@@ -34,7 +34,7 @@ import json
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from enum import StrEnum
 from types import TracebackType
 from typing import Protocol, Self
@@ -42,6 +42,7 @@ from typing import Protocol, Self
 from mister.shared_kernel.errors import DomainError, InvalidValueError
 from mister.shared_kernel.ids import (
     BlockId,
+    ClubSeasonId,
     CompetitionId,
     DilemmaId,
     FixtureId,
@@ -353,69 +354,228 @@ class TacticSystem:
         return self.value
 
 
+class Position(StrEnum):
+    GK = "GK"
+    DF = "DF"
+    MF = "MF"
+    FW = "FW"
+
+
+class TeamVenue(StrEnum):
+    """Where a match is played, from the managed team's point of view."""
+
+    HOME = "home"
+    AWAY = "away"
+    NEUTRAL = "neutral"
+
+
+class UserResult(StrEnum):
+    """Outcome for the managed team, counting extra time and penalties."""
+
+    WIN = "win"
+    DRAW = "draw"
+    LOSS = "loss"
+
+
+class Side(StrEnum):
+    HOME = "home"
+    AWAY = "away"
+
+
+class EventKind(StrEnum):
+    """A notable fact of the block. New kinds are additive."""
+
+    ADVANCED = "advanced"
+    ELIMINATED = "eliminated"
+    CHAMPION = "champion"
+
+
 @dataclass(frozen=True, slots=True)
-class SquadMemberState:
-    """A player of the effective squad as the engine needs him (morale and fitness 0-100)."""
+class TacticSetup:
+    style: TacticStyle
+    system: TacticSystem
+
+
+@dataclass(frozen=True, slots=True)
+class SquadPlayerState:
+    """A player with his state: rating 1-99, morale and fitness 0-100.
+
+    `injured_until` is the first day he is available again (`None` if healthy);
+    `youth_minutes` marks a player the manager must give minutes to (dilemma effect).
+    """
 
     player_id: PlayerId
+    position: Position
     rating: int
+    age: int | None
     morale: int
     fitness: int
-    available: bool
+    injured_until: date | None = None
+    youth_minutes: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class TeamSquad:
+    """A team as a squad plus a tactic: the managed team or a rival changed by transfers."""
+
+    club_season_id: ClubSeasonId
+    players: tuple[SquadPlayerState, ...]
+    tactic: TacticSetup
+
+
+@dataclass(frozen=True, slots=True)
+class ForcedInjury:
+    """An injury applied on `date` for `days` days (from a dilemma effect)."""
+
+    player_id: PlayerId
+    date: date
+    days: int
+
+
+@dataclass(frozen=True, slots=True)
+class ScoreLine:
+    """Goals of the home and the away side."""
+
+    home: int
+    away: int
+
+
+@dataclass(frozen=True, slots=True)
+class MatchOutcome:
+    """The result of a played fixture of the managed team.
+
+    `regulation` is the 90 minutes, `extra_time` only the goals of those 30 minutes and
+    `penalties` the shootout. `venue`, `opponent` and `user_result` are from the managed team's
+    point of view; `winner` is the winning side (`None` for a drawn league match).
+    """
+
+    fixture_id: FixtureId
+    competition_id: CompetitionId
+    date: date
+    home: ClubSeasonId
+    away: ClubSeasonId
+    regulation: ScoreLine
+    venue: TeamVenue
+    opponent: ClubSeasonId
+    user_result: UserResult
+    extra_time: ScoreLine | None = None
+    penalties: ScoreLine | None = None
+    winner: Side | None = None
+    key: bool = False
+    round: int | None = None
+    stage_id: str | None = None
+    group_id: str | None = None
+    leg: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class InjuryOutcome:
+    """An injury suffered in the block (`forced` when it came from content or an effect)."""
+
+    player_id: PlayerId
+    date: date
+    days: int
+    forced: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class PlayerOutcome:
+    """State of a managed player at the close of the block."""
+
+    player_id: PlayerId
+    fitness: int
+    injured_until: date | None = None
+    minutes_played: int = 0
+
+
+@dataclass(frozen=True, slots=True)
+class BlockEvent:
+    """The managed team advances, is eliminated or wins a competition."""
+
+    kind: EventKind
+    date: date
+    club_season_id: ClubSeasonId
+    competition_id: CompetitionId
+    stage_id: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class StandingRow:
+    club_season_id: ClubSeasonId
+    position: int
+    played: int
+    won: int
+    drawn: int
+    lost: int
+    goals_for: int
+    goals_against: int
+    points: int
+
+
+@dataclass(frozen=True, slots=True)
+class Standings:
+    """A league table, or a group's table (`stage_id` and `group_id`), as of a date."""
+
+    competition_id: CompetitionId
+    as_of: date
+    rows: tuple[StandingRow, ...]
+    stage_id: str | None = None
+    group_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class BlockSimulationRequest:
-    """What Game asks of the engine for one block.
+    """What Game asks of the engine for one block: the **run state**, nothing else.
 
-    Deliberately simple: the adapter of T3.5 completes it with the season content it already
-    reads through the Catalog ACL. Extending this DTO is a contract change.
+    Game puts: the season (`playable_season_id`) and the run `seed`, the block (id and dates),
+    the managed team with its tactic and team morale, the rivals changed by transfers
+    (`team_overrides`, the effective squads from the `SquadRegistry`), the competition
+    priorities, the injuries caused by dilemma effects and the results of earlier blocks.
+
+    The adapter of T3.5 completes the reference content from `SeasonContentProvider`
+    (participants, reference squads, competitions and stages, fixtures with their real result,
+    historical standings, content-forced injuries, goal parameters) to build the engine's
+    `SeasonSimInput`, and derives the engine's `RandomSource` from `seed`.
     """
 
     playable_season_id: PlayableSeasonId
     seed: Seed
     block_id: BlockId
-    squad: tuple[SquadMemberState, ...]
-    tactic_style: TacticStyle
-    tactic_system: TacticSystem
+    start: date
+    end: date
+    managed_team: TeamSquad
+    team_morale: int
+    team_overrides: tuple[TeamSquad, ...]
     competition_priorities: Mapping[CompetitionId, Priority]
-
-
-@dataclass(frozen=True, slots=True)
-class MatchOutcome:
-    """The result of a match of the own team, from its point of view."""
-
-    fixture_id: FixtureId
-    competition_id: CompetitionId
-    goals_for: int
-    goals_against: int
-    extra_time: bool = False
-    penalties_for: int | None = None
-    penalties_against: int | None = None
-
-
-@dataclass(frozen=True, slots=True)
-class InjuryOutcome:
-    player_id: PlayerId
-    days: int
+    forced_injuries_from_effects: tuple[ForcedInjury, ...]
+    prior_results: tuple[MatchOutcome, ...]
 
 
 @dataclass(frozen=True, slots=True)
 class BlockSimulationResult:
-    """What the engine answers for a block."""
+    """What the engine answers for a block (the engine's `BlockSummaryDTO`, in Game terms).
+
+    Enough to rebuild the run state and the OpenAPI `BlockSummary` and `MatchReport`. Game
+    derives, not the engine: the key-match label (`keyMatchLabel`), `previousPosition` (from
+    the standings of the previous block), the competition and round display names, and the
+    league position (read from `standings`).
+    """
 
     block_id: BlockId
     matches: tuple[MatchOutcome, ...]
+    key_matches: tuple[FixtureId, ...]
+    standings: tuple[Standings, ...]
+    events: tuple[BlockEvent, ...]
     injuries: tuple[InjuryOutcome, ...]
-    minutes_played: Mapping[PlayerId, int]
-    league_positions: Mapping[CompetitionId, int]
+    player_states: tuple[PlayerOutcome, ...]
 
 
 class SeasonSimulator(Protocol):
     """Game's port towards the engine (PLAN §3.1).
 
-    The adapter of T3.5 translates to `simulation.application.api`. Deterministic: the same
-    request always gives the same result.
+    The adapter of T3.5 translates to `simulation.application.api` (`BlockSimRequest` and
+    `BlockSummaryDTO`; field mapping in `tests/game/test_simulator_dtos_mapping.py`).
+    Deterministic: the same request always gives the same result.
     """
 
     def simulate_block(self, request: BlockSimulationRequest) -> BlockSimulationResult: ...

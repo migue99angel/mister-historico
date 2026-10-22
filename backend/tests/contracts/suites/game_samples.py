@@ -22,8 +22,8 @@ from mister.game.application.ports import (
     ScoreLine,
     Side,
     SquadPlayerState,
-    Standings,
     StandingRow,
+    Standings,
     TacticSetup,
     TacticStyle,
     TacticSystem,
@@ -144,9 +144,7 @@ def make_simulation_request(block: str = "b1") -> BlockSimulationRequest:
             CompetitionId("liga-test"): Priority.NORMAL,
             CompetitionId("copa-test"): Priority.HIGH,
         },
-        forced_injuries_from_effects=(
-            ForcedInjury(PlayerId("tfc-01"), date(2000, 9, 20), 10),
-        ),
+        forced_injuries_from_effects=(ForcedInjury(PlayerId("tfc-01"), date(2000, 9, 20), 10),),
         prior_results=(),
     )
 
