@@ -138,16 +138,19 @@ def test_penalties_may_follow_a_regulation_draw_directly() -> None:
     assert MatchResult(Score(0, 0), penalties=Score(3, 5)).winner is Side.AWAY
 
 
-def test_extra_time_requires_a_regulation_draw() -> None:
-    with pytest.raises(InvalidValueError):
-        MatchResult(Score(2, 1), extra_time=Score(0, 0))
+def test_a_second_leg_can_go_to_extra_time_after_a_decided_match_score() -> None:
+    """The leg is 1-0 but the tie was level on aggregate: the VO only checks structure."""
+    result = MatchResult(Score(1, 0), extra_time=Score(0, 0))
+
+    assert result.total == Score(1, 0)
+    assert result.winner is Side.HOME
 
 
-def test_penalties_require_a_level_score_after_extra_time() -> None:
-    with pytest.raises(InvalidValueError):
-        MatchResult(Score(1, 1), extra_time=Score(1, 0), penalties=Score(4, 3))
-    with pytest.raises(InvalidValueError):
-        MatchResult(Score(2, 1), penalties=Score(4, 3))
+def test_a_second_leg_shootout_may_follow_a_match_score_that_is_not_level() -> None:
+    """Level on aggregate, not in the match: validity against the aggregate is KnockoutTie's."""
+    result = MatchResult(Score(0, 1), penalties=Score(4, 3))
+
+    assert result.winner is Side.HOME  # winner of the match, shootout included; not of the tie
 
 
 def test_a_shootout_cannot_end_level() -> None:
