@@ -10,7 +10,7 @@
 #           (`backend/src` is mounted on top for hot reload).
 #   prod -> runtime only, no uv, non-root user.
 
-ARG PYTHON_IMAGE=python:3.12-slim-bookworm
+ARG PYTHON_IMAGE=python:3.12.15-slim-bookworm
 
 FROM ghcr.io/astral-sh/uv:0.9.7 AS uv
 

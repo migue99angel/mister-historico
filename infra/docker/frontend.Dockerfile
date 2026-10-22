@@ -9,7 +9,7 @@
 # so it needs no image of its own. If one is ever needed, add a `build` stage
 # and a `prod` stage that serves `dist/` with a static file server.
 
-FROM node:22-bookworm-slim AS dev
+FROM node:22.23.4-bookworm-slim AS dev
 WORKDIR /app
 # Dependency layer: only rebuilt when package.json or the lockfile change.
 COPY package.json package-lock.json ./

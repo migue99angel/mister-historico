@@ -17,7 +17,7 @@ ALEMBIC_INI = Path(__file__).resolve().parents[2] / "alembic.ini"
 
 @pytest.fixture(scope="module")
 def database_url() -> Iterator[str]:
-    with PostgresContainer("postgres:16", driver="psycopg") as postgres:
+    with PostgresContainer("postgres:16.15", driver="psycopg") as postgres:
         yield postgres.get_connection_url()
 
 
