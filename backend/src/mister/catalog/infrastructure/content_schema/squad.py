@@ -8,22 +8,26 @@ from pydantic import Field, model_validator
 
 from mister.catalog.infrastructure.content_schema.base import (
     ClubSeasonSlug,
+    NonBlank,
     PlayerId,
     Rating,
     SeasonLabel,
     Slug,
     SourcedModel,
+    enum_from_text,
     season_is_consecutive,
     season_window,
 )
+from mister.catalog.infrastructure.content_schema.effects import Tactic
 
-MIN_CLUB_SQUAD = 18
-MAX_CLUB_SQUAD = 40
 MARKET_PREFIX = "_market-"
+MIN_AGE = 15
+MAX_AGE = 50
+DEFAULT_TACTIC = Tactic(style="balanced", system="4-4-2")
 
 
 class Position(StrEnum):
-    """Broad position of a player."""
+    """Broad position of a player. It decides the engine line, never `subrole`."""
 
     GK = "GK"
     DF = "DF"
@@ -53,31 +57,51 @@ _SUBROLES_BY_POSITION: dict[Position, frozenset[Subrole]] = {
 
 
 class PlayerEntry(SourcedModel):
-    """A player in a club-season squad. `sources` back his membership of the squad."""
+    """A player in a club-season squad. `sources` back his membership of the squad.
 
-    nullable_when_pending = ("age",)
+    `rating` and `age` may be `null` only while the player is `verify: pending`.
+    `rating_rationale` is required for a verified `key` player and, in the playable
+    club-season, for every verified player (the loader checks the latter).
+    """
+
+    nullable_when_pending = ("age", "rating")
 
     player_id: PlayerId
-    display_name: Annotated[str, Field(min_length=1, max_length=80)]
-    alias_name: Annotated[str, Field(min_length=1, max_length=80)]
-    position: Position
-    subrole: Subrole | None = None
-    age: Annotated[int, Field(ge=14, le=50)] | None
-    rating: Rating
+    display_name: NonBlank
+    alias_name: NonBlank
+    position: Annotated[Position, enum_from_text(Position)]
+    subrole: Annotated[Subrole, enum_from_text(Subrole)] | None = None
+    age: Annotated[int, Field(ge=MIN_AGE, le=MAX_AGE)] | None
+    rating: Rating | None
     key: bool
-    rating_rationale: Annotated[str, Field(min_length=1)] | None = None
+    rating_rationale: NonBlank | None = None
     joined_on: date | None = None
     left_on: date | None = None
 
     @model_validator(mode="after")
     def _check_player(self) -> Self:
-        if self.key and not self.rating_rationale:
+        if self.key and self.verify == "ok" and not self.rating_rationale:
             raise ValueError("rating_rationale is required for key players")
         if self.subrole is not None and self.subrole not in _SUBROLES_BY_POSITION[self.position]:
             raise ValueError(f"subrole {self.subrole} is not valid for position {self.position}")
         if self.joined_on and self.left_on and self.left_on < self.joined_on:
             raise ValueError("left_on must not be before joined_on")
         return self
+
+
+class RealLeague(SourcedModel):
+    """The league the club really played that season, with its real goals (P6).
+
+    `competition_label` is free text (e.g. the name of the real league). It is compared with
+    the standings only when it equals the name of a league of the playable season.
+    """
+
+    nullable_when_pending = ("played", "goals_for", "goals_against")
+
+    competition_label: NonBlank
+    played: Annotated[int, Field(ge=0)] | None
+    goals_for: Annotated[int, Field(ge=0)] | None
+    goals_against: Annotated[int, Field(ge=0)] | None
 
 
 class _ClubSeasonFile(SourcedModel):
@@ -110,37 +134,20 @@ class _ClubSeasonFile(SourcedModel):
 
 
 class SquadFile(_ClubSeasonFile):
-    """A full squad. Its `sources` and `verify` cover the real league goals."""
+    """A full squad. Its `sources` and `verify` cover the squad as a whole."""
 
-    real_goals_for: Annotated[int, Field(ge=0)] | None
-    real_goals_against: Annotated[int, Field(ge=0)] | None
+    real_league: RealLeague | None
+    default_tactic: Tactic = DEFAULT_TACTIC
     players: Annotated[tuple[PlayerEntry, ...], Field(min_length=1)]
 
     @model_validator(mode="after")
     def _check_squad(self) -> Self:
-        if not self.is_market:
-            self._check_league_goals()
-            if not MIN_CLUB_SQUAD <= len(self.players) <= MAX_CLUB_SQUAD:
-                raise ValueError(
-                    f"a club squad needs between {MIN_CLUB_SQUAD} and {MAX_CLUB_SQUAD} players"
-                )
-            if not any(p.position is Position.GK for p in self.players):
-                raise ValueError("a club squad needs at least one goalkeeper")
+        if not self.is_market and self.real_league is None:
+            raise ValueError("real_league is required for a club squad")
         ids = [p.player_id for p in self.players]
         duplicates = sorted({i for i in ids if ids.count(i) > 1})
         if duplicates:
             raise ValueError(f"duplicate player_id: {', '.join(duplicates)}")
-        self._check_dates_in_window()
-        return self
-
-    def _check_league_goals(self) -> None:
-        if self.verify != "ok":
-            return
-        for name in ("real_goals_for", "real_goals_against"):
-            if getattr(self, name) is None:
-                raise ValueError(f"{name} is null: use verify: pending")
-
-    def _check_dates_in_window(self) -> None:
         first, last = season_window(self.season)
         for entry in self.players:
             for value in (entry.joined_on, entry.left_on):
@@ -148,17 +155,26 @@ class SquadFile(_ClubSeasonFile):
                     raise ValueError(
                         f"{entry.player_id}: {value} is outside the season window {first}..{last}"
                     )
+        return self
 
 
 class AggregateFile(_ClubSeasonFile):
-    """A rival without a squad (outside the top flight): only an aggregate strength."""
+    """A rival without a squad (outside the top flight): only an aggregate strength.
 
-    attack: Rating
-    defense: Rating
-    rating_rationale: Annotated[str, Field(min_length=1)]
+    `attack` and `defense` are indices in rubric rating points (1-99), the "A" and the "C" of
+    ADR-004. A higher `defense` means a *better* defence (it concedes fewer goals).
+    """
+
+    nullable_when_pending = ("attack", "defense")
+
+    attack: Rating | None
+    defense: Rating | None
+    rating_rationale: NonBlank | None = None
 
     @model_validator(mode="after")
-    def _no_market(self) -> Self:
+    def _check_aggregate(self) -> Self:
         if self.is_market:
             raise ValueError("a market cannot be an aggregate")
+        if self.verify == "ok" and not self.rating_rationale:
+            raise ValueError("rating_rationale is required for a verified aggregate")
         return self

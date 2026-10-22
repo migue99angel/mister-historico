@@ -40,11 +40,15 @@ class StandingsCutoff(SourcedModel):
 
     block: Slug
     competition: Slug
+    stage: Slug | None = None
+    group: Slug | None = None
     date: date
     table: Annotated[tuple[StandingRow, ...], Field(min_length=2)]
 
     @model_validator(mode="after")
     def _check_table(self) -> Self:
+        if (self.stage is None) != (self.group is None):
+            raise ValueError("stage and group go together (group tables) or both stay empty")
         if [r.position for r in self.table] != list(range(1, len(self.table) + 1)):
             raise ValueError("positions must be 1..n in table order")
         points = [r.points for r in self.table]

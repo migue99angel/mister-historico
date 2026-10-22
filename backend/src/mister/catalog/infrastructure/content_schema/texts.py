@@ -4,7 +4,7 @@ from typing import Annotated, Literal, Self
 
 from pydantic import Field, model_validator
 
-from mister.catalog.infrastructure.content_schema.base import ContentModel
+from mister.catalog.infrastructure.content_schema.base import ContentModel, NonBlank
 
 TextId = Annotated[str, Field(pattern=r"^[a-z0-9]+([.-][a-z0-9]+)*$", max_length=80)]
 TextKind = Literal["presentation", "event", "verdict"]
@@ -16,9 +16,9 @@ class Text(ContentModel):
 
     id: TextId
     kind: TextKind
-    body: Annotated[str, Field(min_length=1)]
+    body: NonBlank
     status: TextStatus
-    reviewed_by: Annotated[str, Field(min_length=1)] | None = None
+    reviewed_by: NonBlank | None = None
 
     @model_validator(mode="after")
     def _check_review(self) -> Self:
