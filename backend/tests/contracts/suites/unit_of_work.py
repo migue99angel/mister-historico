@@ -23,6 +23,18 @@ class _Boom(Exception):  # noqa: N818
     """Raised inside a transaction to prove it is rolled back."""
 
 
+def _fail_inside_transaction(uow: UnitOfWork, work: Callable[[UnitOfWork], None]) -> None:
+    """Run `work` in a transaction that then fails, and check the failure propagates."""
+
+    def transaction() -> None:
+        with uow:
+            work(uow)
+            raise _Boom
+
+    with pytest.raises(_Boom):
+        transaction()
+
+
 class UnitOfWorkContract:
     """Behaviour every `UnitOfWork` must have."""
 
@@ -68,9 +80,7 @@ class UnitOfWorkContract:
         uow = make_uow()
         record = make_run_record()
 
-        with pytest.raises(_Boom), uow:
-            uow.runs.add(record)
-            raise _Boom
+        _fail_inside_transaction(uow, lambda tx: tx.runs.add(record))
 
         with uow:
             assert uow.runs.get(record.run_id) is None
@@ -119,10 +129,11 @@ class UnitOfWorkContract:
             uow.runs.add(first)
             uow.commit()
 
-        with pytest.raises(_Boom), uow:
-            uow.runs.save(next_version(first), expected_version=1)
-            uow.runs.put_idempotent(make_idempotency_record(first, "key-1"))
-            raise _Boom
+        def work(tx: UnitOfWork) -> None:
+            tx.runs.save(next_version(first), expected_version=1)
+            tx.runs.put_idempotent(make_idempotency_record(first, "key-1"))
+
+        _fail_inside_transaction(uow, work)
 
         with uow:
             assert uow.runs.get(first.run_id) == first
