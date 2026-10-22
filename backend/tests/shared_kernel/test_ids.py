@@ -79,7 +79,9 @@ def test_club_season_id_accepts_a_leading_underscore_for_system_slugs() -> None:
     assert ClubSeasonId("_market-2012-13").value == "_market-2012-13"
 
 
-@pytest.mark.parametrize("slug", ["__market", "_", "_-a", "_Market"])
+@pytest.mark.parametrize(
+    "slug", ["__market", "_", "_-a", "_Market", "_foo-2000-01", "_market", "_market-"]
+)
 def test_club_season_id_rejects_malformed_underscore_slugs(slug: str) -> None:
     with pytest.raises(InvalidValueError):
         ClubSeasonId(slug)
