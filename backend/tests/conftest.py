@@ -1,8 +1,8 @@
-"""Configuración común de pytest.
+"""Shared pytest configuration.
 
-Marca automáticamente cada test según la carpeta de nivel en la que vive
-(`tests/integration/`, `tests/contract/`...). Lo que no está en ninguna de esas
-carpetas se considera `unit`. Un test puede añadir además marcadores explícitos.
+Every test is marked automatically after the test-level directory it lives in, at any depth
+(`tests/integration/`, `tests/contracts/`, `tests/simulation/unit/`...). Tests outside any
+level directory are marked `unit`. A test can still add explicit markers on top.
 """
 
 from pathlib import Path
@@ -10,16 +10,30 @@ from pathlib import Path
 import pytest
 
 _TESTS_ROOT = Path(__file__).parent
-_LEVEL_DIRS = frozenset({"integration", "contract", "calibration", "content", "e2e"})
+_LEVEL_DIRS: dict[str, str] = {
+    "unit": "unit",
+    "integration": "integration",
+    "contract": "contract",
+    "contracts": "contract",
+    "calibration": "calibration",
+    "content": "content",
+    "e2e": "e2e",
+}
 
 
-# tryfirst: los marcadores tienen que estar puestos antes de que `-m` deseleccione.
+def _level_marker(test_path: Path) -> str:
+    try:
+        directories = test_path.relative_to(_TESTS_ROOT).parts[:-1]
+    except ValueError:
+        return "unit"
+    for directory in directories:
+        if directory in _LEVEL_DIRS:
+            return _LEVEL_DIRS[directory]
+    return "unit"
+
+
+# tryfirst: markers must be in place before `-m` deselects anything.
 @pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
     for item in items:
-        try:
-            relative = item.path.relative_to(_TESTS_ROOT)
-        except ValueError:
-            continue
-        level = relative.parts[0] if len(relative.parts) > 1 else ""
-        item.add_marker(level if level in _LEVEL_DIRS else "unit")
+        item.add_marker(_level_marker(item.path))
