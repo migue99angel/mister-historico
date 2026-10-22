@@ -88,7 +88,7 @@ def test_the_synthetic_season_has_ten_dilemmas_that_use_every_effect_type(root: 
 def test_the_synthetic_league_has_six_clubs_with_full_squads(root: Path) -> None:
     tree = load_content_tree(root, release=True)
 
-    league_squads = [tree.squads[f"{c}-2000-01"] for c in tree.seasons[OWN].season.competitions[0].participants]
+    league_squads = [tree.squads[c] for c in tree.seasons[OWN].season.competitions[0].participants]
     assert len(league_squads) == 6
     assert all(18 <= len(s.players) <= 22 for s in league_squads)
 
@@ -413,7 +413,7 @@ def test_a_block_without_dilemmas_is_reported(root: Path) -> None:
 
     edit(root, f"{SEASON}/dilemmas.yaml", mutate)
 
-    assert_issue(issues_of(root), f"{SEASON}/dilemmas.yaml", "b5", "between 1 and 3")
+    assert_issue(issues_of(root), f"{SEASON}/dilemmas.yaml", "dilemmas", "block b5 has")
 
 
 def test_a_block_with_more_than_three_dilemmas_is_reported(root: Path) -> None:
@@ -423,7 +423,7 @@ def test_a_block_with_more_than_three_dilemmas_is_reported(root: Path) -> None:
 
     edit(root, f"{SEASON}/dilemmas.yaml", mutate)
 
-    assert_issue(issues_of(root), f"{SEASON}/dilemmas.yaml", "b1", "between 1 and 3")
+    assert_issue(issues_of(root), f"{SEASON}/dilemmas.yaml", "dilemmas", "block b1 has")
 
 
 def test_more_than_twelve_dilemmas_in_total_are_reported(root: Path) -> None:
