@@ -18,6 +18,7 @@
 | F0 | C | T0.4 | 1 |
 | F1 | A | T1.1 · T1.2 · T1.3 [HUMANO al final] · T1.4 | 4 |
 | F1 | B | T1.5 · T1.6 | 2 |
+| F1 | C | T1.8 (después de integrar T1.3) | 1 |
 | F2 | A | T2.1 · T2.2 · T2.3 · T2.4 · T2.5 · T2.20 · T2.10 · T2.11 · T2.12 · T2.13 · T2.16 (entre 3 y 5 lotes de rivales) | 5 de backend + entre 6 y 9 de contenido |
 | F2 | B | T2.6 · T2.21 · T2.14 | 3 |
 | F2 | C | T2.7 · T2.8 · T2.15 [HUMANO] | 2 |
@@ -208,10 +209,22 @@
   - `MatchResult.winner` funciona con prórroga y con penaltis.
 - **Aceptación:** `model.py` tiene menos de 200 líneas y no contiene lógica de simulación. Un test de arquitectura demuestra que `mister.game` no puede importar `mister.simulation.domain`.
 
+### T1.8 · Calculador de medias (CR del esquema de contenido)
+- **Capa:** `catalog` · **Oleada:** F1-C · **Tamaño:** M · **Depende de:** T1.3 integrada (la fórmula), T1.2
+- **Propiedad:** `backend/src/mister/catalog/domain/ratings.py`, el esquema de `squad.yaml` en `content_schema/` (CR), `entrypoints/cli/` (subcomando de medias), el contenido sintético y sus tests
+- **Qué hacer:**
+  - Añadir a cada jugador un bloque `season_stats` (con `sources` y `verify`) con las estadísticas que pide la fórmula de la rúbrica.
+  - Añadir `rating_override` opcional con `rationale` obligatorio.
+  - Implementar la fórmula como función pura y determinista en `catalog/domain/ratings.py`.
+  - CLI `mister content ratings compute <club-season>`: escribe las medias calculadas en el YAML.
+  - Validación: la media guardada coincide con la fórmula, salvo que haya `rating_override`.
+- **Tests primero:** tablas de casos de la fórmula, monotonía (más minutos o más goles nunca bajan la media), límites 1-99, validación de discrepancias y overrides sin `rationale`.
+- **Aceptación:** el contenido sintético se recalcula con la CLI y pasa la validación en modo release.
+
 ### T1.7 · Jugadores de referencia de la rúbrica [HUMANO]
 - **Oleada:** antes de empezar la F2 · **Tamaño:** S · **Depende de:** T1.3 integrada
 - **Propiedad:** la tabla `[PENDIENTE autor]` de `docs/content/rating-rubric.md`
-- **Qué hacer:** el autor elige jugadores reales de referencia por banda y posición, cada uno con su temporada concreta. Son el anclaje común de todos los agentes investigadores.
+- **Qué hacer:** el autor elige jugadores reales de referencia por banda y posición, cada uno con su temporada concreta. Sirven para comprobar que la fórmula de T1.8 da medias razonables (anclas de cordura) y para ajustar sus pesos si no.
 - **Aceptación:** la tabla está completa. **Bloquea T2.11, T2.16 y T6.x.**
 
 ---
@@ -365,9 +378,9 @@
 - **Aceptación:** `content validate` en verde y todos los datos con `sources`.
 
 #### T2.11 · Plantilla y medias
-- **Oleada:** F2-A · **Tamaño:** L · **Depende de:** T1.2, T1.3 (rúbrica aprobada), T1.7 (jugadores de referencia)
+- **Oleada:** F2-A · **Tamaño:** L · **Depende de:** T1.2, T1.3 (rúbrica aprobada), T1.7 (jugadores de referencia), T1.8 (calculador)
 - **Propiedad:** `content/club-seasons/real-madrid-2012-13/squad.yaml`
-- **Qué hacer:** la plantilla completa de esa temporada (incluidas las altas y bajas con su fecha), posición, edad, media según la rúbrica completa y `rating_rationale` para todos. Los fichajes posibles de los dilemas que vienen de un rival se referencian con `from_club_season`. Los que no vienen de ningún rival del juego van en `content/club-seasons/_market-2012-13/squad.yaml`.
+- **Qué hacer:** la plantilla completa de esa temporada (incluidas las altas y bajas con su fecha), posición, edad y `season_stats` con fuente para cada jugador. Las medias se calculan con la CLI de T1.8. Solo se revisan a mano los jugadores clave y los casos raros (lesiones largas, llegadas en invierno), con `rating_override` justificado. Los fichajes posibles de los dilemas que vienen de un rival se referencian con `from_club_season`. Los que no vienen de ningún rival del juego van en `content/club-seasons/_market-2012-13/squad.yaml`.
 - **Aceptación:** validación en verde y medias justificadas.
 
 #### T2.12 · Calendario, resultados y clasificaciones
@@ -386,14 +399,14 @@
 - **Aceptación:** validación en verde y una opción histórica en cada dilema.
 
 #### T2.16 · Plantillas de los rivales del RM 2012-13 (por lotes)
-- **Oleada:** F2-A, en cuanto T2.12 publica la lista de participantes · **Tamaño:** M por lote · **Depende de:** T1.2, T1.3 (procedimiento ligero), T1.7 (jugadores de referencia) y la lista de rivales de T2.12
+- **Oleada:** F2-A, en cuanto T2.12 publica la lista de participantes · **Tamaño:** M por lote · **Depende de:** T1.2, T1.3 (procedimiento ligero), T1.7 (jugadores de referencia), T1.8 (calculador) y la lista de rivales de T2.12
 - **Propiedad:** cada lote es dueño de sus `content/club-seasons/<club>-2012-13/**` y `content/clubs/<club>.yaml`. Lotes propuestos (cada uno lo hace un agente, en paralelo):
   - Lote 1: los 6 primeros de la Liga (salvo el RM).
   - Lote 2: los clasificados del 7.º al 13.º.
   - Lote 3: los clasificados del 14.º al 20.º.
   - Lote 4: los rivales de la Champions.
   - Lote 5: los rivales de la Copa y la Supercopa (los de fuera de Primera van como `aggregate.yaml`).
-- **Qué hacer:** la plantilla de cada rival según el procedimiento ligero (P6): jugadores con minutos relevantes, medias, jugadores `key` con su justificación, fuentes, y los goles a favor y en contra reales en la liga.
+- **Qué hacer:** la plantilla de cada rival según P6: jugadores con minutos relevantes con sus `season_stats` y fuentes, `real_league` y medias calculadas con la CLI de T1.8. Revisión manual solo de los jugadores `key`.
 - **Aceptación:** validación en verde para cada club-season. Ningún jugador aparece en dos plantillas de la misma fecha, salvo en los traspasos de invierno, que van con fecha.
 
 #### T2.14 · Verificación independiente del RM
