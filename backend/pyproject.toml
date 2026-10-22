@@ -124,3 +124,66 @@ exclude_also = [
     "raise NotImplementedError",
     "\\.\\.\\.",
 ]
+
+# --------------------------------------------------------------------------- import-linter
+# Reglas de capas de PLAN §3.2, escritas con comodines para que cubran cualquier contexto
+# (`mister.<contexto>.domain`...) sin tener que tocar esto al crear uno nuevo.
+# Un comodín que no encaja con ningún módulo se expande a un conjunto vacío y el contrato se
+# da por cumplido, así que los contratos son válidos aunque todavía no exista ningún contexto.
+# `tests/architecture/test_layer_contracts.py` los aplica sobre un paquete falso con la misma
+# forma para demostrar que de verdad rompen.
+[tool.importlinter]
+root_packages = ["mister"]
+# Necesario para poder prohibir librerías externas (fastapi, sqlalchemy...) en domain.
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "R1 · domain solo importa la stdlib y shared_kernel"
+type = "forbidden"
+source_modules = ["mister.*.domain"]
+forbidden_modules = [
+    "mister.*.application",
+    "mister.*.infrastructure",
+    "mister.entrypoints",
+    "mister.bootstrap",
+    "mister.settings",
+    "fastapi",
+    "starlette",
+    "sqlalchemy",
+    "alembic",
+    "psycopg",
+    "pydantic",
+    "pydantic_settings",
+    "redis",
+    "uvicorn",
+]
+
+[[tool.importlinter.contracts]]
+name = "R2 · application no importa infrastructure ni entrypoints"
+type = "forbidden"
+source_modules = ["mister.*.application"]
+forbidden_modules = ["mister.*.infrastructure", "mister.entrypoints", "mister.bootstrap"]
+
+[[tool.importlinter.contracts]]
+name = "R3 · infrastructure solo la importa bootstrap"
+type = "protected"
+protected_modules = ["mister.*.infrastructure"]
+allowed_importers = ["mister.bootstrap"]
+
+# R4 completa ("un contexto no importa el domain de otro", tampoco desde su application o su
+# infrastructure) no se puede expresar de forma genérica: import-linter no tiene comodines del
+# tipo "<ctx> distinto de <otro>". Aquí se cubre lo esencial (los domain son independientes
+# entre sí); el resto se añadirá con contratos por contexto cuando existan los contextos.
+[[tool.importlinter.contracts]]
+name = "R4 · los domain de distintos contextos son independientes"
+type = "independence"
+modules = ["mister.*.domain"]
+
+# R5: entrypoints habla con application. Se permiten imports indirectos porque application
+# importa domain; lo prohibido es saltarse application.
+[[tool.importlinter.contracts]]
+name = "R5 · entrypoints no importa domain ni infrastructure directamente"
+type = "forbidden"
+source_modules = ["mister.entrypoints"]
+forbidden_modules = ["mister.*.domain", "mister.*.infrastructure"]
+allow_indirect_imports = true
