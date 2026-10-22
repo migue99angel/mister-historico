@@ -40,10 +40,12 @@ players:
   position: DF
   age: 33
   rating: 62
-  key: false
+  key: true
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
+    rated above the squad average.'
 - player_id: drv-04
   display_name: Gael Ejemplo
   alias_name: Jugador DRV-04
@@ -84,7 +86,7 @@ players:
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
     rated above the squad average.'
 - player_id: drv-08
   display_name: Kiko Dummy
@@ -112,10 +114,12 @@ players:
   position: MF
   age: 35
   rating: 59
-  key: false
+  key: true
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
+    rated above the squad average.'
 - player_id: drv-11
   display_name: Nico Sampleton
   alias_name: Jugador DRV-11
@@ -126,7 +130,7 @@ players:
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
     rated above the squad average.'
 - player_id: drv-12
   display_name: Oleg Fakerson
@@ -138,7 +142,7 @@ players:
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
     rated above the squad average.'
 - player_id: drv-13
   display_name: Pepe Testoni
@@ -156,10 +160,12 @@ players:
   position: MF
   age: 28
   rating: 60
-  key: false
+  key: true
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
+    rated above the squad average.'
 - player_id: drv-15
   display_name: Rafa Ficticio
   alias_name: Jugador DRV-15
@@ -196,7 +202,9 @@ players:
   position: FW
   age: 23
   rating: 59
-  key: false
+  key: true
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
+    rated above the squad average.'

@@ -3,7 +3,6 @@
 from collections import Counter
 from datetime import date
 
-from mister.catalog.infrastructure.content_schema.base import season_window
 from mister.catalog.infrastructure.content_schema.context import SeasonContext
 from mister.catalog.infrastructure.content_schema.effects import (
     CompetitionPriorityEffect,
@@ -54,13 +53,17 @@ def check_dilemmas(ctx: SeasonContext) -> None:
         if isinstance(e, SignPlayerEffect)
     }
     usable = ctx.own_players | signed
+    block_starts = {b.id: b.start for b in ctx.blocks}
     for di, dilemma in enumerate(dilemmas):
         for oi, option in enumerate(dilemma.options):
             for ei, effect in enumerate(option.effects):
-                _check_effect(ctx, f"dilemmas.{di}.options.{oi}.effects.{ei}", effect, usable)
+                field = f"dilemmas.{di}.options.{oi}.effects.{ei}"
+                _check_effect(ctx, field, effect, usable, block_starts.get(dilemma.block))
 
 
-def _check_effect(ctx: SeasonContext, field: str, effect: Effect, usable: set[str]) -> None:
+def _check_effect(
+    ctx: SeasonContext, field: str, effect: Effect, usable: set[str], block_start: date | None
+) -> None:
     match effect:
         case SignPlayerEffect():
             _check_sign(ctx, field, effect)
@@ -72,7 +75,7 @@ def _check_effect(ctx: SeasonContext, field: str, effect: Effect, usable: set[st
             _check_player(ctx, f"{field}.player_id", effect.player_id, usable)
         case InjuryEffect():
             _check_player(ctx, f"{field}.player_id", effect.player_id, usable)
-            _check_injury_date(ctx, field, effect.date)
+            _check_injury_date(ctx, field, effect.date, block_start)
         case FitnessEffect() if effect.player_id is not None:
             _check_player(ctx, f"{field}.player_id", effect.player_id, usable)
         case CompetitionPriorityEffect():
@@ -143,7 +146,14 @@ def _check_signing_source(ctx: SeasonContext, field: str, player_id: str, source
         )
 
 
-def _check_injury_date(ctx: SeasonContext, field: str, day: date) -> None:
-    first, last = season_window(ctx.content.season.season)
+def _check_injury_date(ctx: SeasonContext, field: str, day: date, block_start: date | None) -> None:
+    """An injury caused by a decision starts in its block or later, and within the season."""
+    first = block_start or ctx.blocks[0].start
+    last = ctx.blocks[-1].end
     if not first <= day <= last:
-        ctx.add("dilemmas", f"{field}.date", f"{day} is outside the season ({first}..{last})")
+        ctx.add(
+            "dilemmas",
+            f"{field}.date",
+            f"{day} is outside the allowed window {first}..{last} (the dilemma's block to the "
+            "end of the season)",
+        )

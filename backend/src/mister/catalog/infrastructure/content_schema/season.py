@@ -1,6 +1,6 @@
 """`content/seasons/<slug>/season.yaml`: blocks, competitions, objectives and real outcome."""
 
-from datetime import date
+from datetime import date, timedelta
 from enum import StrEnum
 from itertools import pairwise
 from typing import Annotated, Literal, Self
@@ -17,7 +17,6 @@ from mister.catalog.infrastructure.content_schema.base import (
     SourcedModel,
     enum_from_text,
     season_is_consecutive,
-    season_window,
 )
 from mister.catalog.infrastructure.content_schema.effects import MAX_INJURY_DAYS, Tactic
 
@@ -29,6 +28,8 @@ Round = Literal[
     "qualifying",
     "playoff",
     "group_stage",
+    "round_of_128",
+    "round_of_64",
     "round_of_32",
     "round_of_16",
     "quarter_final",
@@ -86,8 +87,8 @@ class GoalStats(SourcedModel):
     nullable_when_pending = ("matches", "home_goals", "away_goals")
 
     matches: Annotated[int, Field(ge=1)] | None
-    home_goals: Annotated[int, Field(ge=0)] | None
-    away_goals: Annotated[int, Field(ge=0)] | None
+    home_goals: Annotated[int, Field(ge=1)] | None
+    away_goals: Annotated[int, Field(ge=1)] | None
 
 
 class GoalBaselineFromLeague(ContentModel):
@@ -145,6 +146,11 @@ class Stage(ContentModel):
             missing = [name for name, value in group_fields.items() if value is None]
             if missing:
                 raise ValueError(f"a group_stage needs {', '.join(missing)}")
+            smallest = min(len(g.participants) for g in self.groups or ())
+            if (self.advance_per_group or 0) >= smallest:
+                raise ValueError(
+                    f"advance_per_group must be smaller than the group size ({smallest})"
+                )
         elif any(value is not None for value in group_fields.values()):
             raise ValueError("group fields (groups, points...) only apply to a group_stage")
         return self
@@ -200,9 +206,14 @@ class _KnockoutBase(_CompetitionBase):
         ids = [s.id for s in self.stages]
         if len(set(ids)) != len(ids):
             raise ValueError("duplicate stage id")
-        ranks = [_ROUND_ORDER[s.round] for s in self.stages]
-        if any(a >= b for a, b in pairwise(ranks)):
-            raise ValueError("stages must be listed in the order of their rounds")
+        for earlier, later in pairwise(self.stages):
+            rank_a, rank_b = _ROUND_ORDER[earlier.round], _ROUND_ORDER[later.round]
+            repeated_qualifying = earlier.round == later.round == "qualifying"
+            if rank_a > rank_b or (rank_a == rank_b and not repeated_qualifying):
+                raise ValueError(
+                    "stages must be listed in the order of their rounds "
+                    "(only qualifying may repeat)"
+                )
         for stage in self.stages:
             for group in stage.groups or ():
                 unknown = set(group.participants) - set(self.participants)
@@ -366,10 +377,11 @@ class SeasonFile(ContentModel):
                 )
 
     def _check_forced_events(self) -> None:
-        first, last = season_window(self.season)
+        first, last = self.blocks[0].start, self.blocks[-1].end
         for event in self.forced_events:
-            if not first <= event.date <= last:
+            ends = event.date + timedelta(days=event.days)  # first day after the injury
+            if not (event.date <= last and ends > first):
                 raise ValueError(
-                    f"forced event of {event.player_id} on {event.date} is outside the "
-                    f"season window {first}..{last}"
+                    f"forced event of {event.player_id} ({event.date}, {event.days} days) does "
+                    f"not overlap the season blocks {first}..{last}"
                 )

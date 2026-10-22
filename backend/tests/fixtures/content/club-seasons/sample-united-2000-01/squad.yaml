@@ -53,10 +53,12 @@ players:
   position: DF
   age: 22
   rating: 75
-  key: false
+  key: true
   sources:
   - https://example.org/test-content/squads/sample-united-2000-01
   verify: ok
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
+    rated above the squad average.'
 - player_id: smu-05
   display_name: Aldo Placebo
   alias_name: Jugador SMU-05
@@ -107,7 +109,7 @@ players:
   sources:
   - https://example.org/test-content/squads/sample-united-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
     rated above the squad average.'
 - player_id: smu-10
   display_name: Fito Simulado
@@ -115,10 +117,12 @@ players:
   position: MF
   age: 32
   rating: 75
-  key: false
+  key: true
   sources:
   - https://example.org/test-content/squads/sample-united-2000-01
   verify: ok
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
+    rated above the squad average.'
 - player_id: smu-11
   display_name: Gael Prueba
   alias_name: Jugador SMU-11
@@ -155,20 +159,24 @@ players:
   position: MF
   age: 19
   rating: 73
-  key: false
+  key: true
   sources:
   - https://example.org/test-content/squads/sample-united-2000-01
   verify: ok
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
+    rated above the squad average.'
 - player_id: smu-15
   display_name: Kiko Stubby
   alias_name: Jugador SMU-15
   position: FW
   age: 22
   rating: 76
-  key: false
+  key: true
   sources:
   - https://example.org/test-content/squads/sample-united-2000-01
   verify: ok
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
+    rated above the squad average.'
 - player_id: smu-16
   display_name: Lalo Sampleton
   alias_name: Jugador SMU-16
@@ -209,7 +217,7 @@ players:
   sources:
   - https://example.org/test-content/squads/sample-united-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
     rated above the squad average.'
 - player_id: smu-20
   display_name: Pepe Ficticio
@@ -221,5 +229,5 @@ players:
   sources:
   - https://example.org/test-content/squads/sample-united-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
     rated above the squad average.'

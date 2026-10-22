@@ -201,6 +201,7 @@ def _check_legs(ctx: SeasonContext, competition: Competition) -> None:
         for opponent, legs in legs_by_opponent.items():
             label = f"{competition.id}/{stage.id}: {opponent}"
             if sorted(legs) == [1, 2]:
+                _check_two_legs(ctx, label, competition.id, stage.id, opponent)
                 continue
             if len(set(legs)) < len(legs):
                 ctx.add("fixtures", "fixtures", f"{label} has two fixtures for the same leg")
@@ -208,6 +209,20 @@ def _check_legs(ctx: SeasonContext, competition: Competition) -> None:
                 ctx.add("fixtures", "fixtures", f"{label} has only the first leg")
             else:
                 ctx.add("fixtures", "fixtures", f"{label} has only the second leg")
+
+
+def _check_two_legs(
+    ctx: SeasonContext, label: str, competition_id: str, stage_id: str, opponent: str
+) -> None:
+    ties = {
+        f.leg: f
+        for f in _own_fixtures(ctx, competition_id)
+        if f.stage == stage_id and f.opponent == opponent
+    }
+    if sorted(f.venue for f in ties.values()) != ["away", "home"]:
+        ctx.add("fixtures", "fixtures", f"{label} needs one leg at home and the other away")
+    if ties[1].date >= ties[2].date:
+        ctx.add("fixtures", "fixtures", f"{label}: leg 1 must be played before leg 2")
 
 
 def _check_stage_order(ctx: SeasonContext, competition: Competition) -> None:

@@ -40,10 +40,12 @@ players:
   position: DF
   age: 24
   rating: 65
-  key: false
+  key: true
   sources:
   - https://example.org/test-content/squads/mock-city-2000-01
   verify: ok
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
+    rated above the squad average.'
 - player_id: mct-04
   display_name: Mati Sampleton
   alias_name: Jugador MCT-04
@@ -84,7 +86,7 @@ players:
   sources:
   - https://example.org/test-content/squads/mock-city-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
     rated above the squad average.'
 - player_id: mct-08
   display_name: Quim Ficticio
@@ -92,10 +94,12 @@ players:
   position: DF
   age: 34
   rating: 65
-  key: false
+  key: true
   sources:
   - https://example.org/test-content/squads/mock-city-2000-01
   verify: ok
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
+    rated above the squad average.'
 - player_id: mct-09
   display_name: Rafa Inventado
   alias_name: Jugador MCT-09
@@ -136,7 +140,7 @@ players:
   sources:
   - https://example.org/test-content/squads/mock-city-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
     rated above the squad average.'
 - player_id: mct-13
   display_name: Vito Prueba
@@ -164,20 +168,24 @@ players:
   position: FW
   age: 28
   rating: 68
-  key: false
+  key: true
   sources:
   - https://example.org/test-content/squads/mock-city-2000-01
   verify: ok
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
+    rated above the squad average.'
 - player_id: mct-16
   display_name: Yago Mocko
   alias_name: Jugador MCT-16
   position: FW
   age: 24
   rating: 69
-  key: false
+  key: true
   sources:
   - https://example.org/test-content/squads/mock-city-2000-01
   verify: ok
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
+    rated above the squad average.'
 - player_id: mct-17
   display_name: Zeno Stubby
   alias_name: Jugador MCT-17
@@ -208,7 +216,7 @@ players:
   sources:
   - https://example.org/test-content/squads/mock-city-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
     rated above the squad average.'
 - player_id: xfer-01
   display_name: Trasp Inventado

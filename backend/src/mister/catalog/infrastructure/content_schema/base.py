@@ -24,7 +24,7 @@ Slug = Annotated[str, StringConstraints(pattern=SLUG_PATTERN, max_length=64)]
 PlayerId = Annotated[str, StringConstraints(pattern=SLUG_PATTERN, max_length=64)]
 """Stable player identifier; the same person keeps the same id across seasons."""
 
-ClubSeasonSlug = Annotated[str, StringConstraints(pattern=CLUB_SEASON_PATTERN, max_length=80)]
+ClubSeasonSlug = Annotated[str, StringConstraints(pattern=CLUB_SEASON_PATTERN, max_length=64)]
 """`<club>-<yyyy>-<yy>`, e.g. `test-fc-2000-01`. A leading underscore marks a market squad."""
 
 SeasonLabel = Annotated[str, StringConstraints(pattern=SEASON_PATTERN)]
