@@ -1,5 +1,6 @@
 """Building blocks shared by every content model: strict base, identifiers and sources."""
 
+from datetime import date
 from typing import Annotated, ClassVar, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, StringConstraints, model_validator
@@ -57,3 +58,15 @@ class SourcedModel(ContentModel):
             if empty:
                 raise ValueError(f"{', '.join(empty)} is null: use verify: pending")
         return self
+
+
+def season_is_consecutive(label: str) -> bool:
+    """True when `yyyy-yy` spans two consecutive years (`2000-01`, `1999-00`)."""
+    start, end = label.split("-")
+    return (int(start) + 1) % 100 == int(end)
+
+
+def season_window(label: str) -> tuple[date, date]:
+    """First and last day of a season: 1 July of the first year to 30 June of the next."""
+    start_year = int(label.split("-")[0])
+    return date(start_year, 7, 1), date(start_year + 1, 6, 30)
