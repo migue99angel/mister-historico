@@ -10,6 +10,7 @@ from hypothesis import strategies as st
 
 from mister.shared_kernel.errors import DomainError, InvalidValueError
 from mister.shared_kernel.ids import (
+    BlockId,
     ClubId,
     ClubSeasonId,
     CompetitionId,
@@ -22,6 +23,7 @@ from mister.shared_kernel.ids import (
 )
 
 SLUG_IDS = [
+    BlockId,
     ClubSeasonId,
     PlayableSeasonId,
     PlayerId,
@@ -32,15 +34,14 @@ SLUG_IDS = [
     OptionId,
 ]
 
-valid_slugs = st.from_regex(r"_?[a-z0-9]+(-[a-z0-9]+)*", fullmatch=True).filter(
-    lambda s: len(s) <= 100
+valid_slugs = st.from_regex(r"[a-z0-9]+(-[a-z0-9]+)*", fullmatch=True).filter(
+    lambda s: len(s) <= 64
 )
+NON_MARKET_IDS = [i for i in SLUG_IDS if i is not ClubSeasonId]
 
 
 @pytest.mark.parametrize("id_type", SLUG_IDS)
-@pytest.mark.parametrize(
-    "slug", ["real-madrid-2012-13", "a", "test-fc-2000-01", "_market-2012-13", "x1-y2"]
-)
+@pytest.mark.parametrize("slug", ["real-madrid-2012-13", "a", "test-fc-2000-01", "x1-y2", "a" * 64])
 def test_slug_ids_accept_kebab_case_slugs(id_type: Any, slug: str) -> None:
     identifier = id_type(slug)
 
@@ -66,12 +67,28 @@ def test_any_kebab_case_slug_is_accepted(slug: str) -> None:
         "double--dash",
         "__double",
         "tilde-á",
-        "a" * 101,
+        "a" * 65,
     ],
 )
 def test_slug_ids_reject_invalid_formats(id_type: Any, slug: str) -> None:
     with pytest.raises(InvalidValueError):
         id_type(slug)
+
+
+def test_club_season_id_accepts_a_leading_underscore_for_system_slugs() -> None:
+    assert ClubSeasonId("_market-2012-13").value == "_market-2012-13"
+
+
+@pytest.mark.parametrize("slug", ["__market", "_", "_-a", "_Market"])
+def test_club_season_id_rejects_malformed_underscore_slugs(slug: str) -> None:
+    with pytest.raises(InvalidValueError):
+        ClubSeasonId(slug)
+
+
+@pytest.mark.parametrize("id_type", NON_MARKET_IDS)
+def test_only_club_season_id_allows_a_leading_underscore(id_type: Any) -> None:
+    with pytest.raises(InvalidValueError):
+        id_type("_market-2012-13")
 
 
 @pytest.mark.parametrize("id_type", SLUG_IDS)
@@ -132,7 +149,18 @@ def test_run_id_parses_its_string_form() -> None:
     assert RunId.parse(str(run_id)) == run_id
 
 
-@pytest.mark.parametrize("text", ["", "not-a-uuid", "1234"])
+@pytest.mark.parametrize(
+    "text",
+    [
+        "",
+        "not-a-uuid",
+        "1234",
+        "urn:uuid:12345678-1234-5678-1234-567812345678",
+        "12345678123456781234567812345678",
+        "12345678-1234-5678-1234-56781234567A",
+        "{12345678-1234-5678-1234-567812345678}",
+    ],
+)
 def test_run_id_parse_rejects_malformed_text(text: str) -> None:
     with pytest.raises(InvalidValueError):
         RunId.parse(text)
