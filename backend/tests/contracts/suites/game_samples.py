@@ -11,9 +11,12 @@ from mister.game.application.ports import (
     IdempotencyRecord,
     InjuryOutcome,
     MatchOutcome,
+    Priority,
     RunRecord,
     RunStatus,
     SquadMemberState,
+    TacticStyle,
+    TacticSystem,
 )
 from mister.shared_kernel.ids import (
     BlockId,
@@ -41,7 +44,7 @@ def make_decision(sequence: int = 1, *, option: str = "a") -> DecisionRecord:
 
 
 def make_run_record(
-    *, run_number: int = 1, version: int = 1, decisions: int = 0, status: RunStatus | None = None
+    *, run_number: int = 1, version: int = 0, decisions: int = 0, status: RunStatus | None = None
 ) -> RunRecord:
     """A run record; `run_number` gives it a stable, distinct id."""
     return RunRecord(
@@ -73,7 +76,7 @@ def next_version(record: RunRecord, *, extra_decisions: int = 0) -> RunRecord:
 
 
 def make_idempotency_record(
-    record: RunRecord, key: str = "key-1", *, request_hash: str = "req-1"
+    record: RunRecord, key: str = "idem-key-1", *, request_hash: str = "req-1"
 ) -> IdempotencyRecord:
     return IdempotencyRecord(
         run_id=record.run_id,
@@ -93,9 +96,9 @@ def make_simulation_request(block: str = "b1") -> BlockSimulationRequest:
             SquadMemberState(PlayerId("tfc-01"), rating=60, morale=55, fitness=90, available=True),
             SquadMemberState(PlayerId("tfc-02"), rating=62, morale=70, fitness=40, available=False),
         ),
-        tactic_style="balanced",
-        tactic_system="4-4-2",
-        competition_priorities={CompetitionId("liga-test"): "normal"},
+        tactic_style=TacticStyle.BALANCED,
+        tactic_system=TacticSystem("4-4-2"),
+        competition_priorities={CompetitionId("liga-test"): Priority.NORMAL},
     )
 
 

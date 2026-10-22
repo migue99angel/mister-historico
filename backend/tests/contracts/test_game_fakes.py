@@ -3,19 +3,26 @@
 import pytest
 
 from mister.game.application.ports import RunTokenGenerator, RunTokenHasher, SeasonSimulator
+from mister.game.application.ports import UnitOfWork
 from mister.game.infrastructure.in_memory.run_repository import (
     InMemoryRunRepository,
+    InMemoryRunStore,
     InMemoryUnitOfWork,
 )
-from mister.game.infrastructure.in_memory.run_tokens import (
-    FakeRunTokenGenerator,
+from mister.game.infrastructure.in_memory.run_tokens import FakeRunTokenGenerator
+from mister.game.infrastructure.security.run_tokens import (
+    SecretsRunTokenGenerator,
     Sha256RunTokenHasher,
 )
 from mister.game.infrastructure.in_memory.season_simulator import (
     ScriptedSeasonSimulator,
     UnscriptedBlockError,
 )
-from tests.contracts.suites.game_samples import make_simulation_request, make_simulation_result
+from tests.contracts.suites.game_samples import (
+    make_run_record,
+    make_simulation_request,
+    make_simulation_result,
+)
 from tests.contracts.suites.run_repository import RepoFactory, RunRepositoryContract
 from tests.contracts.suites.run_token import (
     GeneratorFactory,
@@ -24,7 +31,7 @@ from tests.contracts.suites.run_token import (
     RunTokenHasherContract,
 )
 from tests.contracts.suites.season_simulator import SeasonSimulatorContract, SimulatorFactory
-from tests.contracts.suites.unit_of_work import UnitOfWorkContract, UowFactory
+from tests.contracts.suites.unit_of_work import UnitOfWorkContract, UowPairFactory
 
 
 class TestInMemoryRunRepository(RunRepositoryContract):
@@ -35,8 +42,12 @@ class TestInMemoryRunRepository(RunRepositoryContract):
 
 class TestInMemoryUnitOfWork(UnitOfWorkContract):
     @pytest.fixture
-    def make_uow(self) -> UowFactory:
-        return InMemoryUnitOfWork
+    def make_uows(self) -> UowPairFactory:
+        def make() -> tuple[UnitOfWork, UnitOfWork]:
+            store = InMemoryRunStore()
+            return InMemoryUnitOfWork(store), InMemoryUnitOfWork(store)
+
+        return make
 
 
 class TestScriptedSeasonSimulator(SeasonSimulatorContract):
@@ -59,6 +70,15 @@ class TestFakeRunTokenGenerator(RunTokenGeneratorContract):
         return make
 
 
+class TestSecretsRunTokenGenerator(RunTokenGeneratorContract):
+    @pytest.fixture
+    def make_generator(self) -> GeneratorFactory:
+        def make() -> RunTokenGenerator:
+            return SecretsRunTokenGenerator()
+
+        return make
+
+
 class TestSha256RunTokenHasher(RunTokenHasherContract):
     @pytest.fixture
     def make_hasher(self) -> HasherFactory:
@@ -69,6 +89,15 @@ class TestSha256RunTokenHasher(RunTokenHasherContract):
 
 
 # --------------------------------------------------------------------- fake-only behaviour
+
+
+def test_a_repository_used_on_its_own_commits_every_write_at_once() -> None:
+    repo = InMemoryRunRepository()
+    record = make_run_record()
+
+    repo.add(record)
+
+    assert InMemoryRunRepository(repo.store).get(record.run_id) == record
 
 
 def test_scripted_simulator_records_the_requests_it_received() -> None:
