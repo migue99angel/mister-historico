@@ -29,7 +29,7 @@ R3 = "R3 infrastructure is only imported by bootstrap"
 R4 = "R4 domains of different contexts are independent"
 R5 = "R5 entrypoints do not import domain or infrastructure directly"
 R6 = "R6 only simulation itself imports simulation.domain"
-R7 = "R7 other contexts import only simulation.application.api, from their infrastructure"
+R7 = "R7 only simulation.application.api is public"
 
 # Clean package: every layer imports only what it is allowed to.
 _CLEAN_PACKAGE: dict[str, str] = {
@@ -99,12 +99,12 @@ def _load_importlinter_config() -> dict[str, Any]:
 
 def _rename_root(value: object) -> object:
     if isinstance(value, str):
-        if value == _REAL_ROOT or value.startswith(f"{_REAL_ROOT}."):
-            return _FAKE_ROOT + value.removeprefix(_REAL_ROOT)
-        # Import expressions in `ignore_imports` look like "mister.x -> y".
+        # Import expressions in `ignore_imports` look like "mister.x -> y": rename both sides.
         if " -> " in value:
             importer, imported = value.split(" -> ")
             return f"{_rename_root(importer)} -> {_rename_root(imported)}"
+        if value == _REAL_ROOT or value.startswith(f"{_REAL_ROOT}."):
+            return _FAKE_ROOT + value.removeprefix(_REAL_ROOT)
         return value
     if isinstance(value, list):
         return [_rename_root(item) for item in value]
