@@ -925,3 +925,118 @@ def test_a_blank_reviewed_by_is_rejected() -> None:
 def test_a_blank_dilemma_title_is_rejected() -> None:
     with pytest.raises(ValidationError, match="title"):
         DilemmasFile.model_validate(dilemmas_file(dilemma(title="  ")))
+
+
+# --------------------------------------------------------------------------- round 3
+def test_advance_per_group_must_be_smaller_than_the_group() -> None:
+    data = season()
+    stage = _group_stage()
+    stage["advance_per_group"] = 2  # the group has 2 teams
+    data["competitions"][1]["stages"] = [stage, _stage("final", "final", 1)]
+
+    with pytest.raises(ValidationError, match="advance_per_group"):
+        SeasonFile.model_validate(data)
+
+
+@pytest.mark.parametrize("field", ["home_goals", "away_goals"])
+def test_goal_stats_need_at_least_one_goal_each_side(field: str) -> None:
+    data = season()
+    data["competitions"][0]["league_stats"][field] = 0
+
+    with pytest.raises(ValidationError, match=field):
+        SeasonFile.model_validate(data)
+
+
+def test_a_preseason_injury_that_reaches_the_season_is_accepted() -> None:
+    data = season()
+    data["forced_events"][0].update(date=date(2000, 7, 20), days=30)  # ends 19 August
+
+    assert SeasonFile.model_validate(data)
+
+
+def test_an_injury_that_ends_before_the_first_block_is_rejected() -> None:
+    data = season()
+    data["forced_events"][0].update(date=date(2000, 6, 1), days=10)
+
+    with pytest.raises(ValidationError, match="season"):
+        SeasonFile.model_validate(data)
+
+
+def test_an_injury_that_starts_after_the_last_block_is_rejected() -> None:
+    data = season()
+    data["forced_events"][0].update(date=date(2001, 6, 1), days=10)
+
+    with pytest.raises(ValidationError, match="season"):
+        SeasonFile.model_validate(data)
+
+
+def test_the_extra_early_rounds_are_known_and_ordered() -> None:
+    data = season()
+    stages = [
+        _stage("r128", "round_of_128", 1),
+        _stage("r64", "round_of_64", 1),
+        _stage("r32", "round_of_32", 1),
+        _stage("r16", "round_of_16", 1),
+        _stage("qf", "quarter_final", 1),
+        _stage("sf", "semi_final", 2),
+        _stage("final", "final", 1),
+    ]
+    data["competitions"][1]["stages"] = stages
+
+    assert SeasonFile.model_validate(data)
+
+
+def test_round_of_64_cannot_come_before_round_of_128() -> None:
+    data = season()
+    data["competitions"][1]["stages"] = [
+        _stage("r64", "round_of_64", 1),
+        _stage("r128", "round_of_128", 1),
+        _stage("final", "final", 1),
+    ]
+
+    with pytest.raises(ValidationError, match="order"):
+        SeasonFile.model_validate(data)
+
+
+def test_a_group_stage_sits_between_playoff_and_round_of_128() -> None:
+    data = season()
+    data["competitions"][1]["stages"] = [
+        _stage("q1", "qualifying", 2),
+        _stage("po", "playoff", 2),
+        _group_stage(),
+        _stage("r128", "round_of_128", 1),
+        _stage("final", "final", 1),
+    ]
+
+    assert SeasonFile.model_validate(data)
+
+
+def test_only_qualifying_may_repeat_in_consecutive_stages() -> None:
+    data = season()
+    data["competitions"][1]["stages"] = [
+        _stage("q1", "qualifying", 2),
+        _stage("q2", "qualifying", 2),
+        _stage("q3", "qualifying", 2),
+        _stage("final", "final", 1),
+    ]
+    assert SeasonFile.model_validate(data)
+
+    data["competitions"][1]["stages"] = [
+        _stage("sf1", "semi_final", 2),
+        _stage("sf2", "semi_final", 2),
+        _stage("final", "final", 1),
+    ]
+    with pytest.raises(ValidationError, match="order"):
+        SeasonFile.model_validate(data)
+
+
+def test_repeated_qualifying_stages_still_need_distinct_ids() -> None:
+    data = season()
+    data["competitions"][1]["stages"] = [
+        _stage("q", "qualifying", 2),
+        _stage("q", "qualifying", 2),
+        _stage("final", "final", 1),
+    ]
+
+    with pytest.raises(ValidationError, match="duplicate stage id"):
+        SeasonFile.model_validate(data)

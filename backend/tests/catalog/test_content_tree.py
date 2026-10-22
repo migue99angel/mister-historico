@@ -926,3 +926,72 @@ def test_a_string_rating_in_a_yaml_file_is_rejected(root: Path) -> None:
     edit(root, SQUAD, lambda d: d["players"][2].update(rating="80"))
 
     assert_issue(issues_of(root), SQUAD, "players.2.rating")
+
+
+# --------------------------------------------------------------------------- round 3
+def test_both_legs_of_a_tie_at_home_are_reported(root: Path) -> None:
+    edit(root, FIXTURES, lambda d: fixture_of(d, "tfc-copa-sf-1").update(venue="home"))
+
+    assert_issue(issues_of(root), FIXTURES, "fixtures", "one leg at home and the other away")
+
+
+def test_leg_two_before_leg_one_is_reported(root: Path) -> None:
+    def mutate(d: dict[str, Any]) -> None:
+        fixture_of(d, "tfc-copa-sf-1")["date"] = date(2001, 2, 20)
+
+    edit(root, FIXTURES, mutate)
+
+    assert_issue(issues_of(root), FIXTURES, "fixtures", "leg 1 must be played before leg 2")
+
+
+@pytest.mark.parametrize("day", [date(2000, 11, 30), date(2001, 6, 1)])
+def test_an_injury_effect_outside_its_block_window_is_reported(root: Path, day: date) -> None:
+    # d06 belongs to b3 (2000-12-01..2001-01-31): it cannot start before the block starts
+    # nor after the last block of the season ends.
+    edit(
+        root,
+        DILEMMAS,
+        lambda d: d["dilemmas"][5]["options"][0]["effects"][0].update(date=day),
+    )
+
+    assert_issue(issues_of(root), DILEMMAS, "date", "outside the allowed window")
+
+
+def test_an_injury_effect_after_its_own_block_is_accepted(root: Path) -> None:
+    edit(
+        root,
+        DILEMMAS,
+        lambda d: d["dilemmas"][5]["options"][0]["effects"][0].update(date=date(2001, 5, 1)),
+    )
+
+    load_content_tree(root, release=False)
+
+
+def test_a_forced_injury_in_the_preseason_is_accepted(root: Path) -> None:
+    edit(
+        root,
+        SEASON_FILE,
+        lambda d: d["forced_events"][0].update(date=date(2000, 7, 20), days=30),
+    )
+
+    load_content_tree(root, release=False)
+
+
+@pytest.mark.parametrize("keys", [5, 11])
+def test_a_rival_squad_needs_between_6_and_10_key_players(root: Path, keys: int) -> None:
+    def mutate(d: dict[str, Any]) -> None:
+        for index, player in enumerate(d["players"]):
+            player["key"] = index < keys
+            if player["key"]:
+                player["rating_rationale"] = "Fictional rationale."
+            else:
+                player.pop("rating_rationale", None)
+
+    edit(root, "club-seasons/mock-city-2000-01/squad.yaml", mutate)
+
+    assert_issue(
+        issues_of(root),
+        "club-seasons/mock-city-2000-01/squad.yaml",
+        "players",
+        "between 6 and 10 key players",
+    )
