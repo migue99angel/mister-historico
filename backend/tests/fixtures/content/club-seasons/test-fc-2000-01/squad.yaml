@@ -2,8 +2,14 @@ schema_version: 1
 club_season: test-fc-2000-01
 club: test-fc
 season: 2000-01
-real_goals_for: 14
-real_goals_against: 11
+real_league:
+  competition_label: Liga Test
+  played: 10
+  goals_for: 14
+  goals_against: 8
+  sources:
+  - https://example.org/test-content/squads/test-fc-2000-01/league
+  verify: ok
 sources:
 - https://example.org/test-content/squads/test-fc-2000-01
 verify: ok
@@ -12,8 +18,8 @@ players:
   display_name: Aldo Ficticio
   alias_name: Jugador TFC-01
   position: GK
-  age: 21
-  rating: 63
+  age: 33
+  rating: 73
   key: false
   sources:
   - https://example.org/test-content/squads/test-fc-2000-01
@@ -23,8 +29,8 @@ players:
   display_name: Beto Inventado
   alias_name: Jugador TFC-02
   position: GK
-  age: 22
-  rating: 67
+  age: 35
+  rating: 73
   key: false
   sources:
   - https://example.org/test-content/squads/test-fc-2000-01
@@ -34,19 +40,20 @@ players:
   display_name: Cleo Muestra
   alias_name: Jugador TFC-03
   position: DF
-  age: 33
-  rating: 74
-  key: false
+  age: 25
+  rating: 77
+  key: true
   sources:
   - https://example.org/test-content/squads/test-fc-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: rated from the synthetic rubric.'
+  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+    rated above the squad average.'
 - player_id: tfc-04
   display_name: Dani Ejemplo
   alias_name: Jugador TFC-04
   position: DF
-  age: 31
-  rating: 74
+  age: 35
+  rating: 64
   key: false
   sources:
   - https://example.org/test-content/squads/test-fc-2000-01
@@ -56,8 +63,8 @@ players:
   display_name: Eloy Simulado
   alias_name: Jugador TFC-05
   position: DF
-  age: 22
-  rating: 65
+  age: 24
+  rating: 74
   key: false
   sources:
   - https://example.org/test-content/squads/test-fc-2000-01
@@ -67,8 +74,8 @@ players:
   display_name: Fito Prueba
   alias_name: Jugador TFC-06
   position: DF
-  age: 19
-  rating: 74
+  age: 33
+  rating: 62
   key: false
   sources:
   - https://example.org/test-content/squads/test-fc-2000-01
@@ -78,8 +85,8 @@ players:
   display_name: Gael Falso
   alias_name: Jugador TFC-07
   position: DF
-  age: 32
-  rating: 71
+  age: 23
+  rating: 68
   key: false
   sources:
   - https://example.org/test-content/squads/test-fc-2000-01
@@ -89,8 +96,8 @@ players:
   display_name: Hugo Dummy
   alias_name: Jugador TFC-08
   position: DF
-  age: 33
-  rating: 59
+  age: 20
+  rating: 61
   key: false
   sources:
   - https://example.org/test-content/squads/test-fc-2000-01
@@ -99,9 +106,9 @@ players:
 - player_id: tfc-09
   display_name: Ivo Mocko
   alias_name: Jugador TFC-09
-  position: DF
-  age: 26
-  rating: 67
+  position: MF
+  age: 33
+  rating: 71
   key: false
   sources:
   - https://example.org/test-content/squads/test-fc-2000-01
@@ -111,31 +118,31 @@ players:
   display_name: Jano Stubby
   alias_name: Jugador TFC-10
   position: MF
-  age: 22
-  rating: 77
+  age: 19
+  rating: 64
+  key: false
+  sources:
+  - https://example.org/test-content/squads/test-fc-2000-01
+  verify: ok
+  rating_rationale: 'Fictional rationale: rated from the synthetic rubric.'
+- player_id: tfc-11
+  display_name: Kiko Sampleton
+  alias_name: Jugador TFC-11
+  position: MF
+  age: 21
+  rating: 75
   key: true
   sources:
   - https://example.org/test-content/squads/test-fc-2000-01
   verify: ok
   rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
     rated above the squad average.'
-- player_id: tfc-11
-  display_name: Kiko Sampleton
-  alias_name: Jugador TFC-11
-  position: MF
-  age: 19
-  rating: 69
-  key: false
-  sources:
-  - https://example.org/test-content/squads/test-fc-2000-01
-  verify: ok
-  rating_rationale: 'Fictional rationale: rated from the synthetic rubric.'
 - player_id: tfc-12
   display_name: Lalo Fakerson
   alias_name: Jugador TFC-12
   position: MF
-  age: 19
-  rating: 59
+  age: 20
+  rating: 60
   key: false
   sources:
   - https://example.org/test-content/squads/test-fc-2000-01
@@ -145,20 +152,19 @@ players:
   display_name: Mati Testoni
   alias_name: Jugador TFC-13
   position: MF
-  age: 19
-  rating: 76
-  key: true
+  age: 26
+  rating: 65
+  key: false
   sources:
   - https://example.org/test-content/squads/test-fc-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
-    rated above the squad average.'
+  rating_rationale: 'Fictional rationale: rated from the synthetic rubric.'
 - player_id: tfc-14
   display_name: Nico Placebo
   alias_name: Jugador TFC-14
   position: MF
-  age: 25
-  rating: 71
+  age: 33
+  rating: 59
   key: false
   sources:
   - https://example.org/test-content/squads/test-fc-2000-01
@@ -167,9 +173,9 @@ players:
 - player_id: tfc-15
   display_name: Oleg Ficticio
   alias_name: Jugador TFC-15
-  position: MF
-  age: 19
-  rating: 72
+  position: FW
+  age: 33
+  rating: 69
   key: false
   sources:
   - https://example.org/test-content/squads/test-fc-2000-01
@@ -178,20 +184,21 @@ players:
 - player_id: tfc-16
   display_name: Pepe Inventado
   alias_name: Jugador TFC-16
-  position: MF
-  age: 26
-  rating: 75
-  key: false
+  position: FW
+  age: 25
+  rating: 77
+  key: true
   sources:
   - https://example.org/test-content/squads/test-fc-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: rated from the synthetic rubric.'
+  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+    rated above the squad average.'
 - player_id: tfc-17
   display_name: Quim Muestra
   alias_name: Jugador TFC-17
   position: FW
-  age: 34
-  rating: 73
+  age: 26
+  rating: 75
   key: false
   sources:
   - https://example.org/test-content/squads/test-fc-2000-01
@@ -201,20 +208,19 @@ players:
   display_name: Rafa Ejemplo
   alias_name: Jugador TFC-18
   position: FW
-  age: 26
-  rating: 76
-  key: true
+  age: 34
+  rating: 68
+  key: false
   sources:
   - https://example.org/test-content/squads/test-fc-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
-    rated above the squad average.'
+  rating_rationale: 'Fictional rationale: rated from the synthetic rubric.'
 - player_id: tfc-19
   display_name: Saul Simulado
   alias_name: Jugador TFC-19
   position: FW
-  age: 26
-  rating: 70
+  age: 21
+  rating: 59
   key: false
   sources:
   - https://example.org/test-content/squads/test-fc-2000-01
@@ -225,7 +231,7 @@ players:
   alias_name: Jugador TFC-20
   position: FW
   age: 18
-  rating: 66
+  rating: 73
   key: false
   sources:
   - https://example.org/test-content/squads/test-fc-2000-01
@@ -235,8 +241,8 @@ players:
   display_name: Uri Falso
   alias_name: Jugador TFC-21
   position: FW
-  age: 19
-  rating: 68
+  age: 21
+  rating: 72
   key: false
   sources:
   - https://example.org/test-content/squads/test-fc-2000-01
@@ -247,8 +253,8 @@ players:
   display_name: Vito Dummy
   alias_name: Jugador TFC-22
   position: FW
-  age: 22
-  rating: 72
+  age: 29
+  rating: 67
   key: false
   sources:
   - https://example.org/test-content/squads/test-fc-2000-01

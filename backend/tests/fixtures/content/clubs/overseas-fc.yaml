@@ -1,0 +1,7 @@
+schema_version: 1
+club_id: overseas-fc
+name: Overseas FC
+short_name: OVS
+colors:
+  primary: '#006400'
+  secondary: '#FFFFFF'

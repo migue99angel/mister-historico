@@ -60,14 +60,19 @@ def test_the_synthetic_test_fc_tree_is_valid(root: Path) -> None:
 
     assert isinstance(tree, ContentTree)
     assert OWN in tree.seasons
-    assert len(tree.clubs) == 7
+    assert len(tree.clubs) == 10
 
 
 def test_the_synthetic_test_fc_tree_passes_release_validation(root: Path) -> None:
     tree = load_content_tree(root, release=True)
 
     assert set(tree.squads) >= {OWN, "_market-2000-01"}
-    assert set(tree.aggregates) == {"placeholder-town-2000-01"}
+    assert set(tree.aggregates) == {
+        "placeholder-town-2000-01",
+        "overseas-fc-2000-01",
+        "abroad-athletic-2000-01",
+        "faraway-city-2000-01",
+    }
 
 
 def test_the_synthetic_season_has_ten_dilemmas_that_use_every_effect_type(root: Path) -> None:
@@ -495,9 +500,11 @@ def test_a_standings_table_must_list_every_participant(root: Path) -> None:
 
 
 def test_real_league_goals_must_match_the_final_table(root: Path) -> None:
-    edit(root, SQUAD, lambda d: d.update(real_goals_for=d["real_goals_for"] + 1))
+    edit(
+        root, SQUAD, lambda d: d["real_league"].update(goals_for=d["real_league"]["goals_for"] + 1)
+    )
 
-    assert_issue(issues_of(root), SQUAD, "real_goals_for", "standings")
+    assert_issue(issues_of(root), SQUAD, "real_league.goals_for", "standings")
 
 
 def test_a_tie_in_an_unknown_stage_is_reported(root: Path) -> None:
@@ -528,7 +535,7 @@ def test_a_league_outcome_needs_a_final_position(root: Path) -> None:
 
 
 def test_every_competition_needs_one_historical_outcome(root: Path) -> None:
-    edit(root, f"{SEASON}/season.yaml", lambda d: d["historical_outcome"].pop())
+    edit(root, f"{SEASON}/season.yaml", lambda d: d["historical_outcome"].pop(1))
 
     assert_issue(issues_of(root), f"{SEASON}/season.yaml", "historical_outcome", "copa-test")
 
@@ -594,3 +601,328 @@ def test_release_issues_are_added_to_the_other_issues(root: Path) -> None:
     issues = issues_of(root, release=True)
 
     assert {i.path for i in issues} >= {SQUAD, f"{SEASON}/texts.yaml", "clubs/mock-city.yaml"}
+
+
+# --------------------------------------------------------------------------- schema v2 additions
+FIXTURES = f"{SEASON}/fixtures.yaml"
+STANDINGS = f"{SEASON}/standings.yaml"
+SEASON_FILE = f"{SEASON}/season.yaml"
+DILEMMAS = f"{SEASON}/dilemmas.yaml"
+
+
+def fixture_of(data: dict[str, Any], fixture_id: str) -> dict[str, Any]:
+    found: dict[str, Any] = next(f for f in data["fixtures"] if f["id"] == fixture_id)
+    return found
+
+
+def test_the_synthetic_season_has_all_four_competition_kinds_and_a_group_stage(root: Path) -> None:
+    tree = load_content_tree(root, release=True)
+
+    competitions = tree.seasons[OWN].season.competitions
+
+    assert [c.kind for c in competitions] == ["league", "cup", "super_cup", "continental_cup"]
+    assert any(s.round == "group_stage" for s in getattr(competitions[3], "stages", ()))
+
+
+def test_sign_player_of_a_rival_player_without_from_club_season_is_reported(root: Path) -> None:
+    edit(
+        root,
+        DILEMMAS,
+        lambda d: d["dilemmas"][0]["options"][1]["effects"][0].pop("from_club_season"),
+    )
+
+    assert_issue(
+        issues_of(root),
+        DILEMMAS,
+        "dilemmas.0.options.1.effects.0.player_id",
+        "belongs to sample-united-2000-01",
+    )
+
+
+def test_sign_player_of_a_player_already_in_the_own_squad_is_reported(root: Path) -> None:
+    edit(
+        root,
+        DILEMMAS,
+        lambda d: d["dilemmas"][0]["options"][0]["effects"][0].update(player_id="tfc-03"),
+    )
+
+    assert_issue(issues_of(root), DILEMMAS, "player_id", "already in the own squad")
+
+
+@pytest.mark.parametrize("day", [date(2000, 6, 30), date(2001, 7, 1)])
+def test_an_injury_effect_outside_the_season_is_reported(root: Path, day: date) -> None:
+    edit(
+        root,
+        DILEMMAS,
+        lambda d: d["dilemmas"][5]["options"][0]["effects"][0].update(date=day),
+    )
+
+    assert_issue(issues_of(root), DILEMMAS, "date", "outside the season")
+
+
+def test_a_forced_injury_of_an_unknown_player_is_reported(root: Path) -> None:
+    edit(root, SEASON_FILE, lambda d: d["forced_events"][0].update(player_id="ghost-1"))
+
+    assert_issue(issues_of(root), SEASON_FILE, "forced_events.0.player_id", "ghost-1")
+
+
+def test_a_forced_injury_outside_the_season_is_reported(root: Path) -> None:
+    edit(root, SEASON_FILE, lambda d: d["forced_events"][0].update(date=date(2002, 1, 1)))
+
+    assert_issue(issues_of(root), SEASON_FILE, "", "outside the season")
+
+
+# --- outcomes against the real tables and brackets
+def test_a_league_position_that_contradicts_the_table_is_reported(root: Path) -> None:
+    edit(root, SEASON_FILE, lambda d: d["historical_outcome"][0].update(final_position=1))
+
+    assert_issue(issues_of(root), SEASON_FILE, "historical_outcome.0.final_position", "contradicts")
+
+
+def test_a_league_title_that_contradicts_the_table_is_reported(root: Path) -> None:
+    edit(root, SEASON_FILE, lambda d: d["historical_outcome"][0].update(champion=True))
+
+    assert_issue(issues_of(root), SEASON_FILE, "historical_outcome.0.champion", "contradicts")
+
+
+def test_a_cup_outcome_needs_a_champion_or_an_elimination(root: Path) -> None:
+    edit(root, SEASON_FILE, lambda d: d["historical_outcome"][1].update(champion=False))
+
+    assert_issue(issues_of(root), SEASON_FILE, "historical_outcome.1", "champion or eliminated_in")
+
+
+def test_a_cup_elimination_that_contradicts_the_bracket_is_reported(root: Path) -> None:
+    edit(
+        root,
+        SEASON_FILE,
+        lambda d: d["historical_outcome"][1].update(champion=False, eliminated_in="semifinal"),
+    )
+
+    assert_issue(issues_of(root), SEASON_FILE, "historical_outcome.1", "contradicts")
+
+
+def test_a_continental_title_that_contradicts_the_final_is_reported(root: Path) -> None:
+    edit(
+        root,
+        SEASON_FILE,
+        lambda d: d["historical_outcome"][3].update(champion=True, eliminated_in=None),
+    )
+
+    assert_issue(issues_of(root), SEASON_FILE, "historical_outcome.3.champion", "contradicts")
+
+
+def test_a_group_stage_elimination_that_contradicts_the_group_table_is_reported(
+    root: Path,
+) -> None:
+    edit(root, SEASON_FILE, lambda d: d["historical_outcome"][3].update(eliminated_in="groups"))
+
+    assert_issue(issues_of(root), SEASON_FILE, "historical_outcome.3.eliminated_in", "contradicts")
+
+
+# --- knockout legs, order and same-day fixtures
+def test_a_two_legged_tie_with_only_the_first_leg_is_reported(root: Path) -> None:
+    edit(
+        root,
+        FIXTURES,
+        lambda d: d["fixtures"].remove(fixture_of(d, "tfc-copa-sf-2")),
+    )
+
+    assert_issue(issues_of(root), FIXTURES, "fixtures", "only the first leg")
+
+
+def test_a_two_legged_tie_with_two_first_legs_is_reported(root: Path) -> None:
+    edit(root, FIXTURES, lambda d: fixture_of(d, "tfc-copa-sf-2").update(leg=1))
+
+    assert_issue(issues_of(root), FIXTURES, "fixtures", "same leg")
+
+
+def test_a_two_legged_fixture_needs_its_leg(root: Path) -> None:
+    edit(root, FIXTURES, lambda d: fixture_of(d, "tfc-copa-sf-2").pop("leg"))
+
+    assert_issue(issues_of(root), FIXTURES, ".leg", "leg is required")
+
+
+def test_a_final_before_the_semifinal_is_reported(root: Path) -> None:
+    edit(root, FIXTURES, lambda d: fixture_of(d, "tfc-copa-final").update(date=date(2000, 11, 1)))
+
+    assert_issue(issues_of(root), FIXTURES, "fixtures", "starts before stage")
+
+
+def test_two_own_fixtures_on_the_same_day_are_reported(root: Path) -> None:
+    edit(root, FIXTURES, lambda d: fixture_of(d, "tfc-copa-sf-1").update(date=date(2000, 11, 4)))
+
+    assert_issue(issues_of(root), FIXTURES, "", "same date")
+
+
+# --- group stage
+def test_a_group_stage_needs_all_the_matches_of_the_own_team(root: Path) -> None:
+    edit(root, FIXTURES, lambda d: d["fixtures"].remove(fixture_of(d, "tfc-cont-g6")))
+
+    assert_issue(issues_of(root), FIXTURES, "fixtures", "expected 6")
+
+
+def test_a_group_fixture_in_an_unknown_group_is_reported(root: Path) -> None:
+    edit(root, FIXTURES, lambda d: fixture_of(d, "tfc-cont-g1").update(group="z"))
+
+    assert_issue(issues_of(root), FIXTURES, ".group", "unknown group")
+
+
+def test_a_group_fixture_against_a_team_outside_the_group_is_reported(root: Path) -> None:
+    edit(
+        root,
+        FIXTURES,
+        lambda d: fixture_of(d, "tfc-cont-g1").update(opponent="sample-united-2000-01"),
+    )
+
+    assert_issue(issues_of(root), FIXTURES, ".opponent", "participant")
+
+
+def test_every_group_needs_real_standings(root: Path) -> None:
+    edit(
+        root,
+        STANDINGS,
+        lambda d: d.update(cutoffs=[c for c in d["cutoffs"] if c.get("stage") != "groups"]),
+    )
+
+    assert_issue(issues_of(root), STANDINGS, "cutoffs", "has no standings")
+
+
+def test_the_latest_group_table_must_be_complete(root: Path) -> None:
+    def mutate(d: dict[str, Any]) -> None:
+        groups = [c for c in d["cutoffs"] if c.get("stage") == "groups"]
+        d["cutoffs"].remove(groups[-1])
+        d["cutoffs"].remove(groups[-2])
+
+    edit(root, STANDINGS, mutate)
+
+    assert_issue(issues_of(root), STANDINGS, "cutoffs", "incomplete")
+
+
+def test_a_group_table_must_match_the_own_group_fixtures(root: Path) -> None:
+    edit(
+        root,
+        FIXTURES,
+        lambda d: fixture_of(d, "tfc-cont-g1")["result"].update(goals_for=9),
+    )
+
+    assert_issue(issues_of(root), STANDINGS, "cutoffs", "own fixtures")
+
+
+def test_a_group_table_must_list_the_teams_of_its_group(root: Path) -> None:
+    def mutate(d: dict[str, Any]) -> None:
+        group = next(c for c in d["cutoffs"] if c.get("stage") == "groups")
+        group["table"][-1]["club_season"] = "mock-city-2000-01"
+
+    edit(root, STANDINGS, mutate)
+
+    assert_issue(issues_of(root), STANDINGS, "table", "participants")
+
+
+# --- rival squads (P6)
+def test_a_rival_squad_with_fewer_than_18_players_is_reported(root: Path) -> None:
+    edit(
+        root,
+        "club-seasons/demo-athletic-2000-01/squad.yaml",
+        lambda d: d.update(players=d["players"][:15]),
+    )
+
+    assert_issue(
+        issues_of(root),
+        "club-seasons/demo-athletic-2000-01/squad.yaml",
+        "players",
+        "between 18 and 22",
+    )
+
+
+def test_a_rival_squad_with_more_than_22_players_is_reported(root: Path) -> None:
+    def mutate(d: dict[str, Any]) -> None:
+        for i in range(4):
+            extra = {**d["players"][-1], "player_id": f"dma-x{i}", "display_name": f"Extra {i}"}
+            extra["alias_name"] = f"Alias X{i}"
+            d["players"].append(extra)
+
+    edit(root, "club-seasons/demo-athletic-2000-01/squad.yaml", mutate)
+
+    assert_issue(
+        issues_of(root),
+        "club-seasons/demo-athletic-2000-01/squad.yaml",
+        "players",
+        "between 18 and 22",
+    )
+
+
+@pytest.mark.parametrize(("position", "minimum"), [("GK", 2), ("DF", 6), ("MF", 6), ("FW", 4)])
+def test_a_rival_squad_needs_a_minimum_coverage_per_position(
+    root: Path, position: str, minimum: int
+) -> None:
+    def mutate(d: dict[str, Any]) -> None:
+        replacement = "DF" if position != "DF" else "MF"
+        for player in d["players"]:
+            if player["position"] == position:
+                player["position"] = replacement
+
+    edit(root, "club-seasons/dummy-rovers-2000-01/squad.yaml", mutate)
+
+    assert_issue(
+        issues_of(root),
+        "club-seasons/dummy-rovers-2000-01/squad.yaml",
+        "players",
+        f"at least {minimum} {position}",
+    )
+
+
+def test_the_market_squad_is_exempt_from_the_rival_squad_rules(root: Path) -> None:
+    load_content_tree(root, release=False)  # the market squad has 3 players
+
+
+# --- real league of a rival (B5)
+def test_a_real_league_of_another_competition_is_not_compared_with_the_standings(
+    root: Path,
+) -> None:
+    def mutate(d: dict[str, Any]) -> None:
+        d["real_league"]["competition_label"] = "Some Other League"
+        d["real_league"]["goals_for"] += 5
+
+    edit(root, "club-seasons/sample-united-2000-01/squad.yaml", mutate)
+
+    load_content_tree(root, release=True)
+
+
+# --- pending ratings (B1)
+def test_a_pending_rating_is_accepted_outside_release_mode(root: Path) -> None:
+    def mutate(d: dict[str, Any]) -> None:
+        d["players"][2].update(rating=None, verify="pending")
+
+    edit(root, "club-seasons/sample-united-2000-01/squad.yaml", mutate)
+
+    load_content_tree(root, release=False)
+
+
+def test_a_pending_rating_is_rejected_in_release_mode(root: Path) -> None:
+    edit(root, SQUAD, lambda d: d["players"][2].update(rating=None, verify="pending"))
+
+    assert_issue(issues_of(root, release=True), SQUAD, "players.2.verify", "pending")
+
+
+def test_a_pending_playable_player_does_not_need_a_rationale_yet(root: Path) -> None:
+    def mutate(d: dict[str, Any]) -> None:
+        d["players"][2].pop("rating_rationale")
+        d["players"][2].update(rating=None, verify="pending")
+
+    edit(root, SQUAD, mutate)
+
+    load_content_tree(root, release=False)
+
+
+def test_a_pending_aggregate_is_rejected_in_release_mode(root: Path) -> None:
+    path = "club-seasons/placeholder-town-2000-01/aggregate.yaml"
+    edit(root, path, lambda d: d.update(attack=None, defense=None, verify="pending"))
+
+    load_content_tree(root, release=False)
+    assert_issue(issues_of(root, release=True), path, "verify", "pending")
+
+
+def test_a_string_rating_in_a_yaml_file_is_rejected(root: Path) -> None:
+    edit(root, SQUAD, lambda d: d["players"][2].update(rating="80"))
+
+    assert_issue(issues_of(root), SQUAD, "players.2.rating")

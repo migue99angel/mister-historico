@@ -2,8 +2,14 @@ schema_version: 1
 club_season: dummy-rovers-2000-01
 club: dummy-rovers
 season: 2000-01
-real_goals_for: 12
-real_goals_against: 16
+real_league:
+  competition_label: Liga Test
+  played: 10
+  goals_for: 17
+  goals_against: 13
+  sources:
+  - https://example.org/test-content/squads/dummy-rovers-2000-01/league
+  verify: ok
 sources:
 - https://example.org/test-content/squads/dummy-rovers-2000-01
 verify: ok
@@ -12,7 +18,7 @@ players:
   display_name: Dani Ficticio
   alias_name: Jugador DRV-01
   position: GK
-  age: 32
+  age: 19
   rating: 55
   key: false
   sources:
@@ -22,8 +28,8 @@ players:
   display_name: Eloy Inventado
   alias_name: Jugador DRV-02
   position: GK
-  age: 26
-  rating: 49
+  age: 27
+  rating: 51
   key: false
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
@@ -32,8 +38,8 @@ players:
   display_name: Fito Muestra
   alias_name: Jugador DRV-03
   position: DF
-  age: 31
-  rating: 49
+  age: 33
+  rating: 62
   key: false
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
@@ -43,7 +49,7 @@ players:
   alias_name: Jugador DRV-04
   position: DF
   age: 20
-  rating: 53
+  rating: 56
   key: false
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
@@ -52,8 +58,8 @@ players:
   display_name: Hugo Simulado
   alias_name: Jugador DRV-05
   position: DF
-  age: 33
-  rating: 54
+  age: 24
+  rating: 50
   key: false
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
@@ -62,20 +68,18 @@ players:
   display_name: Ivo Prueba
   alias_name: Jugador DRV-06
   position: DF
-  age: 32
-  rating: 65
-  key: true
+  age: 30
+  rating: 58
+  key: false
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
-    rated above the squad average.'
 - player_id: drv-07
   display_name: Jano Falso
   alias_name: Jugador DRV-07
   position: DF
-  age: 26
-  rating: 66
+  age: 23
+  rating: 65
   key: true
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
@@ -86,8 +90,8 @@ players:
   display_name: Kiko Dummy
   alias_name: Jugador DRV-08
   position: DF
-  age: 33
-  rating: 65
+  age: 30
+  rating: 51
   key: false
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
@@ -95,9 +99,9 @@ players:
 - player_id: drv-09
   display_name: Lalo Mocko
   alias_name: Jugador DRV-09
-  position: DF
-  age: 35
-  rating: 56
+  position: MF
+  age: 33
+  rating: 53
   key: false
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
@@ -106,8 +110,8 @@ players:
   display_name: Mati Stubby
   alias_name: Jugador DRV-10
   position: MF
-  age: 31
-  rating: 49
+  age: 35
+  rating: 59
   key: false
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
@@ -116,7 +120,7 @@ players:
   display_name: Nico Sampleton
   alias_name: Jugador DRV-11
   position: MF
-  age: 29
+  age: 23
   rating: 67
   key: true
   sources:
@@ -129,17 +133,19 @@ players:
   alias_name: Jugador DRV-12
   position: MF
   age: 20
-  rating: 62
-  key: false
+  rating: 67
+  key: true
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
+  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+    rated above the squad average.'
 - player_id: drv-13
   display_name: Pepe Testoni
   alias_name: Jugador DRV-13
   position: MF
-  age: 23
-  rating: 58
+  age: 34
+  rating: 49
   key: false
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
@@ -148,8 +154,8 @@ players:
   display_name: Quim Placebo
   alias_name: Jugador DRV-14
   position: MF
-  age: 20
-  rating: 55
+  age: 28
+  rating: 60
   key: false
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
@@ -157,9 +163,9 @@ players:
 - player_id: drv-15
   display_name: Rafa Ficticio
   alias_name: Jugador DRV-15
-  position: MF
-  age: 21
-  rating: 58
+  position: FW
+  age: 19
+  rating: 50
   key: false
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
@@ -167,8 +173,8 @@ players:
 - player_id: drv-16
   display_name: Saul Inventado
   alias_name: Jugador DRV-16
-  position: MF
-  age: 28
+  position: FW
+  age: 34
   rating: 51
   key: false
   sources:
@@ -178,8 +184,8 @@ players:
   display_name: Teo Muestra
   alias_name: Jugador DRV-17
   position: FW
-  age: 24
-  rating: 58
+  age: 28
+  rating: 51
   key: false
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
@@ -188,8 +194,8 @@ players:
   display_name: Uri Ejemplo
   alias_name: Jugador DRV-18
   position: FW
-  age: 27
-  rating: 62
+  age: 23
+  rating: 59
   key: false
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
