@@ -11,8 +11,8 @@ from dataclasses import replace
 
 import pytest
 
-from mister.sharing.application.ports import ShareCard, ShareCardComparison, ShareCardRenderer
 from mister.shared_kernel.ids import RunId
+from mister.sharing.application.ports import ShareCard, ShareCardComparison, ShareCardRenderer
 
 RendererFactory = Callable[[], ShareCardRenderer]
 
