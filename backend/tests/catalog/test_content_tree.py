@@ -1267,3 +1267,54 @@ def test_a_dilemma_effect_that_targets_the_own_team_is_reported(root: Path) -> N
     )
 
     assert_issue(issues_of(root), DILEMMAS, "to_club_season", "own team")
+
+
+# --- penalties and extra time in two-legged ties and single matches
+def _second_leg_level_on_aggregate(data: dict[str, Any]) -> None:
+    """sf-1 is 2-1; sf-2 becomes 0-1: 2-2 on aggregate, settled on penalties."""
+    fixture_of(data, "tfc-copa-sf-2")["result"] = {
+        "goals_for": 0,
+        "goals_against": 1,
+        "penalties_for": 4,
+        "penalties_against": 3,
+    }
+
+
+def test_second_leg_penalties_are_valid_when_the_aggregate_is_level(root: Path) -> None:
+    edit(root, FIXTURES, _second_leg_level_on_aggregate)
+
+    load_content_tree(root, release=False)
+
+
+def test_second_leg_penalties_are_reported_when_the_aggregate_is_not_level(root: Path) -> None:
+    def mutate(data: dict[str, Any]) -> None:
+        _second_leg_level_on_aggregate(data)
+        fixture_of(data, "tfc-copa-sf-2")["result"]["goals_for"] = 3
+
+    edit(root, FIXTURES, mutate)
+
+    assert_issue(issues_of(root), FIXTURES, "fixtures", "level on aggregate")
+
+
+def test_first_leg_penalties_are_reported(root: Path) -> None:
+    def mutate(data: dict[str, Any]) -> None:
+        fixture_of(data, "tfc-copa-sf-1")["result"] = {
+            "goals_for": 1,
+            "goals_against": 1,
+            "penalties_for": 4,
+            "penalties_against": 3,
+        }
+
+    edit(root, FIXTURES, mutate)
+
+    assert_issue(issues_of(root), FIXTURES, ".result", "first leg")
+
+
+def test_single_match_penalties_need_a_level_score(root: Path) -> None:
+    edit(
+        root,
+        FIXTURES,
+        lambda d: fixture_of(d, "tfc-copa-final")["result"].update(goals_for=2),
+    )
+
+    assert_issue(issues_of(root), FIXTURES, ".result", "level score")
