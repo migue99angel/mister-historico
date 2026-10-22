@@ -15,11 +15,30 @@
           "title": "Date",
           "type": "string"
         },
+        "group": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Group"
+        },
         "id": {
           "maxLength": 64,
           "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
           "title": "Id",
           "type": "string"
+        },
+        "key": {
+          "default": false,
+          "title": "Key",
+          "type": "boolean"
         },
         "leg": {
           "anyOf": [

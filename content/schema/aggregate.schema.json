@@ -1,13 +1,20 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "A rival without a squad (outside the top flight): only an aggregate strength.",
+  "description": "A rival without a squad (outside the top flight): only an aggregate strength.\n\n`attack` and `defense` are indices in rubric rating points (1-99), the \"A\" and the \"C\" of\nADR-004. A higher `defense` means a *better* defence (it concedes fewer goals).",
   "properties": {
     "attack": {
-      "maximum": 99,
-      "minimum": 1,
-      "title": "Attack",
-      "type": "integer"
+      "anyOf": [
+        {
+          "maximum": 99,
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Attack"
     },
     "club": {
       "anyOf": [
@@ -29,15 +36,30 @@
       "type": "string"
     },
     "defense": {
-      "maximum": 99,
-      "minimum": 1,
-      "title": "Defense",
-      "type": "integer"
+      "anyOf": [
+        {
+          "maximum": 99,
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Defense"
     },
     "rating_rationale": {
-      "minLength": 1,
-      "title": "Rating Rationale",
-      "type": "string"
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Rating Rationale"
     },
     "schema_version": {
       "const": 1,
@@ -77,8 +99,7 @@
     "club",
     "season",
     "attack",
-    "defense",
-    "rating_rationale"
+    "defense"
   ],
   "title": "AggregateFile",
   "type": "object"

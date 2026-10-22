@@ -16,7 +16,6 @@
           "type": "string"
         },
         "label": {
-          "maxLength": 60,
           "minLength": 1,
           "title": "Label",
           "type": "string"
@@ -44,6 +43,12 @@
           "maxLength": 64,
           "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
           "title": "Competition",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Id",
           "type": "string"
         },
         "kind": {
@@ -89,6 +94,7 @@
         }
       },
       "required": [
+        "id",
         "competition",
         "kind",
         "text"
@@ -168,18 +174,18 @@
     },
     "ContinentalCupCompetition": {
       "additionalProperties": false,
-      "description": "A continental cup, with an optional group stage before the knockout rounds.",
+      "description": "A continental cup, with a group stage and/or knockout rounds.",
       "properties": {
-        "group_stage": {
+        "goal_baseline": {
           "anyOf": [
             {
-              "$ref": "#/$defs/GroupStage"
+              "$ref": "#/$defs/GoalBaselineFromLeague"
             },
             {
-              "type": "null"
+              "$ref": "#/$defs/GoalStats"
             }
           ],
-          "default": null
+          "title": "Goal Baseline"
         },
         "id": {
           "maxLength": 64,
@@ -193,7 +199,6 @@
           "type": "string"
         },
         "name": {
-          "maxLength": 60,
           "minLength": 1,
           "title": "Name",
           "type": "string"
@@ -210,19 +215,29 @@
         },
         "stages": {
           "items": {
-            "$ref": "#/$defs/KnockoutStage"
+            "$ref": "#/$defs/Stage"
           },
           "minItems": 1,
           "title": "Stages",
           "type": "array"
+        },
+        "tier": {
+          "enum": [
+            "continental_primary",
+            "continental_secondary"
+          ],
+          "title": "Tier",
+          "type": "string"
         }
       },
       "required": [
         "id",
         "name",
         "participants",
+        "goal_baseline",
         "stages",
-        "kind"
+        "kind",
+        "tier"
       ],
       "title": "ContinentalCupCompetition",
       "type": "object"
@@ -231,6 +246,17 @@
       "additionalProperties": false,
       "description": "A domestic cup.",
       "properties": {
+        "goal_baseline": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/GoalBaselineFromLeague"
+            },
+            {
+              "$ref": "#/$defs/GoalStats"
+            }
+          ],
+          "title": "Goal Baseline"
+        },
         "id": {
           "maxLength": 64,
           "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
@@ -243,7 +269,6 @@
           "type": "string"
         },
         "name": {
-          "maxLength": 60,
           "minLength": 1,
           "title": "Name",
           "type": "string"
@@ -260,21 +285,115 @@
         },
         "stages": {
           "items": {
-            "$ref": "#/$defs/KnockoutStage"
+            "$ref": "#/$defs/Stage"
           },
           "minItems": 1,
           "title": "Stages",
           "type": "array"
+        },
+        "tier": {
+          "const": "domestic_cup",
+          "title": "Tier",
+          "type": "string"
         }
       },
       "required": [
         "id",
         "name",
         "participants",
+        "goal_baseline",
         "stages",
-        "kind"
+        "kind",
+        "tier"
       ],
       "title": "CupCompetition",
+      "type": "object"
+    },
+    "GoalBaselineFromLeague": {
+      "additionalProperties": false,
+      "description": "Reuse the goal statistics of a league of the same season.",
+      "properties": {
+        "from_league": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "From League",
+          "type": "string"
+        }
+      },
+      "required": [
+        "from_league"
+      ],
+      "title": "GoalBaselineFromLeague",
+      "type": "object"
+    },
+    "GoalStats": {
+      "additionalProperties": false,
+      "description": "Goals scored by the home and the away sides over a number of matches.\n\nIt gives the engine its goal baseline and home advantage.",
+      "properties": {
+        "away_goals": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Away Goals"
+        },
+        "home_goals": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Home Goals"
+        },
+        "matches": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Matches"
+        },
+        "sources": {
+          "description": "URLs backing the datum.",
+          "items": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "verify": {
+          "enum": [
+            "ok",
+            "pending"
+          ],
+          "title": "Verify",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sources",
+        "verify",
+        "matches",
+        "home_goals",
+        "away_goals"
+      ],
+      "title": "GoalStats",
       "type": "object"
     },
     "Group": {
@@ -305,102 +424,61 @@
       "title": "Group",
       "type": "object"
     },
-    "GroupStage": {
+    "InjuryEvent": {
       "additionalProperties": false,
-      "description": "Group stage of a continental competition.",
+      "description": "A real injury that really happened and is replayed in every run.",
       "properties": {
-        "advance_per_group": {
+        "date": {
+          "format": "date",
+          "title": "Date",
+          "type": "string"
+        },
+        "days": {
+          "maximum": 365,
           "minimum": 1,
-          "title": "Advance Per Group",
+          "title": "Days",
           "type": "integer"
         },
-        "groups": {
-          "items": {
-            "$ref": "#/$defs/Group"
-          },
-          "minItems": 1,
-          "title": "Groups",
-          "type": "array"
-        },
-        "legs": {
-          "enum": [
-            1,
-            2
-          ],
-          "title": "Legs",
-          "type": "integer"
-        },
-        "points_per_win": {
-          "maximum": 3,
-          "minimum": 2,
-          "title": "Points Per Win",
-          "type": "integer"
-        },
-        "tiebreakers": {
-          "items": {
-            "$ref": "#/$defs/Tiebreaker"
-          },
-          "minItems": 1,
-          "title": "Tiebreakers",
-          "type": "array"
-        }
-      },
-      "required": [
-        "groups",
-        "legs",
-        "points_per_win",
-        "tiebreakers",
-        "advance_per_group"
-      ],
-      "title": "GroupStage",
-      "type": "object"
-    },
-    "KnockoutStage": {
-      "additionalProperties": false,
-      "description": "A knockout round. Format and rules are set per competition and per season.",
-      "properties": {
-        "away_goals_rule": {
-          "title": "Away Goals Rule",
-          "type": "boolean"
-        },
-        "extra_time": {
-          "title": "Extra Time",
-          "type": "boolean"
-        },
-        "id": {
+        "player_id": {
           "maxLength": 64,
           "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
-          "title": "Id",
+          "title": "Player Id",
           "type": "string"
         },
-        "legs": {
+        "sources": {
+          "description": "URLs backing the datum.",
+          "items": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "type": {
+          "const": "injury",
+          "title": "Type",
+          "type": "string"
+        },
+        "verify": {
           "enum": [
-            1,
-            2
+            "ok",
+            "pending"
           ],
-          "title": "Legs",
-          "type": "integer"
-        },
-        "name": {
-          "maxLength": 60,
-          "minLength": 1,
-          "title": "Name",
+          "title": "Verify",
           "type": "string"
-        },
-        "penalties": {
-          "title": "Penalties",
-          "type": "boolean"
         }
       },
       "required": [
-        "id",
-        "name",
-        "legs",
-        "away_goals_rule",
-        "extra_time",
-        "penalties"
+        "sources",
+        "verify",
+        "type",
+        "player_id",
+        "date",
+        "days"
       ],
-      "title": "KnockoutStage",
+      "title": "InjuryEvent",
       "type": "object"
     },
     "LeagueCompetition": {
@@ -418,8 +496,10 @@
           "title": "Kind",
           "type": "string"
         },
+        "league_stats": {
+          "$ref": "#/$defs/GoalStats"
+        },
         "name": {
-          "maxLength": 60,
           "minLength": 1,
           "title": "Name",
           "type": "string"
@@ -461,6 +541,11 @@
           "minItems": 1,
           "title": "Tiebreakers",
           "type": "array"
+        },
+        "tier": {
+          "const": "domestic_league",
+          "title": "Tier",
+          "type": "string"
         }
       },
       "required": [
@@ -468,10 +553,12 @@
         "name",
         "participants",
         "kind",
+        "tier",
         "rounds",
         "points_per_win",
         "points_per_draw",
-        "tiebreakers"
+        "tiebreakers",
+        "league_stats"
       ],
       "title": "LeagueCompetition",
       "type": "object"
@@ -481,13 +568,11 @@
       "description": "The real manager of the season.",
       "properties": {
         "alias_name": {
-          "maxLength": 80,
           "minLength": 1,
           "title": "Alias Name",
           "type": "string"
         },
         "display_name": {
-          "maxLength": 80,
           "minLength": 1,
           "title": "Display Name",
           "type": "string"
@@ -521,10 +606,156 @@
       "title": "Manager",
       "type": "object"
     },
+    "Stage": {
+      "additionalProperties": false,
+      "description": "A round of a knockout competition, or its group stage (`round: group_stage`).\n\nFormat and rules are set per competition and per season. The group fields are required\nfor a group stage and forbidden otherwise.",
+      "properties": {
+        "advance_per_group": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Advance Per Group"
+        },
+        "away_goals_rule": {
+          "title": "Away Goals Rule",
+          "type": "boolean"
+        },
+        "extra_time": {
+          "title": "Extra Time",
+          "type": "boolean"
+        },
+        "groups": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Group"
+              },
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Groups"
+        },
+        "id": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "legs": {
+          "enum": [
+            1,
+            2
+          ],
+          "title": "Legs",
+          "type": "integer"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "penalties": {
+          "title": "Penalties",
+          "type": "boolean"
+        },
+        "points_per_draw": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Points Per Draw"
+        },
+        "points_per_win": {
+          "anyOf": [
+            {
+              "maximum": 3,
+              "minimum": 2,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Points Per Win"
+        },
+        "round": {
+          "enum": [
+            "qualifying",
+            "playoff",
+            "group_stage",
+            "round_of_32",
+            "round_of_16",
+            "quarter_final",
+            "semi_final",
+            "final"
+          ],
+          "title": "Round",
+          "type": "string"
+        },
+        "tiebreakers": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Tiebreaker"
+              },
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tiebreakers"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "round",
+        "legs",
+        "away_goals_rule",
+        "extra_time",
+        "penalties"
+      ],
+      "title": "Stage",
+      "type": "object"
+    },
     "SuperCupCompetition": {
       "additionalProperties": false,
-      "description": "A super cup.",
+      "description": "A domestic super cup.",
       "properties": {
+        "goal_baseline": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/GoalBaselineFromLeague"
+            },
+            {
+              "$ref": "#/$defs/GoalStats"
+            }
+          ],
+          "title": "Goal Baseline"
+        },
         "id": {
           "maxLength": 64,
           "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
@@ -537,7 +768,6 @@
           "type": "string"
         },
         "name": {
-          "maxLength": 60,
           "minLength": 1,
           "title": "Name",
           "type": "string"
@@ -554,21 +784,56 @@
         },
         "stages": {
           "items": {
-            "$ref": "#/$defs/KnockoutStage"
+            "$ref": "#/$defs/Stage"
           },
           "minItems": 1,
           "title": "Stages",
           "type": "array"
+        },
+        "tier": {
+          "const": "domestic_super_cup",
+          "title": "Tier",
+          "type": "string"
         }
       },
       "required": [
         "id",
         "name",
         "participants",
+        "goal_baseline",
         "stages",
-        "kind"
+        "kind",
+        "tier"
       ],
       "title": "SuperCupCompetition",
+      "type": "object"
+    },
+    "Tactic": {
+      "additionalProperties": false,
+      "description": "A playing style plus a system.",
+      "properties": {
+        "style": {
+          "enum": [
+            "pressing",
+            "counter",
+            "possession",
+            "balanced"
+          ],
+          "title": "Style",
+          "type": "string"
+        },
+        "system": {
+          "description": "e.g. 4-3-3",
+          "pattern": "^[1-9](-[1-9]){2,4}$",
+          "title": "System",
+          "type": "string"
+        }
+      },
+      "required": [
+        "style",
+        "system"
+      ],
+      "title": "Tactic",
       "type": "object"
     },
     "Tiebreaker": {
@@ -641,6 +906,14 @@
       "title": "Competitions",
       "type": "array"
     },
+    "forced_events": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/InjuryEvent"
+      },
+      "title": "Forced Events",
+      "type": "array"
+    },
     "historical_outcome": {
       "items": {
         "$ref": "#/$defs/CompetitionOutcome"
@@ -648,6 +921,9 @@
       "minItems": 1,
       "title": "Historical Outcome",
       "type": "array"
+    },
+    "initial_tactic": {
+      "$ref": "#/$defs/Tactic"
     },
     "manager": {
       "$ref": "#/$defs/Manager"
@@ -675,6 +951,7 @@
     "club_season",
     "season",
     "manager",
+    "initial_tactic",
     "blocks",
     "competitions",
     "board_objectives",

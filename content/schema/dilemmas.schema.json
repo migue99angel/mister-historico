@@ -400,7 +400,7 @@
         },
         "system": {
           "description": "e.g. 4-3-3",
-          "pattern": "^[1-9](-[1-9]){2,3}$",
+          "pattern": "^[1-9](-[1-9]){2,4}$",
           "title": "System",
           "type": "string"
         },
