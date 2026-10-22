@@ -2,7 +2,6 @@
 
 import math
 from collections import Counter
-from collections.abc import Callable
 
 import pytest
 from hypothesis import given
@@ -106,7 +105,7 @@ def test_deriving_the_same_stream_twice_restarts_it() -> None:
     assert draw(root.stream("a")) == draw(root.stream("a"))
 
 
-# ----------------------------------------------------------------------- random()
+# ----------------------------------------------------------------------- unit interval
 
 
 @given(seed=seeds)
@@ -254,6 +253,6 @@ def test_weighted_choice_rejects_invalid_weights(items: list[str], weights: list
 
 
 def test_stdlib_random_source_satisfies_the_protocol() -> None:
-    make: Callable[[Seed], RandomSource] = StdlibRandomSource
+    source: RandomSource = StdlibRandomSource(Seed(1))  # mypy checks structural compatibility
 
-    assert isinstance(make(Seed(1)).stream("x"), StdlibRandomSource)
+    assert isinstance(source.stream("x"), StdlibRandomSource)
