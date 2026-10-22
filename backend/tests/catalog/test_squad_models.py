@@ -325,3 +325,13 @@ def test_a_pending_aggregate_strength_may_be_null() -> None:
 def test_a_verified_aggregate_needs_a_rationale() -> None:
     with pytest.raises(ValidationError, match="rating_rationale"):
         AggregateFile.model_validate(aggregate(rating_rationale=None))
+
+
+def test_a_club_season_slug_has_at_most_64_characters() -> None:
+    ok_club = "a" * 56  # 56 + "-2000-01" = 64
+    ok = squad(club_season=f"{ok_club}-2000-01", club=ok_club)
+    assert SquadFile.model_validate(ok)
+
+    long_club = "a" * 57  # 65 characters
+    with pytest.raises(ValidationError, match="club_season"):
+        SquadFile.model_validate(squad(club_season=f"{long_club}-2000-01", club=long_club))
