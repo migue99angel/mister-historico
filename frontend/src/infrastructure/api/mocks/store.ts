@@ -114,6 +114,12 @@ function validationError(field: string, message: string): ApiProblem {
   return new ApiProblem(400, 'validation_error', 'The request is not valid.', [{ field, message }]);
 }
 
+/** The body must be a JSON object (already parsed leniently by the handler). */
+export function requireObject(body: Record<string, unknown> | null): Record<string, unknown> {
+  if (body === null) throw validationError('body', 'Must be a JSON object.');
+  return body;
+}
+
 export function requireSlug(value: unknown, field: string): string {
   if (typeof value !== 'string' || value.length > SLUG_MAX_LENGTH || !SLUG.test(value)) {
     throw validationError(field, 'Must be a lowercase slug.');
@@ -311,9 +317,10 @@ export function takeDecision(
   runId: string,
   authorization: string | null,
   idempotencyKey: string | null,
-  body: { dilemmaId: unknown; optionId: unknown; expectedVersion: unknown },
+  rawBody: Record<string, unknown> | null,
 ): Schemas['RunView'] {
   const run = authorize(runId, authorization);
+  const body = requireObject(rawBody);
   const key = requireIdempotencyKey(idempotencyKey);
   const dilemmaId = requireSlug(body.dilemmaId, 'dilemmaId');
   const optionId = requireSlug(body.optionId, 'optionId');
@@ -358,9 +365,10 @@ export function advanceBlock(
   runId: string,
   authorization: string | null,
   idempotencyKey: string | null,
-  body: { expectedVersion: unknown },
+  rawBody: Record<string, unknown> | null,
 ): Schemas['RunView'] {
   const run = authorize(runId, authorization);
+  const body = requireObject(rawBody);
   const key = requireIdempotencyKey(idempotencyKey);
   const expectedVersion = requireExpectedVersion(body.expectedVersion);
   const fingerprint = `advance/${String(expectedVersion)}`;
@@ -496,9 +504,10 @@ function ranked(seasonId: string): Schemas['LeaderboardEntry'][] {
 export function setAlias(
   runId: string,
   authorization: string | null,
-  alias: unknown,
+  rawBody: Record<string, unknown> | null,
 ): Schemas['LeaderboardEntry'] {
   const run = authorize(runId, authorization);
+  const { alias } = requireObject(rawBody);
   if (typeof alias !== 'string' || alias.length < 3 || alias.length > 20) {
     throw validationError('alias', 'Must have between 3 and 20 characters.');
   }

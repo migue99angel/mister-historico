@@ -214,7 +214,7 @@ export interface components {
          */
         Slug: string;
         /**
-         * @description Identifier of a club in a season. Unlike every other slug it may start with an underscore, which marks aggregate (squad-less) rivals.
+         * @description Identifier of a club in a season. Unlike every other slug it admits the `_market-` prefix, reserved for the system market (`_market-<yyyy>-<yy>`), which never appears in a `TeamRef`. Aggregate (squad-less) rivals carry an ordinary id without underscore.
          * @example test-fc-2000-01
          */
         ClubSeasonId: string;
@@ -628,16 +628,13 @@ export interface components {
          * @description An option of a dilemma. Effects and the historical flag are deliberately not exposed until the end of the run.
          * @example {
          *       "id": "sign-the-veteran",
-         *       "label": "Sign the veteran striker",
-         *       "description": "Experienced, expensive and close to the end of his career."
+         *       "label": "Sign the veteran striker"
          *     }
          */
         DilemmaOption: {
             id: components["schemas"]["Slug"];
             /** @description Short option text. */
             label: string;
-            /** @description Optional longer explanation. */
-            description?: string;
         };
         /**
          * @description A decision the player has to take in the current block.
@@ -802,6 +799,12 @@ export interface components {
             away: number;
         };
         /**
+         * @description Where the match is played, from the point of view of the home team listed.
+         * @example home
+         * @enum {string}
+         */
+        Venue: "home" | "away" | "neutral";
+        /**
          * @description The result of a simulated match.
          * @example {
          *       "fixtureId": "tfc-rovers-md7",
@@ -833,6 +836,7 @@ export interface components {
          *       "awayGoals": 1,
          *       "extraTime": null,
          *       "penalties": null,
+         *       "venue": "home",
          *       "isKeyMatch": true,
          *       "keyMatchLabel": "Derby",
          *       "userResult": "win"
@@ -856,6 +860,8 @@ export interface components {
             extraTime: components["schemas"]["ExtraTimeScore"] | null;
             /** @description Shoot-out result, or null when there was none. */
             penalties: components["schemas"]["PenaltyScore"] | null;
+            /** @description `home` or `away` for the player's team, or `neutral` (for example a final). It is relative to the player's team, not to the listed home side. */
+            venue: components["schemas"]["Venue"];
             /** @description Whether the match is highlighted (derbies, knockout ties, finals). */
             isKeyMatch: boolean;
             /** @description Why the match is key, for example `Derby`. Null when it is not. */
@@ -904,7 +910,7 @@ export interface components {
             points: number;
         };
         /**
-         * @description The table of a competition after a block.
+         * @description The table of a competition after a block. Group-stage tables also carry the stage and the group they belong to.
          * @example {
          *       "competitionId": "liga-test",
          *       "competitionName": "Liga Test",
@@ -936,6 +942,10 @@ export interface components {
         Standings: {
             competitionId: components["schemas"]["Slug"];
             competitionName: string;
+            /** @description Stage of the competition, only for group-stage tables. */
+            stageId?: components["schemas"]["Slug"];
+            /** @description Group within the stage, only for group-stage tables. */
+            groupId?: components["schemas"]["Slug"];
             rows: components["schemas"]["StandingRow"][];
         };
         /**
@@ -1006,6 +1016,7 @@ export interface components {
          *           "awayGoals": 1,
          *           "extraTime": null,
          *           "penalties": null,
+         *           "venue": "home",
          *           "isKeyMatch": true,
          *           "keyMatchLabel": "Derby",
          *           "userResult": "win"
@@ -1162,7 +1173,7 @@ export interface components {
          */
         Tactic: {
             style: components["schemas"]["TacticStyle"];
-            /** @description Formation, for example `4-4-2`. */
+            /** @description Formation as 3 to 5 lines separated by hyphens, for example `4-4-2` or `4-1-2-1-2`. The regex only checks the shape; the rules that do not fit in it are that every line has between 1 and 6 players and that the lines add up to 10 (the goalkeeper is not counted). */
             system: string;
         };
         /**
@@ -1183,11 +1194,11 @@ export interface components {
             priority: components["schemas"]["CompetitionPriorityLevel"];
         };
         /**
-         * @description Stage of a knockout competition.
+         * @description Stage of a knockout competition, from the earliest to the latest.
          * @example semi_final
          * @enum {string}
          */
-        KnockoutRound: "qualifying" | "playoff" | "group_stage" | "round_of_32" | "round_of_16" | "quarter_final" | "semi_final" | "final";
+        KnockoutRound: "qualifying" | "playoff" | "group_stage" | "round_of_128" | "round_of_64" | "round_of_32" | "round_of_16" | "quarter_final" | "semi_final" | "final";
         /**
          * @description How a team ended a competition. For cups `finish` and `round` (furthest stage reached) are what matters; for leagues, `position`.
          * @example {
