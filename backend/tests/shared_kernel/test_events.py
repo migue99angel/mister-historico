@@ -31,7 +31,7 @@ def test_domain_event_is_frozen_and_carries_occurred_at() -> None:
 
 def test_domain_event_rejects_naive_timestamps() -> None:
     with pytest.raises(InvalidValueError):
-        RunFinished(occurred_at=datetime(2012, 12, 13), run="r1")  # noqa: DTZ001
+        RunFinished(occurred_at=datetime(2012, 12, 13), run="r1")
 
 
 def test_bus_delivers_events_to_a_subscriber_in_publication_order() -> None:

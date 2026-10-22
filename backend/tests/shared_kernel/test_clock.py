@@ -29,7 +29,7 @@ def test_fixed_clock_always_returns_the_same_aware_instant() -> None:
 
 def test_fixed_clock_rejects_naive_datetimes() -> None:
     with pytest.raises(InvalidValueError):
-        FixedClock(datetime(2012, 12, 13, 20, 0))  # noqa: DTZ001 - the point of the test
+        FixedClock(datetime(2012, 12, 13, 20, 0))
 
 
 def test_fixed_clock_can_be_advanced() -> None:
