@@ -10,6 +10,7 @@ from mister.leaderboard.application.ports import (
     SCORE_BUCKETS,
     AliasAlreadySetError,
     ScoreHistogram,
+    VerdictKind,
 )
 from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.ids import PlayableSeasonId, RunId
@@ -45,3 +46,12 @@ def test_the_alias_error_carries_its_stable_code() -> None:
     error = AliasAlreadySetError(RunId.new())
 
     assert error.code == "alias_already_set"
+
+
+def test_the_verdict_kinds_are_the_ones_of_the_api() -> None:
+    assert {kind.value for kind in VerdictKind} == {
+        "surpassed_history",
+        "matched_history",
+        "below_history",
+        "sacked",
+    }
