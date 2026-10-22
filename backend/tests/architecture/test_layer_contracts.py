@@ -28,6 +28,7 @@ R2 = "R2 application does not import infrastructure or entrypoints"
 R3 = "R3 infrastructure is only imported by bootstrap"
 R4 = "R4 domains of different contexts are independent"
 R5 = "R5 entrypoints do not import domain or infrastructure directly"
+R6 = "R6 only simulation itself imports simulation.domain"
 
 # Clean package: every layer imports only what it is allowed to.
 _CLEAN_PACKAGE: dict[str, str] = {
@@ -60,6 +61,24 @@ _CLEAN_PACKAGE: dict[str, str] = {
     "other/domain/__init__.py": "",
     "other/domain/model.py": "from fakepkg.shared_kernel import ids\n",
     "other/application/__init__.py": "",
+    # `simulation` publishes `application/api.py`; `game` consumes it from its infrastructure.
+    "simulation/__init__.py": "",
+    "simulation/domain/__init__.py": "",
+    "simulation/domain/model.py": "from fakepkg.shared_kernel import ids\n",
+    "simulation/application/__init__.py": "",
+    "simulation/application/api.py": "from fakepkg.simulation.domain import model\n",
+    "simulation/infrastructure/__init__.py": "",
+    "simulation/infrastructure/adapter.py": (
+        "from fakepkg.simulation.application import api\n"
+        "from fakepkg.simulation.domain import model\n"
+    ),
+    "game/__init__.py": "",
+    "game/domain/__init__.py": "",
+    "game/application/__init__.py": "",
+    "game/infrastructure/__init__.py": "",
+    "game/infrastructure/simulation_adapter.py": (
+        "from fakepkg.simulation.application import api\n"
+    ),
     "entrypoints/__init__.py": "",
     "entrypoints/api/__init__.py": "",
     "entrypoints/api/app.py": (
@@ -132,7 +151,7 @@ def test_clean_package_keeps_every_layer_contract(tmp_path: Path) -> None:
     result = _lint(tmp_path, {})
 
     assert result.returncode == 0, result.stdout + result.stderr
-    for contract in (R0, R1, R2, R3, R4, R5):
+    for contract in (R0, R1, R2, R3, R4, R5, R6):
         assert f"{contract} KEPT" in result.stdout
 
 
@@ -203,6 +222,36 @@ def _case(module: str, source: str, contract: str, case_id: str) -> Any:
             "from fakepkg.ctx.domain import model\n",
             R5,
             "entrypoints-import-domain",
+        ),
+        _case(
+            "game/application/bad.py",
+            "from fakepkg.simulation.domain import model\n",
+            R6,
+            "another-context-application-imports-simulation-domain",
+        ),
+        _case(
+            "game/infrastructure/bad.py",
+            "import fakepkg.simulation.domain.model\n",
+            R6,
+            "another-context-infrastructure-imports-simulation-domain-module",
+        ),
+        _case(
+            "game/domain/bad.py",
+            "from fakepkg.simulation.domain import model\n",
+            R6,
+            "another-context-domain-imports-simulation-domain",
+        ),
+        _case(
+            "entrypoints/api/bad.py",
+            "from fakepkg.simulation.domain import model\n",
+            R6,
+            "entrypoints-import-simulation-domain",
+        ),
+        _case(
+            "bootstrap.py",
+            "from fakepkg.simulation.domain import model\n",
+            R6,
+            "bootstrap-imports-simulation-domain",
         ),
         _case(
             "shared_kernel/bad.py", "import sqlalchemy\n", R0, "shared-kernel-imports-sqlalchemy"
