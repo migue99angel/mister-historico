@@ -7,7 +7,7 @@ them from ever comparing equal at runtime either.
 
 - Content IDs (`ClubSeasonId`, `PlayableSeasonId`, `PlayerId`, `ClubId`, `CompetitionId`,
   `FixtureId`, `DilemmaId`, `OptionId`) are kebab-case slugs (`str`) that come from the content
-  files, at most 64 characters. Only `ClubSeasonId` allows a single leading underscore, for
+  files, at most 64 characters. Only `ClubSeasonId` allows the reserved `_market-` prefix, for
   system slugs such as `_market-2012-13`.
 - `RunId` is a UUID, because runs are created at play time and need no human-readable name.
 """
@@ -51,10 +51,10 @@ class _SlugId:
 class ClubSeasonId(_SlugId):
     """A club in a specific season (ADR-015), e.g. `real-madrid-2012-13`.
 
-    The only ID that accepts a leading underscore (`_market-2012-13`).
+    The only ID that accepts the reserved `_market-` prefix (`_market-2012-13`).
     """
 
-    _pattern: ClassVar[re.Pattern[str]] = re.compile(rf"_?{_SLUG_BODY}")
+    _pattern: ClassVar[re.Pattern[str]] = re.compile(rf"(_market-)?{_SLUG_BODY}")
 
 
 @dataclass(frozen=True, slots=True)
