@@ -37,21 +37,6 @@ def check_season(
     check_dilemmas(ctx)
 
 
-def check_playable_rationales(tree: ContentTree, sink: IssueSink) -> None:
-    """The playable club-season is rated in detail: a rationale for every verified player."""
-    for content in tree.seasons.values():
-        squad = tree.squads.get(content.season.club_season)
-        if squad is None:
-            continue
-        for index, player in enumerate(squad.players):
-            if player.verify == "ok" and not player.rating_rationale:
-                sink.add(
-                    squad_path(squad.club_season),
-                    f"players.{index}.rating_rationale",
-                    "required for every player of a playable club-season",
-                )
-
-
 def check_rival_squads(tree: ContentTree, sink: IssueSink) -> None:
     """P6 lightweight procedure: rival squads have 18-22 players and a minimum coverage.
 

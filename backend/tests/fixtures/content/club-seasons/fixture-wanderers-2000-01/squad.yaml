@@ -10,6 +10,14 @@ real_league:
   sources:
   - https://example.org/test-content/squads/fixture-wanderers-2000-01/league
   verify: ok
+club_data:
+  club_matches_all: 14
+  club_matches_league: 10
+  level_tier: D
+  level_tier_basis: 8th of 8 in the fictional Liga Test; promoted.
+  sources:
+  - https://example.org/test-content/clubs/fixture-wanderers-2000-01
+  verify: ok
 sources:
 - https://example.org/test-content/squads/fixture-wanderers-2000-01
 verify: ok
@@ -19,8 +27,23 @@ players:
   alias_name: Jugador FXW-01
   position: GK
   age: 21
-  rating: 48
+  rating: 44
   key: false
+  season_stats:
+    minutes_league: 57
+    starts_league: 1
+    appearances_league: 1
+    minutes_all: 80
+    starts_all: 1
+    appearances_all: 2
+    goals_all: 0
+    assists_all: 0
+    clean_sheets_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/fixture-wanderers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/fixture-wanderers-2000-01
   verify: ok
@@ -29,8 +52,22 @@ players:
   alias_name: Jugador FXW-02
   position: GK
   age: 30
-  rating: 60
+  rating: 55
   key: false
+  season_stats:
+    minutes_league: 294
+    starts_league: 4
+    appearances_league: 5
+    minutes_all: 412
+    starts_all: 5
+    appearances_all: 7
+    goals_all: 0
+    assists_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/fixture-wanderers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/fixture-wanderers-2000-01
   verify: ok
@@ -39,8 +76,22 @@ players:
   alias_name: Jugador FXW-03
   position: DF
   age: 23
-  rating: 47
+  rating: 44
   key: false
+  season_stats:
+    minutes_league: 40
+    starts_league: 1
+    appearances_league: 3
+    minutes_all: 56
+    starts_all: 1
+    appearances_all: 4
+    goals_all: 0
+    assists_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/fixture-wanderers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/fixture-wanderers-2000-01
   verify: ok
@@ -49,8 +100,21 @@ players:
   alias_name: Jugador FXW-04
   position: DF
   age: 30
-  rating: 56
+  rating: 49
   key: false
+  season_stats:
+    minutes_league: 225
+    starts_league: 3
+    appearances_league: 4
+    minutes_all: 316
+    starts_all: 4
+    appearances_all: 5
+    goals_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/fixture-wanderers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/fixture-wanderers-2000-01
   verify: ok
@@ -59,8 +123,21 @@ players:
   alias_name: Jugador FXW-05
   position: DF
   age: 34
-  rating: 48
+  rating: 45
   key: false
+  season_stats:
+    minutes_league: 62
+    appearances_league: 2
+    minutes_all: 87
+    starts_all: 1
+    appearances_all: 3
+    goals_all: 0
+    assists_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/fixture-wanderers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/fixture-wanderers-2000-01
   verify: ok
@@ -69,8 +146,21 @@ players:
   alias_name: Jugador FXW-06
   position: DF
   age: 32
-  rating: 48
+  rating: 45
   key: false
+  season_stats:
+    minutes_league: 63
+    starts_league: 1
+    appearances_league: 3
+    minutes_all: 89
+    appearances_all: 4
+    goals_all: 0
+    assists_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/fixture-wanderers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/fixture-wanderers-2000-01
   verify: ok
@@ -79,8 +169,22 @@ players:
   alias_name: Jugador FXW-07
   position: DF
   age: 34
-  rating: 46
+  rating: 44
   key: false
+  season_stats:
+    minutes_league: 37
+    starts_league: 1
+    appearances_league: 1
+    minutes_all: 53
+    starts_all: 1
+    appearances_all: 2
+    goals_all: 0
+    assists_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/fixture-wanderers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/fixture-wanderers-2000-01
   verify: ok
@@ -89,44 +193,90 @@ players:
   alias_name: Jugador FXW-08
   position: DF
   age: 19
-  rating: 64
+  rating: 52
   key: true
+  season_stats:
+    minutes_league: 373
+    starts_league: 4
+    appearances_league: 6
+    goals_all: 0
+    assists_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/fixture-wanderers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/fixture-wanderers-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
-    rated above the squad average.'
 - player_id: fxw-09
   display_name: Dani Placebo
   alias_name: Jugador FXW-09
   position: MF
   age: 31
-  rating: 58
+  rating: 49
   key: true
+  season_stats:
+    minutes_league: 260
+    starts_league: 3
+    appearances_league: 5
+    minutes_all: 365
+    starts_all: 4
+    appearances_all: 7
+    goals_all: 0
+    assists_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/fixture-wanderers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/fixture-wanderers-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
-    rated above the squad average.'
 - player_id: fxw-10
   display_name: Eloy Ficticio
   alias_name: Jugador FXW-10
   position: MF
   age: 19
-  rating: 64
+  rating: 55
   key: true
+  season_stats:
+    minutes_league: 389
+    starts_league: 4
+    appearances_league: 5
+    minutes_all: 545
+    starts_all: 6
+    appearances_all: 7
+    goals_all: 1
+    assists_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/fixture-wanderers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/fixture-wanderers-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
-    rated above the squad average.'
 - player_id: fxw-11
   display_name: Fito Inventado
   alias_name: Jugador FXW-11
   position: MF
   age: 21
-  rating: 48
+  rating: 45
   key: false
+  season_stats:
+    minutes_league: 62
+    starts_league: 1
+    appearances_league: 2
+    minutes_all: 87
+    starts_all: 1
+    appearances_all: 3
+    goals_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/fixture-wanderers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/fixture-wanderers-2000-01
   verify: ok
@@ -135,8 +285,22 @@ players:
   alias_name: Jugador FXW-12
   position: MF
   age: 22
-  rating: 48
+  rating: 45
   key: false
+  season_stats:
+    minutes_league: 63
+    starts_league: 1
+    appearances_league: 3
+    minutes_all: 89
+    starts_all: 1
+    appearances_all: 4
+    goals_all: 0
+    assists_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/fixture-wanderers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/fixture-wanderers-2000-01
   verify: ok
@@ -145,8 +309,22 @@ players:
   alias_name: Jugador FXW-13
   position: MF
   age: 32
-  rating: 54
+  rating: 47
   key: false
+  season_stats:
+    minutes_league: 172
+    starts_league: 2
+    appearances_league: 3
+    minutes_all: 242
+    starts_all: 3
+    appearances_all: 4
+    goals_all: 0
+    assists_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/fixture-wanderers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/fixture-wanderers-2000-01
   verify: ok
@@ -155,8 +333,21 @@ players:
   alias_name: Jugador FXW-14
   position: MF
   age: 31
-  rating: 56
+  rating: 49
   key: false
+  season_stats:
+    minutes_league: 215
+    appearances_league: 4
+    minutes_all: 302
+    starts_all: 4
+    appearances_all: 6
+    goals_all: 0
+    assists_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/fixture-wanderers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/fixture-wanderers-2000-01
   verify: ok
@@ -165,46 +356,92 @@ players:
   alias_name: Jugador FXW-15
   position: FW
   age: 33
-  rating: 64
+  rating: 59
   key: true
+  season_stats:
+    minutes_league: 381
+    starts_league: 4
+    appearances_league: 6
+    minutes_all: 534
+    starts_all: 6
+    appearances_all: 9
+    goals_all: 4
+    assists_all: 2
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/fixture-wanderers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/fixture-wanderers-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
-    rated above the squad average.'
 - player_id: fxw-16
   display_name: Kiko Falso
   alias_name: Jugador FXW-16
   position: FW
   age: 33
-  rating: 60
+  rating: 55
   key: true
+  season_stats:
+    minutes_league: 307
+    starts_league: 4
+    appearances_league: 4
+    minutes_all: 430
+    starts_all: 5
+    appearances_all: 6
+    goals_all: 3
+    assists_all: 1
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/fixture-wanderers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/fixture-wanderers-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
-    rated above the squad average.'
 - player_id: fxw-17
   display_name: Lalo Dummy
   alias_name: Jugador FXW-17
   position: FW
   age: 21
-  rating: 63
+  rating: 56
   key: true
+  season_stats:
+    minutes_league: 376
+    starts_league: 4
+    appearances_league: 6
+    minutes_all: 527
+    appearances_all: 8
+    goals_all: 2
+    assists_all: 2
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/fixture-wanderers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/fixture-wanderers-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
-    rated above the squad average.'
 - player_id: fxw-18
   display_name: Mati Mocko
   alias_name: Jugador FXW-18
   position: FW
   age: 35
-  rating: 62
+  rating: 57
   key: true
+  season_stats:
+    minutes_league: 362
+    starts_league: 4
+    appearances_league: 6
+    minutes_all: 508
+    starts_all: 6
+    appearances_all: 9
+    goals_all: 3
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/fixture-wanderers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/fixture-wanderers-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
-    rated above the squad average.'

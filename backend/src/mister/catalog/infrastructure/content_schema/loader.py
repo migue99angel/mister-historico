@@ -7,10 +7,10 @@ from mister.catalog.infrastructure.content_schema.integrity import (
     check_players_across_squads,
 )
 from mister.catalog.infrastructure.content_schema.issues import ContentValidationError, IssueSink
+from mister.catalog.infrastructure.content_schema.rating_checks import check_ratings
 from mister.catalog.infrastructure.content_schema.reader import read_tree
 from mister.catalog.infrastructure.content_schema.release import check_release
 from mister.catalog.infrastructure.content_schema.season_checks import (
-    check_playable_rationales,
     check_rival_squads,
     check_season,
 )
@@ -34,7 +34,7 @@ def load_content_tree(root: Path, *, release: bool) -> ContentTree:
     check_players_across_squads(tree, sink)
     for slug in tree.seasons:
         check_season(tree, result.failed_club_seasons, slug, sink)
-    check_playable_rationales(tree, sink)
+    check_ratings(tree, sink)
     check_rival_squads(tree, sink)
     if release:
         check_release(tree, sink)

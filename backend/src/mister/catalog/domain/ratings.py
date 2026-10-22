@@ -21,6 +21,9 @@ from mister.shared_kernel.errors import InvalidValueError
 
 MIN_RATING = 1
 MAX_RATING = 99
+MAX_OVERRIDE_GAP_WITH_RATIONALE = 6
+MAX_OVERRIDE_GAP = 12
+MIN_SOURCES_FOR_LARGE_GAP = 2
 
 _FLOOR = Fraction(46)
 _W_IMPORTANCE = Fraction(22)
@@ -315,3 +318,22 @@ def _awards(awards: tuple[AwardTier, ...]) -> Fraction:
     world = awards.count(AwardTier.W)
     league = awards.count(AwardTier.L)
     return min(_ONE, _WORLD_AWARD * world + _LEAGUE_AWARD * league)
+
+
+def override_problem(formula_rating: int, value: int, distinct_sources: int) -> str | None:
+    """Why a `rating_override` breaks the limits of rubric section 7.4, or `None` if it is fine.
+
+    Up to 6 points away from the formula the rationale is enough; from 7 to 12 two distinct
+    sources are also needed; more than 12 is never allowed.
+    """
+    gap = abs(value - formula_rating)
+    if gap > MAX_OVERRIDE_GAP:
+        return (
+            f"differs {gap} points from the formula ({formula_rating}): more than 12 is forbidden"
+        )
+    if gap > MAX_OVERRIDE_GAP_WITH_RATIONALE and distinct_sources < MIN_SOURCES_FOR_LARGE_GAP:
+        return (
+            f"differs {gap} points from the formula ({formula_rating}): "
+            "from 7 to 12 points it needs at least two distinct sources"
+        )
+    return None

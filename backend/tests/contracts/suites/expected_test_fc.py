@@ -131,6 +131,7 @@ def _effect(effect: object) -> EffectDTO:  # noqa: PLR0911
 
 def _player(entry: PlayerEntry) -> PlayerDTO:
     assert entry.age is not None
+    assert entry.position is not None
     assert entry.rating is not None
     return PlayerDTO(
         player_id=PlayerId(entry.player_id),
