@@ -35,7 +35,7 @@ Todo vive detrás del puerto `GoalModel` (`simulation/domain/ports.py`): recibe 
 
 ### 2. Fuerza del equipo: de las medias de su once a ataque y defensa
 
-Se aplica **igual al equipo propio y a los rivales con plantilla** (T2.2). Un **rival agregado** no pasa por el once: su `AggregateFile.attack` y `AggregateFile.defense` son directamente `A` y `C` de abajo, en puntos de media (con una `C` alta, mejor defensa), y son fijos. Pueden ser `null` mientras estén `verify: pending`.
+Las medias de los jugadores no se opinan: las calcula la fórmula de la [rúbrica](../content/rating-rubric.md) a partir de estadísticas (ADR-006); este ADR solo las consume. Se aplica **igual al equipo propio y a los rivales con plantilla** (T2.2). Un **rival agregado** no pasa por el once: su `AggregateFile.attack` y `AggregateFile.defense` son directamente `A` y `C` de abajo, en puntos de media (con una `C` alta, mejor defensa), y son fijos. Pueden ser `null` mientras estén `verify: pending`.
 
 **Paso 1: media efectiva de cada titular.**
 
@@ -131,7 +131,7 @@ Con estos rangos, el producto de táctica y moral de un equipo está en `[0,865;
 | Pesos de las líneas (`0,50/0,35/0,15` y `0,20/0,45/0,35`) | **Calibrable** | Valores iniciales a calibrar en T2.7. |
 | Penalizaciones (físico `0,07`, fuera de posición `5`, moral individual `±2`) | **Calibrable** | Valores iniciales a calibrar en T2.7. |
 | Rangos de táctica, moral, físico y rotación | **Diseño** | Los de la tabla de arriba. T2.7 puede proponer cambios con informe y un ADR que sustituya a este. |
-| Fuerza de un rival agregado | **Dato** | `AggregateFile.attack` y `AggregateFile.defense` (`A` y `C` en puntos de media), justificados con la rúbrica (sección 6.6). |
+| Fuerza de un rival agregado | **Dato** | `AggregateFile.attack` y `AggregateFile.defense` (`A` y `C` en puntos de media), justificados con la rúbrica (sección 8.6). |
 | Goles reales de un rival con plantilla (para la banda P6) | **Dato histórico** | `SquadFile.real_league {played, goals_for, goals_against}`. |
 
 Ningún valor numérico de liga se afirma aquí como hecho histórico: los de los ejemplos son inventados.
@@ -150,7 +150,7 @@ La prórroga usa `λ/3` por equipo (30 minutos sobre 90). Los penaltis no usan e
 
 ### 7. Bandas de calibración propuestas para T2.7
 
-Las bandas viven aquí, junto al modelo, porque las aprueba el autor y las consume `make calibrate`. La rúbrica solo las resume. Todo el arnés usa la **política histórica** (en cada dilema se elige `historical_option`) y la semilla base fija del repositorio.
+Las bandas viven aquí, junto al modelo, porque las aprueba el autor y las consume `make calibrate`. La rúbrica solo las resume y la comprobación P6 se apoya en que las medias salen de estadísticas, no de la opinión del agente. Todo el arnés usa la **política histórica** (en cada dilema se elige `historical_option`) y la semilla base fija del repositorio.
 
 **Qué rompe la CI y qué avisa** (decisión del autor):
 
@@ -162,7 +162,7 @@ Las bandas viven aquí, junto al modelo, porque las aprueba el autor y las consu
 | **Puntos** | La **media de puntos simulados queda a ±5 puntos** de los reales. | **Aviso** en el informe | Es un test de ajuste, no de predicción: con una desviación típica de unos 8 puntos por temporada (orden de magnitud con una distribución típica de victorias, empates y derrotas), con un modelo perfecto una temporada real solo cae dentro de ±5 en torno a la mitad de las veces. |
 | **Barça 2008-09** | El triplete real tiene una probabilidad de entre el **5 % y el 15 %**. Es la banda general de títulos con un techo de aviso. | **Suelo del 5 %: rompe la CI**, como en cualquier equipo. **Techo del 15 %: solo aviso.** El techo general del 40 % rompe la CI como siempre. | Es el reto difícil: posible, pero improbable. No hay excepciones en los datos ni campo `calibration_overrides`. |
 
-**Sobre la estimación del triplete.** Una estimación gruesa con probabilidades de ganar cada título de una potencia dominante de 0,5 (liga), 0,35 (copa) y 0,25 (Champions), **suponiendo independencia**, da `0,5 × 0,35 × 0,25 ≈ 4,4 %`, por debajo del suelo del 5 %. Esa cuenta es un orden de magnitud, no una predicción: **en la realidad hay correlación positiva entre competiciones** (la misma plantilla fuerte compite en las tres, y las lesiones y la moral afectan a todas), lo que sube la probabilidad conjunta por encima del producto. Si la calibración falla de entrada en el suelo, **se revisa** en este orden: (1) los valores iniciales de `β` y los pesos de las líneas, con un informe y un ADR que sustituya a este; (2) si hay un error de evidencia en las medias de los jugadores clave, con fuentes nuevas; (3) el propio suelo, por decisión expresa del autor. **Nunca se ajustan los datos para forzar el resultado.**
+**Sobre la estimación del triplete.** Una estimación gruesa con probabilidades de ganar cada título de una potencia dominante de 0,5 (liga), 0,35 (copa) y 0,25 (Champions), **suponiendo independencia**, da `0,5 × 0,35 × 0,25 ≈ 4,4 %`, por debajo del suelo del 5 %. Esa cuenta es un orden de magnitud, no una predicción: **en la realidad hay correlación positiva entre competiciones** (la misma plantilla fuerte compite en las tres, y las lesiones y la moral afectan a todas), lo que sube la probabilidad conjunta por encima del producto. Si la calibración falla de entrada en el suelo, **se revisa** en este orden: (1) los valores iniciales de `β` y los pesos de las líneas, con un informe y un ADR que sustituya a este; (2) si hay un error en las estadísticas de entrada de los jugadores clave o en el nivel de club (A-D), con fuentes nuevas, o, si el desvío es sistemático, los pesos de la fórmula de medias de la rúbrica (con PR aprobada por el autor); (3) el propio suelo, por decisión expresa del autor. **Nunca se ajustan los datos para forzar el resultado.**
 
 **Número de simulaciones y tolerancia estadística.**
 
@@ -180,7 +180,7 @@ Las bandas viven aquí, junto al modelo, porque las aprueba el autor y las consu
 ## Consecuencias
 
 - **Positivas:** el modelo es simple, conocido en la literatura y fácil de explicar en un README de portfolio. T2.1 y T2.2 son funciones puras con tests de propiedades (λ monótona en ataque y defensa, límites de los ajustes). Los datos históricos (`base_liga`, `H`) salen del contenido con fuente, no del código. El mismo modelo sirve a tu equipo, a los rivales con plantilla y, con una fuerza fija, a los agregados.
-- **Negativas y trade-offs:** Poisson subestima ligeramente los empates y asume goles independientes (la corrección está en Dixon-Coles). Los valores iniciales de `β`, los pesos y las penalizaciones no son datos, así que **hasta que se calibre T2.7 no hay evidencia de que sean los buenos**. Las bandas de puntos y de posición son avisos precisamente porque ajustan una única temporada, con riesgo de **sobreajuste** (ajustar las medias hasta que cuadre); la rúbrica lo prohíbe y T2.7 solo emite informe. La normalización por competición hace que la fuerza de un equipo dependa de los participantes del contenido (un cambio de contenido en una liga cambia las λ de esa liga) y tiene los sesgos reconocidos en la sección 2.
+- **Negativas y trade-offs:** Poisson subestima ligeramente los empates y asume goles independientes (la corrección está en Dixon-Coles). Los valores iniciales de `β`, los pesos y las penalizaciones no son datos, así que **hasta que se calibre T2.7 no hay evidencia de que sean los buenos**. Las bandas de puntos y de posición son avisos precisamente porque ajustan una única temporada, con riesgo de **sobreajuste** (ajustar los datos o los pesos de la fórmula de medias hasta que cuadre); la rúbrica lo prohíbe y T2.7 solo emite informe. La normalización por competición hace que la fuerza de un equipo dependa de los participantes del contenido (un cambio de contenido en una liga cambia las λ de esa liga) y tiene los sesgos reconocidos en la sección 2.
 - **Seguimiento:**
   - T2.7 calibra `β`, los pesos y las penalizaciones y, si los cambia, escribe un ADR que sustituye a este.
   - T2.7 mide el sesgo de `base_liga` y el recorte a `[0,4; 2,5]`.
