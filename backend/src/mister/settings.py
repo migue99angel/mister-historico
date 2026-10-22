@@ -1,6 +1,6 @@
-"""Configuración de la aplicación leída de variables de entorno.
+"""Application settings read from environment variables.
 
-Vive fuera de cualquier capa `domain`: pydantic-settings es una dependencia de framework.
+Lives outside every `domain` layer: pydantic-settings is a framework dependency.
 """
 
 from pydantic_settings import BaseSettings, SettingsConfigDict

@@ -1,7 +1,7 @@
 [project]
 name = "mister"
 version = "0.1.0"
-description = "Míster Histórico: backend (FastAPI, arquitectura hexagonal)."
+description = "Míster Histórico backend (FastAPI, hexagonal architecture)."
 license = "MIT"
 requires-python = ">=3.12,<3.13"
 dependencies = [
@@ -60,14 +60,14 @@ select = [
     "PT",       # pytest-style
     "TID",      # tidy-imports
     "TC",       # type-checking imports
-    "ERA",      # código comentado
+    "ERA",      # commented-out code
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = [
-    "S101",     # assert es la forma de escribir tests
-    "S603",     # los tests lanzan subprocesos con argumentos controlados
-    "PLR2004",  # números mágicos en asserts
+    "S101",     # assert is how tests are written
+    "S603",     # tests spawn subprocesses with controlled arguments
+    "PLR2004",  # magic numbers in asserts
 ]
 
 [tool.ruff.lint.isort]
@@ -77,7 +77,11 @@ known-first-party = ["mister"]
 [tool.mypy]
 strict = true
 python_version = "3.12"
-files = ["src", "tests"]
+# "." checks the whole backend: src, tests and the Alembic `migrations/` (owned by T0.5).
+# Listing "migrations" explicitly would fail while it does not exist. mypy skips
+# dot-directories such as .venv by itself.
+files = ["."]
+exclude = ['^mutants/', '^build/', '^dist/']
 mypy_path = "src"
 explicit_package_bases = true
 warn_unreachable = true
@@ -97,12 +101,12 @@ addopts = [
     "--cov-report=term-missing",
 ]
 markers = [
-    "unit: tests unitarios, sin IO (por defecto para lo que no está en otra carpeta de nivel)",
-    "integration: tests contra infraestructura real (testcontainers, Postgres...)",
-    "contract: suites de contrato de puertos (fake y adaptador real)",
-    "calibration: Monte Carlo del motor; lento, se excluye por defecto (pytest -m calibration)",
-    "content: validación del contenido histórico",
-    "e2e: tests extremo a extremo",
+    "unit: unit tests without IO (default for tests outside any other level directory)",
+    "integration: tests against real infrastructure (testcontainers, Postgres...)",
+    "contract: port contract suites (run against the fake and the real adapter)",
+    "calibration: engine Monte Carlo; slow, excluded by default (run with pytest -m calibration)",
+    "content: historical content validation",
+    "e2e: end-to-end tests",
 ]
 xfail_strict = true
 filterwarnings = ["error"]
@@ -115,9 +119,9 @@ branch = true
 [tool.coverage.report]
 show_missing = true
 skip_covered = true
-# Umbral global (PLAN §4.3). El umbral del 95 % de líneas y ramas para domain + application
-# se aplicará por capas (p. ej. `coverage report --include='src/mister/*/domain/*,...'
-# --fail-under=95` en la CI) en cuanto exista el primer contexto con esas capas.
+# Global threshold (PLAN §4.3). The 95 % line + branch threshold for domain + application
+# will be enforced per layer (e.g. `coverage report --include='src/mister/*/domain/*,...'
+# --fail-under=95` in CI) as soon as the first context with those layers exists.
 fail_under = 85
 exclude_also = [
     "if TYPE_CHECKING:",
@@ -126,19 +130,19 @@ exclude_also = [
 ]
 
 # --------------------------------------------------------------------------- import-linter
-# Reglas de capas de PLAN §3.2, escritas con comodines para que cubran cualquier contexto
-# (`mister.<contexto>.domain`...) sin tener que tocar esto al crear uno nuevo.
-# Un comodín que no encaja con ningún módulo se expande a un conjunto vacío y el contrato se
-# da por cumplido, así que los contratos son válidos aunque todavía no exista ningún contexto.
-# `tests/architecture/test_layer_contracts.py` los aplica sobre un paquete falso con la misma
-# forma para demostrar que de verdad rompen.
+# Layer rules from PLAN §3.2, written with wildcards so that they cover every context
+# (`mister.<context>.domain`...) without touching this file when a new one is created.
+# A wildcard that matches no module expands to an empty set and the contract is kept, so the
+# contracts are valid even before any context exists.
+# `tests/architecture/test_layer_contracts.py` applies them to a fake package with the same
+# shape to prove that they really break.
 [tool.importlinter]
 root_packages = ["mister"]
-# Necesario para poder prohibir librerías externas (fastapi, sqlalchemy...) en domain.
+# Required to forbid external libraries (fastapi, sqlalchemy...) in domain.
 include_external_packages = true
 
 [[tool.importlinter.contracts]]
-name = "R1 · domain solo importa la stdlib y shared_kernel"
+name = "R1 domain only imports the stdlib and shared_kernel"
 type = "forbidden"
 source_modules = ["mister.*.domain"]
 forbidden_modules = [
@@ -159,30 +163,30 @@ forbidden_modules = [
 ]
 
 [[tool.importlinter.contracts]]
-name = "R2 · application no importa infrastructure ni entrypoints"
+name = "R2 application does not import infrastructure or entrypoints"
 type = "forbidden"
 source_modules = ["mister.*.application"]
 forbidden_modules = ["mister.*.infrastructure", "mister.entrypoints", "mister.bootstrap"]
 
 [[tool.importlinter.contracts]]
-name = "R3 · infrastructure solo la importa bootstrap"
+name = "R3 infrastructure is only imported by bootstrap"
 type = "protected"
 protected_modules = ["mister.*.infrastructure"]
 allowed_importers = ["mister.bootstrap"]
 
-# R4 completa ("un contexto no importa el domain de otro", tampoco desde su application o su
-# infrastructure) no se puede expresar de forma genérica: import-linter no tiene comodines del
-# tipo "<ctx> distinto de <otro>". Aquí se cubre lo esencial (los domain son independientes
-# entre sí); el resto se añadirá con contratos por contexto cuando existan los contextos.
+# The full R4 ("a context does not import another context's domain", not even from its
+# application or infrastructure) cannot be expressed generically: import-linter has no
+# "<ctx> other than <other>" wildcard. This covers the core of it (domains are independent
+# of each other); the rest will be added as per-context contracts once the contexts exist.
 [[tool.importlinter.contracts]]
-name = "R4 · los domain de distintos contextos son independientes"
+name = "R4 domains of different contexts are independent"
 type = "independence"
 modules = ["mister.*.domain"]
 
-# R5: entrypoints habla con application. Se permiten imports indirectos porque application
-# importa domain; lo prohibido es saltarse application.
+# R5: entrypoints talk to application. Indirect imports are allowed because application
+# imports domain; what is forbidden is bypassing application.
 [[tool.importlinter.contracts]]
-name = "R5 · entrypoints no importa domain ni infrastructure directamente"
+name = "R5 entrypoints do not import domain or infrastructure directly"
 type = "forbidden"
 source_modules = ["mister.entrypoints"]
 forbidden_modules = ["mister.*.domain", "mister.*.infrastructure"]

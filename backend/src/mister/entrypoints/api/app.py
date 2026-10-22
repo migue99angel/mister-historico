@@ -1,6 +1,6 @@
-"""Factoría de la app FastAPI.
+"""FastAPI application factory.
 
-Se lanza con `uvicorn mister.entrypoints.api.app:create_app --factory`.
+Run with `uvicorn mister.entrypoints.api.app:create_app --factory`.
 """
 
 from fastapi import FastAPI

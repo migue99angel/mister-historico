@@ -1,6 +1,6 @@
-"""Composition root: el único sitio que cablea puertos con adaptadores (PLAN §3.2).
+"""Composition root: the only place that wires ports to adapters (PLAN §3.2).
 
-Es el único módulo autorizado a importar `mister.*.infrastructure`.
+It is the only module allowed to import `mister.*.infrastructure`.
 """
 
 from dataclasses import dataclass

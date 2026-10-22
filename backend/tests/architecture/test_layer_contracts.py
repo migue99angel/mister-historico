@@ -1,8 +1,8 @@
-"""Las reglas de capas de import-linter (PLAN §3.2) funcionan de verdad.
+"""The import-linter layer rules (PLAN §3.2) really work.
 
-Todavía no hay contextos en `mister`, así que los contratos reales pasan sin comprobar
-nada. Para demostrar que muerden, se copian los contratos de `pyproject.toml` cambiando
-el paquete raíz por uno falso con la misma forma, y se ejecuta `lint-imports` sobre él.
+There are no contexts in `mister` yet, so the real contracts pass without checking
+anything. To prove they bite, the contracts in `pyproject.toml` are copied with the root
+package renamed to a fake package with the same shape, and `lint-imports` is run on it.
 """
 
 import json
@@ -19,7 +19,7 @@ _REAL_ROOT = "mister"
 _FAKE_ROOT = "fakepkg"
 _LINT_IMPORTS = Path(sys.executable).parent / "lint-imports"
 
-# Paquete limpio: cada capa importa solo lo que le está permitido.
+# Clean package: every layer imports only what it is allowed to.
 _CLEAN_PACKAGE: dict[str, str] = {
     "__init__.py": "",
     "bootstrap.py": "from fakepkg.ctx.infrastructure import repo\n",
@@ -59,7 +59,7 @@ def _rename_root(value: object) -> object:
 def _toml_value(value: object) -> str:
     if isinstance(value, bool):
         return "true" if value else "false"
-    # Las cadenas y listas de cadenas en JSON son TOML válido.
+    # JSON strings and lists of strings are valid TOML.
     return json.dumps(value)
 
 

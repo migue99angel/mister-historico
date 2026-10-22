@@ -1,1 +1,1 @@
-"""Adaptadores de entrada (API HTTP, CLI). Solo llaman a casos de uso de application."""
+"""Driving adapters (HTTP API, CLI). They only call application use cases."""
