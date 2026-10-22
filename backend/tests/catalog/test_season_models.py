@@ -95,7 +95,7 @@ def season(**overrides: Any) -> dict[str, Any]:
                 "points_per_win": 3,
                 "points_per_draw": 1,
                 "tiebreakers": ["goal_difference", "goals_for"],
-                "league_stats": _STATS,
+                "league_stats": deepcopy(_STATS),
             },
             {
                 "kind": "cup",
@@ -576,7 +576,7 @@ def test_a_negative_score_is_rejected() -> None:
 def test_a_fixture_needs_either_a_round_or_a_stage() -> None:
     with pytest.raises(ValidationError, match="needs a round"):
         FixturesFile.model_validate(fixtures_file(fixture(round=None)))
-    with pytest.raises(ValidationError, match="needs a round"):
+    with pytest.raises(ValidationError, match="needs a group"):
         FixturesFile.model_validate(fixtures_file(fixture(stage="final")))
 
 
@@ -846,7 +846,9 @@ def test_duplicate_text_ids_are_rejected() -> None:
 
 # --------------------------------------------------------------------------- v2 additions
 def test_a_fixture_can_be_marked_as_key_and_is_not_by_default() -> None:
-    parsed = FixturesFile.model_validate(fixtures_file(fixture(), fixture(id="f02", key=True)))
+    parsed = FixturesFile.model_validate(
+        fixtures_file(fixture(), fixture(id="f02", date=date(2000, 9, 9), key=True))
+    )
 
     assert [f.key for f in parsed.fixtures] == [False, True]
 

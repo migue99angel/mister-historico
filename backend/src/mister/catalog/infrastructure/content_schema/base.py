@@ -1,9 +1,18 @@
 """Building blocks shared by every content model: strict base, identifiers and sources."""
 
 from datetime import date
-from typing import Annotated, ClassVar, Literal, Self
+from enum import Enum
+from typing import Annotated, Any, ClassVar, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, StringConstraints, model_validator
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    HttpUrl,
+    StringConstraints,
+    model_validator,
+)
 
 SLUG_PATTERN = r"^[a-z0-9]+(-[a-z0-9]+)*$"
 CLUB_SEASON_PATTERN = r"^_?[a-z0-9]+(-[a-z0-9]+)*-\d{4}-\d{2}$"
@@ -24,16 +33,35 @@ SeasonLabel = Annotated[str, StringConstraints(pattern=SEASON_PATTERN)]
 Verify = Literal["ok", "pending"]
 """`ok`: the datum was checked against its sources. `pending`: missing or unconfirmed."""
 
+NonBlank = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+"""Text that is not empty once whitespace is stripped."""
+
 Rating = Annotated[int, Field(ge=1, le=99)]
 """Player or team rating on the project rubric (1-99)."""
 
 Sources = Annotated[tuple[HttpUrl, ...], Field(description="URLs backing the datum.")]
 
 
-class ContentModel(BaseModel):
-    """Immutable model that rejects unknown fields: typos must fail loudly."""
+def enum_from_text[E: Enum](enum_type: type[E]) -> BeforeValidator:
+    """Let a strict model read an enum from its YAML text (strict mode rejects plain str)."""
+    return BeforeValidator(lambda value: enum_type(value) if isinstance(value, str) else value)
 
-    model_config = ConfigDict(frozen=True, extra="forbid")
+
+class ContentModel(BaseModel):
+    """Immutable model that rejects unknown fields and implicit type coercion.
+
+    Strict mode means `rating: "80"` or `delta: true` fail instead of being converted.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid", strict=True)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _lists_to_tuples(cls, data: Any) -> Any:
+        """YAML gives lists; the models are immutable and use tuples."""
+        if isinstance(data, dict):
+            return {k: tuple(v) if isinstance(v, list) else v for k, v in data.items()}
+        return data
 
 
 class SourcedModel(ContentModel):

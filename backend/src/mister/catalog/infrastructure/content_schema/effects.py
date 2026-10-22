@@ -16,7 +16,7 @@ single dilemma can swing a whole season:
 from datetime import date
 from typing import Annotated, Literal
 
-from pydantic import Field
+from pydantic import AfterValidator, Field
 
 from mister.catalog.infrastructure.content_schema.base import (
     ClubSeasonSlug,
@@ -33,7 +33,36 @@ MAX_INJURY_DAYS = 365
 
 TacticStyle = Literal["pressing", "counter", "possession", "balanced"]
 Priority = Literal["low", "normal", "high"]
-System = Annotated[str, Field(pattern=r"^[1-9](-[1-9]){2,3}$", description="e.g. 4-3-3")]
+OUTFIELD_PLAYERS = 10
+MIN_LINES = 3
+MAX_LINES = 5
+MAX_LINE_SIZE = 6
+
+
+def _check_system(value: str) -> str:
+    lines = [int(part) for part in value.split("-")]
+    if not MIN_LINES <= len(lines) <= MAX_LINES:
+        raise ValueError(f"a system has between {MIN_LINES} and {MAX_LINES} lines")
+    if any(not 1 <= line <= MAX_LINE_SIZE for line in lines):
+        raise ValueError(f"every line has between 1 and {MAX_LINE_SIZE} players")
+    if sum(lines) != OUTFIELD_PLAYERS:
+        raise ValueError(f"a system must add up to {OUTFIELD_PLAYERS} outfield players")
+    return value
+
+
+System = Annotated[
+    str,
+    Field(pattern=r"^[1-9](-[1-9]){2,4}$", description="e.g. 4-3-3"),
+    AfterValidator(_check_system),
+]
+"""Formation as lines of outfield players, e.g. `4-3-3` (10 players, 3 to 5 lines)."""
+
+
+class Tactic(ContentModel):
+    """A playing style plus a system."""
+
+    style: TacticStyle
+    system: System
 
 
 class MoraleEffect(ContentModel):
