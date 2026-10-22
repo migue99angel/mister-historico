@@ -40,7 +40,7 @@ class RandomSource(Protocol):
     """Port for deterministic randomness. Same seed and same keys give the same values."""
 
     def stream(self, *keys: Key) -> Self:
-        """Derive an independent child source for `keys` (at least one), without consuming this one."""
+        """Derive an independent child source for `keys` (at least one); this one is untouched."""
         ...
 
     def random(self) -> float:
