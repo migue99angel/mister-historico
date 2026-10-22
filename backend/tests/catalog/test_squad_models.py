@@ -79,7 +79,7 @@ def test_a_player_without_sources_is_rejected() -> None:
 
 
 def test_a_player_source_must_be_an_http_url() -> None:
-    with pytest.raises(ValidationError, match="players.3.sources"):
+    with pytest.raises(ValidationError, match=r"players\.3\.sources"):
         SquadFile.model_validate(with_player(3, sources=["not a url"]))
 
 
@@ -248,5 +248,5 @@ def test_a_valid_club_parses() -> None:
 
 
 def test_a_club_color_must_be_a_hex_code() -> None:
-    with pytest.raises(ValidationError, match="colors.primary"):
+    with pytest.raises(ValidationError, match=r"colors\.primary"):
         ClubFile.model_validate(club(colors={"primary": "red", "secondary": "#FFFFFF"}))

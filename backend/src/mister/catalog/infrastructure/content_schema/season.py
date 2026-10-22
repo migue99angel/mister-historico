@@ -15,6 +15,7 @@ from mister.catalog.infrastructure.content_schema.base import (
     season_is_consecutive,
 )
 
+TWO_LEGS = 2
 MIN_BLOCKS = 5
 MAX_BLOCKS = 6
 
@@ -65,7 +66,7 @@ class KnockoutStage(ContentModel):
 
     @model_validator(mode="after")
     def _check_away_goals(self) -> Self:
-        if self.away_goals_rule and self.legs != 2:
+        if self.away_goals_rule and self.legs != TWO_LEGS:
             raise ValueError("away_goals_rule only applies to two-legged stages")
         return self
 

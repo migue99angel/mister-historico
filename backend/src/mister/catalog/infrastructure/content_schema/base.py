@@ -68,5 +68,5 @@ def season_is_consecutive(label: str) -> bool:
 
 def season_window(label: str) -> tuple[date, date]:
     """First and last day of a season: 1 July of the first year to 30 June of the next."""
-    start_year = int(label.split("-")[0])
+    start_year = int(label.split("-", maxsplit=1)[0])
     return date(start_year, 7, 1), date(start_year + 1, 6, 30)

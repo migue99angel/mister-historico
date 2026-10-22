@@ -47,9 +47,7 @@ def assert_issue(
     issues: list[ContentIssue], path: str, field_part: str = "", message_part: str = ""
 ) -> None:
     found = [
-        i
-        for i in issues
-        if i.path == path and field_part in i.field and message_part in i.message
+        i for i in issues if i.path == path and field_part in i.field and message_part in i.message
     ]
     assert found, f"no issue at {path} / {field_part} / {message_part} in:\n" + "\n".join(
         map(str, issues)
@@ -114,7 +112,10 @@ def test_a_key_player_without_rationale_is_reported(root: Path) -> None:
     edit(root, "club-seasons/sample-united-2000-01/squad.yaml", mutate)
 
     assert_issue(
-        issues_of(root), "club-seasons/sample-united-2000-01/squad.yaml", "players", "rating_rationale"
+        issues_of(root),
+        "club-seasons/sample-united-2000-01/squad.yaml",
+        "players",
+        "rating_rationale",
     )
 
 
@@ -285,7 +286,9 @@ def test_a_fixture_against_an_unknown_club_season_is_reported(root: Path) -> Non
         lambda d: d["fixtures"][0].update(opponent="nobody-2000-01"),
     )
 
-    assert_issue(issues_of(root), f"{SEASON}/fixtures.yaml", "fixtures.0.opponent", "nobody-2000-01")
+    assert_issue(
+        issues_of(root), f"{SEASON}/fixtures.yaml", "fixtures.0.opponent", "nobody-2000-01"
+    )
 
 
 def test_a_fixture_in_an_unknown_competition_is_reported(root: Path) -> None:
@@ -558,7 +561,9 @@ def test_pending_standings_and_fixtures_are_rejected_in_release_mode(root: Path)
     issues = issues_of(root, release=True)
 
     assert_issue(issues, f"{SEASON}/fixtures.yaml", "fixtures.3.verify", "pending")
-    assert_issue(issues, f"{SEASON}/dilemmas.yaml", "dilemmas.1.historical_option.verify", "pending")
+    assert_issue(
+        issues, f"{SEASON}/dilemmas.yaml", "dilemmas.1.historical_option.verify", "pending"
+    )
 
 
 def test_draft_texts_are_accepted_outside_release_mode(root: Path) -> None:

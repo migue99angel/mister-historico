@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import Any
 
 import yaml  # type: ignore[import-untyped]
 from pydantic import ValidationError
@@ -18,7 +18,6 @@ from mister.catalog.infrastructure.content_schema.standings import StandingsFile
 from mister.catalog.infrastructure.content_schema.texts import TextsFile
 from mister.catalog.infrastructure.content_schema.tree import ContentTree, SeasonContent
 
-M = TypeVar("M", bound=ContentModel)
 
 class _DuplicateKeyError(Exception):
     def __init__(self, key: object) -> None:
@@ -29,7 +28,7 @@ class _DuplicateKeyError(Exception):
 class _UniqueKeyLoader(yaml.SafeLoader):  # type: ignore[misc]
     """A safe loader that refuses duplicate mapping keys instead of silently keeping the last."""
 
-    def construct_mapping(self, node: Any, deep: bool = False) -> dict[Any, Any]:  # noqa: FBT001, FBT002
+    def construct_mapping(self, node: Any, deep: bool = False) -> dict[Any, Any]:
         seen: set[Any] = set()
         for key_node, _ in node.value:
             key = self.construct_object(key_node, deep=True)
@@ -53,7 +52,9 @@ def _field_name(location: tuple[int | str, ...]) -> str:
     return ".".join(str(part) for part in location)
 
 
-def _load_model(root: Path, path: Path, model: type[M], sink: IssueSink) -> M | None:
+def _load_model[M: ContentModel](
+    root: Path, path: Path, model: type[M], sink: IssueSink
+) -> M | None:
     relative = path.relative_to(root).as_posix()
     if not path.is_file():
         sink.add(relative, "", "file is missing")
@@ -81,7 +82,9 @@ def _read_clubs(root: Path, result: ReadResult, sink: IssueSink) -> None:
         if club is None:
             continue
         if club.club_id != path.stem:
-            sink.add(path.relative_to(root).as_posix(), "club_id", f"must match file name {path.stem!r}")
+            sink.add(
+                path.relative_to(root).as_posix(), "club_id", f"must match file name {path.stem!r}"
+            )
         result.tree.clubs[path.stem] = club
 
 
@@ -134,7 +137,9 @@ def _read_season(root: Path, directory: Path, result: ReadResult, sink: IssueSin
         )
         result.failed_seasons.add(directory.name)
         return
-    result.tree.seasons[directory.name] = SeasonContent(season, fixtures, standings, dilemmas, texts)
+    result.tree.seasons[directory.name] = SeasonContent(
+        season, fixtures, standings, dilemmas, texts
+    )
 
 
 def read_tree(root: Path, sink: IssueSink) -> ReadResult:
