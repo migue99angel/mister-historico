@@ -194,21 +194,23 @@ class Score:
 
 @dataclass(frozen=True, slots=True)
 class MatchResult:
-    """Result of a match: 90 minutes, then optional extra time (goals of those 30 minutes only)
-    and optional shootout. `winner` is `None` for a draw (league)."""
+    """Result of one match: 90 minutes, then optional extra time (goals of those 30 minutes
+    only) and optional shootout.
+
+    It checks structure only (scores >= 0, a shootout cannot end level). Whether extra time or
+    a shootout was needed depends on the tie, not on this match: in a second leg the
+    aggregate is level, not necessarily the match, and `KnockoutTie` (T2.4) validates that.
+    `winner` is the winner of the **match** counting extra time and the shootout, `None` for a
+    drawn league match; the winner of a tie is decided by `KnockoutTie`.
+    """
 
     regulation: Score
     extra_time: Score | None = None
     penalties: Score | None = None
 
     def __post_init__(self) -> None:
-        if self.extra_time is not None and self.regulation.home != self.regulation.away:
-            raise InvalidValueError("extra time needs a drawn regulation score")
-        if self.penalties is not None:
-            if self.total.home != self.total.away:
-                raise InvalidValueError("a shootout needs a level score after extra time")
-            if self.penalties.home == self.penalties.away:
-                raise InvalidValueError("a shootout cannot end level")
+        if self.penalties is not None and self.penalties.home == self.penalties.away:
+            raise InvalidValueError("a shootout cannot end level")
 
     @property
     def total(self) -> Score:
@@ -218,7 +220,7 @@ class MatchResult:
 
     @property
     def winner(self) -> Side | None:
-        """The side that won, deciding by goals first and the shootout if level."""
+        """The side that won the match: the shootout if there was one, else the total goals."""
         decisive = self.penalties or self.total
         if decisive.home == decisive.away:
             return None

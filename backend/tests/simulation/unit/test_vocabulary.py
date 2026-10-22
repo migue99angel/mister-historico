@@ -1,4 +1,4 @@
-"""The published `Literal`s, the domain enums, the content schema and OpenAPI share one vocabulary."""
+"""The published `Literal`s, domain enums, content schema and OpenAPI share one vocabulary."""
 
 from enum import StrEnum
 from pathlib import Path

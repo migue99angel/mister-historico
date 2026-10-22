@@ -90,15 +90,12 @@ def test_simulate_block_delegates_to_the_use_case_module_until_t2_6() -> None:
         simulate_block.simulate_block(_request(), rng)
 
 
-def test_the_facade_only_delegates() -> None:
+def test_the_facade_only_delegates(monkeypatch: pytest.MonkeyPatch) -> None:
     """T2.6 implements `simulate_block.py` without touching `api.py`."""
     sentinel = BlockSummaryDTO(block_id=BlockId("block-1"))
-    original = simulate_block.simulate_block
-    simulate_block.simulate_block = lambda request, rng: sentinel  # type: ignore[assignment]
-    try:
-        result = SimulationService().simulate_block(_request(), StdlibRandomSource(Seed(1)))
-    finally:
-        simulate_block.simulate_block = original  # type: ignore[assignment]
+    monkeypatch.setattr(simulate_block, "simulate_block", lambda request, rng: sentinel)
+
+    result = SimulationService().simulate_block(_request(), StdlibRandomSource(Seed(1)))
 
     assert result is sentinel
 
@@ -181,7 +178,8 @@ def test_competition_input_describes_league_rules_and_knockout_stages() -> None:
     )
 
     assert (league.kind, league.tier, league.rounds) == ("league", "domestic_league", 2)
-    assert league.stages == () and league.real_ties == ()
+    assert league.stages == ()
+    assert league.real_ties == ()
     assert cup.stages[0].advance_per_group == 1
     assert cup.real_ties[0].winner == _ME
 
