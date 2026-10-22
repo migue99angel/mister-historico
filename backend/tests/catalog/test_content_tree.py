@@ -657,7 +657,7 @@ def test_an_injury_effect_outside_the_season_is_reported(root: Path, day: date) 
         lambda d: d["dilemmas"][5]["options"][0]["effects"][0].update(date=day),
     )
 
-    assert_issue(issues_of(root), DILEMMAS, "date", "outside the season")
+    assert_issue(issues_of(root), DILEMMAS, "date", "outside the allowed window")
 
 
 def test_a_forced_injury_of_an_unknown_player_is_reported(root: Path) -> None:
@@ -669,7 +669,7 @@ def test_a_forced_injury_of_an_unknown_player_is_reported(root: Path) -> None:
 def test_a_forced_injury_outside_the_season_is_reported(root: Path) -> None:
     edit(root, SEASON_FILE, lambda d: d["forced_events"][0].update(date=date(2002, 1, 1)))
 
-    assert_issue(issues_of(root), SEASON_FILE, "", "outside the season")
+    assert_issue(issues_of(root), SEASON_FILE, "", "does not overlap the season blocks")
 
 
 # --- outcomes against the real tables and brackets

@@ -44,7 +44,7 @@ players:
   sources:
   - https://example.org/test-content/squads/demo-athletic-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
     rated above the squad average.'
 - player_id: dma-04
   display_name: Teo Simulado
@@ -62,10 +62,12 @@ players:
   position: DF
   age: 25
   rating: 70
-  key: false
+  key: true
   sources:
   - https://example.org/test-content/squads/demo-athletic-2000-01
   verify: ok
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
+    rated above the squad average.'
 - player_id: dma-06
   display_name: Vito Falso
   alias_name: Jugador DMA-06
@@ -86,7 +88,7 @@ players:
   sources:
   - https://example.org/test-content/squads/demo-athletic-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
     rated above the squad average.'
 - player_id: dma-08
   display_name: Xavi Mocko
@@ -118,7 +120,7 @@ players:
   sources:
   - https://example.org/test-content/squads/demo-athletic-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
     rated above the squad average.'
 - player_id: dma-11
   display_name: Aldo Testoni
@@ -156,20 +158,24 @@ players:
   position: MF
   age: 28
   rating: 67
-  key: false
+  key: true
   sources:
   - https://example.org/test-content/squads/demo-athletic-2000-01
   verify: ok
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
+    rated above the squad average.'
 - player_id: dma-15
   display_name: Eloy Muestra
   alias_name: Jugador DMA-15
   position: FW
   age: 21
   rating: 69
-  key: false
+  key: true
   sources:
   - https://example.org/test-content/squads/demo-athletic-2000-01
   verify: ok
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
+    rated above the squad average.'
 - player_id: dma-16
   display_name: Fito Ejemplo
   alias_name: Jugador DMA-16

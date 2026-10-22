@@ -12,6 +12,8 @@ from mister.catalog.infrastructure.content_schema.tree import ContentTree
 
 MIN_RIVAL_SQUAD = 18
 MAX_RIVAL_SQUAD = 22
+MIN_KEY_PLAYERS = 6
+MAX_KEY_PLAYERS = 10
 MIN_BY_POSITION: dict[Position, int] = {
     Position.GK: 2,
     Position.DF: 6,
@@ -67,6 +69,14 @@ def check_rival_squads(tree: ContentTree, sink: IssueSink) -> None:
                 "players",
                 f"a rival squad has between {MIN_RIVAL_SQUAD} and {MAX_RIVAL_SQUAD} players, "
                 f"found {size}",
+            )
+        keys = sum(1 for p in squad.players if p.key)
+        if not MIN_KEY_PLAYERS <= keys <= MAX_KEY_PLAYERS:
+            sink.add(
+                path,
+                "players",
+                f"a rival squad has between {MIN_KEY_PLAYERS} and {MAX_KEY_PLAYERS} key players, "
+                f"found {keys}",
             )
         for position, minimum in MIN_BY_POSITION.items():
             count = sum(1 for p in squad.players if p.position is position)

@@ -94,7 +94,7 @@ players:
   sources:
   - https://example.org/test-content/squads/fixture-wanderers-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
     rated above the squad average.'
 - player_id: fxw-09
   display_name: Dani Placebo
@@ -102,10 +102,12 @@ players:
   position: MF
   age: 31
   rating: 58
-  key: false
+  key: true
   sources:
   - https://example.org/test-content/squads/fixture-wanderers-2000-01
   verify: ok
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
+    rated above the squad average.'
 - player_id: fxw-10
   display_name: Eloy Ficticio
   alias_name: Jugador FXW-10
@@ -116,7 +118,7 @@ players:
   sources:
   - https://example.org/test-content/squads/fixture-wanderers-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
     rated above the squad average.'
 - player_id: fxw-11
   display_name: Fito Inventado
@@ -168,7 +170,7 @@ players:
   sources:
   - https://example.org/test-content/squads/fixture-wanderers-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
     rated above the squad average.'
 - player_id: fxw-16
   display_name: Kiko Falso
@@ -176,27 +178,33 @@ players:
   position: FW
   age: 33
   rating: 60
-  key: false
+  key: true
   sources:
   - https://example.org/test-content/squads/fixture-wanderers-2000-01
   verify: ok
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
+    rated above the squad average.'
 - player_id: fxw-17
   display_name: Lalo Dummy
   alias_name: Jugador FXW-17
   position: FW
   age: 21
   rating: 63
-  key: false
+  key: true
   sources:
   - https://example.org/test-content/squads/fixture-wanderers-2000-01
   verify: ok
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
+    rated above the squad average.'
 - player_id: fxw-18
   display_name: Mati Mocko
   alias_name: Jugador FXW-18
   position: FW
   age: 35
   rating: 62
-  key: false
+  key: true
   sources:
   - https://example.org/test-content/squads/fixture-wanderers-2000-01
   verify: ok
+  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
+    rated above the squad average.'
