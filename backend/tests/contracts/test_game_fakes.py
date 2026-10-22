@@ -2,26 +2,36 @@
 
 import pytest
 
-from mister.game.application.ports import RunTokenGenerator, RunTokenHasher, SeasonSimulator
-from mister.game.application.ports import UnitOfWork
+from mister.game.application.ports import (
+    ConcurrencyError,
+    IdempotencyKeyExistsError,
+    NoActiveTransactionError,
+    RunAlreadyExistsError,
+    RunTokenGenerator,
+    RunTokenHasher,
+    SeasonSimulator,
+    UnitOfWork,
+)
 from mister.game.infrastructure.in_memory.run_repository import (
     InMemoryRunRepository,
     InMemoryRunStore,
     InMemoryUnitOfWork,
 )
 from mister.game.infrastructure.in_memory.run_tokens import FakeRunTokenGenerator
-from mister.game.infrastructure.security.run_tokens import (
-    SecretsRunTokenGenerator,
-    Sha256RunTokenHasher,
-)
 from mister.game.infrastructure.in_memory.season_simulator import (
     ScriptedSeasonSimulator,
     UnscriptedBlockError,
 )
+from mister.game.infrastructure.security.run_tokens import (
+    SecretsRunTokenGenerator,
+    Sha256RunTokenHasher,
+)
 from tests.contracts.suites.game_samples import (
+    make_idempotency_record,
     make_run_record,
     make_simulation_request,
     make_simulation_result,
+    next_version,
 )
 from tests.contracts.suites.run_repository import RepoFactory, RunRepositoryContract
 from tests.contracts.suites.run_token import (
@@ -131,3 +141,62 @@ def test_scripted_simulator_can_be_told_to_fail() -> None:
 
 def test_fake_token_generator_is_deterministic_across_instances() -> None:
     assert FakeRunTokenGenerator().generate() == FakeRunTokenGenerator().generate()
+
+
+def test_two_transactions_adding_the_same_run_cannot_both_commit() -> None:
+    store = InMemoryRunStore()
+    first, second = InMemoryUnitOfWork(store), InMemoryUnitOfWork(store)
+    record = make_run_record()
+
+    with first, second:
+        first.runs.add(record)
+        second.runs.add(record)
+        first.commit()
+
+        with pytest.raises(RunAlreadyExistsError):
+            second.commit()
+
+
+def test_two_transactions_saving_the_same_version_cannot_both_commit() -> None:
+    store = InMemoryRunStore()
+    first, second = InMemoryUnitOfWork(store), InMemoryUnitOfWork(store)
+    base = make_run_record()
+    with first:
+        first.runs.add(base)
+        first.commit()
+
+    with first, second:
+        first.runs.save(next_version(base), expected_version=0)
+        second.runs.save(next_version(base, extra_decisions=1), expected_version=0)
+        first.commit()
+
+        with pytest.raises(ConcurrencyError):
+            second.commit()
+
+    assert InMemoryRunRepository(store).get(base.run_id) == next_version(base)
+
+
+def test_two_transactions_storing_the_same_reply_cannot_both_commit() -> None:
+    store = InMemoryRunStore()
+    first, second = InMemoryUnitOfWork(store), InMemoryUnitOfWork(store)
+    base = make_run_record()
+    with first:
+        first.runs.add(base)
+        first.commit()
+
+    with first, second:
+        first.runs.put_idempotent(make_idempotency_record(base, "idem-key-1"))
+        second.runs.put_idempotent(make_idempotency_record(base, "idem-key-1"))
+        first.commit()
+
+        with pytest.raises(IdempotencyKeyExistsError):
+            second.commit()
+
+
+def test_commit_and_rollback_need_an_open_transaction() -> None:
+    uow = InMemoryUnitOfWork()
+
+    with pytest.raises(NoActiveTransactionError):
+        uow.commit()
+    with pytest.raises(NoActiveTransactionError):
+        uow.rollback()

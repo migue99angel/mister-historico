@@ -186,7 +186,9 @@ def _stage(stage: sn.Stage) -> StageDTO:
     )
 
 
-def _competition(competition: sn.Competition, leagues: dict[str, sn.LeagueCompetition]) -> CompetitionDTO:
+def _competition(
+    competition: sn.Competition, leagues: dict[str, sn.LeagueCompetition]
+) -> CompetitionDTO:
     common = {
         "id": CompetitionId(competition.id),
         "name": competition.name,
@@ -360,9 +362,7 @@ def build_expected_test_fc_season(tree: ContentTree | None = None) -> PlayableSe
                 title=d.title,
                 prompt=d.prompt,
                 options=tuple(
-                    DilemmaOptionDTO(
-                        OptionId(o.id), o.label, tuple(_effect(e) for e in o.effects)
-                    )
+                    DilemmaOptionDTO(OptionId(o.id), o.label, tuple(_effect(e) for e in o.effects))
                     for o in d.options
                 ),
                 historical_option=OptionId(d.historical_option.option),
