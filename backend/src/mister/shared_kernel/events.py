@@ -40,12 +40,17 @@ class EventBus(Protocol):
 class InMemoryEventBus:
     """Synchronous bus that delivers events in publication order.
 
+    - Synchronous: the outermost `publish` returns only after every queued event has reached
+      all its subscribers.
     - A handler receives events whose class is `event_type` or a subclass of it, so
       subscribing to `DomainEvent` receives everything.
     - Handlers of one event run in subscription order.
-    - An event published by a handler is queued and delivered after the event being handled
-      has reached all its handlers, so the global order is the publication order.
-    - A handler error propagates to the outermost `publish`; events still queued are dropped.
+    - Reentrancy: an event published by a handler is queued and delivered after the event
+      being handled has reached all its handlers, so the global order is the publication
+      order. The nested `publish` returns immediately.
+    - Error isolation: a failing handler does not stop the other handlers nor the queued
+      events. Errors are collected and, once everything has been delivered, the outermost
+      `publish` raises them together in an `ExceptionGroup`.
     """
 
     def __init__(self) -> None:
@@ -61,12 +66,18 @@ class InMemoryEventBus:
         if self._dispatching:
             return
         self._dispatching = True
+        errors: list[Exception] = []
         try:
             while self._queue:
                 current = self._queue.popleft()
                 for event_type, handler in list(self._subscriptions):
                     if isinstance(current, event_type):
-                        handler(current)
+                        try:
+                            handler(current)
+                        except Exception as error:
+                            errors.append(error)
         finally:
             self._dispatching = False
-            self._queue.clear()
+            self._queue.clear()  # only non-empty if interrupted by a BaseException
+        if errors:
+            raise ExceptionGroup("event handlers failed", errors)
