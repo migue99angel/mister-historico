@@ -2,24 +2,38 @@
 
 import uuid
 from dataclasses import replace
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 from mister.game.application.ports import (
+    BlockEvent,
     BlockSimulationRequest,
     BlockSimulationResult,
     DecisionRecord,
+    EventKind,
+    ForcedInjury,
     IdempotencyRecord,
     InjuryOutcome,
     MatchOutcome,
+    PlayerOutcome,
+    Position,
     Priority,
     RunRecord,
     RunStatus,
-    SquadMemberState,
+    ScoreLine,
+    Side,
+    SquadPlayerState,
+    Standings,
+    StandingRow,
+    TacticSetup,
     TacticStyle,
     TacticSystem,
+    TeamSquad,
+    TeamVenue,
+    UserResult,
 )
 from mister.shared_kernel.ids import (
     BlockId,
+    ClubSeasonId,
     CompetitionId,
     DilemmaId,
     FixtureId,
@@ -87,39 +101,126 @@ def make_idempotency_record(
     )
 
 
+BLOCK_START = date(2000, 8, 1)
+BLOCK_END = date(2000, 9, 30)
+
+
 def make_simulation_request(block: str = "b1") -> BlockSimulationRequest:
+    own = ClubSeasonId("test-fc-2000-01")
+    rival = ClubSeasonId("sample-united-2000-01")
+    tactic = TacticSetup(TacticStyle.BALANCED, TacticSystem("4-4-2"))
     return BlockSimulationRequest(
         playable_season_id=PlayableSeasonId("test-fc-2000-01"),
         seed=Seed(7),
         block_id=BlockId(block),
-        squad=(
-            SquadMemberState(PlayerId("tfc-01"), rating=60, morale=55, fitness=90, available=True),
-            SquadMemberState(PlayerId("tfc-02"), rating=62, morale=70, fitness=40, available=False),
+        start=BLOCK_START,
+        end=BLOCK_END,
+        managed_team=TeamSquad(
+            own,
+            (
+                SquadPlayerState(PlayerId("tfc-01"), Position.GK, 60, 25, 55, 90),
+                SquadPlayerState(
+                    PlayerId("tfc-02"),
+                    Position.DF,
+                    62,
+                    None,
+                    70,
+                    40,
+                    injured_until=date(2000, 9, 15),
+                    youth_minutes=True,
+                ),
+            ),
+            tactic,
         ),
-        tactic_style=TacticStyle.BALANCED,
-        tactic_system=TacticSystem("4-4-2"),
-        competition_priorities={CompetitionId("liga-test"): Priority.NORMAL},
+        team_morale=58,
+        team_overrides=(
+            TeamSquad(
+                rival,
+                (SquadPlayerState(PlayerId("sam-01"), Position.FW, 70, 28, 50, 100),),
+                TacticSetup(TacticStyle.COUNTER, TacticSystem("4-3-3")),
+            ),
+        ),
+        competition_priorities={
+            CompetitionId("liga-test"): Priority.NORMAL,
+            CompetitionId("copa-test"): Priority.HIGH,
+        },
+        forced_injuries_from_effects=(
+            ForcedInjury(PlayerId("tfc-01"), date(2000, 9, 20), 10),
+        ),
+        prior_results=(),
     )
 
 
 def make_simulation_result(block: str = "b1") -> BlockSimulationResult:
+    """A result that is consistent with `make_simulation_request`."""
+    own = ClubSeasonId("test-fc-2000-01")
+    rival = ClubSeasonId("sample-united-2000-01")
+    liga, copa = CompetitionId("liga-test"), CompetitionId("copa-test")
     return BlockSimulationResult(
         block_id=BlockId(block),
         matches=(
             MatchOutcome(
-                FixtureId("tfc-liga-01"), CompetitionId("liga-test"), goals_for=2, goals_against=1
+                fixture_id=FixtureId("tfc-liga-01"),
+                competition_id=liga,
+                date=date(2000, 9, 2),
+                home=own,
+                away=rival,
+                regulation=ScoreLine(2, 1),
+                venue=TeamVenue.HOME,
+                opponent=rival,
+                user_result=UserResult.WIN,
+                winner=Side.HOME,
+                round=1,
             ),
             MatchOutcome(
-                FixtureId("tfc-copa-final"),
-                CompetitionId("copa-test"),
-                goals_for=1,
-                goals_against=1,
-                extra_time=True,
-                penalties_for=4,
-                penalties_against=3,
+                fixture_id=FixtureId("tfc-copa-final"),
+                competition_id=copa,
+                date=date(2000, 9, 28),
+                home=rival,
+                away=own,
+                regulation=ScoreLine(1, 1),
+                venue=TeamVenue.NEUTRAL,
+                opponent=rival,
+                user_result=UserResult.WIN,
+                extra_time=ScoreLine(0, 0),
+                penalties=ScoreLine(3, 4),
+                winner=Side.AWAY,
+                key=True,
+                stage_id="final",
+                leg=None,
             ),
         ),
-        injuries=(InjuryOutcome(PlayerId("tfc-02"), days=14),),
-        minutes_played={PlayerId("tfc-01"): 180, PlayerId("tfc-02"): 90},
-        league_positions={CompetitionId("liga-test"): 3},
+        key_matches=(FixtureId("tfc-copa-final"),),
+        standings=(
+            Standings(
+                competition_id=liga,
+                as_of=BLOCK_END,
+                rows=(
+                    StandingRow(own, 1, 1, 1, 0, 0, 2, 1, 3),
+                    StandingRow(rival, 2, 1, 0, 0, 1, 1, 2, 0),
+                ),
+            ),
+            Standings(
+                competition_id=copa,
+                as_of=BLOCK_END,
+                stage_id="groups",
+                group_id="a",
+                rows=(StandingRow(own, 1, 1, 1, 0, 0, 1, 0, 3),),
+            ),
+        ),
+        events=(
+            BlockEvent(EventKind.CHAMPION, date(2000, 9, 28), own, copa, "final"),
+            BlockEvent(EventKind.ADVANCED, date(2000, 9, 20), own, copa, "semifinal"),
+            BlockEvent(EventKind.ELIMINATED, date(2000, 9, 21), rival, copa),
+        ),
+        injuries=(
+            InjuryOutcome(PlayerId("tfc-02"), date(2000, 9, 10), 14),
+            InjuryOutcome(PlayerId("tfc-01"), date(2000, 9, 20), 10, forced=True),
+        ),
+        player_states=(
+            PlayerOutcome(PlayerId("tfc-01"), fitness=80, minutes_played=180),
+            PlayerOutcome(
+                PlayerId("tfc-02"), fitness=35, injured_until=date(2000, 9, 24), minutes_played=45
+            ),
+        ),
     )
