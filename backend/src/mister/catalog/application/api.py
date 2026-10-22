@@ -17,6 +17,9 @@ Decisions:
 - Effects are a closed union (`EffectDTO`), one frozen dataclass per type of the content DSL
   (`docs/content/content-format.md` §8). Consumers `match` on it and close the match with
   `assert_never`, so adding a type is a contract change that mypy reports everywhere.
+- `PlayableSeasonDTO.club_seasons` holds every participant of any competition of the season
+  (the own club-season included), sorted by id; `texts` holds only reviewed texts. The exact
+  mapping is pinned by the Test FC oracle of the contract suite.
 - Sources and `verify` flags stay in the content: they are editorial, not game data.
 """
 
