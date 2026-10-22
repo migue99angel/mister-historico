@@ -7,11 +7,19 @@ on:
     branches: [main]
     paths:
       - "backend/src/mister/simulation/**"
+      - "backend/src/mister/shared_kernel/**"
+      - "backend/tests/calibration/**"
+      - "backend/uv.lock"
+      - "backend/pyproject.toml"
       - "content/**"
       - ".github/workflows/calibration.yml"
   pull_request:
     paths:
       - "backend/src/mister/simulation/**"
+      - "backend/src/mister/shared_kernel/**"
+      - "backend/tests/calibration/**"
+      - "backend/uv.lock"
+      - "backend/pyproject.toml"
       - "content/**"
       - ".github/workflows/calibration.yml"
   schedule:
@@ -23,7 +31,8 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
+  # Only superseded PR runs are cancelled; runs on main and scheduled runs always finish.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 defaults:
   run:
@@ -39,9 +48,16 @@ jobs:
         with:
           persist-credentials: false
 
+      # Python and uv versions must match infra/docker/api.Dockerfile (python:3.12.15, uv 0.9.7).
+      # uv 0.9.7 cannot download 3.12.15, so setup-python provides it and uv picks it up.
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12.15"
+
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           version: "0.9.7"
+          python-version: "3.12.15"
           working-directory: backend
           enable-cache: true
           cache-dependency-glob: uv.lock # relative to working-directory
@@ -50,15 +66,16 @@ jobs:
         run: uv sync --frozen
 
       # --no-cov: calibration runs a subset of the suite, so the global coverage threshold
-      # does not apply. Exit code 5 ("no tests collected") is accepted only while no
-      # calibration test exists yet (they arrive in T2.7); any other failure fails the job.
+      # does not apply. Exit code 5 ("no tests collected") is accepted only while
+      # backend/tests/calibration/ does not exist (T2.7 creates it); any other failure,
+      # or exit 5 once that directory exists, fails the job.
       - name: pytest -m calibration
         run: |
           set +e
           uv run pytest -m calibration --no-cov
           status=$?
           set -e
-          if [ "${status}" -eq 5 ]; then
+          if [ "${status}" -eq 5 ] && [ ! -e tests/calibration ]; then
             echo "::notice title=Calibration::No calibration tests collected yet (T2.7); nothing to run."
             exit 0
           fi

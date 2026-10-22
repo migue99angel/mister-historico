@@ -8,13 +8,19 @@ on:
     branches: [main]
     paths:
       - "contracts/**"
+      # Covers entrypoints/api/** (the FastAPI app that generates the OpenAPI schema).
       - "backend/src/mister/entrypoints/**"
+      # Published DTOs (`application/api.py`) shape the OpenAPI schema.
+      - "backend/src/mister/*/application/**"
       - "frontend/src/infrastructure/**"
       - ".github/workflows/contracts.yml"
   pull_request:
     paths:
       - "contracts/**"
+      # Covers entrypoints/api/** (the FastAPI app that generates the OpenAPI schema).
       - "backend/src/mister/entrypoints/**"
+      # Published DTOs (`application/api.py`) shape the OpenAPI schema.
+      - "backend/src/mister/*/application/**"
       - "frontend/src/infrastructure/**"
       - ".github/workflows/contracts.yml"
 
@@ -23,7 +29,8 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
+  # Only superseded PR runs are cancelled; runs on main and scheduled runs always finish.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   drift:
