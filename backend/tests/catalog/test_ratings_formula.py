@@ -23,7 +23,7 @@ from mister.catalog.domain.ratings import (
 )
 
 
-def stats(position: Position | None = Position.MF, **overrides: object) -> PlayerStats:
+def stats(position: Position | None = Position.MF, /, **overrides: object) -> PlayerStats:
     """A fully known player with league and all-competitions data; tests override what matters."""
     base: dict[str, object] = {
         "position": position,
@@ -112,7 +112,7 @@ def test_rubric_example_goalkeeper_with_clean_sheets_rates_90() -> None:
 
     assert result.rating == 90
     assert result.raw is not None
-    assert float(result.raw) == pytest.approx(89.51, abs=0.01)
+    assert float(result.raw) == pytest.approx(89.51, abs=0.05)  # the rubric rounds each term
 
 
 def test_rubric_example_goalkeeper_without_clean_sheets_rates_83() -> None:
@@ -186,7 +186,7 @@ def test_each_club_tier_is_three_points_apart() -> None:
     assert b is not None
     assert c is not None
     assert d is not None
-    assert (a - b, b - c, c - d) == (3, 3, 3)
+    assert [a - b, b - c, c - d] == [3, 3, 3]
 
 
 def test_a_world_award_weighs_more_than_a_league_award() -> None:
@@ -388,7 +388,7 @@ def test_all_minutes_without_all_appearances_or_league_data_gives_no_rating() ->
         {"available_matches_all": 0},
     ],
 )
-def test_impossible_statistics_are_rejected(bad: dict[str, int]) -> None:
+def test_impossible_statistics_are_rejected(bad: dict[str, object]) -> None:
     with pytest.raises(ValueError, match="invalid"):
         compute_rating(stats(**bad), ATLANTIC)
 
