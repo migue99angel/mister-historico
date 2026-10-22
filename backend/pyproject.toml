@@ -117,11 +117,13 @@ source = ["mister"]
 branch = true
 
 [tool.coverage.report]
+# Report modules of a context that lacks an `__init__.py` too, so none escapes the thresholds.
+include_namespace_packages = true
 show_missing = true
 skip_covered = true
-# Global threshold (PLAN §4.3). The 95 % line + branch threshold for domain + application
-# will be enforced per layer (e.g. `coverage report --include='src/mister/*/domain/*,...'
-# --fail-under=95` in CI) as soon as the first context with those layers exists.
+# Global threshold (PLAN §4.3). The >= 95 % threshold for domain + application, checked
+# separately for lines and for branches, is enforced in CI by
+# `.github/scripts/layer-coverage.sh` (backend workflow).
 fail_under = 85
 exclude_also = [
     "if TYPE_CHECKING:",
