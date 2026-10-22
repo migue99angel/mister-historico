@@ -34,6 +34,7 @@ def check_fixtures(ctx: SeasonContext) -> None:
         if ctx.block_of(fixture.date) is None:
             ctx.add("fixtures", f"{field}.date", f"{fixture.date} falls outside every block")
         _check_shape(ctx, field, fixture, competition)
+        _check_penalties(ctx, field, fixture)
     for competition in ctx.content.season.competitions:
         if isinstance(competition, LeagueCompetition):
             _check_league_completeness(ctx, competition)
@@ -41,6 +42,18 @@ def check_fixtures(ctx: SeasonContext) -> None:
             _check_group_completeness(ctx, competition)
             _check_legs(ctx, competition)
             _check_stage_order(ctx, competition)
+
+
+def _check_penalties(ctx: SeasonContext, field: str, fixture: Fixture) -> None:
+    """A shoot-out follows a level single match; in a second leg it follows a level aggregate
+    (checked with the whole tie in `_check_two_legs`); a first leg never has one."""
+    result = fixture.result
+    if result is None or result.penalties_for is None:
+        return
+    if fixture.leg == 1:
+        ctx.add("fixtures", f"{field}.result", "a first leg cannot go to penalties")
+    elif fixture.leg is None and result.goals_for != result.goals_against:
+        ctx.add("fixtures", f"{field}.result", "penalties need a level score")
 
 
 def _check_opponent(
@@ -223,6 +236,16 @@ def _check_two_legs(
         ctx.add("fixtures", "fixtures", f"{label} needs one leg at home and the other away")
     if ties[1].date >= ties[2].date:
         ctx.add("fixtures", "fixtures", f"{label}: leg 1 must be played before leg 2")
+    first, second = ties[1].result, ties[2].result
+    if first is not None and second is not None and second.penalties_for is not None:
+        goals_for = first.goals_for + second.goals_for
+        goals_against = first.goals_against + second.goals_against
+        if goals_for != goals_against:
+            ctx.add(
+                "fixtures",
+                "fixtures",
+                f"{label}: penalties in the second leg need the tie level on aggregate",
+            )
 
 
 def _check_stage_order(ctx: SeasonContext, competition: Competition) -> None:

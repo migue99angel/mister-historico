@@ -341,7 +341,7 @@ fixtures:
 - `key: true` marca los partidos clave (clásicos, finales...). Por defecto es `false`.
 - `opponent` es un club-season existente y **participante** de esa competición (y del mismo grupo, en la fase de grupos), distinto del propio.
 - `venue`: `home`, `away` o `neutral`. Las finales pueden ser en campo neutral; un partido de liga, de grupos o de una eliminatoria a doble partido, no.
-- `result`: los goles son los del tiempo jugado (con prórroga si `extra_time: true`); los penaltis van aparte (`penalties_for` y `penalties_against`, siempre los dos, **distintos entre sí**, y solo con el marcador igualado). Si no lo encuentras, `result: null` y `verify: pending`.
+- `result`: los goles son los del tiempo jugado (con prórroga si `extra_time: true`); los penaltis van aparte (`penalties_for` y `penalties_against`, siempre los dos y **distintos entre sí**). Los goles son los **del partido**: con penaltis, el partido único acaba igualado; en una **segunda pierna**, lo que tiene que estar igualado es el **global** (ida 1-0 y vuelta 1-0 pueden ir a prórroga y penaltis); una ida nunca tiene penaltis. El validador de árbol lo comprueba. Si no lo encuentras, `result: null` y `verify: pending`.
 - El resultado real lleva `sources`, como cualquier dato histórico.
 - La fecha tiene que caer dentro de algún bloque, y **el equipo propio no juega dos partidos el mismo día**.
 - **La liga tiene que estar completa:** el equipo propio juega `(participantes - 1) × rounds` partidos de liga, una vez en cada jornada, y en una doble vuelta se enfrenta a cada rival una vez en casa y otra fuera. Lo mismo vale para su grupo: `(equipos del grupo - 1) × legs` partidos.

@@ -884,24 +884,6 @@ def test_tied_penalties_are_rejected() -> None:
         )
 
 
-def test_penalties_need_a_level_score() -> None:
-    with pytest.raises(ValidationError, match="penalties"):
-        FixturesFile.model_validate(
-            fixtures_file(
-                fixture(
-                    round=None,
-                    stage="final",
-                    result={
-                        "goals_for": 2,
-                        "goals_against": 1,
-                        "penalties_for": 4,
-                        "penalties_against": 3,
-                    },
-                )
-            )
-        )
-
-
 def test_two_fixtures_on_the_same_day_are_rejected() -> None:
     with pytest.raises(ValidationError, match="same date"):
         FixturesFile.model_validate(fixtures_file(fixture(), fixture(id="f02", round=2)))

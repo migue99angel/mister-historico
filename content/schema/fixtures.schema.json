@@ -143,7 +143,7 @@
     },
     "RealResult": {
       "additionalProperties": false,
-      "description": "Real score from the own team's point of view (after extra time, before penalties).",
+      "description": "Real score of the match from the own team's point of view (after extra time, before\npenalties). Whether a shoot-out is consistent with the score depends on the leg, so the\ncontent tree checks it: level score for a single match, level aggregate for a second leg.",
       "properties": {
         "extra_time": {
           "default": false,
