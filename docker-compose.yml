@@ -1,0 +1,93 @@
+# Míster Histórico development environment. Usage: `make dev` (docker compose up --build).
+#
+#   postgres  -> localhost:5432 (mister/mister, db mister)
+#   api       -> http://localhost:8000 (hot reload on backend/src)
+#   frontend  -> http://localhost:5173 (Vite with HMR on frontend/)
+#
+# Host ports can be changed with the variables in `.env.example`.
+
+name: mister-historico
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: mister
+      POSTGRES_PASSWORD: mister
+      POSTGRES_DB: mister
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mister -d mister"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: ../infra/docker/api.Dockerfile
+      target: dev
+    environment:
+      DATABASE_URL: postgresql+psycopg://mister:mister@postgres:5432/mister
+    # Apply the migrations, then start uvicorn with reload.
+    command:
+      - sh
+      - -c
+      - >-
+        alembic upgrade head &&
+        exec uvicorn mister.entrypoints.api.app:create_app --factory
+        --host 0.0.0.0 --port 8000 --reload --reload-dir src
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/migrations:/app/migrations
+      - ./backend/alembic.ini:/app/alembic.ini:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../infra/docker/frontend.Dockerfile
+      target: dev
+    environment:
+      # Used by the browser on the host, hence localhost and not `api`.
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    volumes:
+      - ./frontend:/app
+      # Anonymous volume: keeps the image's node_modules instead of the host's.
+      - /app/node_modules
+    depends_on:
+      api:
+        condition: service_healthy
+    # Lets `docker compose up --wait` block until Vite is serving.
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:5173/').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  postgres-data:
