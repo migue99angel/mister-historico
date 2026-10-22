@@ -8,7 +8,6 @@ from pydantic import Field, model_validator
 
 from mister.catalog.infrastructure.content_schema.base import (
     ClubSeasonSlug,
-    ContentModel,
     PlayerId,
     Rating,
     SeasonLabel,

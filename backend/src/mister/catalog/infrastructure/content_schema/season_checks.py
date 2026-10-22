@@ -107,7 +107,9 @@ class SeasonChecker:
             field = f"historical_outcome.{index}"
             competition = self._competitions.get(outcome.competition)
             if competition is None:
-                self._add("season", f"{field}.competition", f"unknown competition {outcome.competition!r}")
+                self._add(
+                    "season", f"{field}.competition", f"unknown competition {outcome.competition!r}"
+                )
                 continue
             self._check_outcome(field, competition, index)
         for competition_id in self._competitions:
@@ -115,7 +117,8 @@ class SeasonChecker:
                 self._add(
                     "season",
                     "historical_outcome",
-                    f"competition {competition_id!r} needs exactly one outcome, found {seen[competition_id]}",
+                    f"competition {competition_id!r} needs exactly one outcome, "
+                    f"found {seen[competition_id]}",
                 )
         for index, objective in enumerate(self._content.season.board_objectives):
             if objective.competition not in self._competitions:
@@ -129,7 +132,9 @@ class SeasonChecker:
         outcome = self._content.season.historical_outcome[index]
         if isinstance(competition, LeagueCompetition):
             if outcome.final_position is None and outcome.verify == "ok":
-                self._add("season", f"{field}.final_position", "a league outcome needs final_position")
+                self._add(
+                    "season", f"{field}.final_position", "a league outcome needs final_position"
+                )
             if outcome.eliminated_in is not None:
                 self._add("season", f"{field}.eliminated_in", "a league has no elimination stage")
             return
@@ -137,7 +142,9 @@ class SeasonChecker:
             self._add("season", f"{field}.final_position", "final_position only applies to leagues")
         stages = {s.id for s in competition.stages}
         if outcome.eliminated_in is not None and outcome.eliminated_in not in stages:
-            self._add("season", f"{field}.eliminated_in", f"unknown stage {outcome.eliminated_in!r}")
+            self._add(
+                "season", f"{field}.eliminated_in", f"unknown stage {outcome.eliminated_in!r}"
+            )
 
     # ------------------------------------------------------------------ fixtures.yaml
     def _block_of(self, day: date) -> Block | None:
@@ -148,7 +155,11 @@ class SeasonChecker:
             field = f"fixtures.{index}"
             competition = self._competitions.get(fixture.competition)
             if competition is None:
-                self._add("fixtures", f"{field}.competition", f"unknown competition {fixture.competition!r}")
+                self._add(
+                    "fixtures",
+                    f"{field}.competition",
+                    f"unknown competition {fixture.competition!r}",
+                )
                 continue
             self._check_fixture_opponent(field, fixture.opponent, competition)
             if self._block_of(fixture.date) is None:
@@ -176,7 +187,9 @@ class SeasonChecker:
             if fixture.round is None:
                 self._add("fixtures", f"{field}.round", "a league fixture needs a round")
             elif fixture.round > (len(competition.participants) - 1) * competition.rounds:
-                self._add("fixtures", f"{field}.round", f"round {fixture.round} is beyond the last round")
+                self._add(
+                    "fixtures", f"{field}.round", f"round {fixture.round} is beyond the last round"
+                )
             if fixture.venue == "neutral":
                 self._add("fixtures", f"{field}.venue", "a league match is never on neutral ground")
             return
@@ -215,7 +228,9 @@ class SeasonChecker:
             else:
                 valid, what = len(venues) == 1, "exactly once"
             if not valid:
-                self._add("fixtures", "fixtures", f"{competition.id}: {opponent} must be met {what}")
+                self._add(
+                    "fixtures", "fixtures", f"{competition.id}: {opponent} must be met {what}"
+                )
 
     # ------------------------------------------------------------------ standings.yaml
     def _check_standings(self) -> None:
@@ -227,21 +242,25 @@ class SeasonChecker:
             for league_id in leagues:
                 if (block.id, league_id) not in present:
                     self._add(
-                        "standings", "cutoffs", f"missing cutoff for block {block.id} and {league_id}"
+                        "standings",
+                        "cutoffs",
+                        f"missing cutoff for block {block.id} and {league_id}",
                     )
         for index, cutoff in enumerate(standings.cutoffs):
             field = f"cutoffs.{index}"
-            block, league = blocks.get(cutoff.block), leagues.get(cutoff.competition)
-            if block is None:
+            cutoff_block, league = blocks.get(cutoff.block), leagues.get(cutoff.competition)
+            if cutoff_block is None:
                 self._add("standings", f"{field}.block", f"unknown block {cutoff.block!r}")
-            elif cutoff.date != block.end:
+            elif cutoff.date != cutoff_block.end:
                 self._add(
                     "standings",
                     f"{field}.date",
-                    f"must be the end of block {block.id} ({block.end})",
+                    f"must be the end of block {cutoff_block.id} ({cutoff_block.end})",
                 )
             if league is None:
-                self._add("standings", f"{field}.competition", f"{cutoff.competition!r} is not a league")
+                self._add(
+                    "standings", f"{field}.competition", f"{cutoff.competition!r} is not a league"
+                )
                 continue
             self._check_table(field, index, league)
         self._check_ties()
@@ -271,7 +290,9 @@ class SeasonChecker:
             if row.club_season == self._own:
                 self._check_own_row(row_field, row_index, index, own_fixtures)
 
-    def _check_own_row(self, field: str, row_index: int, index: int, fixtures: list[Fixture]) -> None:
+    def _check_own_row(
+        self, field: str, row_index: int, index: int, fixtures: list[Fixture]
+    ) -> None:
         row = self._content.standings.cutoffs[index].table[row_index]
         results = [f.result for f in fixtures]
         if any(r is None for r in results):
@@ -300,13 +321,21 @@ class SeasonChecker:
             field = f"ties.{index}"
             competition = self._competitions.get(tie.competition)
             if competition is None or isinstance(competition, LeagueCompetition):
-                self._add("standings", f"{field}.competition", f"{tie.competition!r} is not a knockout competition")
+                self._add(
+                    "standings",
+                    f"{field}.competition",
+                    f"{tie.competition!r} is not a knockout competition",
+                )
                 continue
             if tie.stage not in {s.id for s in competition.stages}:
                 self._add("standings", f"{field}.stage", f"unknown stage {tie.stage!r}")
             for club in tie.clubs:
                 if club not in competition.participants:
-                    self._add("standings", f"{field}.clubs", f"{club!r} is not a participant of {competition.id!r}")
+                    self._add(
+                        "standings",
+                        f"{field}.clubs",
+                        f"{club!r} is not a participant of {competition.id!r}",
+                    )
 
     def _check_final_goals(self, leagues: dict[str, LeagueCompetition]) -> None:
         """The squad's real league goals must equal the last real table of the season."""
@@ -354,7 +383,8 @@ class SeasonChecker:
             self._add(
                 "dilemmas",
                 "dilemmas",
-                f"{len(dilemmas)} dilemmas in total; expected between {MIN_DILEMMAS} and {MAX_DILEMMAS}",
+                f"{len(dilemmas)} dilemmas in total; "
+                f"expected between {MIN_DILEMMAS} and {MAX_DILEMMAS}",
             )
         signed = {
             e.player_id
@@ -385,7 +415,11 @@ class SeasonChecker:
                 self._check_player(f"{field}.player_id", effect.player_id, usable)
             case CompetitionPriorityEffect():
                 if effect.competition_id not in self._competitions:
-                    self._add("dilemmas", f"{field}.competition_id", f"unknown competition {effect.competition_id!r}")
+                    self._add(
+                        "dilemmas",
+                        f"{field}.competition_id",
+                        f"unknown competition {effect.competition_id!r}",
+                    )
             case _:
                 pass
 
@@ -424,7 +458,9 @@ class SeasonChecker:
     def _check_injury_date(self, field: str, day: date) -> None:
         first, last = self._blocks[0].start, self._blocks[-1].end
         if not first <= day <= last:
-            self._add("dilemmas", f"{field}.date", f"{day} is outside the season blocks ({first}..{last})")
+            self._add(
+                "dilemmas", f"{field}.date", f"{day} is outside the season blocks ({first}..{last})"
+            )
 
 
 def check_playable_rationales(tree: ContentTree, sink: IssueSink) -> None:

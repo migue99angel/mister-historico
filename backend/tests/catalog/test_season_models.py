@@ -520,9 +520,7 @@ def test_the_historical_option_must_be_one_of_the_options() -> None:
 def test_the_historical_option_needs_sources() -> None:
     with pytest.raises(ValidationError, match="at least one source"):
         DilemmasFile.model_validate(
-            dilemmas_file(
-                dilemma(historical_option={"option": "a", "sources": [], "verify": "ok"})
-            )
+            dilemmas_file(dilemma(historical_option={"option": "a", "sources": [], "verify": "ok"}))
         )
 
 

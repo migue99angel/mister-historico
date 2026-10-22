@@ -9,7 +9,9 @@ from mister.catalog.infrastructure.content_schema.tree import ContentTree
 def _walk_pending(value: object, path: str, parts: list[str], sink: IssueSink) -> None:
     if isinstance(value, BaseModel):
         if getattr(value, "verify", None) == "pending":
-            sink.add(path, ".".join([*parts, "verify"]), "verify: pending is not allowed in release mode")
+            sink.add(
+                path, ".".join([*parts, "verify"]), "verify: pending is not allowed in release mode"
+            )
         for name in type(value).model_fields:
             _walk_pending(getattr(value, name), path, [*parts, name], sink)
     elif isinstance(value, tuple):
