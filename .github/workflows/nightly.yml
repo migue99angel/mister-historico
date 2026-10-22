@@ -2,7 +2,7 @@
 #
 # Placeholder: no context has a domain layer yet, so there is nothing to mutate.
 # Once they exist, this job will:
-#   - set up uv (same pinned setup-uv and uv 0.9.7 as backend.yml) and `uv sync --frozen`;
+#   - set up uv (same pinned setup-uv and uv version as backend.yml) and `uv sync --frozen`;
 #   - mutate `backend/src/mister/simulation/domain/` and `backend/src/mister/evaluation/domain/`
 #     (configured in `[tool.mutmut]` in backend/pyproject.toml, owned by its task or a CR);
 #   - run `uv run mutmut run`, then fail if the mutation score (killed / total) is below 80 %.

@@ -14,6 +14,8 @@ on:
       - "backend/**"
       - "frontend/**"
       - ".github/workflows/docker.yml"
+      - ".github/workflows/backend.yml"
+      - ".github/workflows/calibration.yml"
   pull_request:
     paths:
       - "infra/docker/**"
@@ -22,6 +24,8 @@ on:
       - "backend/**"
       - "frontend/**"
       - ".github/workflows/docker.yml"
+      - ".github/workflows/backend.yml"
+      - ".github/workflows/calibration.yml"
 
 permissions:
   contents: read
@@ -50,6 +54,21 @@ jobs:
           echo "test_migrations.py: ${test_image:-<none>}"
           if [ -z "${compose_image}" ] || [ "${compose_image}" != "${test_image}" ]; then
             echo "::error title=Postgres image drift::Use the same image in docker-compose.yml and backend/tests/integration/test_migrations.py."
+            exit 1
+          fi
+
+      - name: uv version of the CI workflows matches the API image
+        run: |
+          image_uv="$(grep -oE 'ghcr.io/astral-sh/uv:[0-9.]+' infra/docker/api.Dockerfile | cut -d: -f2)"
+          echo "infra/docker/api.Dockerfile: ${image_uv:-<none>}"
+          drift=0
+          for wf in .github/workflows/backend.yml .github/workflows/calibration.yml; do
+            ci_uv="$(grep -A3 'astral-sh/setup-uv@' "$wf" | grep -oE 'version: "[0-9.]+"' | grep -oE '[0-9.]+' | head -1)"
+            echo "$wf: ${ci_uv:-<none>}"
+            [ -n "$image_uv" ] && [ "$ci_uv" = "$image_uv" ] || drift=1
+          done
+          if [ "$drift" -ne 0 ]; then
+            echo "::error title=uv version drift::Use the same uv version in infra/docker/api.Dockerfile and the setup-uv steps of the workflows."
             exit 1
           fi
 
