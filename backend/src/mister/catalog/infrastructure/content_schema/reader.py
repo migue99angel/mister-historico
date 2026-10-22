@@ -52,7 +52,7 @@ def _field_name(location: tuple[int | str, ...]) -> str:
     return ".".join(str(part) for part in location)
 
 
-def _load_model[M: ContentModel](
+def load_model[M: ContentModel](
     root: Path, path: Path, model: type[M], sink: IssueSink
 ) -> M | None:
     relative = path.relative_to(root).as_posix()
@@ -78,7 +78,7 @@ def _load_model[M: ContentModel](
 
 def _read_clubs(root: Path, result: ReadResult, sink: IssueSink) -> None:
     for path in sorted((root / "clubs").glob("*.yaml")):
-        club = _load_model(root, path, ClubFile, sink)
+        club = load_model(root, path, ClubFile, sink)
         if club is None:
             continue
         if club.club_id != path.stem:
@@ -100,13 +100,13 @@ def _read_club_season(root: Path, directory: Path, result: ReadResult, sink: Iss
         result.failed_club_seasons.add(name)
         return
     if squad_path.is_file():
-        squad = _load_model(root, squad_path, SquadFile, sink)
+        squad = load_model(root, squad_path, SquadFile, sink)
         loaded: SquadFile | AggregateFile | None = squad
         if squad is not None:
             result.tree.squads[name] = squad
         path = squad_path
     else:
-        aggregate = _load_model(root, aggregate_path, AggregateFile, sink)
+        aggregate = load_model(root, aggregate_path, AggregateFile, sink)
         loaded = aggregate
         if aggregate is not None:
             result.tree.aggregates[name] = aggregate
@@ -121,11 +121,11 @@ def _read_club_season(root: Path, directory: Path, result: ReadResult, sink: Iss
 
 
 def _read_season(root: Path, directory: Path, result: ReadResult, sink: IssueSink) -> None:
-    season = _load_model(root, directory / "season.yaml", SeasonFile, sink)
-    fixtures = _load_model(root, directory / "fixtures.yaml", FixturesFile, sink)
-    standings = _load_model(root, directory / "standings.yaml", StandingsFile, sink)
-    dilemmas = _load_model(root, directory / "dilemmas.yaml", DilemmasFile, sink)
-    texts = _load_model(root, directory / "texts.yaml", TextsFile, sink)
+    season = load_model(root, directory / "season.yaml", SeasonFile, sink)
+    fixtures = load_model(root, directory / "fixtures.yaml", FixturesFile, sink)
+    standings = load_model(root, directory / "standings.yaml", StandingsFile, sink)
+    dilemmas = load_model(root, directory / "dilemmas.yaml", DilemmasFile, sink)
+    texts = load_model(root, directory / "texts.yaml", TextsFile, sink)
     if season is None or fixtures is None or standings is None or dilemmas is None or texts is None:
         result.failed_seasons.add(directory.name)
         return
