@@ -16,13 +16,12 @@ interface Operation {
 }
 
 function operations(): { path: string; method: string; operation: Operation }[] {
-  const paths = openApiDocument.paths as Record<string, Record<string, Operation>>;
+  const paths = openApiDocument.paths as Record<string, Record<string, Operation | undefined>>;
   return Object.entries(paths).flatMap(([path, item]) =>
-    METHODS.filter((method) => method in item).map((method) => ({
-      path,
-      method,
-      operation: item[method] as Operation,
-    })),
+    METHODS.flatMap((method) => {
+      const operation = item[method];
+      return operation ? [{ path, method, operation }] : [];
+    }),
   );
 }
 
