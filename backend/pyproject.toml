@@ -153,11 +153,8 @@ include_external_packages = true
 [[tool.importlinter.contracts]]
 name = "R0 shared_kernel only imports the stdlib"
 type = "forbidden"
-# A plain "mister.shared_kernel" fails while the package does not exist (import-linter only
-# tolerates missing modules behind wildcards), so this matches its submodules instead.
-# Limitation: `shared_kernel/__init__.py` itself is not covered; switch to
-# "mister.shared_kernel" once T1.1 creates the package.
-source_modules = ["mister.shared_kernel.**"]
+# Covers the package itself (its `__init__`) and every submodule.
+source_modules = ["mister.shared_kernel", "mister.shared_kernel.**"]
 forbidden_modules = [
     "mister.*.domain",
     "mister.*.application",
