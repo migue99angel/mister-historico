@@ -1,7 +1,8 @@
 """Checks of `fixtures.yaml` against the season: competitions, stages, groups, legs and dates."""
 
 from collections import Counter, defaultdict
-from datetime import date
+from itertools import pairwise
+from typing import TYPE_CHECKING
 
 from mister.catalog.infrastructure.content_schema.context import SeasonContext, stage_of
 from mister.catalog.infrastructure.content_schema.fixtures import Fixture
@@ -10,6 +11,9 @@ from mister.catalog.infrastructure.content_schema.season import (
     LeagueCompetition,
     Stage,
 )
+
+if TYPE_CHECKING:
+    from datetime import date
 
 TWO_LEGS = 2
 
@@ -214,7 +218,7 @@ def _check_stage_order(ctx: SeasonContext, competition: Competition) -> None:
         days = [f.date for f in _own_fixtures(ctx, competition.id) if f.stage == stage.id]
         if days:
             dates.append((stage.id, min(days), max(days)))
-    for (earlier, _, earlier_end), (later, later_start, _) in zip(dates, dates[1:], strict=False):
+    for (earlier, _, earlier_end), (later, later_start, _) in pairwise(dates):
         if later_start <= earlier_end:
             ctx.add(
                 "fixtures",

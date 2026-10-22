@@ -241,7 +241,7 @@ def test_a_club_squad_needs_real_league_data() -> None:
 
 
 def test_a_pending_real_league_may_be_null() -> None:
-    league = {
+    league: dict[str, Any] = {
         "competition_label": "Liga Test",
         "played": None,
         "goals_for": None,

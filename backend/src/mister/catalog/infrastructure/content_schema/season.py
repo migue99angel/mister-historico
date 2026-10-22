@@ -2,6 +2,7 @@
 
 from datetime import date
 from enum import StrEnum
+from itertools import pairwise
 from typing import Annotated, Literal, Self
 
 from pydantic import Field, model_validator
@@ -200,7 +201,7 @@ class _KnockoutBase(_CompetitionBase):
         if len(set(ids)) != len(ids):
             raise ValueError("duplicate stage id")
         ranks = [_ROUND_ORDER[s.round] for s in self.stages]
-        if any(a >= b for a, b in zip(ranks, ranks[1:], strict=False)):
+        if any(a >= b for a, b in pairwise(ranks)):
             raise ValueError("stages must be listed in the order of their rounds")
         for stage in self.stages:
             for group in stage.groups or ():
@@ -319,7 +320,7 @@ class SeasonFile(ContentModel):
         ids = [b.id for b in self.blocks]
         if len(set(ids)) != len(ids):
             raise ValueError("duplicate block id")
-        for previous, current in zip(self.blocks, self.blocks[1:], strict=False):
+        for previous, current in pairwise(self.blocks):
             if current.start <= previous.end:
                 raise ValueError(
                     f"blocks overlap or are out of order: {previous.id} and {current.id}"
