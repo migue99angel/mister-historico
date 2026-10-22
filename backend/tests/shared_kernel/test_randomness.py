@@ -256,3 +256,25 @@ def test_stdlib_random_source_satisfies_the_protocol() -> None:
     source: RandomSource = StdlibRandomSource(Seed(1))  # mypy checks structural compatibility
 
     assert isinstance(source.stream("x"), StdlibRandomSource)
+
+
+# ----------------------------------------------------------------------- golden values
+
+
+def test_golden_random_values_never_change() -> None:
+    """Pins the exact sequence. If this fails, every replay and golden test is invalidated."""
+    source = StdlibRandomSource(Seed(20121213)).stream("golden")
+
+    assert draw(source, 5) == [
+        0.6095593629330438,
+        0.03260291500339596,
+        0.5360276883429727,
+        0.17276581438283778,
+        0.27663068755713804,
+    ]
+
+
+def test_golden_poisson_values_never_change() -> None:
+    source = StdlibRandomSource(Seed(20121213)).stream("golden")
+
+    assert [source.poisson(1.5) for _ in range(5)] == [2, 0, 1, 0, 1]
