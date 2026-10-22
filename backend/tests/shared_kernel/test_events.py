@@ -102,16 +102,79 @@ def test_events_published_by_a_handler_are_delivered_after_the_current_one() -> 
     assert order == ["finished:r1", "finished-done:r1", "second:r1", "evaluated"]
 
 
-def test_a_handler_error_propagates_to_the_publisher() -> None:
+def test_a_failing_handler_does_not_prevent_the_other_handlers_from_running() -> None:
     bus = InMemoryEventBus()
+    calls: list[str] = []
 
     def boom(_: RunFinished) -> None:
         raise RuntimeError("handler failed")
 
+    bus.subscribe(RunFinished, lambda _: calls.append("before"))
     bus.subscribe(RunFinished, boom)
+    bus.subscribe(RunFinished, lambda _: calls.append("after"))
 
-    with pytest.raises(RuntimeError, match="handler failed"):
+    with pytest.raises(ExceptionGroup) as excinfo:
         bus.publish(RunFinished(occurred_at=NOW, run="r1"))
+
+    assert calls == ["before", "after"]
+    assert [str(e) for e in excinfo.value.exceptions] == ["handler failed"]
+
+
+def test_a_failing_handler_does_not_drop_events_queued_by_reentrancy() -> None:
+    bus = InMemoryEventBus()
+    evaluated: list[int] = []
+
+    def on_finished(_: RunFinished) -> None:
+        bus.publish(RunEvaluated(occurred_at=NOW, score=7))
+        raise RuntimeError("after queueing")
+
+    bus.subscribe(RunFinished, on_finished)
+    bus.subscribe(RunEvaluated, lambda e: evaluated.append(e.score))
+
+    with pytest.raises(ExceptionGroup):
+        bus.publish(RunFinished(occurred_at=NOW, run="r1"))
+
+    assert evaluated == [7]
+
+
+def test_the_exception_group_contains_every_handler_error() -> None:
+    bus = InMemoryEventBus()
+
+    def fail_finished(_: RunFinished) -> None:
+        raise RuntimeError("finished")
+
+    def fail_evaluated(_: RunEvaluated) -> None:
+        raise ValueError("evaluated")
+
+    bus.subscribe(RunFinished, fail_finished)
+    bus.subscribe(RunFinished, lambda _: bus.publish(RunEvaluated(occurred_at=NOW, score=1)))
+    bus.subscribe(RunEvaluated, fail_evaluated)
+    bus.subscribe(RunFinished, fail_finished)
+
+    with pytest.raises(ExceptionGroup) as excinfo:
+        bus.publish(RunFinished(occurred_at=NOW, run="r1"))
+
+    assert [type(e) for e in excinfo.value.exceptions] == [RuntimeError, RuntimeError, ValueError]
+
+
+def test_the_bus_is_usable_after_handler_errors() -> None:
+    bus = InMemoryEventBus()
+    received: list[str] = []
+    should_fail = True
+
+    def flaky(event: RunFinished) -> None:
+        received.append(event.run)
+        if should_fail:
+            raise RuntimeError("boom")
+
+    bus.subscribe(RunFinished, flaky)
+    with pytest.raises(ExceptionGroup):
+        bus.publish(RunFinished(occurred_at=NOW, run="r1"))
+    should_fail = False
+
+    bus.publish(RunFinished(occurred_at=NOW, run="r2"))
+
+    assert received == ["r1", "r2"]
 
 
 def test_in_memory_bus_satisfies_the_protocol() -> None:
