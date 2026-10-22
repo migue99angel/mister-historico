@@ -309,7 +309,7 @@
 
 #### T2.6 · Simulación por bloques
 - **Oleada:** F2-B · **Tamaño:** M · **Depende de:** T2.1-T2.5
-- **Propiedad:** `simulation/domain/season.py`, `simulation/application/simulate_block.py` y sus tests
+- **Propiedad:** `simulation/domain/season.py`, `simulation/application/simulate_block.py` (la fachada de `api.py` ya delega en este módulo) y sus tests
 - **Qué hacer:**
   - `simulate_block(state, block)`: recorre en orden de fecha los partidos de todas las competiciones dentro del rango del bloque, actualiza el estado físico, las lesiones y las clasificaciones, y devuelve un `BlockSummary` con los resultados, las clasificaciones, los eventos y los partidos clave marcados (clásicos y eliminatorias).
 - **Tests primero:**
@@ -343,7 +343,7 @@
 
 #### T2.20 · Dominio del catálogo, cargador YAML y validación
 - **Oleada:** F2-A · **Tamaño:** M · **Depende de:** T1.2, T1.5
-- **Propiedad:** `catalog/domain/**`, `catalog/application/**` (salvo `ports.py`), `catalog/infrastructure/yaml_loader.py`, `entrypoints/cli/content.py` y sus tests y `docs/adr/008-nombres-reales-desactivables.md`
+- **Propiedad:** `catalog/domain/**`, `catalog/application/**` (salvo `ports.py` y `api.py`, que son contrato de T1.5: cambiarlos requiere CR), `catalog/infrastructure/yaml_loader.py`, `entrypoints/cli/content.py` y sus tests y `docs/adr/008-nombres-reales-desactivables.md`
 - **Qué hacer:**
   - Entidades del catálogo.
   - `YamlSeasonContentProvider`.
@@ -429,7 +429,7 @@
 ## F3 · Partida en el servidor (`backend/src/mister/game/`)
 
 ### T3.1 · Agregado `Run` y máquina de estados
-- **Oleada:** F3-A · **Tamaño:** L · **Depende de:** F1, T2.20 (DTOs del catálogo)
+- **Oleada:** F3-A · **Tamaño:** L · **Depende de:** F1 (los DTOs del catálogo están en `catalog/application/api.py`, de T1.5)
 - **Propiedad:** `game/domain/run.py`, `game/domain/events.py`, `game/domain/errors.py` y sus tests
 - **Qué hacer:**
   - El `Run` tiene estos datos: id, temporada, semilla, estado (`in_progress | finished | sacked`), bloque actual, decisiones pendientes y tomadas, y `RunState` (plantilla con moral, estado físico y lesiones, táctica, prioridades y confianza de la directiva).
