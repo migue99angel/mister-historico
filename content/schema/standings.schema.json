@@ -177,6 +177,20 @@
           "title": "Date",
           "type": "string"
         },
+        "group": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Group"
+        },
         "sources": {
           "description": "URLs backing the datum.",
           "items": {
@@ -187,6 +201,20 @@
           },
           "title": "Sources",
           "type": "array"
+        },
+        "stage": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stage"
         },
         "table": {
           "items": {
