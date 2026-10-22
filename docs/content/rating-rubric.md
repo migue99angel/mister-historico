@@ -1,91 +1,321 @@
-# Rúbrica de medias (escala 1-99)
+# Rúbrica de medias (escala 1-99): fórmula a partir de estadísticas
 
 > Estado: **propuesta, pendiente de aprobación del autor** (T1.3) · Decisión: [ADR-006](../adr/006-medias.md) · Modelo que consume las medias: [ADR-004](../adr/004-modelo-de-goles.md)
-> Público: los agentes investigadores que rellenan `squad.yaml` (T2.11, T2.16, etc.) y quien revise su trabajo. Este documento es autosuficiente: no hace falta consultar ninguna otra fuente de medias.
+> Público: los agentes investigadores que recogen estadísticas (T2.11, T2.16, etc.), quien implementa el calculador (T1.8) y quien revise el contenido. Este documento es autosuficiente: no hace falta consultar ninguna otra fuente de medias.
+
+## En una frase
+
+**La media de un jugador no se opina: se calcula.** Los agentes recogen estadísticas públicas de esa temporada (minutos, goles, internacionalidades, premios…), cada una con su fuente, y una fórmula fija las convierte en un número de 1 a 99. Solo los jugadores clave y los casos raros llevan una corrección manual, justificada.
 
 ## 0. Reglas que no se negocian
 
-1. **Nunca copies ni consultes medias de un juego comercial** (FIFA/EA FC, Football Manager, PES/eFootball, etc.). Si por casualidad conoces una, ignórala. La media sale de **evidencia observable** de esa temporada y de esta rúbrica.
-2. **Nunca inventes.** Si no encuentras la evidencia mínima (sección 7), la media va en `null` con `verify: pending`. No la deduzcas, no la aproximes, no la rellenes.
-3. **La media es de esa temporada, no de la carrera.** Un jugador a los 20 años y el mismo a los 30 pueden tener medias muy distintas.
-4. **La media es absoluta.** Mide la calidad individual frente a todos los futbolistas profesionales de esa temporada, no frente a su equipo ni a su liga (sección 4).
-5. **Todo lo que escribas se puede comprobar.** Cada afirmación del `rating_rationale` tiene que poder contrastarse con las `sources` del jugador.
-6. Los nombres de los ejemplos de este documento son **inventados**, igual que sus clubes y sus cifras. No son datos históricos y no se pueden citar como tales.
+1. **Nunca copies ni consultes medias de un juego comercial** (FIFA/EA FC, Football Manager, PES/eFootball, etc.). La media sale de las estadísticas de esta rúbrica.
+2. **Nunca inventes.** Una estadística sin fuente va como `null` con `verify: pending`. No la deduzcas, no la aproximes, no la rellenes. Un cero solo se escribe si la fuente lo confirma.
+3. **La media es de esa temporada, no de la carrera.**
+4. **El agente no escribe la media.** Escribe estadísticas; la media la calcula la CLI de T1.8 (`mister content ratings compute <club-season>`). Un agente no puede retocar una media "porque le parece baja".
+5. **Todo dato es verificable** con las `sources` de su jugador.
+6. Los nombres, clubes, ligas y cifras de los **ejemplos** de este documento son **inventados**. No son datos históricos y no se pueden citar como tales.
 
-## 1. Qué mide la media
+## 1. Cómo se obtiene una media
 
-La media resume **cuánto aporta un jugador a su equipo cuando juega en su posición, esa temporada**, según su nivel de rendimiento. El motor la usa como un número por jugador y por posición (ADR-004): no hay atributos separados.
+```
+estadísticas con fuente (season_stats)  ->  fórmula (sección 4)  ->  media 1-99
+                                                         \
+                      jugadores clave y casos raros ->  rating_override (sección 7)
+```
 
-- **Posición:** la media es para la posición en la que juega habitualmente esa temporada (portero, defensa, centrocampista, delantero). Un defensa de 85 y un delantero de 85 son igual de buenos en lo suyo. No se castiga a los defensas ni a los porteros por no marcar goles.
-- **Potencial:** no cuenta. Un canterano prometedor se valora por lo que rinde ahora.
-- **Disponibilidad:** una lesión larga no baja la media (la media es el nivel cuando juega). Se refleja en `joined_on`/`left_on` o en los eventos, no aquí.
+La media que se guarda y que usa el motor es el `rating_override.value` si existe y, si no, el resultado de la fórmula. La validación de contenido (T1.8) comprueba que la media guardada coincide con la fórmula, salvo que haya un override.
 
-## 2. Bandas
+## 2. Estadísticas de entrada (`season_stats`)
 
-Las bandas se definen por **posición relativa entre todos los futbolistas profesionales de esa temporada**, no por el club. Las cuotas del mundo son orientativas y las valida el autor (ver D2 en la PR): sirven para detectar inflación.
+Todas son **hechos verificables** de una temporada concreta de un club (el club-season de la plantilla). Una temporada va del **1 de julio al 30 de junio**.
 
-| Banda | Nombre | Descripción | Criterios observables (se exige la mayoría) | Cuota orientativa en el mundo, esa temporada |
-|---|---|---|---|---|
-| **95-99** | Excepcional | El mejor o casi el mejor del mundo ese año, con dominio claro. | Premio individual de máximo nivel o primer finalista; decisivo en las grandes eliminatorias; titular indiscutible de un candidato a todo. | 0-1 |
-| **90-94** | Élite mundial | Entre los 5-10 mejores del mundo ese año. | Finalista o top 5 de los grandes premios individuales; once ideal de la temporada en medios de referencia; protagonista en fases finales europeas o de selección. | 3-8 |
-| **85-89** | Estrella internacional | Jugador diferencial de un candidato a títulos importantes. | Titular indiscutible (más del 75 % de los minutos posibles) de un candidato al título de una gran liga o de la Champions; nominado a premios individuales de primer nivel o en el once ideal de su liga; titular de una selección de primer nivel. | 15-30 |
-| **80-84** | Titular de un grande | Titular habitual de un equipo de la parte alta de una gran liga. | Titular de un equipo que acaba en puestos de Champions; internacional absoluto con una selección de primer nivel (convocado con regularidad); en el once ideal de su liga alguna vez en la temporada. | 60-110 |
-| **75-79** | Titular sólido de nivel alto | Titular de un equipo de la mitad alta, o suplente de lujo de un grande. | Más del 60 % de los minutos en un equipo de la mitad alta de una gran liga, o minutos relevantes (25-60 %) en un grande; convocatorias ocasionales con la selección. | 200-300 |
-| **70-74** | Titular de Primera | Titular regular de Primera, sin brillar de forma excepcional. | Más del 60 % de los minutos en un equipo de Primera de mitad de tabla; rendimiento regular, sin premios. | Un grueso de los titulares de las grandes ligas |
-| **65-69** | Titular de mitad baja / rotación | Titular de un equipo de la parte baja, o rotación de un equipo de mitad de tabla. | Entre el 40 % y el 60 % de los minutos en Primera; o titular de un equipo recién ascendido o que lucha por no descender. | -- |
-| **60-64** | Nivel de Primera justo | Jugador de rotación en equipos de la parte baja de Primera, o titular de Segunda alta. | Menos del 40 % de los minutos en Primera; o titular de un equipo de arriba en Segunda. | -- |
-| **50-59** | Categorías inferiores / cantera con algo de minutos | Segunda o Segunda B, filiales con presencia en el primer equipo. | Jugador de categorías inferiores o del filial con algún partido o convocatoria con el primer equipo. | -- |
-| **40-49** | Cantera sin minutos | Juveniles o filiales sin minutos con el primer equipo. | Sin minutos oficiales con el primer equipo ni evidencia de nivel. En V1 casi nunca hace falta rellenar esta banda. | -- |
-| **1-39** | No se usa en V1 | Reservado. | Cualquier media por debajo de 40 exige justificación en la PR. | -- |
+### 2.1 Definiciones
 
-**Cómo leer la tabla**
+**Competiciones.** Se usan dos conjuntos:
 
-- Elige primero la banda y después el punto dentro de ella. Dentro de una banda, 5 puntos separan un jugador "de lo mejor de su banda" de uno "de lo justo".
-- Los criterios de una banda son una **guía conjunta**, no una lista de requisitos de uno en uno. Si un jugador cumple los criterios de dos bandas, gana la inferior salvo que haya evidencia (premio, selección, estadística) que lo sitúe por encima.
-- Una media de **85 o más** o de **70 o menos** en un jugador de un equipo de la parte alta de la tabla exige explicación expresa en el `rating_rationale` (es un valor llamativo).
+- **`league`:** la liga de primera división nacional del club (la que juega la temporada jugable).
+- **`all`:** todas las competiciones **oficiales de clubes** de esa temporada: la liga, las copas nacionales, la supercopa nacional y cualquier competición internacional oficial de clubes. **No cuentan** los amistosos, los partidos de selección, ni las rondas de clasificación no oficiales.
 
-## 3. Criterios y peso orientativo
+**Campos por jugador** (todo con `sources`, y `verify: ok | pending`):
 
-Los pesos **no son una fórmula**: indican cuánto debe pesar cada criterio en tu juicio. No calcules una media ponderada; elige la banda con el conjunto de evidencias y justifica.
-
-| Criterio | Peso | Qué mirar | Evidencia típica |
+| Campo | Definición exacta | Obligatorio | Si falta |
 |---|---|---|---|
-| **Rendimiento en esa temporada** | 40 % | Calidad en su posición: goles, asistencias, paradas, duelos, regularidad, partidos decisivos. Para defensas y porteros, evita juzgar solo por goles encajados del equipo. | Estadísticas por temporada (fuentes con referencias), crónicas, valoraciones de prensa de la época. |
-| **Minutos y titularidades** | 20 % | Porcentaje de los minutos posibles en todas las competiciones del club. Es **evidencia** de la confianza del entrenador, no un castigo. | Partidos, titularidades y minutos publicados. |
-| **Rol en el equipo** | 15 % | Pieza clave, titular regular, rotación, suplente, capitán, especialista (por ejemplo, lanzador de penaltis). | Alineaciones, crónicas. |
-| **Premios y selección** | 15 % | Premios individuales, once ideal, convocatorias con la selección absoluta ese año, títulos en los que fue protagonista. | Palmarés oficial, convocatorias. |
-| **Edad y momento de forma** | 10 % | Tendencia de la temporada: racha, lesión que condicionó el nivel, declive o ascenso claros. Ajusta como mucho 2-3 puntos dentro de la banda. | Cronología de la temporada. |
+| `position` | `GK`, `DF`, `MF` o `FW`: la posición en la que jugó más minutos esa temporada. Es la única que usa la fórmula. | Sí | `null` + `pending` |
+| `age` | Años cumplidos el **1 de enero** de la temporada de cierre (por ejemplo, el 1 de enero de 2013 para 2012-13). **No entra en la fórmula**: sirve para validar y para revisar casos raros (un jugador de 17 años con una media de 85 se revisa). | Sí | `null` + `pending` |
+| `minutes_league` | Minutos jugados en la liga (sin descuento; los de la prórroga no cuentan en la liga). | Sí | `null` + `pending` |
+| `starts_league` | Partidos de liga en los que estuvo en el once inicial. | No | `null` |
+| `appearances_league` | Partidos de liga en los que jugó al menos un minuto. | Sí | `null` + `pending` |
+| `minutes_all` | Minutos en el conjunto `all`, incluida la prórroga. | Sí (ver 5) | `null` |
+| `starts_all` | Partidos de `all` en el once inicial. | No | `null` |
+| `appearances_all` | Partidos de `all` en los que jugó al menos un minuto. | Sí (ver 5) | `null` |
+| `goals_all` | Goles en `all`, sin contar los de penaltis en tandas ni los de la fase de clasificación no oficial. | Sí | `null` + `pending` |
+| `assists_all` | Asistencias de gol en `all`, **con el criterio de la fuente**. Solo se rellena si una **misma fuente** publica las asistencias de **toda** la temporada. | **No** | `null` (permitido) |
+| `clean_sheets_all` | **Solo porteros.** Partidos de `all` en los que jugó **al menos 60 minutos** y su equipo no encajó en el tiempo que estuvo. Si la fuente usa otra definición (por ejemplo, el partido completo), se anota en la PR. | No | `null` (permitido) |
+| `caps` | Partidos jugados con la **selección absoluta** (cualquier selección de ese país) entre el 1 de julio y el 30 de junio de la temporada, **incluidos los amistosos** (así los publican las fuentes), contando solo los partidos en los que jugó. `0` si la fuente confirma que no jugó ninguno. | Sí | `null` + `pending` |
+| `awards` | Lista de premios individuales **de esa temporada**, cada uno con `name`, `tier` y su fuente. `[]` si la fuente confirma que no hay. `tier` solo puede ser: **`W`** (mundial): quedar entre los 3 primeros de un premio individual al mejor jugador del mundo, o figurar en el once ideal mundial de la temporada; **`L`** (liga): premio oficial de la liga del club (mejor jugador, mejor portero, máximo goleador, máximo asistente) o figurar en su once ideal oficial. Los demás premios (jugador del mes, mejor joven, etc.) **no se registran**. | Sí | `null` + `pending` |
+| `available_matches_all` | **Partidos de `all` que el club jugó mientras el jugador estaba inscrito** (llegadas y salidas a mitad de temporada). Si estuvo toda la temporada, se omite y se usa `club_matches_all`. Se justifica con la fecha de alta o de baja y el calendario. | No | se usa `club_matches_all` |
 
-Notas:
+**Datos del club-season** (los rellena quien hace la plantilla, con fuente; no son del jugador):
 
-- **Minutos bajos por lesión documentada:** valora su nivel cuando jugó y explícalo. **Minutos bajos por decisión técnica:** es indicio de un nivel inferior al de los titulares.
-- **Un solo partido brillante no hace una media.** Prioriza la regularidad de la temporada.
-- **Jugadores que cambian de club a mitad de temporada:** una sola media por club y temporada. Si el nivel cambió mucho, repórtalo en la PR y no inventes dos medias sin evidencia.
+| Campo | Definición |
+|---|---|
+| `club_matches_all` | Partidos oficiales del club en `all` esa temporada. |
+| `club_matches_league` | Partidos de liga del club. |
+| `level_tier` | `A`, `B`, `C` o `D` según la sección 3, con `level_tier_basis` (posición final y mejor ronda europea) y fuentes. |
 
-## 4. El nivel del club o de la competición no infla la media
+### 2.2 Qué fuentes valen
 
-La media individual es **absoluta**: debe ser comparable entre equipos, ligas y temporadas.
+- **Preferentes:** **BDFutbol** (minutos, partidos, titularidades, goles) y **Wikipedia con referencias** (plantillas, palmarés, premios, internacionalidades). Cuando se cita Wikipedia, se cita también la referencia que respalda el dato siempre que se pueda.
+- **Otras, con criterio:** webs oficiales de la liga o la federación, y hemerotecas de prensa de la época. Valen si publican el dato con su metodología.
+- **Una sola fuente por estadística y temporada** siempre que sea posible: mezclar fuentes con criterios distintos (sobre todo en asistencias y porterías a cero) crea incoherencias.
+- **Cobertura para 2003-04 a 2013-14.** Solo se piden estadísticas que se pueden encontrar con fuente para esas temporadas. **No son fiables en esas fechas, y por tanto no se piden:** estadísticas avanzadas (tiros, pases, duelos, expected goals, etc.), valoraciones de portales, y datos que no publica ninguna fuente de esa época. Las asistencias y las porterías a cero pueden faltar: por eso son opcionales.
+- Un dato por el que dos fuentes se contradicen se resuelve citando ambas, usando la más fiable y marcando `verify: pending` si cambia el resultado de forma apreciable.
 
-- Un titular de 72 en un equipo de media tabla y un titular de 72 en un campeón son equivalentes en nivel individual. Que el campeón gane más es consecuencia de tener más jugadores de 80+, no de que a los suyos se les suba la media.
-- **No sumes puntos "por jugar en un grande"** ni restes "por jugar en un equipo pequeño". El título del equipo no es mérito individual, salvo que el jugador fuera protagonista (se documenta).
-- **Excepción acotada para los no clave de los rivales (sección 6):** el nivel del club se usa solo como **indicio débil** para ubicar a un jugador sin evidencia individual detallada. Nunca se suma sobre un jugador con evidencia propia.
-- **Competiciones distintas:** la evidencia de una liga menor pesa menos que la de una liga de primer nivel para las bandas altas. Para pasar de 80 hacia arriba hace falta evidencia en competiciones de primer nivel o en selección.
+## 3. Nivel del club en la temporada (A-D)
 
-## 5. Anclaje entre temporadas y entre agentes
+Cada club-season tiene un **nivel** `A`, `B`, `C` o `D`, con criterio objetivo y fuentes. Se toma **el más alto** que cumpla. Una "gran liga" es una de las cinco grandes ligas europeas de clubes.
 
-El riesgo principal es la **inflación** y la **incoherencia entre agentes**: dos agentes con el mismo jugador deberían acabar a menos de 3 puntos.
+| Nivel | Criterio |
+|---|---|
+| **A** | Campeón o subcampeón de una gran liga; o semifinalista (o mejor) de la máxima competición europea de clubes. |
+| **B** | 3.º-6.º de una gran liga; o cuartofinalista de la máxima competición europea de clubes. |
+| **C** | 7.º-14.º de una gran liga (de 20 equipos); o campeón de una liga que no es una de las cinco grandes. |
+| **D** | Del 15.º en adelante en una gran liga, ascendidos, y el resto de clubes de ligas fuera de las cinco grandes. |
 
-### 5.1 Reglas anti-inflación
+**Por qué existe este factor.** Los minutos y los goles pesan más cuando se consiguen contra mejores rivales y compitiendo por más cosas. El factor es **pequeño y transparente** (de −3 a +6 puntos, sección 4), no un bonus por jugar en un grande. **Aviso:** el criterio usa la posición final del club, que es un resultado, así que hay una circularidad leve con la comprobación P6 (sección 8.5). Se acepta porque el efecto es pequeño, y la comprobación P6 es la que detecta si el conjunto se descuadra.
 
-1. **Cuotas de la sección 2:** una plantilla con más de dos jugadores de 88+, o más de seis de 80+, hace saltar una alerta. No es un error por sí mismo, pero exige justificación en la PR.
-2. **Media del once titular:** la media del mejor once de un club de Primera suele caer en un rango amplio entre 66 y 84. Fuera de ese rango, revísalo.
-3. **Orden relativo dentro de cada posición:** los jugadores de una misma posición del mismo club se ordenan de mejor a peor y esa ordenación tiene que ser coherente con los minutos y con el rol.
-4. **Sin deriva temporal:** no ajustes las medias para que "suenen bien" por la época. Una media de 90 significa lo mismo en cualquier temporada: estar entre los mejores del mundo ese año.
-5. **Redondeo:** usa enteros. Evita los múltiplos de 5 como atajo (no escribas siempre 80, 85, 90): se nota y empobrece la distinción.
+## 4. La fórmula
 
-### 5.2 Jugadores de referencia por banda (los elige el autor)
+### 4.1 Definición exacta
 
-El autor fija 2 jugadores de referencia por banda y posición, con su temporada, y los apunta aquí. **Hasta que el autor los complete, no los inventes ni los deduzcas.** Se trabaja con los criterios de la sección 2 y con el contraste por parejas de la sección 5.3.
+Para un jugador con `position`, estadísticas y club-season con `level_tier`:
+
+**Paso 0: partidos disponibles.** `avail = available_matches_all` si existe y, si no, `club_matches_all`.
+
+**Paso 1: importancia en el equipo `I` (0 a 1).**
+
+```
+share_min   = min(1, minutes_all / (90 × avail))
+share_start = min(1, starts_all / avail)
+I = 0,70 × share_min + 0,30 × share_start        # si starts_all es null: I = share_min
+```
+
+**Paso 2: producción `P` (0 a 1), según la posición.**
+
+```
+FW, MF, DF:
+  con asistencias:   tasa = (goals_all + 0,5 × assists_all) / avail ;  P = min(1, tasa / TOPE[position])
+  assists_all null:  tasa = goals_all / avail                       ;  P = min(1, tasa / (0,80 × TOPE[position]))
+  TOPE:  FW = 0,80   MF = 0,45   DF = 0,20
+
+GK:
+  con porterías a cero:  tasa = clean_sheets_all / avail ;  P = min(1, tasa / 0,55)
+  clean_sheets_all null: P = 0,35
+```
+
+**Paso 3: bonus de selección `N` (0 a 1).**
+
+```
+N = min(1, caps / 8)
+```
+
+**Paso 4: bonus de premios `V` (0 a 1).** Con `nW` y `nL` el número de premios de nivel `W` y `L`:
+
+```
+V = min(1, 0,60 × nW + 0,35 × nL)
+```
+
+**Paso 5: factor de nivel `T`.**
+
+```
+T = +6 (A)   +3 (B)   0 (C)   −3 (D)
+```
+
+**Paso 6: media.**
+
+```
+bruta = 46 + 22 × I + 14 × P + 6 × N + 7 × V + T
+media = clamp( redondear(bruta), 1, 99 )
+```
+
+Para que dos implementaciones den **el mismo resultado**: calcula con decimales exactos o redondea `bruta` a 6 decimales, y redondea a entero con "medio hacia arriba" (`floor(bruta + 0,5)`). Después acota a `[1, 99]`.
+
+### 4.2 Valores iniciales
+
+**Todos los números de esta sección son "valor inicial a calibrar"** (sección 9): `46`, `22`, `14`, `6`, `7`, `0,70/0,30`, `0,5` (peso de la asistencia), `0,80` (descuento sin asistencias), los `TOPE`, `0,55`, `0,35`, el `8` de las internacionalidades, los `0,60/0,35` de los premios y los valores de `T`.
+
+### 4.3 Por qué cada pieza
+
+| Pieza | Peso máximo | Por qué |
+|---|---|---|
+| **Suelo `46`** | 46 | Un jugador inscrito sin ninguna evidencia queda en torno a 40-49 (la banda de cantera sin minutos). Evita medias de 1 a 20, que el motor no necesita. |
+| **Importancia `I`** | 22 | Es la evidencia más objetiva y la que mejor se encuentra para 2003-2014: quien juega casi todo es quien el entrenador considera mejor. Pesa más que ninguna otra pieza. Los minutos pesan más que las titularidades (0,70 frente a 0,30) porque miden la participación real. |
+| **Producción `P`** | 14 | Goles y asistencias (o porterías a cero) miden lo que el jugador aporta en el área. **Se mide por partido disponible del club** y no por minuto: así un jugador no pierde media por jugar más (monotonía). La asistencia vale la mitad que un gol porque su criterio es menos fiable. |
+| **Selección `N`** | 6 | Convocatoria y minutos con la absoluta indican nivel frente a los mejores de un país. Se satura en 8 partidos para no premiar solo los amistosos. |
+| **Premios `V`** | 7 | Recogen reconocimiento externo y, sobre todo, a quienes destacan sin que lo vean los números (porteros y defensas). Un premio mundial pesa más que uno de liga. |
+| **Nivel `T`** | −3 a +6 | Corrige que el mismo rendimiento vale más contra mejores rivales (sección 3). Es asimétrico (A pesa más que D) porque la distancia entre un grande y un equipo de mitad de tabla es mayor que entre este y uno de la zona baja. |
+| **Topes `TOPE`** | -- | Es la tasa por partido a partir de la cual la producción se considera máxima. Los delanteros tienen el tope más alto y los defensas el más bajo, para no castigar a los defensas por no marcar. |
+| **Edad** | 0 | Una fórmula por edad premiaría o castigaría sin evidencia; el rendimiento ya refleja la edad. |
+
+### 4.4 Propiedades que cumple (y que T1.8 comprueba con tests)
+
+- **Monotonía:** para el mismo jugador y club, la media **nunca baja** al subir `minutes_all`, `starts_all`, `goals_all`, `assists_all`, `clean_sheets_all`, `caps` o el número de premios. Tampoco baja si el nivel del club sube (`D` a `A`). Baja (o no sube) al **aumentar `avail`** con las mismas estadísticas, porque hubo más partidos que jugar.
+- **Acotada:** el resultado siempre está en `[1, 99]`. Sin evidencia de ningún tipo, el máximo teórico es `46 + 22 + 14 + 6 + 7 + 6 = 101`, que se acota a 99.
+- **Determinista y pura:** no usa azar, ni fecha, ni orden de los jugadores.
+- **No depende de la `age`.**
+
+## 5. Datos que faltan
+
+La regla es siempre la misma: **no se inventa**. Esto es lo que ocurre con cada hueco:
+
+| Falta | Qué pasa |
+|---|---|
+| `assists_all` (`null`) | **Permitido.** Se usa la tasa solo con goles y un tope un 20 % más bajo (paso 2). La CLI anota `assists: null` en el resultado. |
+| `clean_sheets_all` de un portero (`null`) | **Permitido.** `P = 0,35` (un valor neutro: ni premia ni castiga). |
+| `starts_all` (`null`) | **Permitido.** `I = share_min`. |
+| `minutes_all` o `appearances_all` (`null`) pero hay `minutes_league` y `appearances_league` | **Permitido, con aviso.** Se usa la liga: en el paso 1, `minutes_league / (90 × club_matches_league)`, y `starts_league` en lugar de `starts_all`. Los demás pasos usan `avail` de la liga (`club_matches_league`). La CLI anota `basis: league`. |
+| `minutes_league` y `minutes_all` (`null`) | **No se calcula.** `rating: null` y `verify: pending`. |
+| `goals_all`, `caps`, `awards`, `position`, `age` (`null`) | **No se calcula.** `rating: null` y `verify: pending`. Si la fuente confirma que no hubo goles, no hubo partidos con la selección o no hubo premios, se escribe `0` o `[]`. |
+| Nivel del club (`level_tier`) sin fuente | **No se calcula**, igual que arriba. |
+
+La validación en modo release falla con cualquier `verify: pending`, y es lo correcto: obliga a resolverlo antes de publicar.
+
+## 6. Cómo se interpreta el resultado (bandas)
+
+Las bandas **no se usan para asignar** la media, sino para **interpretar** lo que la fórmula devuelve y para detectar problemas. Se definen por posición relativa entre todos los futbolistas profesionales de esa temporada.
+
+| Banda | Nombre | Qué significa |
+|---|---|---|
+| **95-99** | Excepcional | El mejor o casi el mejor del mundo ese año. |
+| **90-94** | Élite mundial | Entre los 5-10 mejores del mundo. |
+| **85-89** | Estrella internacional | Jugador diferencial de un candidato a títulos importantes. |
+| **80-84** | Titular de un grande | Titular habitual de un equipo de la parte alta de una gran liga. |
+| **75-79** | Titular sólido de nivel alto | Titular de la mitad alta, o suplente de lujo de un grande. |
+| **70-74** | Titular de Primera | Titular regular de Primera, sin brillar de forma excepcional. |
+| **65-69** | Mitad baja / rotación | Titular de un equipo de la parte baja, o rotación de uno de mitad de tabla. |
+| **60-64** | Nivel de Primera justo | Rotación en la parte baja, o titular de Segunda alta. |
+| **50-59** | Categorías inferiores o cantera con algo de minutos | |
+| **40-49** | Cantera sin minutos | |
+| **1-39** | No se usa en V1 | |
+
+### 6.1 Alertas anti-inflación
+
+Las dispara la CLI (T1.8) como **aviso**, no como error. Si saltan, se revisan primero los **datos** (una estadística mal copiada, un nivel de club mal asignado), nunca la media a mano.
+
+- Una plantilla con **más de dos jugadores de 88+** o **más de seis de 80+**.
+- La **media del once titular** de un club de Primera fuera del rango **66-84**.
+- Una media de **90 o más** en un jugador de 21 años o menos, o de 35 o más (por edad, se revisa por si es un dato mal copiado).
+- Cuotas orientativas en el mundo, por banda, que valida el autor: 95+ hasta 1 jugador, 90-94 de 3 a 8, 85-89 de 15 a 30, 80-84 de 60 a 110.
+
+## 7. Correcciones manuales: `rating_override`
+
+### 7.1 Cuándo se permite
+
+Solo en estos casos, y siempre con evidencia documentada:
+
+1. **Jugadores `key`** (sección 8.2): se **revisan a mano** contra el contexto y los jugadores de referencia (T1.7). Si la fórmula los deja claramente fuera de lugar, se corrige. **Revisar no obliga a corregir**: se anota en la PR "revisado, sin cambios".
+2. **Casos raros** que la fórmula no puede ver con estas estadísticas, por ejemplo:
+   - una **lesión larga** documentada (más del 25 % de los partidos del club perdidos por lesión);
+   - un **portero suplente que juega solo en la Copa** (importancia baja con un nivel alto);
+   - un jugador que **cambió de posición** a mitad de temporada;
+   - una llegada o salida en invierno cuando no se puede documentar `available_matches_all`.
+
+### 7.2 Cuándo NO se permite
+
+- Para que la **comprobación P6** cuadre con los goles reales (sección 8.5).
+- Por la **fama**, la carrera o el nivel de otra temporada.
+- Porque una media de un juego comercial o de un portal "dice otra cosa".
+- Para un jugador no `key` sin un caso raro documentado.
+- Si la fórmula falla porque falta una estadística: se resuelve consiguiendo la estadística, no con una corrección.
+
+### 7.3 Formato
+
+```yaml
+rating_override:
+  value: 70
+  rationale: >-
+    Se perdió 25 de los 55 partidos del club por una lesión de rodilla (del 3 de noviembre al 9 de febrero).
+    Titular indiscutible antes y después de la lesión, según las alineaciones.
+  sources:
+    - https://example.org/...
+```
+
+- **`rationale`:** 1-3 frases, en español de España, verificables con las `sources`. Sin predicciones, sin comparar con su carrera, sin mencionar medias de otros juegos.
+- **Mal ejemplo:** "Es un crack, la fórmula se queda corta." (no se puede verificar ni dice qué evidencia falta).
+
+### 7.4 Cuánto se puede separar de la fórmula
+
+| Diferencia entre `value` y la media de la fórmula | Qué hace falta |
+|---|---|
+| Hasta **6 puntos** | El `rationale` normal. |
+| De **7 a 12 puntos** | Además, al menos **dos fuentes distintas** que respalden la evidencia, y que el revisor independiente (T2.14) la confirme. Hasta que la confirme, `verify: pending`. |
+| **Más de 12 puntos** | **No se permite.** Si hace falta, es que falta una estadística o la fórmula falla; se escala al autor (el cambio de fórmula va por una PR de la rúbrica). |
+
+El calculador (T1.8) rechaza un override sin `rationale` o fuera de estos límites.
+
+## 8. Procedimiento ligero para los rivales (P6)
+
+Aplica a las plantillas de los **rivales con plantilla**. Tu equipo propio usa la misma fórmula, con todos sus jugadores y revisión manual de todos los `key`. Los rivales de fuera de Primera, sin datos fiables, van como `aggregate.yaml` (8.6).
+
+### 8.1 Qué jugadores entran
+
+1. Se cuentan los minutos del club en `all` (`minutes_all`). Si solo hay datos de liga, se usan esos y se anota.
+2. Entran siempre los que pasen de **900 minutos** (unas 10 titularidades completas) y los que hayan tenido **al menos 10 partidos**.
+3. Se completa hasta **18** jugadores como mínimo, por orden de minutos, y nunca más de **22**.
+4. **Cobertura mínima por línea:** 2 porteros, 6 defensas, 6 centrocampistas y 4 delanteros. Si por minutos no llegas, añade al siguiente por minutos de esa línea. Si faltan jugadores con datos, no inventes: añade los que haya y anótalo en la PR.
+5. Los fichajes y bajas de mitad de temporada entran con `joined_on`/`left_on` y `available_matches_all`. Un jugador no puede estar en dos plantillas en la misma fecha, salvo en el traspaso de invierno, con fecha.
+
+### 8.2 Cuándo un jugador es `key`
+
+Debe haber **entre 6 y 10** por plantilla. Se marcan, por este orden, hasta llegar a 10:
+
+1. El **portero titular**.
+2. Los jugadores con algún **premio** (`W` o `L`).
+3. Los jugadores con **3 o más internacionalidades** esa temporada.
+4. El **máximo goleador** y el **máximo asistente** del club.
+5. Si no llegas a 6, los jugadores con la **media calculada más alta**, hasta 6.
+
+Si hay más de 10 candidatos, se queda con los 10 de mayor media calculada. La media calculada es la de la fórmula, no la opinión de nadie.
+
+### 8.3 Qué se hace con los `key` y con los demás
+
+- **No clave:** su media es la de la fórmula, sin más. No llevan `rating_override` ni justificación.
+- **Clave:** su media se **revisa a mano** (7.1). Si no hay motivo para cambiarla, queda la de la fórmula.
+
+### 8.4 Cuando no hay datos
+
+Un jugador sin minutos publicados no se incluye en el conjunto de 18-22 por falta de evidencia: se anota en la PR. Un jugador con minutos pero sin goles, selecciones o premios con fuente va como `pending` (sección 5).
+
+### 8.5 Comprobación de conjunto
+
+La media de cada jugador de un rival no se valida una por una, sino **en conjunto**. T2.7 calcula, para cada rival, la fuerza que resulta de su mejor once (ADR-004, sección 2) y la compara con sus **goles a favor y en contra reales por partido en la liga** (`real_league {played, goals_for, goals_against}`, dividido por `played`):
+
+- **Qué se compara:** los goles esperados por partido frente a un rival medio de la competición (ataque) y de un rival medio (defensa), calculados con el modelo, frente a los reales.
+- **Banda de tolerancia propuesta:** la diferencia tiene que ser menor o igual que el **mayor** de estos dos valores: **±0,25 goles por partido** o **±20 % del valor real**. La banda cubre la variación aleatoria de una temporada de unas 38 jornadas y la imprecisión de las medias; el razonamiento está en el ADR-004, sección 7.
+- **A quién aplica:** el assert solo aplica a los rivales con plantilla cuya `real_league` es la liga de la temporada jugable. Para los demás (rivales continentales o de otras ligas) habría que normalizar con los participantes de **su** liga, que no están en el contenido, así que su comparación es solo un **aviso** en el informe.
+- **Efecto:** esta comprobación **rompe la CI** (junto con la de títulos) para los rivales de la liga jugable.
+- **Resultado:** T2.7 produce una lista de rivales fuera de banda. **No corrige nada automáticamente.**
+- **Qué hace el agente investigador:** si un rival sale de la banda, **revisa primero los datos de entrada** (una estadística mal copiada, `level_tier`, `available_matches_all`) y, solo con evidencia nueva, un override. **Nunca retoca una media para acercarse a los goles**: eso es inventar el dato.
+- **Qué se hace con un desvío sistemático** (muchos rivales fuera de banda en el mismo sentido): se revisan los pesos de la fórmula (sección 9), no los jugadores uno a uno.
+
+### 8.6 Rivales sin plantilla (`aggregate`)
+
+Si no hay datos fiables de minutos y jugadores (típicamente clubes de fuera de Primera en las primeras rondas de Copa), el rival va como `aggregate.yaml`: no lleva medias individuales sino una fuerza fija: `attack` y `defense`, que son los índices `A` y `C` del ADR-004 (sección 2), en puntos de media (con una `defense` alta, mejor defensa). Elige los valores como la media que tendría el once de ese club según las bandas de la sección 6, y anota la fuente y por qué no hay plantilla. Si no puedes justificar el nivel, `attack` y `defense` van en `null` con `verify: pending`.
+
+## 9. Calibración de la fórmula
+
+Los valores iniciales de la sección 4 son una primera propuesta. Se ajustan con dos comprobaciones:
+
+1. **Contra los jugadores de referencia (T1.7).** El autor elige jugadores reales de referencia por banda y posición, cada uno con su temporada. Sirven como **anclas de cordura**: se recogen sus estadísticas igual que las de cualquier jugador y se calcula su media.
+   - **Criterio:** cada ancla debe quedar **dentro de su banda**; si más de una de cada cinco queda fuera, o alguna se desvía **más de 5 puntos** de su banda, hay que ajustar los pesos.
+   - **Cómo:** se cambian los valores de la sección 4 con una PR de esta rúbrica, que aprueba el autor, con una tabla de los resultados de las anclas antes y después. No se retoca ningún jugador concreto.
+   - Mientras la tabla siga en `[PENDIENTE autor]`, no hay anclas y no se puede dar la fórmula por calibrada.
+2. **Contra la comprobación P6 de goles reales (sección 8.5).** Detecta desvíos sistemáticos de conjunto. Se mantiene igual: es assert solo para los rivales de la liga jugable.
+
+**Para no hacer trampas:** los pesos se ajustan con las **anclas** (y con las temporadas que no sean las de la comprobación P6); las comprobaciones con los goles reales de la temporada jugable sirven de **validación**, no de ajuste.
+
+**Anclas por banda y posición (las elige el autor, T1.7):**
 
 | Banda | Portero | Defensa | Centrocampista | Delantero |
 |---|---|---|---|---|
@@ -96,133 +326,16 @@ El autor fija 2 jugadores de referencia por banda y posición, con su temporada,
 | 70-74 | `[PENDIENTE autor]` | `[PENDIENTE autor]` | `[PENDIENTE autor]` | `[PENDIENTE autor]` |
 | 60-69 | `[PENDIENTE autor]` | `[PENDIENTE autor]` | `[PENDIENTE autor]` | `[PENDIENTE autor]` |
 
-Cuando estén, cada agente compara cada jugador clave con el de referencia de su banda y su posición: "¿es mejor, igual o peor que la referencia esa temporada, y por qué?". Las referencias llevan su propia media, justificada igual que cualquier otra.
+## 10. Ejemplos completos (todo inventado)
 
-### 5.3 Contraste entre agentes
+> **Aviso:** los jugadores, clubes, ligas, minutos, goles y premios de esta sección son **inventados** para enseñar el formato y el cálculo. No describen a ninguna persona real ni ningún dato histórico real. Las `sources` se sustituyen por `https://example.org/...` y no apuntan a nada.
 
-- **Pareja de contraste:** en cada lote, el agente compara 3 jugadores clave de posiciones distintas con 3 de otro club del mismo lote ("¿cuál es mejor y por cuánto?"). La ordenación tiene que coincidir con las medias asignadas.
-- **Doble lectura de una muestra:** el revisor independiente (T2.14) vuelve a puntuar sin ver las medias el 20 % de los jugadores clave. Si la diferencia media supera los 3 puntos, o un jugador difiere en más de 5, se revisa el lote.
-- **Misma regla entre temporadas:** al abrir una temporada nueva se vuelven a tomar como referencia los jugadores de las bandas del 5.2. Nunca se "continúa" la escala de la temporada anterior.
+Clubes ficticios de la **Liga Ficticia 2050-51**:
 
-## 6. Procedimiento ligero para los rivales (P6)
+- **Real Atlántico FC:** nivel **A** (campeón de la liga ficticia). `club_matches_all = 55`, `club_matches_league = 38`.
+- **CD Ficticio Norte:** nivel **C** (puesto 11.º de 20). `club_matches_all = 42`, `club_matches_league = 38`.
 
-Aplica a las plantillas de los **rivales con plantilla** (no a tu equipo propio, que lleva la rúbrica completa con `rating_rationale` en todos los jugadores). Los rivales de fuera de Primera, sin datos fiables, van como `aggregate.yaml` (ver 6.6).
-
-### 6.1 Qué jugadores entran
-
-Entran los jugadores con **minutos relevantes** en esa temporada, con este criterio cuantitativo propuesto:
-
-1. Se cuentan los minutos del club en **todas las competiciones**. Si solo hay datos de liga, se usan esos y se anota.
-2. Entran siempre los que pasen de **900 minutos** (unas 10 titularidades completas) y los que hayan tenido **al menos 10 partidos**.
-3. Se completa hasta **18** jugadores como mínimo, por orden de minutos, y nunca más de **22**.
-4. La plantilla tiene que dar una **cobertura mínima por línea**: 2 porteros, 6 defensas, 6 centrocampistas y 4 delanteros. Si por minutos no llegas, añade al siguiente por minutos de esa línea.
-5. Si en una línea hay menos jugadores con datos que la cobertura mínima, no inventes: añade los que haya y anótalo en la PR.
-6. Los fichajes y las bajas de mitad de temporada entran con `joined_on`/`left_on`. Un jugador no puede estar en dos plantillas en la misma fecha, salvo en el traspaso de invierno con fecha.
-
-### 6.2 Cuándo un jugador es `key`
-
-Marca `key: true` a los jugadores cuya media **cambia de forma apreciable la fuerza del equipo** o que son los más conocidos. Debe haber **entre 6 y 10** por plantilla. Se marca `key: true` si cumple **cualquiera** de estos criterios, hasta llegar a ese máximo:
-
-- Es el **portero titular** (pesa mucho en la defensa, ADR-004).
-- Tiene una media provisional **por encima del techo del titular regular de la tabla 6.4** para el nivel de su club (más de 83 en A, más de 79 en B, más de 73 en C y más de 68 en D): es un jugador por encima de lo que se espera de un titular normal de ese club.
-- Ganó un premio individual ese año o estuvo en un once ideal, o fue convocado con la selección absoluta de un país de primer nivel esa temporada.
-- Es el **máximo goleador** o el **máximo asistente** del club en la liga.
-- Es **capitán** y titular indiscutible.
-
-Los titulares sin evidencia individual que dentro de la tabla 6.4 quedan en su rango **no son `key` por su media**: el umbral de `key` es el techo de la tabla, no una cifra fija. Si hay más de 10 candidatos, deja como `key` a los de mayor media provisional. Si hay menos de 6, añade a los titulares con más minutos hasta llegar a 6.
-
-### 6.3 Cómo se rellenan los jugadores clave
-
-Se rellenan igual que los de tu equipo: media según la rúbrica completa (secciones 2-5), `rating_rationale` de 1-3 frases (sección 8), `sources` y `verify`.
-
-### 6.4 Cómo se asigna la media a los no clave
-
-Los no clave llevan `rating`, `sources` (con la fuente de los minutos) y `verify`, **sin `rating_rationale`, salvo si salen del rango de la tabla (punto 4)**. Se asignan con esta tabla rápida, en tres pasos:
-
-1. **Nivel del club en esa temporada (nivel absoluto, no solo de su liga):**
-   - **A:** entre los diez mejores clubes de Europa esa temporada.
-   - **B:** candidato a Champions o mitad alta de una gran liga.
-   - **C:** mitad baja de una gran liga, o mitad alta de una liga media.
-   - **D:** lucha por evitar el descenso, ascendido o liga menor.
-2. **Rol por minutos (todas las competiciones):**
-   - **Titular regular:** más del 60 % de los minutos posibles.
-   - **Rotación:** entre el 25 % y el 60 %.
-   - **Suplente:** menos del 25 %.
-3. **Rango de partida:**
-
-| Nivel del club | Titular regular | Rotación | Suplente |
-|---|---|---|---|
-| A | 78-83 | 72-77 | 66-71 |
-| B | 74-79 | 68-73 | 62-67 |
-| C | 68-73 | 63-68 | 58-63 |
-| D | 63-68 | 59-64 | 54-59 |
-
-   Coherencia con la sección 2: un titular regular de un club de nivel A, sin evidencia individual, es un "titular de un grande" y no puede quedar sistemáticamente por debajo de la banda 80-84; por eso su rango (78-83) cubre la parte baja de esa banda. Los rangos de B, C y D siguen las bandas 75-79, 70-74 y 65-69.
-4. **Punto dentro del rango:** sube hacia el techo si hay evidencia individual de rendimiento (estadística destacada, premio menor) y baja hacia el suelo si no la hay. Puedes salir del rango de la tabla si tienes **evidencia documentada**, y entonces el jugador **lleva `rating_rationale` aunque no sea `key`** (1-2 frases con esa evidencia y sus `sources`). Sin evidencia, quédate dentro del rango.
-
-> El nivel del club es aquí un **indicio débil**, no un bonus. Si un no clave tiene evidencia individual clara que lo lleve por encima del techo de su rango (6.2), deja de ser un no clave: márcalo `key: true`.
-
-### 6.5 Comprobación de conjunto (P6)
-
-La media de cada jugador de un rival no se valida una por una, sino **en conjunto**. T2.7 calcula, para cada rival, la fuerza que resulta de su mejor once (ADR-004, sección 2) y la compara con sus **goles a favor y en contra reales por partido en la liga** (`real_league {played, goals_for, goals_against}`, dividido por `played`):
-
-- **Qué se compara:** los goles esperados por partido frente a un rival medio de la liga (ataque) y de un rival medio (defensa), calculados con el modelo, frente a los reales.
-- **Banda de tolerancia propuesta:** la diferencia tiene que ser menor o igual que el **mayor** de estos dos valores: **±0,25 goles por partido** o **±20 % del valor real**. La banda cubre la variación aleatoria de una temporada de unas 38 jornadas y la imprecisión de las medias; el razonamiento está en el ADR-004 (sección "Bandas de calibración").
-- **A quién aplica:** el assert solo aplica a los rivales con plantilla cuya `real_league` es la liga de la temporada jugable. Para los demás (rivales continentales o de otras ligas) habría que normalizar con los participantes de **su** liga, que no están en el contenido, así que su comparación es solo un **aviso** en el informe.
-- **Efecto:** esta comprobación **rompe la CI** (junto con la de títulos) para los rivales de la liga jugable. Las de posición y puntos de una temporada son solo avisos (ADR-004, sección 7).
-- **Resultado:** T2.7 produce una lista de rivales fuera de banda con las medias que habría que revisar. **No las corrige automáticamente.**
-- **Qué hace el agente investigador:** aporta los goles reales con su fuente y sus medias. **No ajusta una media para que cuadre la banda.** Si la banda falla, la corrección se hace con evidencia nueva (por ejemplo, un jugador clave mal valorado), no con un retoque numérico. Ajustar medias sin evidencia para acercarse a los goles es inventar el dato.
-- **Circularidad:** como la comprobación usa los goles reales, el agente **no debe** mirar la clasificación final ni los goles para asignar medias. Las medias salen de la evidencia individual; la comprobación detecta errores sistemáticos.
-
-### 6.6 Rivales sin plantilla (`aggregate`)
-
-Si no hay datos fiables de minutos y jugadores (típicamente clubes de fuera de Primera en las primeras rondas de Copa), el rival va como `aggregate.yaml`: no lleva medias individuales sino una fuerza fija: `attack` y `defense`, que son los índices `A` y `C` del ADR-004 (sección 2), en puntos de media (con una `defense` alta, mejor defensa). Elige los valores como la media que tendría el once de ese club según las bandas de la sección 2, y anota la fuente y por qué no hay plantilla. Si no puedes justificar el nivel, `attack` y `defense` van en `null` con `verify: pending`.
-
-## 7. Cuando no hay datos suficientes: `verify: pending`
-
-Evidencia mínima para poner una media:
-
-| Tipo de jugador | Evidencia mínima |
-|---|---|
-| Clave | Minutos o partidos de la temporada **y** al menos una evidencia de rendimiento o reconocimiento (estadística, premio, selección, valoración de prensa de la época), todo con fuente. |
-| No clave | Minutos o partidos de la temporada con fuente (para ubicar el rol en 6.4). |
-
-Si falta, no avances por "lo lógico":
-
-| Situación | Qué hacer |
-|---|---|
-| No hay minutos publicados de un jugador | `rating: null`, `verify: pending`. Anota en la PR qué buscaste. |
-| Hay minutos pero ninguna evidencia de rendimiento (jugador clave) | `rating: null`, `verify: pending`. No uses la tabla de 6.4 para un clave. |
-| Hay datos de liga pero no de otras competiciones | Usa los de liga, anótalo en `sources`/PR y no extrapoles los demás. |
-| Dos fuentes se contradicen | Cita las dos, usa la más fiable y marca `verify: pending` si cambia la banda. |
-| Un dato es una estimación tuya | No lo escribas. Un dato no es "casi seguro": o tiene fuente o es `null`. |
-
-La validación en modo release falla con cualquier `verify: pending`, y es lo correcto: obliga a resolverlo antes de publicar.
-
-## 8. Cómo escribir `rating_rationale`
-
-- **1-3 frases**, en español de España, **verificables** con las `sources` del jugador.
-- Estructura recomendada: **(1) rol y minutos**, **(2) evidencia de rendimiento o reconocimiento**, **(3) por qué esa banda** (si es llamativa).
-- Cifras y hechos concretos, nunca adjetivos sueltos. Sin predicciones, sin comparar con su carrera, sin mencionar medias de otros juegos.
-- Si el valor es llamativo (85 o más, o 70 o menos en un grande), una de las frases lo justifica.
-
-**Bien (jugador inventado):**
-
-> Titular en 34 de 38 partidos de liga (2 950 minutos) del Real Atlántico FC y máximo goleador del equipo con 21 goles. Elegido en el once ideal de la liga ficticia y convocado con regularidad por su selección. Entra en la banda 85-89 por regularidad y por ser el delantero diferencial de un candidato al título.
-
-**Mal:**
-
-> Un crack que lo ha ganado todo con el equipo y es de lo mejor de su generación. Con razón es un 91.
-
-Por qué es mala: no hay minutos ni cifras, el "lo ha ganado todo" juzga la carrera y el club (no la temporada), "de lo mejor de su generación" no se puede verificar y la media aparece sin criterio. Tampoco indica por qué 91 y no 86.
-
-## 9. Ejemplos completos (todo inventado)
-
-> **Aviso:** los jugadores, clubes, ligas, minutos, goles y premios de esta sección son **inventados** para enseñar el formato. No describen a ninguna persona real ni ningún dato histórico real. Las `sources` se sustituyen por `https://example.org/...` y no apuntan a nada.
-
-Se usan el club ficticio **Real Atlántico FC**, la **Liga Ficticia** y la temporada ficticia **2050-51**.
-
-### 9.1 Banda 90-94: delantero inventado
+### 10.1 Delantero: Zoran Quillfeather (Real Atlántico, nivel A)
 
 ```yaml
 - player_id: zoran-quillfeather
@@ -230,102 +343,130 @@ Se usan el club ficticio **Real Atlántico FC**, la **Liga Ficticia** y la tempo
   alias_name: Z. Quill
   position: FW
   age: 27
-  rating: 91
   key: true
-  rating_rationale: >-
-    Titular en 36 de 38 partidos de liga (3 140 minutos) y 12 de 13 en la Copa Ficticia de Campeones, con 31 goles en liga.
-    Segundo en la votación del premio ficticio al mejor jugador del año y en el once ideal de la temporada.
-    Banda 90-94 por ser el delantero de referencia de un finalista continental y por regularidad durante todo el año.
-  sources:
-    - https://example.org/liga-ficticia/2050-51/estadisticas
-    - https://example.org/premios-ficticios/2051
-  verify: ok
+  season_stats:
+    minutes_league: 3140
+    appearances_league: 36
+    minutes_all: 4350
+    starts_all: 50
+    appearances_all: 53
+    goals_all: 38
+    assists_all: 9
+    caps: 7
+    awards:
+      - {name: Máximo goleador de la liga ficticia, tier: L, source: https://example.org/premios-ficticios/2051}
+      - {name: Once ideal de la liga ficticia, tier: L, source: https://example.org/premios-ficticios/2051}
+    sources: [https://example.org/liga-ficticia/2050-51/estadisticas]
+    verify: ok
 ```
 
-### 9.2 Banda 80-84: centrocampista inventado
+Cálculo (`avail = 55`):
+
+| Paso | Operación | Resultado |
+|---|---|---|
+| `share_min` | 4350 / (90 × 55) = 4350 / 4950 | 0,879 |
+| `share_start` | 50 / 55 | 0,909 |
+| `I` | 0,70 × 0,879 + 0,30 × 0,909 | 0,888 |
+| `P` (FW, con asistencias) | tasa = (38 + 0,5 × 9) / 55 = 0,773; `P` = min(1, 0,773 / 0,80) | 0,966 |
+| `N` | min(1, 7 / 8) | 0,875 |
+| `V` | min(1, 0,35 × 2) | 0,70 |
+| `T` | nivel A | +6 |
+| `bruta` | 46 + 22 × 0,888 + 14 × 0,966 + 6 × 0,875 + 7 × 0,70 + 6 = 46 + 19,54 + 13,52 + 5,25 + 4,90 + 6 | 95,21 |
+| **media** | redondeo | **95** |
+
+Es un valor muy alto, y es lo esperado de un delantero inventado con 38 goles, premios y selección en un campeón. Por eso es `key`: se revisaría a mano contra las anclas de T1.7 (banda 90-94 y 95-99).
+
+### 10.2 Centrocampista: Odalys Mirrorfield (Real Atlántico, nivel A)
+
+Estadísticas: `minutes_all: 3900`, `starts_all: 44`, `goals_all: 6`, `assists_all: 12`, `caps: 5`, `awards: []`.
+
+| Paso | Operación | Resultado |
+|---|---|---|
+| `share_min` | 3900 / 4950 | 0,788 |
+| `share_start` | 44 / 55 | 0,800 |
+| `I` | 0,70 × 0,788 + 0,30 × 0,800 | 0,792 |
+| `P` (MF) | tasa = (6 + 0,5 × 12) / 55 = 0,218; `P` = 0,218 / 0,45 | 0,485 |
+| `N` | 5 / 8 | 0,625 |
+| `V` | sin premios | 0 |
+| `T` | nivel A | +6 |
+| `bruta` | 46 + 22 × 0,792 + 14 × 0,485 + 6 × 0,625 + 0 + 6 = 46 + 17,42 + 6,79 + 3,75 + 6 | 79,96 |
+| **media** | redondeo | **80** |
+
+### 10.3 Defensa: Tomás Zeldaberry (CD Ficticio Norte, nivel C)
+
+Estadísticas: `minutes_all: 2900`, `starts_all: 33`, `goals_all: 2`, `assists_all: 1`, `caps: 0`, `awards: []`. `avail = 42`.
+
+| Paso | Operación | Resultado |
+|---|---|---|
+| `share_min` | 2900 / (90 × 42) = 2900 / 3780 | 0,767 |
+| `share_start` | 33 / 42 | 0,786 |
+| `I` | 0,70 × 0,767 + 0,30 × 0,786 | 0,773 |
+| `P` (DF) | tasa = (2 + 0,5) / 42 = 0,0595; `P` = 0,0595 / 0,20 | 0,298 |
+| `N`, `V`, `T` | 0, 0, 0 (nivel C) | 0 |
+| `bruta` | 46 + 22 × 0,773 + 14 × 0,298 = 46 + 17,01 + 4,17 | 67,18 |
+| **media** | redondeo | **67** |
+
+### 10.4 Portero: Gael Brightwater (Real Atlántico, nivel A)
+
+Estadísticas: `minutes_all: 4900`, `starts_all: 54`, `clean_sheets_all: 24`, `caps: 3`, `awards`: un premio de nivel `L` (mejor portero de la liga ficticia). Los goles y las asistencias son 0.
+
+| Paso | Operación | Resultado |
+|---|---|---|
+| `share_min` | 4900 / 4950 | 0,990 |
+| `share_start` | 54 / 55 | 0,982 |
+| `I` | 0,70 × 0,990 + 0,30 × 0,982 | 0,987 |
+| `P` (GK) | tasa = 24 / 55 = 0,436; `P` = 0,436 / 0,55 | 0,793 |
+| `N` | 3 / 8 | 0,375 |
+| `V` | 0,35 × 1 | 0,35 |
+| `T` | nivel A | +6 |
+| `bruta` | 46 + 21,71 + 11,10 + 2,25 + 2,45 + 6 | 89,51 |
+| **media** | redondeo | **90** |
+
+Si `clean_sheets_all` fuese `null`, `P = 0,35` y la bruta bajaría a 46 + 21,71 + 4,90 + 2,25 + 2,45 + 6 = 83,31, es decir, **83**. El dato que falta no se rellena: se usa el valor neutro.
+
+### 10.5 Suplente de rotación, con `assists_all` desconocido: Rubén Ostermoon (CD Ficticio Norte, nivel C)
+
+Estadísticas: `position: MF`, `minutes_all: 520`, `starts_all: 4`, `goals_all: 1`, `assists_all: null` (la fuente no publica las asistencias de toda la temporada), `caps: 0`, `awards: []`. `avail = 42`. Es un jugador **no clave**, así que su media es la de la fórmula.
+
+| Paso | Operación | Resultado |
+|---|---|---|
+| `share_min` | 520 / 3780 | 0,138 |
+| `share_start` | 4 / 42 | 0,095 |
+| `I` | 0,70 × 0,138 + 0,30 × 0,095 | 0,125 |
+| `P` (MF, sin asistencias) | tasa = 1 / 42 = 0,0238; `P` = 0,0238 / (0,80 × 0,45 = 0,36) | 0,066 |
+| `N`, `V`, `T` | 0 | 0 |
+| `bruta` | 46 + 22 × 0,125 + 14 × 0,066 = 46 + 2,75 + 0,92 | 49,67 |
+| **media** | redondeo | **50** |
+
+### 10.6 Override por lesión larga: Calisto Marblethorn (Real Atlántico, nivel A)
+
+Defensa titular que se perdió 25 de los 55 partidos del club por una lesión documentada. Estadísticas: `minutes_all: 1800`, `starts_all: 20`, `goals_all: 1`, `assists_all: 1`, `caps: 2`, `awards: []`. La fórmula da:
+
+- `share_min` = 1800 / 4950 = 0,364; `share_start` = 20 / 55 = 0,364; `I` = 0,364.
+- `P` = ((1 + 0,5) / 55) / 0,20 = 0,136; `N` = 2 / 8 = 0,25.
+- `bruta` = 46 + 22 × 0,364 + 14 × 0,136 + 6 × 0,25 + 0 + 6 = 46 + 8,00 + 1,90 + 1,50 + 6 = 63,40, es decir, **63**.
+
+Pero el jugador fue titular indiscutible cuando estuvo sano. Se propone un override de **70** (7 puntos de diferencia), que cae en el tramo de 7 a 12: exige dos fuentes distintas y la confirmación del revisor independiente.
 
 ```yaml
-- player_id: odalys-mirrorfield
-  display_name: Odalys Mirrorfield
-  alias_name: O. Mirror
-  position: MF
-  age: 29
-  rating: 82
-  key: true
-  rating_rationale: >-
-    Titular en 33 partidos de liga (2 780 minutos) del Real Atlántico FC y capitana del equipo, con 9 asistencias.
-    Convocada con regularidad por la selección absoluta de un país de primer nivel ficticio, pero sin premios individuales.
-    Banda 80-84 y no 85-89 porque no hay evidencia de ser el jugador diferencial del equipo.
-  sources:
-    - https://example.org/liga-ficticia/2050-51/estadisticas
-  verify: ok
+  rating_override:
+    value: 70
+    rationale: >-
+      Se perdió 25 de los 55 partidos del club por una lesión de rodilla, según el parte médico del club y las crónicas.
+      Fue titular en los 20 partidos en los que estuvo disponible, según las alineaciones.
+    sources:
+      - https://example.org/liga-ficticia/2050-51/lesiones
+      - https://example.org/liga-ficticia/2050-51/alineaciones
+  verify: pending   # hasta que T2.14 confirme las dos fuentes
 ```
 
-### 9.3 Banda 65-69: defensa inventado de un equipo de mitad baja
+### 10.7 Comprobación de conjunto (P6) de un rival, con números inventados
 
-```yaml
-- player_id: tomas-zeldaberry
-  display_name: Tomás Zeldaberry
-  alias_name: T. Zelda
-  position: DF
-  age: 31
-  rating: 68
-  key: true
-  rating_rationale: >-
-    Titular en 24 de 38 partidos de liga (2 050 minutos) del CD Ficticio Norte, equipo que se salva en las últimas jornadas.
-    Sin premios ni convocatorias con la selección. Banda 65-69 por tener un rol de titular regular en un equipo de la zona baja.
-  sources:
-    - https://example.org/liga-ficticia/2050-51/estadisticas
-  verify: ok
-```
-
-(Es `key` en este ejemplo porque el CD Ficticio Norte cuenta con pocos jugadores destacados y se cubrió el mínimo de 6 `key` con los titulares con más minutos, según 6.2.)
-
-### 9.4 Banda 50-59: canterano inventado con pocos minutos
-
-```yaml
-- player_id: wilfredo-nuncajugo
-  display_name: Wilfredo Nuncajugó
-  alias_name: W. Nunca
-  position: MF
-  age: 18
-  rating: 55
-  key: false
-  rating_rationale: >-
-    Jugador del filial convocado en 3 partidos con el primer equipo y 38 minutos en total.
-    Sin evidencia de rendimiento en el primer equipo: se sitúa en la banda 50-59, por debajo del rango de un suplente de Primera.
-  sources:
-    - https://example.org/liga-ficticia/2050-51/estadisticas
-  verify: ok
-```
-
-Para un no clave de un club de nivel B con 120 minutos en total (suplente), la tabla de 6.4 daría 62-67. Aquí la media baja a 55 porque es un jugador del filial convocado en 3 partidos, y esa evidencia individual (que no es la de un suplente de Primera) justifica salir del rango. Como se sale de 6.4, el jugador lleva `rating_rationale` aunque no sea `key`. Con `verify: pending` si faltasen sus minutos.
-
-### 9.5 Rival: un no clave aplicando la tabla rápida de 6.4
-
-Rival inventado: **CD Ficticio Norte** (nivel C: mitad baja de una gran liga). Jugador no clave, centrocampista con el 45 % de los minutos posibles (rotación).
-
-- Rango de la tabla (C, rotación): **63-68**.
-- Sin premios ni estadística destacada: se asigna **64**.
-
-```yaml
-- player_id: ruben-ostermoon
-  display_name: Rubén Ostermoon
-  alias_name: R. Ostermoon
-  position: MF
-  age: 25
-  rating: 64
-  key: false
-  sources:
-    - https://example.org/liga-ficticia/2050-51/estadisticas
-  verify: ok
-```
-
-Y la comprobación de conjunto (P6) del mismo rival, con números inventados:
+Rival: **CD Ficticio Norte**.
 
 | Concepto | Valor |
 |---|---|
-| Partidos de liga | 38 |
+| Partidos de liga (`real_league.played`) | 38 |
 | Goles a favor / en contra reales | 45 / 51 |
 | Por partido (real) | 1,18 / 1,34 |
 | Por partido (modelo, contra un rival medio) | 1,10 / 1,41 |
@@ -333,14 +474,15 @@ Y la comprobación de conjunto (P6) del mismo rival, con números inventados:
 | Banda (el mayor de 0,25 o el 20 % del real: 0,24 / 0,27) | ±0,25 / ±0,27 |
 | Resultado | Dentro de banda |
 
-Cómo se calcula "por partido (modelo)" está en el ADR-004. Si un rival quedase fuera de la banda, el informe lista las medias a revisar y el agente busca más evidencia; no retoca números.
+Cómo se calcula "por partido (modelo)" está en el ADR-004. Si un rival quedase fuera de la banda, el informe lo lista y el agente **revisa los datos de entrada**; no retoca medias.
 
-## 10. Lista de comprobación antes de abrir la PR
+## 11. Lista de comprobación antes de abrir la PR
 
 - [ ] Ninguna media se ha copiado ni contrastado con un juego comercial.
-- [ ] Todo jugador tiene `sources`; los clave tienen `rating_rationale`.
-- [ ] Ningún valor está inventado: los datos que faltan van en `null` con `verify: pending`.
-- [ ] Una plantilla rival tiene entre 18 y 22 jugadores, con la cobertura mínima por línea y entre 6 y 10 `key`.
-- [ ] No hay más de dos jugadores de 88+ ni más de seis de 80+ sin justificación en la PR.
+- [ ] Todo jugador tiene `season_stats` con `sources`; los datos que faltan van en `null` con `verify: pending` y no hay ningún valor inventado.
+- [ ] El club-season tiene `club_matches_all`, `club_matches_league` y `level_tier` con su criterio y fuentes.
+- [ ] Las medias las ha escrito la CLI de T1.8, no una persona.
+- [ ] Una plantilla rival tiene entre 18 y 22 jugadores, con la cobertura mínima por línea y entre 6 y 10 `key`, revisados a mano.
+- [ ] Todo `rating_override` tiene `rationale`, fuentes, y respeta los límites de 7.4.
+- [ ] No hay alertas de 6.1 sin explicar en la PR.
 - [ ] No has ajustado ninguna media mirando la clasificación o los goles.
-- [ ] La media del once titular cae en un rango razonable (sección 5.1) o lo has explicado.
