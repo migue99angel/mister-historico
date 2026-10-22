@@ -191,7 +191,8 @@ describe('OpenAPI contract', () => {
       '`expectedVersion`',
       'business rules',
     ];
-    const positions = steps.map((step) => info.description.indexOf(step));
+    const section = info.description.slice(info.description.indexOf('**Order of checks.**'));
+    const positions = steps.map((step) => section.indexOf(step));
     expect(positions.every((position) => position >= 0)).toBe(true);
     expect(positions).toEqual([...positions].sort((a, b) => a - b));
   });

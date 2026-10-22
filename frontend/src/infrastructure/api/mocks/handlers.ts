@@ -2,6 +2,7 @@ import { HttpResponse, http, type RequestHandler } from 'msw';
 
 import {
   ApiProblem,
+  requireObject,
   acceptEvent,
   advanceBlock,
   getLeaderboard,
@@ -45,16 +46,17 @@ async function respond(action: () => Response | Promise<Response>): Promise<Resp
   }
 }
 
-async function jsonBody(request: Request): Promise<Record<string, unknown>> {
+/** Parses the body leniently: validation happens later, in the contract's order of checks. */
+async function jsonBody(request: Request): Promise<Record<string, unknown> | null> {
   try {
     const body: unknown = await request.json();
     if (typeof body === 'object' && body !== null && !Array.isArray(body)) {
       return body as Record<string, unknown>;
     }
   } catch {
-    // Falls through to the validation error below.
+    // Malformed JSON: reported as a validation error by the store.
   }
-  throw new ApiProblem(400, 'validation_error', 'The body must be a JSON object.');
+  return null;
 }
 
 function positiveInt(value: string | null, fallback: number, max: number, field: string): number {
@@ -77,7 +79,7 @@ export const handlers: RequestHandler[] = [
 
   http.post(`${API}/runs`, ({ request }) =>
     respond(async () => {
-      const body = await jsonBody(request);
+      const body = requireObject(await jsonBody(request));
       const started = startRun(body.seasonId);
       return HttpResponse.json(started, {
         status: 201,
@@ -100,11 +102,7 @@ export const handlers: RequestHandler[] = [
           String(params.runId),
           request.headers.get('Authorization'),
           request.headers.get('Idempotency-Key'),
-          {
-            dilemmaId: body.dilemmaId,
-            optionId: body.optionId,
-            expectedVersion: body.expectedVersion,
-          },
+          body,
         ),
       );
     }),
@@ -118,7 +116,7 @@ export const handlers: RequestHandler[] = [
           String(params.runId),
           request.headers.get('Authorization'),
           request.headers.get('Idempotency-Key'),
-          { expectedVersion: body.expectedVersion },
+          body,
         ),
       );
     }),
@@ -132,7 +130,7 @@ export const handlers: RequestHandler[] = [
     respond(async () => {
       const body = await jsonBody(request);
       return HttpResponse.json(
-        setAlias(String(params.runId), request.headers.get('Authorization'), body.alias),
+        setAlias(String(params.runId), request.headers.get('Authorization'), body),
       );
     }),
   ),
@@ -148,7 +146,7 @@ export const handlers: RequestHandler[] = [
 
   http.post(`${API}/events`, ({ request }) =>
     respond(async () => {
-      acceptEvent(await jsonBody(request));
+      acceptEvent(requireObject(await jsonBody(request)));
       return new HttpResponse(null, { status: 202 });
     }),
   ),

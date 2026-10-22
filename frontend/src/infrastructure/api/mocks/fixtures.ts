@@ -229,9 +229,9 @@ const TEAMS: Record<string, Omit<Schemas['TeamRef'], 'isUser'>> = {
     shortName: 'UFI',
     colors: { primary: '#15803d', secondary: '#ffffff' },
   },
-  // An aggregate rival (no squad): its id starts with an underscore.
+  // An aggregate rival (no squad): it carries an ordinary id, like any other club.
   'Athletic Ensayo': {
-    clubSeasonId: '_athletic-ensayo-2000-01',
+    clubSeasonId: 'athletic-ensayo-2000-01',
     name: 'Athletic Ensayo',
     shortName: 'ATE',
     colors: { primary: '#7e22ce', secondary: '#f1f5f9' },
@@ -259,6 +259,7 @@ export function resultsForBlock(block: number): Schemas['MatchReport'][] {
     awayGoals: 1,
     extraTime: null,
     penalties: null,
+    venue: 'home',
     isKeyMatch: block % 2 === 0,
     keyMatchLabel: block % 2 === 0 ? 'Derby' : null,
     userResult: 'win',
@@ -274,6 +275,7 @@ export function resultsForBlock(block: number): Schemas['MatchReport'][] {
     isKeyMatch: false,
     keyMatchLabel: null,
     userResult: 'draw',
+    venue: 'away',
   };
   if (block === 2) {
     return [
@@ -290,6 +292,7 @@ export function resultsForBlock(block: number): Schemas['MatchReport'][] {
         extraTime: { home: 1, away: 0 },
         isKeyMatch: true,
         keyMatchLabel: 'Knockout tie',
+        venue: 'neutral',
       },
     ];
   }
