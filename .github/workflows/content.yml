@@ -40,7 +40,7 @@ jobs:
       #     version: "0.9.7"
       #     working-directory: backend
       #     enable-cache: true
-      #     cache-dependency-glob: backend/uv.lock
+      #     cache-dependency-glob: uv.lock # relative to working-directory
 
       - name: Validate content (placeholder)
         run: echo "Content validation is enabled in T2.20 (uv run mister content validate --release)."
