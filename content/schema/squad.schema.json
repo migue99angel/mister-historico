@@ -1,0 +1,260 @@
+{
+  "$defs": {
+    "PlayerEntry": {
+      "additionalProperties": false,
+      "description": "A player in a club-season squad. `sources` back his membership of the squad.",
+      "properties": {
+        "age": {
+          "anyOf": [
+            {
+              "maximum": 50,
+              "minimum": 14,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Age"
+        },
+        "alias_name": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Alias Name",
+          "type": "string"
+        },
+        "display_name": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Display Name",
+          "type": "string"
+        },
+        "joined_on": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Joined On"
+        },
+        "key": {
+          "title": "Key",
+          "type": "boolean"
+        },
+        "left_on": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Left On"
+        },
+        "player_id": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Player Id",
+          "type": "string"
+        },
+        "position": {
+          "$ref": "#/$defs/Position"
+        },
+        "rating": {
+          "maximum": 99,
+          "minimum": 1,
+          "title": "Rating",
+          "type": "integer"
+        },
+        "rating_rationale": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rating Rationale"
+        },
+        "sources": {
+          "description": "URLs backing the datum.",
+          "items": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "subrole": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Subrole"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "verify": {
+          "enum": [
+            "ok",
+            "pending"
+          ],
+          "title": "Verify",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sources",
+        "verify",
+        "player_id",
+        "display_name",
+        "alias_name",
+        "position",
+        "age",
+        "rating",
+        "key"
+      ],
+      "title": "PlayerEntry",
+      "type": "object"
+    },
+    "Position": {
+      "description": "Broad position of a player.",
+      "enum": [
+        "GK",
+        "DF",
+        "MF",
+        "FW"
+      ],
+      "title": "Position",
+      "type": "string"
+    },
+    "Subrole": {
+      "description": "Optional finer role; it must be coherent with the position.",
+      "enum": [
+        "CB",
+        "LB",
+        "RB",
+        "DM",
+        "CM",
+        "AM",
+        "WG",
+        "ST"
+      ],
+      "title": "Subrole",
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A full squad. Its `sources` and `verify` cover the real league goals.",
+  "properties": {
+    "club": {
+      "anyOf": [
+        {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Club"
+    },
+    "club_season": {
+      "maxLength": 80,
+      "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
+      "title": "Club Season",
+      "type": "string"
+    },
+    "players": {
+      "items": {
+        "$ref": "#/$defs/PlayerEntry"
+      },
+      "minItems": 1,
+      "title": "Players",
+      "type": "array"
+    },
+    "real_goals_against": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Real Goals Against"
+    },
+    "real_goals_for": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Real Goals For"
+    },
+    "schema_version": {
+      "const": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "season": {
+      "pattern": "^\\d{4}-\\d{2}$",
+      "title": "Season",
+      "type": "string"
+    },
+    "sources": {
+      "description": "URLs backing the datum.",
+      "items": {
+        "format": "uri",
+        "maxLength": 2083,
+        "minLength": 1,
+        "type": "string"
+      },
+      "title": "Sources",
+      "type": "array"
+    },
+    "verify": {
+      "enum": [
+        "ok",
+        "pending"
+      ],
+      "title": "Verify",
+      "type": "string"
+    }
+  },
+  "required": [
+    "sources",
+    "verify",
+    "schema_version",
+    "club_season",
+    "club",
+    "season",
+    "real_goals_for",
+    "real_goals_against",
+    "players"
+  ],
+  "title": "SquadFile",
+  "type": "object"
+}

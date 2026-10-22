@@ -1,0 +1,251 @@
+{
+  "$defs": {
+    "RealTie": {
+      "additionalProperties": false,
+      "description": "A real knockout tie, including those that do not involve the own team (P2).",
+      "properties": {
+        "aggregate": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Aggregate"
+        },
+        "clubs": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "maxLength": 80,
+              "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
+              "type": "string"
+            },
+            {
+              "maxLength": 80,
+              "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
+              "type": "string"
+            }
+          ],
+          "title": "Clubs",
+          "type": "array"
+        },
+        "competition": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Competition",
+          "type": "string"
+        },
+        "sources": {
+          "description": "URLs backing the datum.",
+          "items": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "stage": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Stage",
+          "type": "string"
+        },
+        "verify": {
+          "enum": [
+            "ok",
+            "pending"
+          ],
+          "title": "Verify",
+          "type": "string"
+        },
+        "winner": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Winner"
+        }
+      },
+      "required": [
+        "sources",
+        "verify",
+        "competition",
+        "stage",
+        "clubs",
+        "winner"
+      ],
+      "title": "RealTie",
+      "type": "object"
+    },
+    "StandingRow": {
+      "additionalProperties": false,
+      "description": "One row of a real league table.",
+      "properties": {
+        "club_season": {
+          "maxLength": 80,
+          "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
+          "title": "Club Season",
+          "type": "string"
+        },
+        "drawn": {
+          "minimum": 0,
+          "title": "Drawn",
+          "type": "integer"
+        },
+        "goals_against": {
+          "minimum": 0,
+          "title": "Goals Against",
+          "type": "integer"
+        },
+        "goals_for": {
+          "minimum": 0,
+          "title": "Goals For",
+          "type": "integer"
+        },
+        "lost": {
+          "minimum": 0,
+          "title": "Lost",
+          "type": "integer"
+        },
+        "played": {
+          "minimum": 0,
+          "title": "Played",
+          "type": "integer"
+        },
+        "points": {
+          "minimum": 0,
+          "title": "Points",
+          "type": "integer"
+        },
+        "position": {
+          "minimum": 1,
+          "title": "Position",
+          "type": "integer"
+        },
+        "won": {
+          "minimum": 0,
+          "title": "Won",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "club_season",
+        "position",
+        "played",
+        "won",
+        "drawn",
+        "lost",
+        "goals_for",
+        "goals_against",
+        "points"
+      ],
+      "title": "StandingRow",
+      "type": "object"
+    },
+    "StandingsCutoff": {
+      "additionalProperties": false,
+      "description": "The real league table on the cutoff date of a block.",
+      "properties": {
+        "block": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Block",
+          "type": "string"
+        },
+        "competition": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Competition",
+          "type": "string"
+        },
+        "date": {
+          "format": "date",
+          "title": "Date",
+          "type": "string"
+        },
+        "sources": {
+          "description": "URLs backing the datum.",
+          "items": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "table": {
+          "items": {
+            "$ref": "#/$defs/StandingRow"
+          },
+          "minItems": 2,
+          "title": "Table",
+          "type": "array"
+        },
+        "verify": {
+          "enum": [
+            "ok",
+            "pending"
+          ],
+          "title": "Verify",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sources",
+        "verify",
+        "block",
+        "competition",
+        "date",
+        "table"
+      ],
+      "title": "StandingsCutoff",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Real tables at each block cutoff and the real bracket of the knockout competitions.",
+  "properties": {
+    "cutoffs": {
+      "items": {
+        "$ref": "#/$defs/StandingsCutoff"
+      },
+      "title": "Cutoffs",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "ties": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/RealTie"
+      },
+      "title": "Ties",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "cutoffs"
+  ],
+  "title": "StandingsFile",
+  "type": "object"
+}
