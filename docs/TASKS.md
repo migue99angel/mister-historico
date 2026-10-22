@@ -2,6 +2,7 @@
 
 > Parte de [`PLAN.md`](./PLAN.md): arquitectura en §3, testing en §4, fases en §5 y reglas de trabajo en paralelo en §6.
 > **Formato de cada tarea:** ID · capa · oleada · tamaño (S < ½ día de agente, M ≈ 1 día, L > 1 día) · dependencias · **propiedad** (los únicos ficheros que puede tocar) · qué hacer · **tests primero** (los casos que se escriben en rojo antes de implementar) · criterios de aceptación.
+> Los ADR se nombran `NNN-slug-en-espanol.md` y los redacta la tarea que los tiene en su propiedad.
 > Todas las tareas comparten esta definición de hecho: **ciclo TDD con commits separados, CI en verde, umbrales de cobertura de §4.3, ninguna regla de capas violada y una PR revisada.**
 > Las tareas marcadas **[HUMANO]** las cierra el autor. Las marcas [P2], [P6], etc. indican la decisión de PLAN §2 en la que se basa la tarea.
 
@@ -46,7 +47,7 @@
 
 ### T0.2 · Tooling del backend y app mínima
 - **Capa:** backend · **Oleada:** F0-B · **Tamaño:** M · **Depende de:** T0.1
-- **Propiedad:** `backend/pyproject.toml`, `backend/uv.lock`, `backend/.importlinter`, `backend/src/mister/{__init__,bootstrap}.py`, `backend/src/mister/entrypoints/api/app.py`, `backend/tests/conftest.py`, `backend/tests/entrypoints/`.
+- **Propiedad:** `backend/pyproject.toml` (incluida la configuración de import-linter en `[tool.importlinter]`), `backend/uv.lock`, `backend/.python-version`, `backend/src/mister/{__init__,bootstrap,settings}.py`, `backend/src/mister/entrypoints/**/__init__.py`, `backend/src/mister/entrypoints/api/app.py`, `backend/tests/conftest.py`, `backend/tests/entrypoints/` y `backend/tests/architecture/`.
 - **Qué hacer:**
   - Python 3.12 con uv: ruff, `mypy --strict`, pytest, pytest-cov, hypothesis, pytest-benchmark, testcontainers, mutmut e import-linter.
   - Marcadores de pytest: `unit`, `integration`, `contract`, `calibration`, `content` y `e2e`.
@@ -74,6 +75,7 @@
 - **Capa:** plataforma · **Oleada:** F0-C · **Tamaño:** M · **Depende de:** T0.2, T0.3, T0.5
 - **Propiedad:** `.github/workflows/**`
 - **Qué hacer:**
+  - Heredado de la revisión de F0: aplicar en la CI el umbral del 95 % de cobertura a `domain` + `application` (`coverage report --include=... --fail-under=95`), y fijar las imágenes de Docker (`postgres`, `python`, `node`) a versión menor o digest.
   - Workflows `backend.yml` (lint, tipos, import-linter, tests con Postgres por testcontainers y cobertura), `frontend.yml` (lint, tipos, tests, build, size-limit, e2e) y `content.yml` (`mister content validate`, como placeholder hasta T2.20).
   - `calibration.yml`: con *path filters* sobre `simulation/` y `content/`, y en un cron nocturno.
   - `nightly.yml`: mutmut.
@@ -83,7 +85,7 @@
 
 ### T0.5 · Entorno de desarrollo con Docker
 - **Capa:** plataforma · **Oleada:** F0-B · **Tamaño:** S · **Depende de:** T0.1
-- **Propiedad:** `infra/docker/**`, `docker-compose.yml`, `backend/alembic.ini`, `backend/migrations/**`
+- **Propiedad:** `infra/docker/**`, `docker-compose.yml`, `.env.example`, `backend/.dockerignore`, `frontend/.dockerignore`, `backend/alembic.ini`, `backend/migrations/**` y `backend/tests/integration/test_migrations.py`
 - **Qué hacer:** Dockerfile multi-stage para la API, compose con `postgres:16`, `api` (con recarga) y `frontend` (Vite), Alembic inicializado con una migración vacía y `make dev`.
 - **Tests primero:** un test de integración que aplica las migraciones sobre un Postgres de testcontainers y comprueba la tabla `alembic_version`.
 - **Aceptación:** `make dev` levanta todo y `/health` responde a través del compose.
@@ -105,7 +107,7 @@
 - **Capa:** `shared_kernel` · **Oleada:** F1-A · **Tamaño:** M · **Depende de:** F0
 - **Propiedad:** `backend/src/mister/shared_kernel/**` y `backend/tests/shared_kernel/**`
 - **Qué hacer:**
-  - IDs tipados: `RunId`, `TeamSeasonId`, `PlayerId`, etc.
+  - IDs tipados: `RunId`, `ClubSeasonId`, `PlayableSeasonId`, `PlayerId`, etc.
   - `Seed`.
   - Puerto `RandomSource` con `stream(*keys) -> RandomSource`, `poisson(lam)`, `random()` y `choice()`, más un adaptador `Pcg64RandomSource` (numpy) que deriva cada flujo con un hash estable de la semilla y las claves (ADR-005).
   - Puerto `Clock` y su fake.
@@ -121,7 +123,7 @@
 
 ### T1.2 · Esquema de contenido (*published language*) y equipo sintético
 - **Capa:** `catalog/infrastructure/content_schema` · **Oleada:** F1-A · **Tamaño:** L · **Depende de:** F0
-- **Propiedad:** `backend/src/mister/catalog/infrastructure/content_schema/**`, `content/schema/**` (JSON Schema exportado), `backend/tests/fixtures/content/**` (Test FC y su liga sintética) y `docs/content/content-format.md`
+- **Propiedad:** `backend/src/mister/catalog/infrastructure/content_schema/**`, `content/schema/**` (JSON Schema exportado), `backend/tests/fixtures/content/**` (Test FC y su liga sintética), `docs/content/content-format.md`, `docs/adr/007-contenido-como-datos.md` y `docs/adr/015-clubseason-y-playableseason.md`
 - **Qué hacer:**
   - Modelos Pydantic para cada fichero de contenido (ADR-007 y ADR-015):
     - `content/clubs/<club>.yaml`: nombre, nombre corto y colores.
@@ -151,7 +153,7 @@
 
 ### T1.3 · Rúbrica de medias y ADR del motor
 - **Capa:** documentación · **Oleada:** F1-A · **Tamaño:** M · **Depende de:** F0 · **[HUMANO]**: la rúbrica la aprueba el autor.
-- **Propiedad:** `docs/content/rating-rubric.md`, `docs/adr/004-goal-model.md`, `docs/adr/006-ratings.md`
+- **Propiedad:** `docs/content/rating-rubric.md`, `docs/adr/004-modelo-de-goles.md`, `docs/adr/006-medias.md`
 - **Qué hacer:**
   - **Rúbrica 1-99:** bandas (90+ élite mundial ese año, 80-89 titular de un grande, etc.), criterios (rendimiento en esa temporada, minutos, rol, premios y selección), cómo documentar `rating_rationale` y un ejemplo con un jugador inventado.
   - **Procedimiento ligero para los rivales (P6):** qué jugadores entran (los que tienen minutos relevantes), cuándo un jugador es `key`, cómo se asigna una media sin justificación detallada y la banda de tolerancia entre la fuerza que resulta de la plantilla y los goles a favor y en contra reales del rival.
@@ -191,17 +193,19 @@
 - **Aceptación:** todos los fakes pasan su suite.
 
 ### T1.6 · Modelo publicado del motor de simulación
-- **Capa:** `simulation/domain` · **Oleada:** F1-B · **Tamaño:** S · **Depende de:** T1.1
-- **Propiedad:** `backend/src/mister/simulation/domain/model.py`, `backend/src/mister/simulation/domain/ports.py` y `backend/tests/simulation/unit/test_model.py`
+- **Capa:** `simulation/domain` y `simulation/application` · **Oleada:** F1-B · **Tamaño:** M · **Depende de:** T1.1
+- **Propiedad:** `backend/src/mister/simulation/domain/model.py`, `backend/src/mister/simulation/domain/ports.py`, `backend/src/mister/simulation/application/api.py`, `backend/tests/simulation/unit/test_model.py` y `backend/tests/simulation/unit/test_api_contract.py`
 - **Qué hacer:**
-  - VOs inmutables: `Rating`, `TeamStrength(attack, defense)`, `Tactic(style, system)`, `Morale` y `Fitness` (los dos de 0 a 100), `Score`, `MatchResult` (incluye prórroga y penaltis), `FixtureSpec` y `SimTeam`.
+  - VOs inmutables del dominio interno del motor: `Rating`, `TeamStrength(attack, defense)`, `Tactic(style, system)`, `Morale` y `Fitness` (los dos de 0 a 100), `Score`, `MatchResult` (incluye prórroga y penaltis), `FixtureSpec` y `SimTeam`.
   - Protocolos `GoalModel` y `MatchSimulator`.
+  - **API publicada del contexto** en `simulation/application/api.py`: DTOs de entrada y salida propios (`SeasonSimInput`, `BlockSimRequest`, `BlockSummaryDTO`…) y la firma de la fachada `SimulationService.simulate_block(...)`, que de momento lanza `NotImplementedError` y se implementa en T2.6. **Es lo único que pueden importar otros contextos** (regla 4 de PLAN §3.2). El adaptador de Game (T3.5) depende de esta API, nunca de `simulation.domain`.
+  - Añadir a `pyproject.toml`, como CR de T0.2, un contrato de import-linter que prohíba a cualquier `mister.<otro>.*` importar `mister.simulation.domain`.
   - Con esto, las tareas de la F2-A pueden trabajar en paralelo.
 - **Tests primero:**
   - Los VOs rechazan valores fuera de rango.
   - `Score` no admite goles negativos.
   - `MatchResult.winner` funciona con prórroga y con penaltis.
-- **Aceptación:** el módulo tiene menos de 200 líneas y no contiene lógica de simulación.
+- **Aceptación:** `model.py` tiene menos de 200 líneas y no contiene lógica de simulación. Un test de arquitectura demuestra que `mister.game` no puede importar `mister.simulation.domain`.
 
 ---
 
@@ -319,7 +323,7 @@
 
 #### T2.20 · Dominio del catálogo, cargador YAML y validación
 - **Oleada:** F2-A · **Tamaño:** M · **Depende de:** T1.2, T1.5
-- **Propiedad:** `catalog/domain/**`, `catalog/application/**` (salvo `ports.py`), `catalog/infrastructure/yaml_loader.py`, `entrypoints/cli/content.py` y sus tests
+- **Propiedad:** `catalog/domain/**`, `catalog/application/**` (salvo `ports.py`), `catalog/infrastructure/yaml_loader.py`, `entrypoints/cli/content.py` y sus tests y `docs/adr/008-nombres-reales-desactivables.md`
 - **Qué hacer:**
   - Entidades del catálogo.
   - `YamlSeasonContentProvider`.
@@ -354,8 +358,8 @@
 - **Aceptación:** `content validate` en verde y todos los datos con `sources`.
 
 #### T2.11 · Plantilla y medias
-- **Oleada:** F2-A · **Tamaño:** L · **Depende de:** T1.2, T1.3 (rúbrica aprobada) · **Propiedad:** `squad.yaml`
-- **Propiedad:** `content/club-seasons/real-madrid-2012-13/squad.yaml` (no el `squad.yaml` de la temporada jugable, que ya no existe)
+- **Oleada:** F2-A · **Tamaño:** L · **Depende de:** T1.2, T1.3 (rúbrica aprobada)
+- **Propiedad:** `content/club-seasons/real-madrid-2012-13/squad.yaml`
 - **Qué hacer:** la plantilla completa de esa temporada (incluidas las altas y bajas con su fecha), posición, edad, media según la rúbrica completa y `rating_rationale` para todos. Los fichajes posibles de los dilemas que vienen de un rival se referencian con `from_club_season`. Los que no vienen de ningún rival del juego van en `content/club-seasons/_market-2012-13/squad.yaml`.
 - **Aceptación:** validación en verde y medias justificadas.
 
@@ -448,7 +452,7 @@
 
 ### T3.4 · Persistencia de la partida
 - **Oleada:** F3-A · **Tamaño:** M · **Depende de:** T1.5, T0.5
-- **Propiedad:** `game/infrastructure/sqlalchemy/**` y `backend/migrations/versions/*game*`
+- **Propiedad:** `game/infrastructure/sqlalchemy/**` y `backend/migrations/versions/*game*` y `docs/adr/009-persistencia-de-la-partida.md`
 - **Qué hacer:** tabla `runs` (con el snapshot en JSONB y la columna `version`) y tabla `run_decisions` (que funciona como log), con un `SqlRunRepository` y un `SqlUnitOfWork` (ADR-009).
 - **Tests primero:**
   - La suite de contrato de `RunRepository` contra Postgres.
@@ -457,7 +461,7 @@
 
 ### T3.5 · Casos de uso y replay
 - **Oleada:** F3-B · **Tamaño:** L · **Depende de:** T3.1-T3.4, T2.6
-- **Propiedad:** `game/application/**` (salvo `ports.py`), `game/infrastructure/simulation_adapter.py` y `entrypoints/cli/replay.py`
+- **Propiedad:** `game/application/**` (salvo `ports.py`), `game/infrastructure/simulation_adapter.py` (solo importa `mister.simulation.application.api`) y `entrypoints/cli/replay.py`
 - **Qué hacer:**
   - Casos de uso `StartRun` (genera la semilla en el servidor), `GetRun`, `TakeDecision` (idempotente) y `AdvanceBlock`, este último a través del puerto `SeasonSimulator` y su adaptador (ACL hacia simulation).
   - `ReplayRun`: reconstruye la partida a partir de la semilla y las decisiones y comprueba que coincide con el snapshot. Es el antitrampas.
@@ -554,7 +558,7 @@
 
 ### T5.1 · Contexto de evaluación
 - **Oleada:** F5-A · **Tamaño:** M · **Depende de:** T3.1 (eventos), T2.20
-- **Propiedad:** `backend/src/mister/evaluation/**` y `docs/adr/014-mister-score.md`
+- **Propiedad:** `backend/src/mister/evaluation/**` y `docs/adr/014-puntuacion-del-mister.md`
 - **Qué hacer:**
   - `MisterScore` de 0 a 100: títulos con un peso por competición, puntos en liga respecto a los reales, evolución de la moral y objetivos cumplidos. Los pesos son configurables y quedan documentados en el ADR.
   - `HistoricalComparison`.
@@ -592,7 +596,7 @@
 
 ### T5.4 · Página pública `/r/<id>` y `/og/<id>.png`
 - **Oleada:** F5-A · **Tamaño:** M · **Depende de:** T1.4
-- **Propiedad:** `entrypoints/api/routers/public.py` y `entrypoints/api/templates/result.html`
+- **Propiedad:** `entrypoints/api/routers/public.py` y `entrypoints/api/templates/result.html` y `docs/adr/010-tarjeta-og.md`
 - **Qué hacer:**
   - HTML renderizado en el servidor con `og:*` y `twitter:card=summary_large_image`, que carga la SPA en `/r/:id`.
   - `/og/<id>.png` con `Cache-Control: public, max-age=31536000, immutable`.
@@ -633,7 +637,7 @@
 
 ### T6.5 · Herramienta de contenido con IA offline
 - **Oleada:** F6-A · **Tamaño:** M · **Depende de:** T1.2
-- **Propiedad:** `tools/content-gen/**` y `docs/adr/013-offline-ai.md`
+- **Propiedad:** `tools/content-gen/**` y `docs/adr/013-ia-offline.md`
 - **Qué hacer:**
   - CLI `content-gen draft <slug>`: a partir de los datos estructurados (dilema y contexto), genera con la API de Claude variantes de los textos, titulares de prensa de la época y descripciones de los eventos. Salida estructurada, con los resultados en `texts.yaml` con `status: draft`.
   - CLI `content-gen review`: aprobación interactiva que añade `reviewed_by`.
@@ -665,7 +669,7 @@
 ## F7 · Producción y lanzamiento
 
 ### T7.1 · Decisión de hosting (ADR-012) [HUMANO]
-- **Oleada:** F7-A · **Tamaño:** S
+- **Oleada:** F7-A · **Tamaño:** S · **Propiedad:** `docs/adr/012-hosting.md`
 - **Qué hacer:** un agente compara un VPS con Docker Compose y Cloudflare, un PaaS (Fly o Render) y un enfoque híbrido, con coste mensual estimado en reposo y en un pico, operación y backups. **El autor decide** y fija el presupuesto mensual.
 
 ### T7.2 · Observabilidad

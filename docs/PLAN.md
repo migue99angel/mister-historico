@@ -86,16 +86,17 @@ backend/src/mister/
 1. `domain` solo importa la biblioteca estándar y `shared_kernel`. **Nada** de FastAPI, SQLAlchemy, Pydantic ni Redis.
 2. `application` importa `domain` y define los puertos. No importa `infrastructure`.
 3. `infrastructure` implementa los puertos. No la importa nadie salvo `bootstrap.py`.
-4. Un contexto no importa el `domain` de otro. Solo puede usar sus DTOs publicados o su API de aplicación, y siempre a través de un adaptador.
+4. Un contexto no importa el `domain` de otro. Solo puede usar su **API publicada** (`<contexto>/application/api.py`: DTOs y fachada), y siempre desde un adaptador de su `infrastructure`.
 5. `entrypoints` solo llama a casos de uso de `application`.
 
 **Frontend** (`frontend/src/`), con hexagonal ligera comprobada con `dependency-cruiser`:
 
 ```
 domain/          # view models y funciones puras (formatear resultados, narrativa de bloque...)
-application/     # hooks de casos de uso (useStartRun, useTakeDecision...) sobre puertos
-infrastructure/  # cliente API generado desde OpenAPI, TanStack Query, analítica
+application/     # hooks de casos de uso (useStartRun, useTakeDecision...) sobre puertos. Pueden usar TanStack Query
+infrastructure/  # adaptadores: cliente API generado desde OpenAPI, analítica
 ui/              # componentes y pantallas. Solo usan application/ y domain/
+app/             # composition root: rutas, providers y cableado de puertos con adaptadores. Es lo único que importa infrastructure/
 ```
 
 ### 3.3 Decisiones técnicas clave (cada una tendrá su ADR en `docs/adr/`)
@@ -109,13 +110,14 @@ ui/              # componentes y pantallas. Solo usan application/ y domain/
 | 005 | Determinismo | `RandomSource` con **flujos derivados**: `stream(seed, "match", fixture_id)`. Cada partido usa su propio flujo, así que una decisión tomada en el bloque 2 no altera el azar de partidos que no dependen de ella. Misma semilla y mismas decisiones dan exactamente el mismo resultado. |
 | 006 | Medias 1-99 | La rúbrica está en `docs/content/rating-rubric.md`. La media de cada jugador se guarda con `rating_rationale` y `sources`. |
 | 007 | Contenido como datos | `content/clubs/<club>.yaml` (nombre y colores), `content/club-seasons/<club>-<temporada>/squad.yaml` (plantilla, un directorio por cada club y temporada, sea propio o rival) y `content/seasons/<slug>/` (lo jugable: temporada, calendario, clasificaciones, dilemas y textos, que referencian club-seasons). Esquema Pydantic que también se exporta como JSON Schema. `mister content validate` en CI. `mister content load` es idempotente y usa un hash de la versión de contenido. |
-| 015 | `ClubSeason` frente a `PlayableSeason` | La plantilla pertenece al `ClubSeason`, de modo que tu equipo y los rivales comparten modelo. En una partida, la plantilla efectiva es la del contenido más las diferencias guardadas en `SquadRegistry` (fichajes y ventas). Es la base del mercado de fichajes y permite que cualquier rival sea jugable más adelante. |
 | 008 | Nombres reales desactivables | `NamePolicy` en la presentación, controlada por un flag de entorno. |
 | 009 | Persistencia de la partida | Snapshot del `RunState` en JSONB más un log de decisiones. **Replay:** el estado se puede reconstruir a partir de la semilla y las decisiones, y se usa como test y como antitrampas. Bloqueo optimista por `version`. |
 | 010 | Tarjeta OG | Se renderiza en el servidor con Pillow (1200×630), con URL inmutable `/og/<run_id>.png` cacheable en el CDN. `/r/<id>` es HTML renderizado en el servidor con las meta OG/Twitter, porque los crawlers no ejecutan la SPA. |
 | 011 | Frontend | TanStack Query para el estado de servidor, sin store global. Tailwind. Presupuesto: < 100 KB gz de JS inicial y Lighthouse móvil ≥ 90. |
 | 012 | Hosting | Se decide en F7. |
 | 013 | IA offline | `tools/content-gen` genera borradores con estado `draft`. Solo se cargan los textos con `reviewed_by`. El coste de cada ejecución queda registrado. Se usa una API key personal (§20 del brief). |
+| 014 | Puntuación del míster | Fórmula de `MisterScore` (0-100): títulos con peso por competición, puntos en liga frente a los reales, moral y objetivos. Pesos configurables. Lo redacta T5.1. |
+| 015 | `ClubSeason` frente a `PlayableSeason` | La plantilla pertenece al `ClubSeason`, de modo que tu equipo y los rivales comparten modelo. En una partida, la plantilla efectiva es la del contenido más las diferencias guardadas en `SquadRegistry` (fichajes y ventas). Es la base del mercado de fichajes y permite que cualquier rival sea jugable más adelante. |
 
 ---
 
