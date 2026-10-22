@@ -10,6 +10,8 @@ const METHODS = ['get', 'post', 'put', 'patch', 'delete'] as const;
 
 interface Operation {
   operationId?: string;
+  security?: Record<string, unknown>[];
+  requestBody?: unknown;
   description?: string;
   parameters?: { name?: string; in?: string; required?: boolean; $ref?: string }[];
   responses?: Record<string, unknown>;
@@ -70,17 +72,69 @@ describe('OpenAPI contract', () => {
     }
   });
 
-  it('requires the Idempotency-Key header on POST /runs/{runId}/decisions', () => {
+  function headerOf(path: string, name: string): { in?: string; required?: boolean } | undefined {
     const paths = openApiDocument.paths as Record<string, Record<string, Operation>>;
-    const operation = paths['/runs/{runId}/decisions']?.post;
     const components = openApiDocument.components as {
       parameters: Record<string, { name: string; in: string; required?: boolean }>;
     };
-    const resolved = (operation?.parameters ?? []).map((parameter) =>
+    const resolved = (paths[path]?.post?.parameters ?? []).map((parameter) =>
       parameter.$ref ? components.parameters[parameter.$ref.split('/').pop() ?? ''] : parameter,
     );
-    const header = resolved.find((parameter) => parameter?.name === 'Idempotency-Key');
-    expect(header?.in).toBe('header');
-    expect(header?.required).toBe(true);
+    return resolved.find((parameter) => parameter?.name === name);
+  }
+
+  it.each(['/runs/{runId}/decisions', '/runs/{runId}/advance'])(
+    'requires the Idempotency-Key header on POST %s',
+    (path) => {
+      const header = headerOf(path, 'Idempotency-Key');
+      expect(header?.in).toBe('header');
+      expect(header?.required).toBe(true);
+    },
+  );
+
+  it('does not use If-Match: optimistic locking is the expectedVersion body field', () => {
+    for (const path of ['/runs/{runId}/decisions', '/runs/{runId}/advance']) {
+      expect(headerOf(path, 'If-Match')).toBeUndefined();
+    }
+    const schemas = (openApiDocument.components as { schemas: Record<string, { required?: string[] }> })
+      .schemas;
+    expect(schemas.TakeDecisionRequest?.required).toContain('expectedVersion');
+    expect(schemas.AdvanceBlockRequest?.required).toContain('expectedVersion');
+  });
+
+  it('protects run commands with the bearer run token and keeps the result public', () => {
+    const paths = openApiDocument.paths as Record<string, Record<string, Operation>>;
+    const protectedOperations = [
+      ['/runs/{runId}', 'get'],
+      ['/runs/{runId}/decisions', 'post'],
+      ['/runs/{runId}/advance', 'post'],
+      ['/runs/{runId}/alias', 'post'],
+    ] as const;
+    for (const [path, method] of protectedOperations) {
+      const operation = paths[path]?.[method];
+      expect(operation?.security, `${method} ${path}`).toEqual([{ runToken: [] }]);
+      expect(Object.keys(operation?.responses ?? {}), `${method} ${path}`).toEqual(
+        expect.arrayContaining(['401', '403']),
+      );
+    }
+    expect(paths['/runs/{runId}/result']?.get?.security).toEqual([]);
+    expect(paths['/runs']?.post?.security).toBeUndefined();
+  });
+
+  it('has no 422 on POST /runs: request validation errors are 400 validation_error', () => {
+    const paths = openApiDocument.paths as Record<string, Record<string, Operation>>;
+    expect(Object.keys(paths['/runs']?.post?.responses ?? {})).not.toContain('422');
+    const info = openApiDocument.info as { description: string };
+    expect(info.description).toContain('validation_error');
+  });
+
+  it('limits slugs to 64 characters and only allows a leading underscore in ClubSeasonId', () => {
+    const schemas = (
+      openApiDocument.components as { schemas: Record<string, { pattern?: string; maxLength?: number }> }
+    ).schemas;
+    expect(schemas.Slug?.maxLength).toBe(64);
+    expect(new RegExp(schemas.Slug?.pattern ?? '').test('_aggregate')).toBe(false);
+    expect(new RegExp(schemas.ClubSeasonId?.pattern ?? '').test('_aggregate-2000-01')).toBe(true);
+    expect(schemas.ClubSeasonId?.maxLength).toBe(64);
   });
 });
