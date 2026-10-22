@@ -1,0 +1,126 @@
+[project]
+name = "mister"
+version = "0.1.0"
+description = "Míster Histórico: backend (FastAPI, arquitectura hexagonal)."
+license = "MIT"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "pydantic-settings",
+    "sqlalchemy>=2",
+    "alembic",
+    "psycopg[binary]>=3",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mister"]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "hypothesis>=6.170.5",
+    "import-linter>=2.15",
+    "mutmut>=3.8.0",
+    "mypy>=2.4.0",
+    "pytest>=9.1.1",
+    "pytest-benchmark>=5.3.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.17.1",
+    "testcontainers[postgres]>=4.15.0",
+]
+
+# --------------------------------------------------------------------------- ruff
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",   # pycodestyle
+    "F",        # pyflakes
+    "I",        # isort
+    "N",        # pep8-naming
+    "UP",       # pyupgrade
+    "B",        # bugbear
+    "A",        # builtins
+    "C4",       # comprehensions
+    "SIM",      # simplify
+    "RET",      # return
+    "PTH",      # pathlib
+    "PL",       # pylint
+    "RUF",      # ruff
+    "S",        # bandit
+    "T20",      # print
+    "PT",       # pytest-style
+    "TID",      # tidy-imports
+    "TC",       # type-checking imports
+    "ERA",      # código comentado
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    "S101",     # assert es la forma de escribir tests
+    "S603",     # los tests lanzan subprocesos con argumentos controlados
+    "PLR2004",  # números mágicos en asserts
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["mister"]
+
+# --------------------------------------------------------------------------- mypy
+[tool.mypy]
+strict = true
+python_version = "3.12"
+files = ["src", "tests"]
+mypy_path = "src"
+explicit_package_bases = true
+warn_unreachable = true
+plugins = ["pydantic.mypy"]
+
+# --------------------------------------------------------------------------- pytest
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "-m", "not calibration",
+    "--cov=mister",
+    "--cov-report=term-missing",
+]
+markers = [
+    "unit: tests unitarios, sin IO (por defecto para lo que no está en otra carpeta de nivel)",
+    "integration: tests contra infraestructura real (testcontainers, Postgres...)",
+    "contract: suites de contrato de puertos (fake y adaptador real)",
+    "calibration: Monte Carlo del motor; lento, se excluye por defecto (pytest -m calibration)",
+    "content: validación del contenido histórico",
+    "e2e: tests extremo a extremo",
+]
+xfail_strict = true
+filterwarnings = ["error"]
+
+# --------------------------------------------------------------------------- coverage
+[tool.coverage.run]
+source = ["mister"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+# Umbral global (PLAN §4.3). El umbral del 95 % de líneas y ramas para domain + application
+# se aplicará por capas (p. ej. `coverage report --include='src/mister/*/domain/*,...'
+# --fail-under=95` en la CI) en cuanto exista el primer contexto con esas capas.
+fail_under = 85
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "\\.\\.\\.",
+]
