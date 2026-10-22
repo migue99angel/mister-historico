@@ -14,6 +14,7 @@ from mister.leaderboard.application.ports import (
     AliasAlreadySetError,
     LeaderboardEntry,
     LeaderboardRepository,
+    VerdictKind,
 )
 from mister.shared_kernel.errors import DomainError, InvalidValueError
 from mister.shared_kernel.ids import PlayableSeasonId, RunId
@@ -39,7 +40,7 @@ def make_entry(
         season_id=season,
         alias=alias or f"Mister {number}",
         mister_score=score,
-        verdict_kind="surpassed_history",
+        verdict_kind=VerdictKind.SURPASSED_HISTORY,
         finished_at=T0 + timedelta(minutes=finished_after),
     )
 

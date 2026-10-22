@@ -6,6 +6,7 @@ import pytest
 from tests.contracts.suites.share_card_renderer import make_card
 
 from mister.shared_kernel.errors import InvalidValueError
+from mister.sharing.application.ports import VerdictKind
 from mister.sharing.infrastructure.in_memory.share_card import FakeShareCardRenderer
 
 
@@ -19,3 +20,12 @@ def test_the_fake_renderer_needs_no_imaging_library() -> None:
     renderer = FakeShareCardRenderer()
 
     assert isinstance(renderer.render(make_card()), bytes)
+
+
+def test_the_verdict_kinds_are_the_ones_of_the_api() -> None:
+    assert {kind.value for kind in VerdictKind} == {
+        "surpassed_history",
+        "matched_history",
+        "below_history",
+        "sacked",
+    }

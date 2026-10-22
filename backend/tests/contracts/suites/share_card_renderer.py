@@ -12,7 +12,12 @@ from dataclasses import replace
 import pytest
 
 from mister.shared_kernel.ids import RunId
-from mister.sharing.application.ports import ShareCard, ShareCardComparison, ShareCardRenderer
+from mister.sharing.application.ports import (
+    ShareCard,
+    ShareCardComparison,
+    ShareCardRenderer,
+    VerdictKind,
+)
 
 RendererFactory = Callable[[], ShareCardRenderer]
 
@@ -26,7 +31,7 @@ def make_card() -> ShareCard:
         run_id=RunId(uuid.UUID(int=1)),
         club_name="Test FC",
         historical_manager="Mister Ficticio",
-        verdict_kind="surpassed_history",
+        verdict_kind=VerdictKind.SURPASSED_HISTORY,
         verdict_text="You surpassed Mister Ficticio.",
         mister_score=78,
         comparisons=(
@@ -68,7 +73,7 @@ class ShareCardRendererContract:
     def test_a_different_card_gives_different_bytes(self, make_renderer: RendererFactory) -> None:
         renderer = make_renderer()
 
-        other = replace(make_card(), mister_score=12, verdict_kind="below_history")
+        other = replace(make_card(), mister_score=12, verdict_kind=VerdictKind.BELOW_HISTORY)
 
         assert renderer.render(make_card()) != renderer.render(other)
 

@@ -10,6 +10,10 @@ from collections.abc import Callable, Sequence
 import pytest
 
 from mister.evaluation.application.ports import (
+    BoardObjectiveSpec,
+    CompetitionKind,
+    CompetitionTier,
+    ObjectiveKind,
     CompetitionHistory,
     HistoricalOutcomeNotFoundError,
     HistoricalOutcomeProvider,
@@ -29,15 +33,47 @@ def make_outcome(slug: str = "test-fc-2000-01") -> HistoricalSeasonOutcome:
         manager_alias_name="El Profesor",
         competitions=(
             CompetitionHistory(
-                CompetitionId("liga-test"), "Liga Test", "league", champion=False, final_position=2
+                CompetitionId("liga-test"),
+                "Liga Test",
+                CompetitionKind.LEAGUE,
+                CompetitionTier.DOMESTIC_LEAGUE,
+                champion=False,
+                final_position=2,
             ),
-            CompetitionHistory(CompetitionId("copa-test"), "Copa Test", "cup", champion=True),
+            CompetitionHistory(
+                CompetitionId("copa-test"),
+                "Copa Test",
+                CompetitionKind.CUP,
+                CompetitionTier.DOMESTIC_CUP,
+                champion=True,
+            ),
             CompetitionHistory(
                 CompetitionId("copa-continental-test"),
                 "Copa Continental Test",
-                "continental_cup",
+                CompetitionKind.CONTINENTAL_CUP,
+                CompetitionTier.CONTINENTAL_PRIMARY,
                 champion=False,
+                eliminated_in_stage_id="groups",
                 eliminated_in_stage_name="Group stage",
+            ),
+        ),
+        board_objectives=(
+            BoardObjectiveSpec(
+                "obj-liga",
+                CompetitionId("liga-test"),
+                ObjectiveKind.FINISH_TOP,
+                "Finish top three.",
+                target_position=3,
+            ),
+            BoardObjectiveSpec(
+                "obj-copa",
+                CompetitionId("copa-test"),
+                ObjectiveKind.REACH_STAGE,
+                "Reach the final.",
+                target_stage="final",
+            ),
+            BoardObjectiveSpec(
+                "obj-cont", CompetitionId("copa-continental-test"), ObjectiveKind.WIN, "Win it."
             ),
         ),
     )
