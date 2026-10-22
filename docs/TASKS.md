@@ -109,7 +109,7 @@
 - **Qué hacer:**
   - IDs tipados: `RunId`, `ClubSeasonId`, `PlayableSeasonId`, `PlayerId`, etc.
   - `Seed`.
-  - Puerto `RandomSource` con `stream(*keys) -> RandomSource`, `poisson(lam)`, `random()` y `choice()`, más un adaptador `Pcg64RandomSource` (numpy) que deriva cada flujo con un hash estable de la semilla y las claves (ADR-005).
+  - Puerto `RandomSource` con `stream(*keys) -> RandomSource`, `poisson(lam)`, `random()` y `choice()`, implementado en Python puro (`StdlibRandomSource`) sobre `random.Random(int).random()`, con cada flujo derivado de un hash estable (`hashlib`) de la semilla y las claves, y con las distribuciones (Poisson, choice…) implementadas en el proyecto (ADR-005). Sin numpy.
   - Puerto `Clock` y su fake.
   - `DomainError`, `DomainEvent` y el puerto `EventBus` con su implementación síncrona en memoria.
   - Redactar el ADR-005.
