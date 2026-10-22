@@ -10,6 +10,14 @@ real_league:
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01/league
   verify: ok
+club_data:
+  club_matches_all: 14
+  club_matches_league: 10
+  level_tier: D
+  level_tier_basis: 7th of 8 in the fictional Liga Test; no European round.
+  sources:
+  - https://example.org/test-content/clubs/dummy-rovers-2000-01
+  verify: ok
 sources:
 - https://example.org/test-content/squads/dummy-rovers-2000-01
 verify: ok
@@ -19,8 +27,23 @@ players:
   alias_name: Jugador DRV-01
   position: GK
   age: 19
-  rating: 55
+  rating: 50
   key: false
+  season_stats:
+    minutes_league: 192
+    starts_league: 2
+    appearances_league: 3
+    minutes_all: 269
+    starts_all: 3
+    appearances_all: 4
+    goals_all: 0
+    assists_all: 0
+    clean_sheets_all: 1
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/dummy-rovers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
@@ -31,6 +54,20 @@ players:
   age: 27
   rating: 51
   key: false
+  season_stats:
+    minutes_league: 117
+    starts_league: 1
+    appearances_league: 3
+    minutes_all: 165
+    starts_all: 2
+    appearances_all: 4
+    goals_all: 0
+    assists_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/dummy-rovers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
@@ -39,20 +76,45 @@ players:
   alias_name: Jugador DRV-03
   position: DF
   age: 33
-  rating: 62
+  rating: 52
   key: true
+  season_stats:
+    minutes_league: 341
+    starts_league: 4
+    appearances_league: 6
+    minutes_all: 478
+    starts_all: 6
+    appearances_all: 9
+    goals_all: 0
+    assists_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/dummy-rovers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
-    rated above the squad average.'
 - player_id: drv-04
   display_name: Gael Ejemplo
   alias_name: Jugador DRV-04
   position: DF
   age: 20
-  rating: 56
+  rating: 49
   key: false
+  season_stats:
+    minutes_league: 225
+    starts_league: 3
+    appearances_league: 4
+    minutes_all: 316
+    starts_all: 4
+    appearances_all: 5
+    goals_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/dummy-rovers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
@@ -61,8 +123,21 @@ players:
   alias_name: Jugador DRV-05
   position: DF
   age: 24
-  rating: 50
+  rating: 46
   key: false
+  season_stats:
+    minutes_league: 104
+    appearances_league: 3
+    minutes_all: 146
+    starts_all: 2
+    appearances_all: 4
+    goals_all: 0
+    assists_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/dummy-rovers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
@@ -71,8 +146,21 @@ players:
   alias_name: Jugador DRV-06
   position: DF
   age: 30
-  rating: 58
+  rating: 50
   key: false
+  season_stats:
+    minutes_league: 277
+    starts_league: 4
+    appearances_league: 6
+    minutes_all: 389
+    appearances_all: 8
+    goals_all: 0
+    assists_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/dummy-rovers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
@@ -81,20 +169,43 @@ players:
   alias_name: Jugador DRV-07
   position: DF
   age: 23
-  rating: 65
+  rating: 52
   key: true
+  season_stats:
+    minutes_league: 384
+    starts_league: 4
+    appearances_league: 5
+    minutes_all: 538
+    starts_all: 6
+    appearances_all: 7
+    goals_all: 0
+    assists_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/dummy-rovers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
-    rated above the squad average.'
 - player_id: drv-08
   display_name: Kiko Dummy
   alias_name: Jugador DRV-08
   position: DF
   age: 30
-  rating: 51
+  rating: 46
   key: false
+  season_stats:
+    minutes_league: 117
+    starts_league: 1
+    appearances_league: 3
+    goals_all: 0
+    assists_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/dummy-rovers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
@@ -103,8 +214,22 @@ players:
   alias_name: Jugador DRV-09
   position: MF
   age: 33
-  rating: 53
+  rating: 47
   key: false
+  season_stats:
+    minutes_league: 160
+    starts_league: 2
+    appearances_league: 4
+    minutes_all: 225
+    starts_all: 3
+    appearances_all: 6
+    goals_all: 0
+    assists_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/dummy-rovers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
@@ -113,44 +238,93 @@ players:
   alias_name: Jugador DRV-10
   position: MF
   age: 35
-  rating: 59
+  rating: 50
   key: true
+  season_stats:
+    minutes_league: 287
+    starts_league: 4
+    appearances_league: 4
+    minutes_all: 402
+    starts_all: 5
+    appearances_all: 6
+    goals_all: 0
+    assists_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/dummy-rovers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
-    rated above the squad average.'
 - player_id: drv-11
   display_name: Nico Sampleton
   alias_name: Jugador DRV-11
   position: MF
   age: 23
-  rating: 67
+  rating: 57
   key: true
+  season_stats:
+    minutes_league: 460
+    starts_league: 6
+    appearances_league: 7
+    minutes_all: 645
+    starts_all: 8
+    appearances_all: 10
+    goals_all: 1
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/dummy-rovers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
-    rated above the squad average.'
 - player_id: drv-12
   display_name: Oleg Fakerson
   alias_name: Jugador DRV-12
   position: MF
   age: 20
-  rating: 67
+  rating: 60
   key: true
+  season_stats:
+    minutes_league: 470
+    starts_league: 6
+    appearances_league: 8
+    minutes_all: 658
+    starts_all: 8
+    appearances_all: 11
+    goals_all: 2
+    assists_all: 1
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/dummy-rovers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
-    rated above the squad average.'
 - player_id: drv-13
   display_name: Pepe Testoni
   alias_name: Jugador DRV-13
   position: MF
   age: 34
-  rating: 49
+  rating: 45
   key: false
+  season_stats:
+    minutes_league: 76
+    starts_league: 1
+    appearances_league: 1
+    minutes_all: 107
+    starts_all: 1
+    appearances_all: 2
+    goals_all: 0
+    assists_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/dummy-rovers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
@@ -159,20 +333,45 @@ players:
   alias_name: Jugador DRV-14
   position: MF
   age: 28
-  rating: 60
+  rating: 53
   key: true
+  season_stats:
+    minutes_league: 294
+    appearances_league: 5
+    minutes_all: 412
+    starts_all: 5
+    appearances_all: 7
+    goals_all: 1
+    assists_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/dummy-rovers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
-    rated above the squad average.'
 - player_id: drv-15
   display_name: Rafa Ficticio
   alias_name: Jugador DRV-15
   position: FW
   age: 19
-  rating: 50
+  rating: 47
   key: false
+  season_stats:
+    minutes_league: 100
+    starts_league: 1
+    appearances_league: 4
+    minutes_all: 140
+    starts_all: 2
+    appearances_all: 5
+    goals_all: 1
+    assists_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/dummy-rovers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
@@ -181,8 +380,22 @@ players:
   alias_name: Jugador DRV-16
   position: FW
   age: 34
-  rating: 51
+  rating: 47
   key: false
+  season_stats:
+    minutes_league: 122
+    starts_league: 1
+    appearances_league: 2
+    minutes_all: 172
+    starts_all: 2
+    appearances_all: 3
+    goals_all: 1
+    assists_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/dummy-rovers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
@@ -191,8 +404,21 @@ players:
   alias_name: Jugador DRV-17
   position: FW
   age: 28
-  rating: 51
+  rating: 46
   key: false
+  season_stats:
+    minutes_league: 125
+    starts_league: 1
+    appearances_league: 3
+    minutes_all: 175
+    appearances_all: 4
+    goals_all: 0
+    assists_all: 0
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/dummy-rovers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
@@ -201,10 +427,21 @@ players:
   alias_name: Jugador DRV-18
   position: FW
   age: 23
-  rating: 59
+  rating: 54
   key: true
+  season_stats:
+    minutes_league: 298
+    starts_league: 4
+    appearances_league: 6
+    minutes_all: 418
+    starts_all: 5
+    appearances_all: 8
+    goals_all: 2
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/stats/dummy-rovers-2000-01
+    verify: ok
   sources:
   - https://example.org/test-content/squads/dummy-rovers-2000-01
   verify: ok
-  rating_rationale: 'Fictional rationale: one of the seven best outfield players of this synthetic squad,
-    rated above the squad average.'

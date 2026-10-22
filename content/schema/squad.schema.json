@@ -1,8 +1,129 @@
 {
   "$defs": {
+    "Award": {
+      "additionalProperties": false,
+      "description": "An individual award of the season, with the source that confirms it.",
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "source": {
+          "format": "uri",
+          "maxLength": 2083,
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "tier": {
+          "enum": [
+            "W",
+            "L"
+          ],
+          "title": "Tier",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "tier",
+        "source"
+      ],
+      "title": "Award",
+      "type": "object"
+    },
+    "ClubData": {
+      "additionalProperties": false,
+      "description": "What the formula needs to know of the club in the season (rubric sections 2.1 and 3).\n\n`level_tier_basis` states the criterion (final position, best European round) so a reviewer\ncan check the tier.",
+      "properties": {
+        "club_matches_all": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Club Matches All"
+        },
+        "club_matches_league": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Club Matches League"
+        },
+        "level_tier": {
+          "anyOf": [
+            {
+              "enum": [
+                "A",
+                "B",
+                "C",
+                "D"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Level Tier"
+        },
+        "level_tier_basis": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Level Tier Basis"
+        },
+        "sources": {
+          "description": "URLs backing the datum.",
+          "items": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "verify": {
+          "enum": [
+            "ok",
+            "pending"
+          ],
+          "title": "Verify",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sources",
+        "verify",
+        "club_matches_all",
+        "club_matches_league",
+        "level_tier"
+      ],
+      "title": "ClubData",
+      "type": "object"
+    },
     "PlayerEntry": {
       "additionalProperties": false,
-      "description": "A player in a club-season squad. `sources` back his membership of the squad.\n\n`rating` and `age` may be `null` only while the player is `verify: pending`.\n`rating_rationale` is required for a verified `key` player and, in the playable\nclub-season, for every verified player (the loader checks the latter).",
+      "description": "A player in a club-season squad. `sources` back his membership of the squad.\n\n`position`, `age` and `rating` may be `null` only while the player is `verify: pending`.\nThe rating is computed from `season_stats` and the club's `club_data` (ADR-006) and checked\nagainst the formula by the tree validation. `rating_override` replaces it, with a\n`rationale` and `sources`; `rating_rationale` only makes sense next to an override.\nStatistics are required in a club squad and absent in a market squad (it has no club).",
       "properties": {
         "age": {
           "anyOf": [
@@ -64,7 +185,14 @@
           "type": "string"
         },
         "position": {
-          "$ref": "#/$defs/Position"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Position"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "rating": {
           "anyOf": [
@@ -79,6 +207,17 @@
           ],
           "title": "Rating"
         },
+        "rating_override": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RatingOverride"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "rating_rationale": {
           "anyOf": [
             {
@@ -91,6 +230,17 @@
           ],
           "default": null,
           "title": "Rating Rationale"
+        },
+        "season_stats": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SeasonStats"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "sources": {
           "description": "URLs backing the datum.",
@@ -147,6 +297,42 @@
       ],
       "title": "Position",
       "type": "string"
+    },
+    "RatingOverride": {
+      "additionalProperties": false,
+      "description": "A justified manual correction of the formula's rating (rubric section 7).\n\nIts distance from the formula is limited, which needs the formula and is therefore\nchecked with the whole tree (`rating_checks`).",
+      "properties": {
+        "rationale": {
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "sources": {
+          "description": "URLs backing the datum.",
+          "items": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Sources",
+          "type": "array"
+        },
+        "value": {
+          "maximum": 99,
+          "minimum": 1,
+          "title": "Value",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "value",
+        "rationale",
+        "sources"
+      ],
+      "title": "RatingOverride",
+      "type": "object"
     },
     "RealLeague": {
       "additionalProperties": false,
@@ -224,6 +410,195 @@
       "title": "RealLeague",
       "type": "object"
     },
+    "SeasonStats": {
+      "additionalProperties": false,
+      "description": "Public statistics of one player in one season (rubric section 2.1).\n\n`null` means \"not found in the sources\". The statistics the formula cannot do without may\nbe `null` only with `verify: pending`; the optional ones (starts, assists, clean sheets,\nall-competitions figures) may be `null` in a verified datum, and the formula has a\ndocumented fallback for each (rubric section 5). Position and age live in the player.",
+      "properties": {
+        "appearances_all": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Appearances All"
+        },
+        "appearances_league": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Appearances League"
+        },
+        "assists_all": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Assists All"
+        },
+        "available_matches_all": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Available Matches All"
+        },
+        "awards": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Award"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Awards"
+        },
+        "caps": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Caps"
+        },
+        "clean_sheets_all": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Clean Sheets All"
+        },
+        "goals_all": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Goals All"
+        },
+        "minutes_all": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Minutes All"
+        },
+        "minutes_league": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Minutes League"
+        },
+        "sources": {
+          "description": "URLs backing the datum.",
+          "items": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "starts_all": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Starts All"
+        },
+        "starts_league": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Starts League"
+        },
+        "verify": {
+          "enum": [
+            "ok",
+            "pending"
+          ],
+          "title": "Verify",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sources",
+        "verify",
+        "minutes_league",
+        "appearances_league",
+        "goals_all",
+        "caps",
+        "awards"
+      ],
+      "title": "SeasonStats",
+      "type": "object"
+    },
     "Subrole": {
       "description": "Optional finer role; it must be coherent with the position.",
       "enum": [
@@ -284,6 +659,17 @@
         }
       ],
       "title": "Club"
+    },
+    "club_data": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ClubData"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "club_season": {
       "maxLength": 64,

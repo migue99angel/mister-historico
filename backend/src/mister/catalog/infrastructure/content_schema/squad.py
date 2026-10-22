@@ -19,6 +19,11 @@ from mister.catalog.infrastructure.content_schema.base import (
     season_window,
 )
 from mister.catalog.infrastructure.content_schema.effects import Tactic
+from mister.catalog.infrastructure.content_schema.season_stats import (
+    ClubData,
+    RatingOverride,
+    SeasonStats,
+)
 
 MARKET_PREFIX = "_market-"
 MIN_AGE = 15
@@ -59,31 +64,46 @@ _SUBROLES_BY_POSITION: dict[Position, frozenset[Subrole]] = {
 class PlayerEntry(SourcedModel):
     """A player in a club-season squad. `sources` back his membership of the squad.
 
-    `rating` and `age` may be `null` only while the player is `verify: pending`.
-    `rating_rationale` is required for a verified `key` player and, in the playable
-    club-season, for every verified player (the loader checks the latter).
+    `position`, `age` and `rating` may be `null` only while the player is `verify: pending`.
+    The rating is computed from `season_stats` and the club's `club_data` (ADR-006) and checked
+    against the formula by the tree validation. `rating_override` replaces it, with a
+    `rationale` and `sources`; `rating_rationale` only makes sense next to an override.
+    Statistics are required in a club squad and absent in a market squad (it has no club).
     """
 
-    nullable_when_pending = ("age", "rating")
+    nullable_when_pending = ("position", "age", "rating")
 
     player_id: PlayerId
     display_name: NonBlank
     alias_name: NonBlank
-    position: Annotated[Position, enum_from_text(Position)]
+    position: Annotated[Position, enum_from_text(Position)] | None
     subrole: Annotated[Subrole, enum_from_text(Subrole)] | None = None
     age: Annotated[int, Field(ge=MIN_AGE, le=MAX_AGE)] | None
     rating: Rating | None
     key: bool
+    season_stats: SeasonStats | None = None
+    rating_override: RatingOverride | None = None
     rating_rationale: NonBlank | None = None
     joined_on: date | None = None
     left_on: date | None = None
 
     @model_validator(mode="after")
     def _check_player(self) -> Self:
-        if self.key and self.verify == "ok" and not self.rating_rationale:
-            raise ValueError("rating_rationale is required for key players")
-        if self.subrole is not None and self.subrole not in _SUBROLES_BY_POSITION[self.position]:
-            raise ValueError(f"subrole {self.subrole} is not valid for position {self.position}")
+        if self.rating_rationale and self.rating_override is None:
+            raise ValueError("rating_rationale is only for a rating_override")
+        if self.position is not None:
+            allowed = _SUBROLES_BY_POSITION[self.position]
+            if self.subrole is not None and self.subrole not in allowed:
+                raise ValueError(
+                    f"subrole {self.subrole} is not valid for position {self.position}"
+                )
+            stats = self.season_stats
+            if (
+                stats is not None
+                and stats.clean_sheets_all is not None
+                and self.position is not Position.GK
+            ):
+                raise ValueError("clean_sheets_all is only for goalkeepers")
         if self.joined_on and self.left_on and self.left_on < self.joined_on:
             raise ValueError("left_on must not be before joined_on")
         return self
@@ -137,6 +157,7 @@ class SquadFile(_ClubSeasonFile):
     """A full squad. Its `sources` and `verify` cover the squad as a whole."""
 
     real_league: RealLeague | None
+    club_data: ClubData | None = None
     default_tactic: Tactic = DEFAULT_TACTIC
     players: Annotated[tuple[PlayerEntry, ...], Field(min_length=1)]
 
@@ -144,12 +165,20 @@ class SquadFile(_ClubSeasonFile):
     def _check_squad(self) -> Self:
         if not self.is_market and self.real_league is None:
             raise ValueError("real_league is required for a club squad")
+        if self.is_market and self.club_data is not None:
+            raise ValueError("a market squad has no club_data")
+        if not self.is_market and self.club_data is None:
+            raise ValueError("club_data is required for a club squad")
         ids = [p.player_id for p in self.players]
         duplicates = sorted({i for i in ids if ids.count(i) > 1})
         if duplicates:
             raise ValueError(f"duplicate player_id: {', '.join(duplicates)}")
         first, last = season_window(self.season)
-        for entry in self.players:
+        for index, entry in enumerate(self.players):
+            if self.is_market and entry.season_stats is not None:
+                raise ValueError(f"players.{index}.season_stats: a market squad has no club")
+            if not self.is_market and entry.season_stats is None:
+                raise ValueError(f"players.{index}.season_stats is required in a club squad")
             for value in (entry.joined_on, entry.left_on):
                 if value is not None and not first <= value <= last:
                     raise ValueError(

@@ -521,15 +521,15 @@ def test_every_competition_needs_one_historical_outcome(root: Path) -> None:
 
 # --------------------------------------------------------------------------- release mode
 def test_pending_data_is_accepted_outside_release_mode(root: Path) -> None:
-    edit(root, SQUAD, lambda d: d["players"][2].update(age=None, verify="pending"))
+    edit(root, SQUAD, lambda d: d["players"][4].update(age=None, rating=None, verify="pending"))
 
     load_content_tree(root, release=False)
 
 
 def test_pending_data_is_rejected_in_release_mode(root: Path) -> None:
-    edit(root, SQUAD, lambda d: d["players"][2].update(age=None, verify="pending"))
+    edit(root, SQUAD, lambda d: d["players"][4].update(age=None, rating=None, verify="pending"))
 
-    assert_issue(issues_of(root, release=True), SQUAD, "players.2.verify", "pending")
+    assert_issue(issues_of(root, release=True), SQUAD, "players.4.verify", "pending")
 
 
 def test_pending_standings_and_fixtures_are_rejected_in_release_mode(root: Path) -> None:
@@ -839,6 +839,7 @@ def test_a_rival_squad_needs_a_minimum_coverage_per_position(
         for player in d["players"]:
             if player["position"] == position:
                 player["position"] = replacement
+                player["season_stats"].pop("clean_sheets_all", None)
 
     edit(root, "club-seasons/dummy-rovers-2000-01/squad.yaml", mutate)
 
@@ -878,20 +879,20 @@ def test_a_pending_rating_is_accepted_outside_release_mode(root: Path) -> None:
     edit(
         root,
         "club-seasons/sample-united-2000-01/squad.yaml",
-        lambda d: make_unrated(d["players"][2]),
+        lambda d: make_unrated(d["players"][4]),
     )
 
     load_content_tree(root, release=False)
 
 
 def test_a_pending_rating_is_rejected_in_release_mode(root: Path) -> None:
-    edit(root, SQUAD, lambda d: make_unrated(d["players"][2]))
+    edit(root, SQUAD, lambda d: make_unrated(d["players"][4]))
 
-    assert_issue(issues_of(root, release=True), SQUAD, "players.2.verify", "pending")
+    assert_issue(issues_of(root, release=True), SQUAD, "players.4.verify", "pending")
 
 
 def test_a_pending_playable_player_needs_no_statistics_yet(root: Path) -> None:
-    edit(root, SQUAD, lambda d: make_unrated(d["players"][2]))
+    edit(root, SQUAD, lambda d: make_unrated(d["players"][4]))
 
     load_content_tree(root, release=False)
 
