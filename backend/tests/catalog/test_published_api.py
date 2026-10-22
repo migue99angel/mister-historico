@@ -4,6 +4,7 @@ from dataclasses import FrozenInstanceError, replace
 from typing import assert_never
 
 import pytest
+from tests.contracts.suites.sample_content import make_sample_season
 
 from mister.catalog.application.api import (
     BoardConfidenceEffectDTO,
@@ -23,34 +24,34 @@ from mister.catalog.application.api import (
 )
 from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.ids import ClubSeasonId, OptionId, PlayableSeasonId
-from tests.contracts.suites.sample_content import make_sample_season
 
 
 def _describe(effect: EffectDTO) -> str:
     """Exhaustive `match` over the closed union: mypy fails if a type is missing."""
     match effect:
         case MoraleEffectDTO():
-            return "morale"
+            name = "morale"
         case PlayerMoraleEffectDTO():
-            return "player_morale"
+            name = "player_morale"
         case SignPlayerEffectDTO():
-            return "sign_player"
+            name = "sign_player"
         case SellPlayerEffectDTO():
-            return "sell_player"
+            name = "sell_player"
         case SetTacticEffectDTO():
-            return "set_tactic"
+            name = "set_tactic"
         case CompetitionPriorityEffectDTO():
-            return "competition_priority"
+            name = "competition_priority"
         case BoardConfidenceEffectDTO():
-            return "board_confidence"
+            name = "board_confidence"
         case YouthMinutesEffectDTO():
-            return "youth_minutes"
+            name = "youth_minutes"
         case InjuryEffectDTO():
-            return "injury"
+            name = "injury"
         case FitnessEffectDTO():
-            return "fitness"
+            name = "fitness"
         case _ as unreachable:
             assert_never(unreachable)
+    return name
 
 
 def test_effect_union_covers_the_ten_types_of_the_dsl() -> None:
