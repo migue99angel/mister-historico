@@ -87,9 +87,9 @@ plugins = ["pydantic.mypy"]
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["tests"]
-pythonpath = ["src"]
 addopts = [
     "-ra",
+    "--import-mode=importlib",
     "--strict-markers",
     "--strict-config",
     "-m", "not calibration",
