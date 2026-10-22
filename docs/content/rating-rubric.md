@@ -137,7 +137,7 @@ Se rellenan igual que los de tu equipo: media según la rúbrica completa (secci
 
 ### 6.4 Cómo se asigna la media a los no clave
 
-Los no clave llevan `rating`, `sources` (con la fuente de los minutos) y `verify`, **sin `rating_rationale`**. Se asignan con esta tabla rápida, en tres pasos:
+Los no clave llevan `rating`, `sources` (con la fuente de los minutos) y `verify`, **sin `rating_rationale`, salvo si salen del rango de la tabla (punto 4)**. Se asignan con esta tabla rápida, en tres pasos:
 
 1. **Nivel del club en esa temporada (nivel absoluto, no solo de su liga):**
    - **A:** entre los diez mejores clubes de Europa esa temporada.
@@ -158,7 +158,7 @@ Los no clave llevan `rating`, `sources` (con la fuente de los minutos) y `verify
 | D | 63-68 | 59-64 | 54-59 |
 
    Coherencia con la sección 2: un titular regular de un club de nivel A, sin evidencia individual, es un "titular de un grande" y no puede quedar sistemáticamente por debajo de la banda 80-84; por eso su rango (78-83) cubre la parte baja de esa banda. Los rangos de B, C y D siguen las bandas 75-79, 70-74 y 65-69.
-4. **Punto dentro del rango:** sube hacia el techo si hay evidencia individual de rendimiento (estadística destacada, premio menor) y baja hacia el suelo si no la hay. No salgas del rango sin convertir al jugador en `key` y justificarlo.
+4. **Punto dentro del rango:** sube hacia el techo si hay evidencia individual de rendimiento (estadística destacada, premio menor) y baja hacia el suelo si no la hay. Puedes salir del rango de la tabla si tienes **evidencia documentada**, y entonces el jugador **lleva `rating_rationale` aunque no sea `key`** (1-2 frases con esa evidencia y sus `sources`). Sin evidencia, quédate dentro del rango.
 
 > El nivel del club es aquí un **indicio débil**, no un bonus. Si un no clave tiene evidencia individual clara que lo lleve por encima del techo de su rango (6.2), deja de ser un no clave: márcalo `key: true`.
 
@@ -168,7 +168,8 @@ La media de cada jugador de un rival no se valida una por una, sino **en conjunt
 
 - **Qué se compara:** los goles esperados por partido frente a un rival medio de la liga (ataque) y de un rival medio (defensa), calculados con el modelo, frente a los reales.
 - **Banda de tolerancia propuesta:** la diferencia tiene que ser menor o igual que el **mayor** de estos dos valores: **±0,25 goles por partido** o **±20 % del valor real**. La banda cubre la variación aleatoria de una temporada de unas 38 jornadas y la imprecisión de las medias; el razonamiento está en el ADR-004 (sección "Bandas de calibración").
-- **Efecto:** esta comprobación **rompe la CI** (junto con la de títulos). Las de posición y puntos de una temporada son solo avisos (ADR-004, sección 7).
+- **A quién aplica:** el assert solo aplica a los rivales con plantilla cuya `real_league` es la liga de la temporada jugable. Para los demás (rivales continentales o de otras ligas) habría que normalizar con los participantes de **su** liga, que no están en el contenido, así que su comparación es solo un **aviso** en el informe.
+- **Efecto:** esta comprobación **rompe la CI** (junto con la de títulos) para los rivales de la liga jugable. Las de posición y puntos de una temporada son solo avisos (ADR-004, sección 7).
 - **Resultado:** T2.7 produce una lista de rivales fuera de banda con las medias que habría que revisar. **No las corrige automáticamente.**
 - **Qué hace el agente investigador:** aporta los goles reales con su fuente y sus medias. **No ajusta una media para que cuadre la banda.** Si la banda falla, la corrección se hace con evidencia nueva (por ejemplo, un jugador clave mal valorado), no con un retoque numérico. Ajustar medias sin evidencia para acercarse a los goles es inventar el dato.
 - **Circularidad:** como la comprobación usa los goles reales, el agente **no debe** mirar la clasificación final ni los goles para asignar medias. Las medias salen de la evidencia individual; la comprobación detecta errores sistemáticos.
@@ -290,12 +291,15 @@ Se usan el club ficticio **Real Atlántico FC**, la **Liga Ficticia** y la tempo
   age: 18
   rating: 55
   key: false
+  rating_rationale: >-
+    Jugador del filial convocado en 3 partidos con el primer equipo y 38 minutos en total.
+    Sin evidencia de rendimiento en el primer equipo: se sitúa en la banda 50-59, por debajo del rango de un suplente de Primera.
   sources:
     - https://example.org/liga-ficticia/2050-51/estadisticas
   verify: ok
 ```
 
-Para un no clave de un club de nivel B con 120 minutos en total (suplente), la tabla de 6.4 daría 62-67. Aquí la media baja a 55 porque es un jugador del filial convocado en 3 partidos, y esa evidencia individual (que no es la de un suplente de Primera) justifica salir del rango. Como se sale de 6.4, el agente lo explica en la PR. Con `verify: pending` si faltasen sus minutos.
+Para un no clave de un club de nivel B con 120 minutos en total (suplente), la tabla de 6.4 daría 62-67. Aquí la media baja a 55 porque es un jugador del filial convocado en 3 partidos, y esa evidencia individual (que no es la de un suplente de Primera) justifica salir del rango. Como se sale de 6.4, el jugador lleva `rating_rationale` aunque no sea `key`. Con `verify: pending` si faltasen sus minutos.
 
 ### 9.5 Rival: un no clave aplicando la tabla rápida de 6.4
 
