@@ -19,7 +19,7 @@ Antes de empezar, lee este fichero, PLAN §3-4, los ADR relevantes y tu tarea en
 1. Lee la tarea completa: dependencias, **propiedad**, qué hacer, tests primero y aceptación.
 2. **Toca solo los ficheros de tu propiedad.** Si necesitas otro, para y dilo en la PR.
 3. Trabaja en la rama `task/<ID>-<slug>` (por ejemplo, `task/T2.3-league`). **Una tarea, una PR** contra `main`.
-4. **No cambies contratos** (puertos en `*/application/ports.py`, esquema de contenido, `contracts/openapi.yaml`) desde una tarea normal: abre una tarea de cambio de contrato (**CR**), que se integra primero (PLAN §6).
+4. **No cambies contratos** (puertos en `*/application/ports.py` y `*/domain/ports.py`, APIs publicadas en `*/application/api.py`, esquema de contenido, `contracts/openapi.yaml`) desde una tarea normal: abre una tarea de cambio de contrato (**CR**), que se integra primero (PLAN §6).
 5. Los ficheros compartidos (`pyproject.toml`, `package.json`, workflows de CI, `bootstrap.py`) solo los modifica la tarea que los creó o una CR. ¿Necesitas una dependencia nueva? Pídela en la descripción de la PR.
 6. Termina cuando se cumplan todos los criterios de aceptación y `make test` y `make lint` estén en verde.
 7. No integres tu propia PR: pasa la CI y una revisión independiente. Las tareas **[HUMANO]** las cierra el autor.
@@ -28,16 +28,16 @@ Antes de empezar, lee este fichero, PLAN §3-4, los ADR relevantes y tu tarea en
 
 Siete contextos en `backend/src/mister/`: `catalog`, `simulation`, `game`, `evaluation`, `leaderboard`, `sharing` y `analytics`, más `shared_kernel/`, `entrypoints/` (FastAPI y CLI) y `bootstrap.py` (composition root).
 
-Reglas de capas, comprobadas por `import-linter` en la CI:
+Reglas de capas, comprobadas por `import-linter` (configurado en `[tool.importlinter]` de `backend/pyproject.toml`, con tests en `backend/tests/architecture/`):
 
-- `domain/`: Python puro (`dataclasses` y biblioteca estándar) más `shared_kernel`. **Nunca** FastAPI, SQLAlchemy, Pydantic ni Redis. El dominio no llama a puertos.
-- `application/`: casos de uso, DTOs y puertos con `typing.Protocol`. Importa `domain`, nunca `infrastructure`.
+- `domain/`: Python puro (`dataclasses` y biblioteca estándar) más `shared_kernel`. **Nunca** FastAPI, SQLAlchemy, Pydantic ni Redis. Sin IO. Puede definir protocolos de **estrategias puras** en `domain/ports.py` (`GoalModel`, `MatchSimulator`) y recibirlas por parámetro, igual que el `RandomSource` del shared kernel.
+- `application/`: casos de uso, DTOs y **puertos de IO** (repositorios, contenido, renderizadores, `Clock`, `EventBus`…) con `typing.Protocol` en `ports.py`. Importa `domain`, nunca `infrastructure`. `application/api.py` es la **API publicada** del contexto (DTOs y fachada).
 - `infrastructure/`: adaptadores que implementan puertos y fakes en memoria. Solo la importa `bootstrap.py` (y los tests).
-- Un contexto **no importa el `domain` de otro**: usa sus DTOs publicados o su API de aplicación, a través de un adaptador (ACL).
+- Un contexto **no importa el `domain` de otro**: solo `<contexto>/application/api.py`, y siempre desde un adaptador de su propia `infrastructure` (ACL).
 - `entrypoints/` solo llama a casos de uso de `application`.
 - El motor (`simulation`) es determinista y sin IO: todo el azar llega por un `RandomSource` con semilla.
 
-Frontend (`frontend/src/`, ADR-011, comprobado con `dependency-cruiser`): `domain/` (puro) ← `application/` (hooks y puertos) ← `infrastructure/` (cliente generado, TanStack Query, MSW). `ui/` solo importa `application/` y `domain/`. El cableado va en `app/` y `main.tsx`. Sin store global.
+Frontend (`frontend/src/`, ADR-011, comprobado con `dependency-cruiser`): `domain/` (puro) ← `application/` (hooks sobre TanStack Query y puertos) ← `infrastructure/` (adaptadores: cliente generado, analítica, MSW). `ui/` solo importa `application/` y `domain/`. `app/` (con `main.tsx`) es el composition root y **lo único que importa `infrastructure/`**. Sin store global.
 
 ## TDD obligatorio (PLAN §4)
 
@@ -58,6 +58,7 @@ Umbrales bloqueantes: cobertura de `domain` + `application` ≥ 95 % en el backe
 - **Nunca datos históricos reales en tests unitarios ni de aplicación:** usa **Test FC 2000-01** y su Liga Test (`backend/tests/fixtures/content/`). Lo real solo aparece en los tests de contenido y de calibración.
 - **Nunca azar sin semilla:** todo test con azar recibe un `RandomSource` con semilla fija.
 - Cada puerto tiene un fake y una suite de contrato que se ejecuta contra el fake y contra el adaptador real.
+- Tests de API con `httpx.AsyncClient` y `ASGITransport`, no con `TestClient`.
 
 ## Datos históricos: nunca inventes
 
@@ -69,9 +70,9 @@ Umbrales bloqueantes: cobertura de `domain` + `application` ≥ 95 % en el backe
 
 ## Idioma
 
-- **Código, identificadores, commits y nombres de ramas en inglés.**
-- **Interfaz y textos de usuario en español de España.** Usa los términos del [glosario](docs/glossary.md) (Partida = `Run`, Míster = `Manager`, Bloque = `Block`…). Si falta un término, añádelo al glosario en la misma PR.
-- La documentación del proyecto (`docs/`) se escribe en español.
+- **En inglés:** identificadores, docstrings, comentarios de código, comentarios de ficheros de configuración (`pyproject.toml`, `package.json`, YAML de CI, Dockerfiles…), mensajes de commit y nombres de rama.
+- **En español de España:** la documentación de `docs/` (brief, plan, tareas, ADR, glosario), este `CLAUDE.md` y los textos de usuario.
+- En la interfaz, usa los términos del [glosario](docs/glossary.md) (Partida = `Run`, Míster = `Manager`, Bloque = `Block`…). Si falta un término, añádelo al glosario en la misma PR.
 
 ## Comandos
 
@@ -82,12 +83,12 @@ Punto de entrada único: el `Makefile` raíz (no hay `just`).
 | `make help` | Lista los objetivos disponibles. |
 | `make test` | Tests del backend y del frontend. |
 | `make lint` | Lint, tipos y reglas de capas de ambos. |
-| `make dev` | Levanta Postgres, API y frontend con Docker Compose. |
+| `make dev` | Levanta Postgres, API y frontend con Docker Compose (puertos en `.env`, ver `.env.example`; `POSTGRES_PORT` si el 5432 está ocupado). |
 | `make validate-content` | Valida `content/` (desde T2.20). |
 | `make calibrate SEASON=<slug>` | Calibración del motor (desde T2.7). |
 
-- Backend: `cd backend && uv run pytest -m unit` (marcadores: `unit`, `integration`, `contract`, `calibration`, `content`, `e2e`). Gestiona dependencias con `uv`, nunca con `pip`.
-- Frontend: `cd frontend && npm run test | lint | build | e2e`.
+- Backend: `cd backend && uv run pytest -m unit` (marcadores: `unit`, `integration`, `contract`, `calibration`, `content`, `e2e`; `calibration` se excluye por defecto). Gestiona dependencias con `uv`, nunca con `pip`.
+- Frontend: `cd frontend && npm run test | lint | build | e2e | size`. Playwright emula Pixel 7 e iPhone 14 sobre Chromium.
 
 ## Restricciones del autor
 
@@ -97,7 +98,7 @@ Punto de entrada único: el `Makefile` raíz (no hay `just`).
 
 ## Commits y PR
 
-- Mensajes en inglés con prefijo convencional (`test`, `feat`, `refactor`, `fix`, `docs`, `chore`) y el contexto entre paréntesis.
+- Mensajes de commit en inglés con prefijo convencional (`test`, `feat`, `refactor`, `fix`, `docs`, `chore`) y el contexto entre paréntesis.
 - Todo mensaje de commit termina con:
 
   ```
