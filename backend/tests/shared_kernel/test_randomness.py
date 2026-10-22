@@ -105,6 +105,11 @@ def test_deriving_the_same_stream_twice_restarts_it() -> None:
     assert draw(root.stream("a")) == draw(root.stream("a"))
 
 
+def test_stream_without_keys_is_rejected() -> None:
+    with pytest.raises(InvalidValueError):
+        StdlibRandomSource(Seed(1)).stream()
+
+
 # ----------------------------------------------------------------------- unit interval
 
 
@@ -154,12 +159,29 @@ def test_poisson_rejects_invalid_lambda(lam: float) -> None:
         StdlibRandomSource(Seed(1)).poisson(lam)
 
 
-def test_poisson_terminates_even_when_the_draw_exceeds_the_representable_cdf() -> None:
+@pytest.mark.parametrize("lam", [50.0, 500.0])
+def test_poisson_mean_and_variance_converge_for_large_lambda(lam: float) -> None:
+    n = 4_000
+    source = StdlibRandomSource(Seed(2025)).stream("poisson-large", str(lam))
+
+    samples = [source.poisson(lam) for _ in range(n)]
+
+    mean = sum(samples) / n
+    variance = sum((s - mean) ** 2 for s in samples) / (n - 1)
+    assert abs(mean - lam) < 5 * math.sqrt(lam / n)
+    assert abs(variance - lam) < 5 * math.sqrt((lam + 2 * lam**2) / n)
+
+
+@pytest.mark.parametrize("lam", [0.2, 1.5, 50.0, 500.0])
+def test_poisson_tail_is_cut_at_a_reasonable_maximum(lam: float) -> None:
     class Almost1(StdlibRandomSource):
         def random(self) -> float:
             return 1.0 - 2**-53
 
-    assert Almost1(Seed(1)).poisson(100.0) >= 0
+    value = Almost1(Seed(1)).poisson(lam)
+
+    k_max = math.ceil(lam + 12 * math.sqrt(lam) + 20)
+    assert value <= k_max
 
 
 # ----------------------------------------------------------------------- choice / uniform
@@ -278,3 +300,22 @@ def test_golden_poisson_values_never_change() -> None:
     source = StdlibRandomSource(Seed(20121213)).stream("golden")
 
     assert [source.poisson(1.5) for _ in range(5)] == [2, 0, 1, 0, 1]
+
+
+@pytest.mark.parametrize(
+    ("lam", "expected"),
+    [
+        (
+            0.3,
+            [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1]
+            + [0, 0],
+        ),
+        (3.0, [3, 0, 3, 1, 2, 2, 1, 3]),
+    ],
+)
+def test_golden_poisson_values_for_other_lambdas_never_change(
+    lam: float, expected: list[int]
+) -> None:
+    source = StdlibRandomSource(Seed(20121213)).stream("golden")
+
+    assert [source.poisson(lam) for _ in range(len(expected))] == expected
