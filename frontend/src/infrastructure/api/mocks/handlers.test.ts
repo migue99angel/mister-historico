@@ -40,7 +40,7 @@ async function call<T = unknown>(
     (acc, [name, value]) => acc.replace(`{${name}}`, value),
     template,
   );
-  const token = options.token === undefined ? tokens.get(params.runId ?? '') : options.token;
+  const token = 'token' in options ? options.token : tokens.get(params.runId ?? '');
   const response = await fetch(`http://localhost:3000/api${path}${options.query ?? ''}`, {
     method,
     headers: {
@@ -179,8 +179,12 @@ describe('starting a run', () => {
   });
 
   it('issues a different token for every run', async () => {
-    const first = await call<StartRunResponse>('POST', '/runs', { body: { seasonId: TEST_SEASON_ID } });
-    const second = await call<StartRunResponse>('POST', '/runs', { body: { seasonId: TEST_SEASON_ID } });
+    const first = await call<StartRunResponse>('POST', '/runs', {
+      body: { seasonId: TEST_SEASON_ID },
+    });
+    const second = await call<StartRunResponse>('POST', '/runs', {
+      body: { seasonId: TEST_SEASON_ID },
+    });
     expect(first.body.runToken).not.toBe(second.body.runToken);
   });
 
@@ -380,7 +384,9 @@ describe('decisions', () => {
     expect(tactical.body.tactic.style).toBe('pressing');
     const done = await playBlock(tactical.body);
     const rotation = await decide(done, 'rotate-the-squad');
-    expect(rotation.body.competitionPriorities.some((entry) => entry.priority === 'low')).toBe(true);
+    expect(rotation.body.competitionPriorities.some((entry) => entry.priority === 'low')).toBe(
+      true,
+    );
   });
 });
 

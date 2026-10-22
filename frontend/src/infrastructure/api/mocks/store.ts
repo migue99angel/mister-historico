@@ -24,6 +24,9 @@ type ProblemCode = Schemas['Problem']['code'];
 const PROBLEM_TITLES: Record<ProblemCode, string> = {
   validation_error: 'Invalid request',
   idempotency_key_required: 'Idempotency-Key required',
+  run_token_required: 'Run token required',
+  run_token_invalid: 'Run token invalid',
+  alias_already_set: 'Alias already set',
   season_not_found: 'Season not found',
   run_not_found: 'Run not found',
   version_conflict: 'Version conflict',
@@ -60,12 +63,15 @@ export class ApiProblem extends Error {
 }
 
 const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+const SLUG_MAX_LENGTH = 64;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const BANNED_ALIAS_FRAGMENTS = ['badword'];
 const SHARE_ORIGIN = 'https://misterhistorico.example';
 
 interface RunRecord {
   runId: string;
+  /** Secret bearer token of the run. */
+  token: string;
   seasonId: string;
   version: number;
   /** Zero-based block to play next (or the last one played once the run has ended). */
@@ -74,6 +80,8 @@ interface RunRecord {
   decisions: Schemas['Decision'][];
   pending: DilemmaDef[];
   state: Schemas['TeamState'];
+  tactic: Schemas['Tactic'];
+  priorities: Map<string, Schemas['CompetitionPriorityLevel']>;
   lastBlockSummary: Schemas['BlockSummary'] | null;
   injuredPlayerId: string | null;
   sackedMonth: number | null;
@@ -107,7 +115,7 @@ function validationError(field: string, message: string): ApiProblem {
 }
 
 export function requireSlug(value: unknown, field: string): string {
-  if (typeof value !== 'string' || !SLUG.test(value)) {
+  if (typeof value !== 'string' || value.length > SLUG_MAX_LENGTH || !SLUG.test(value)) {
     throw validationError(field, 'Must be a lowercase slug.');
   }
   return value;
@@ -158,9 +166,9 @@ function view(run: RunRecord): Schemas['RunView'] {
       total: BLOCK_LABELS.length,
       label: BLOCK_LABELS[run.block] ?? '',
     },
-    pendingDilemmas: run.pending.map(({ id, category, prompt, options }) => ({
+    pendingDilemmas: run.pending.map(({ id, title, prompt, options }) => ({
       id,
-      category,
+      title,
       prompt,
       options: options.map(({ option }) => option),
     })),
@@ -176,15 +184,44 @@ function view(run: RunRecord): Schemas['RunView'] {
         injury: player.id === injured ? { daysOut: 14 } : null,
       })),
     },
+    tactic: run.tactic,
+    competitionPriorities: [...run.priorities].map(([competitionId, priority]) => ({
+      competitionId,
+      priority,
+    })),
     lastBlockSummary: run.lastBlockSummary,
     sackedMonth: run.sackedMonth,
   };
 }
 
-export function startRun(seasonId: unknown): Schemas['RunView'] {
+/** 32 random bytes, base64url encoded (43 characters). */
+function newToken(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  return btoa(String.fromCharCode(...bytes))
+    .replaceAll('+', '-')
+    .replaceAll('/', '_')
+    .replaceAll('=', '');
+}
+
+/** Resolves a run and checks its Bearer token: 400, 401, 404 and 403 in that order. */
+function authorize(runId: string, authorization: string | null): RunRecord {
+  if (!UUID.test(runId)) throw validationError('runId', 'Must be a UUID.');
+  const token = /^Bearer (\S+)$/.exec(authorization ?? '')?.[1];
+  if (!token) {
+    throw new ApiProblem(401, 'run_token_required', 'Send the run token as a Bearer token.');
+  }
+  const run = findRun(runId);
+  if (run.token !== token) {
+    throw new ApiProblem(403, 'run_token_invalid', 'The run token is not valid for this run.');
+  }
+  return run;
+}
+
+export function startRun(seasonId: unknown): Schemas['StartRunResponse'] {
   const season = findSeason(requireSlug(seasonId, 'seasonId'));
   const run: RunRecord = {
     runId: crypto.randomUUID(),
+    token: newToken(),
     seasonId: season.id,
     version: 0,
     block: 0,
@@ -196,6 +233,8 @@ export function startRun(seasonId: unknown): Schemas['RunView'] {
       boardConfidence: season.id === ROVERS_SEASON_ID ? 55 : 65,
       fitness: 90,
     },
+    tactic: { style: 'balanced', system: '4-4-2' },
+    priorities: new Map(season.competitions.map((competition) => [competition.id, 'normal'])),
     lastBlockSummary: null,
     injuredPlayerId: null,
     sackedMonth: null,
@@ -204,21 +243,60 @@ export function startRun(seasonId: unknown): Schemas['RunView'] {
     idempotency: new Map(),
   };
   store.runs.set(run.runId, run);
-  return view(run);
+  return { runToken: run.token, run: view(run) };
 }
 
-export function getRun(runId: string): Schemas['RunView'] {
-  return view(findRun(runId));
+export function getRun(runId: string, authorization: string | null): Schemas['RunView'] {
+  return view(authorize(runId, authorization));
 }
 
-function checkVersion(run: RunRecord, ifMatch: string | null): void {
-  if (ifMatch !== null && ifMatch !== `"${String(run.version)}"`) {
+function checkVersion(run: RunRecord, expectedVersion: number): void {
+  if (expectedVersion !== run.version) {
     throw new ApiProblem(
       409,
       'version_conflict',
-      `The run is at version ${String(run.version)}, not ${ifMatch}.`,
+      `The run is at version ${String(run.version)}, not ${String(expectedVersion)}.`,
     );
   }
+}
+
+function requireIdempotencyKey(key: string | null): string {
+  if (key === null || key === '') {
+    throw new ApiProblem(
+      400,
+      'idempotency_key_required',
+      'The Idempotency-Key header is required.',
+      [{ field: 'Idempotency-Key', message: 'Required.' }],
+    );
+  }
+  if (key.length < 8 || key.length > 128) {
+    throw validationError('Idempotency-Key', 'Must have between 8 and 128 characters.');
+  }
+  return key;
+}
+
+function requireExpectedVersion(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) {
+    throw validationError('expectedVersion', 'Must be a non-negative integer.');
+  }
+  return value;
+}
+
+/**
+ * Returns the stored reply when the key was already used with the same request, throws when it
+ * was used with another one, and returns null for a new key.
+ */
+function replay(run: RunRecord, key: string, fingerprint: string): Schemas['RunView'] | null {
+  const previous = run.idempotency.get(key);
+  if (!previous) return null;
+  if (previous.fingerprint !== fingerprint) {
+    throw new ApiProblem(
+      422,
+      'idempotency_key_conflict',
+      'That Idempotency-Key was already used with a different body.',
+    );
+  }
+  return previous.reply;
 }
 
 function requireInProgress(run: RunRecord): void {
@@ -231,39 +309,21 @@ const clamp = (value: number): number => Math.min(100, Math.max(0, value));
 
 export function takeDecision(
   runId: string,
+  authorization: string | null,
   idempotencyKey: string | null,
-  ifMatch: string | null,
-  body: { dilemmaId: unknown; optionId: unknown },
+  body: { dilemmaId: unknown; optionId: unknown; expectedVersion: unknown },
 ): Schemas['RunView'] {
-  const run = findRun(runId);
-  if (idempotencyKey === null || idempotencyKey === '') {
-    throw new ApiProblem(
-      400,
-      'idempotency_key_required',
-      'The Idempotency-Key header is required.',
-      [{ field: 'Idempotency-Key', message: 'Required.' }],
-    );
-  }
-  if (idempotencyKey.length < 8 || idempotencyKey.length > 128) {
-    throw validationError('Idempotency-Key', 'Must have between 8 and 128 characters.');
-  }
+  const run = authorize(runId, authorization);
+  const key = requireIdempotencyKey(idempotencyKey);
   const dilemmaId = requireSlug(body.dilemmaId, 'dilemmaId');
   const optionId = requireSlug(body.optionId, 'optionId');
+  const expectedVersion = requireExpectedVersion(body.expectedVersion);
 
-  const fingerprint = `${dilemmaId}/${optionId}`;
-  const previous = run.idempotency.get(idempotencyKey);
-  if (previous) {
-    if (previous.fingerprint !== fingerprint) {
-      throw new ApiProblem(
-        422,
-        'idempotency_key_conflict',
-        'That Idempotency-Key was already used with a different body.',
-      );
-    }
-    return previous.reply;
-  }
+  const fingerprint = `${dilemmaId}/${optionId}/${String(expectedVersion)}`;
+  const replayed = replay(run, key, fingerprint);
+  if (replayed) return replayed;
 
-  checkVersion(run, ifMatch);
+  checkVersion(run, expectedVersion);
   requireInProgress(run);
   if (run.decisions.some((decision) => decision.dilemmaId === dilemmaId)) {
     throw new ApiProblem(409, 'dilemma_already_decided', 'That dilemma was already decided.');
@@ -281,15 +341,33 @@ export function takeDecision(
     morale: clamp(run.state.morale + option.effects.morale),
     boardConfidence: clamp(run.state.boardConfidence + option.effects.boardConfidence),
   };
+  if (option.effects.tactic) run.tactic = { ...run.tactic, style: option.effects.tactic };
+  const { cupPriority } = option.effects;
+  if (cupPriority) {
+    for (const competition of findSeason(run.seasonId).competitions) {
+      if (competition.kind === 'cup') run.priorities.set(competition.id, cupPriority);
+    }
+  }
   run.version += 1;
   const reply = view(run);
-  run.idempotency.set(idempotencyKey, { fingerprint, reply });
+  run.idempotency.set(key, { fingerprint, reply });
   return reply;
 }
 
-export function advanceBlock(runId: string, ifMatch: string | null): Schemas['RunView'] {
-  const run = findRun(runId);
-  checkVersion(run, ifMatch);
+export function advanceBlock(
+  runId: string,
+  authorization: string | null,
+  idempotencyKey: string | null,
+  body: { expectedVersion: unknown },
+): Schemas['RunView'] {
+  const run = authorize(runId, authorization);
+  const key = requireIdempotencyKey(idempotencyKey);
+  const expectedVersion = requireExpectedVersion(body.expectedVersion);
+  const fingerprint = `advance/${String(expectedVersion)}`;
+  const replayed = replay(run, key, fingerprint);
+  if (replayed) return replayed;
+
+  checkVersion(run, expectedVersion);
   requireInProgress(run);
   if (run.pending.length > 0) {
     throw new ApiProblem(
@@ -324,7 +402,9 @@ export function advanceBlock(runId: string, ifMatch: string | null): Schemas['Ru
     run.block = block + 1;
     run.pending = [...(DILEMMAS_BY_BLOCK[run.block] ?? [])];
   }
-  return view(run);
+  const reply = view(run);
+  run.idempotency.set(key, { fingerprint, reply });
+  return reply;
 }
 
 function score(run: RunRecord): number {
@@ -356,11 +436,22 @@ export function getResult(runId: string): Schemas['RunResult'] {
   const misterScore = score(run);
   const sacked = run.status === 'sacked';
   const leagueUser = sacked ? null : misterScore >= 70 ? 1 : misterScore >= 50 ? 2 : 5;
-  const placement = (
-    won: boolean,
+  const leaguePlacement = (position: number | null): Schemas['Placement'] => ({
+    finish: position === 1 ? 'champion' : position === 2 ? 'runner_up' : 'eliminated',
+    round: null,
+    stageName: null,
+    position,
+  });
+  const cupPlacement = (
     finish: Schemas['Placement']['finish'],
-    position: number | null,
-  ): Schemas['Placement'] => ({ won, finish, position });
+    round: Schemas['KnockoutRound'],
+    stageName: string,
+  ): Schemas['Placement'] => ({ finish, round, stageName, position: null });
+  const userCup = sacked
+    ? cupPlacement('eliminated', 'quarter_final', 'Quarter-final')
+    : misterScore >= 80
+      ? cupPlacement('champion', 'final', 'Final')
+      : cupPlacement('eliminated', 'semi_final', 'Semi-final');
 
   return {
     runId: run.runId,
@@ -371,16 +462,11 @@ export function getResult(runId: string): Schemas['RunResult'] {
       competitionId: competition.id,
       competitionName: competition.name,
       kind: competition.kind,
-      user:
-        competition.kind === 'league'
-          ? sacked
-            ? placement(false, 'eliminated', null)
-            : placement(leagueUser === 1, leagueUser === 1 ? 'winner' : 'eliminated', leagueUser)
-          : placement(!sacked && misterScore >= 80, sacked ? 'eliminated' : 'semi_final', null),
+      user: competition.kind === 'league' ? leaguePlacement(leagueUser) : userCup,
       historical:
         competition.kind === 'league'
-          ? placement(false, 'runner_up', 2)
-          : placement(false, 'semi_final', null),
+          ? leaguePlacement(2)
+          : cupPlacement('eliminated', 'semi_final', 'Semi-final'),
     })),
     leaguePosition: leagueUser === null ? null : { user: leagueUser, historical: 2 },
     misterScore,
@@ -407,13 +493,20 @@ function ranked(seasonId: string): Schemas['LeaderboardEntry'][] {
   }));
 }
 
-export function setAlias(runId: string, alias: unknown): Schemas['LeaderboardEntry'] {
-  const run = findRun(runId);
+export function setAlias(
+  runId: string,
+  authorization: string | null,
+  alias: unknown,
+): Schemas['LeaderboardEntry'] {
+  const run = authorize(runId, authorization);
   if (typeof alias !== 'string' || alias.length < 3 || alias.length > 20) {
     throw validationError('alias', 'Must have between 3 and 20 characters.');
   }
   if (run.status === 'in_progress') {
     throw new ApiProblem(409, 'run_not_finished', 'Only a finished run can be published.');
+  }
+  if (run.alias !== null) {
+    throw new ApiProblem(409, 'alias_already_set', 'The alias of this run was already set.');
   }
   if (BANNED_ALIAS_FRAGMENTS.some((fragment) => alias.toLowerCase().includes(fragment))) {
     throw new ApiProblem(422, 'alias_rejected', 'That alias is not allowed.');

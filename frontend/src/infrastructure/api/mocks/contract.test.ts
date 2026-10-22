@@ -96,8 +96,9 @@ describe('OpenAPI contract', () => {
     for (const path of ['/runs/{runId}/decisions', '/runs/{runId}/advance']) {
       expect(headerOf(path, 'If-Match')).toBeUndefined();
     }
-    const schemas = (openApiDocument.components as { schemas: Record<string, { required?: string[] }> })
-      .schemas;
+    const schemas = (
+      openApiDocument.components as { schemas: Record<string, { required?: string[] }> }
+    ).schemas;
     expect(schemas.TakeDecisionRequest?.required).toContain('expectedVersion');
     expect(schemas.AdvanceBlockRequest?.required).toContain('expectedVersion');
   });
@@ -130,7 +131,9 @@ describe('OpenAPI contract', () => {
 
   it('limits slugs to 64 characters and only allows a leading underscore in ClubSeasonId', () => {
     const schemas = (
-      openApiDocument.components as { schemas: Record<string, { pattern?: string; maxLength?: number }> }
+      openApiDocument.components as {
+        schemas: Record<string, { pattern?: string; maxLength?: number }>;
+      }
     ).schemas;
     expect(schemas.Slug?.maxLength).toBe(64);
     expect(new RegExp(schemas.Slug?.pattern ?? '').test('_aggregate')).toBe(false);

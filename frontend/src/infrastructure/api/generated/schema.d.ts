@@ -55,7 +55,7 @@ export interface paths {
         put?: never;
         /**
          * Start a run
-         * @description Starts a new run of a playable season and returns its initial `RunView`. The random seed is generated and kept by the server and is never exposed.
+         * @description Starts a new run of a playable season and returns its initial `RunView` plus the secret `runToken` that authorises every later command on the run. The random seed is generated and kept by the server and is never exposed.
          */
         post: operations["startRun"];
         delete?: never;
@@ -95,7 +95,7 @@ export interface paths {
         put?: never;
         /**
          * Take a decision
-         * @description Records the chosen option of a pending dilemma of the current block. The `Idempotency-Key` header is mandatory: repeating the same key with the same body returns the original reply and records nothing twice, while the same key with a different body is rejected with `422 idempotency_key_conflict`. Optionally send `If-Match` with the last known `version` for optimistic locking.
+         * @description Records the chosen option of a pending dilemma of the current block. The `Idempotency-Key` header is mandatory: repeating the same key with the same body returns the original reply and records nothing twice, while the same key with a different body is rejected with `422 idempotency_key_conflict`. The replay is evaluated before `expectedVersion`, which is mandatory in the body and answers `409 version_conflict` when stale. Requires the run token.
          */
         post: operations["takeDecision"];
         delete?: never;
@@ -115,7 +115,7 @@ export interface paths {
         put?: never;
         /**
          * Simulate the current block
-         * @description Simulates the matches of the current block and returns the `RunView` with its `BlockSummary`. Answers `409 pending_dilemmas` while dilemmas are unresolved and `409 run_already_finished` once the run has ended. When the board confidence falls below the threshold the run ends with status `sacked`.
+         * @description Simulates the matches of the current block and returns the `RunView` with its `BlockSummary`. Answers `409 pending_dilemmas` while dilemmas are unresolved and `409 run_already_finished` once the run has ended. When the board confidence falls below the threshold the run ends with status `sacked`. Like decisions, it requires an `Idempotency-Key` (a replay returns the original reply and never simulates twice), a mandatory `expectedVersion` in the body and the run token.
          */
         post: operations["advanceBlock"];
         delete?: never;
@@ -133,7 +133,7 @@ export interface paths {
         };
         /**
          * Get the final result of a run
-         * @description Returns the final result of a finished or sacked run: titles against the real history, league position against the real one, the Mister score, the verdict, the percentile and the share links. Answers `409 run_not_finished` while the run is in progress.
+         * @description Returns the final result of a finished or sacked run: titles against the real history, league position against the real one, the Mister score, the verdict, the percentile and the share links. Answers `409 run_not_finished` while the run is in progress. Public: it needs no run token because the share link relies on it.
          */
         get: operations["getRunResult"];
         put?: never;
@@ -155,7 +155,7 @@ export interface paths {
         put?: never;
         /**
          * Publish a finished run under an alias
-         * @description Publishes a finished or sacked run in the leaderboard under a public alias (3 to 20 characters, filtered). Answers `422 alias_rejected` when the alias is not allowed and `409 run_not_finished` while the run is in progress.
+         * @description Publishes a finished or sacked run in the leaderboard under a public alias (3 to 20 characters, filtered). Answers `422 alias_rejected` when the alias is not allowed, `409 run_not_finished` while the run is in progress and `409 alias_already_set` when the run already has an alias (it can be set only once). Requires the run token.
          */
         post: operations["setAlias"];
         delete?: never;
@@ -214,6 +214,11 @@ export interface components {
          */
         Slug: string;
         /**
+         * @description Identifier of a club in a season. Unlike every other slug it may start with an underscore, which marks aggregate (squad-less) rivals.
+         * @example test-fc-2000-01
+         */
+        ClubSeasonId: string;
+        /**
          * @description Color as a `#rrggbb` hex string.
          * @example #1d4ed8
          */
@@ -242,7 +247,7 @@ export interface components {
              * @description Stable machine-readable error code. Clients branch on this value.
              * @enum {string}
              */
-            code: "validation_error" | "idempotency_key_required" | "season_not_found" | "run_not_found" | "version_conflict" | "pending_dilemmas" | "dilemma_already_decided" | "run_already_finished" | "run_not_finished" | "invalid_option" | "idempotency_key_conflict" | "alias_rejected" | "rate_limited";
+            code: "validation_error" | "idempotency_key_required" | "run_token_required" | "run_token_invalid" | "alias_already_set" | "season_not_found" | "run_not_found" | "version_conflict" | "pending_dilemmas" | "dilemma_already_decided" | "run_already_finished" | "run_not_finished" | "invalid_option" | "idempotency_key_conflict" | "alias_rejected" | "rate_limited";
             /** @description Human-readable explanation specific to this occurrence. */
             detail?: string;
             /**
@@ -342,35 +347,45 @@ export interface components {
             competitionId?: components["schemas"]["Slug"] | null;
         };
         /**
+         * @description Competition format.
+         * @example league
+         * @enum {string}
+         */
+        CompetitionKind: "league" | "cup" | "super_cup" | "continental_cup";
+        /**
+         * @description Importance tier of the competition.
+         * @example domestic_league
+         * @enum {string}
+         */
+        CompetitionTier: "domestic_league" | "domestic_cup" | "domestic_super_cup" | "continental_primary" | "continental_secondary";
+        /**
          * @description A competition the club plays in that season.
          * @example {
          *       "id": "liga-test",
          *       "name": "Liga Test",
-         *       "kind": "league"
+         *       "kind": "league",
+         *       "tier": "domestic_league"
          *     }
          */
         Competition: {
             id: components["schemas"]["Slug"];
             /** @description Competition name. */
             name: string;
-            /**
-             * @description Competition format.
-             * @enum {string}
-             */
-            kind: "league" | "cup" | "supercup" | "continental";
+            kind: components["schemas"]["CompetitionKind"];
+            tier: components["schemas"]["CompetitionTier"];
         };
         /**
          * @description Line the player belongs to.
-         * @example forward
+         * @example FW
          * @enum {string}
          */
-        PlayerPosition: "goalkeeper" | "defender" | "midfielder" | "forward";
+        PlayerPosition: "GK" | "DF" | "MF" | "FW";
         /**
          * @description A player of the initial squad, as shown before starting a run.
          * @example {
          *       "id": "ivan-delantero",
          *       "displayName": "Ivan Delantero",
-         *       "position": "forward",
+         *       "position": "FW",
          *       "age": 27,
          *       "rating": 84,
          *       "key": true
@@ -396,7 +411,7 @@ export interface components {
          *         {
          *           "id": "ivan-delantero",
          *           "displayName": "Ivan Delantero",
-         *           "position": "forward",
+         *           "position": "FW",
          *           "age": 27,
          *           "rating": 84,
          *           "key": true
@@ -437,7 +452,7 @@ export interface components {
          *           {
          *             "id": "ivan-delantero",
          *             "displayName": "Ivan Delantero",
-         *             "position": "forward",
+         *             "position": "FW",
          *             "age": 27,
          *             "rating": 84,
          *             "key": true
@@ -448,7 +463,8 @@ export interface components {
          *         {
          *           "id": "liga-test",
          *           "name": "Liga Test",
-         *           "kind": "league"
+         *           "kind": "league",
+         *           "tier": "domestic_league"
          *         }
          *       ],
          *       "blockCount": 5
@@ -479,15 +495,102 @@ export interface components {
             seasonId: components["schemas"]["Slug"];
         };
         /**
+         * @description The new run and the secret token that authorises its commands.
+         * @example {
+         *       "runToken": "kq3Z8mWb1xJrT0yH5sVnC2dEoPfLuA7iBgR4tYjN6Xw",
+         *       "run": {
+         *         "runId": "0b6f3a52-6c0e-4d3e-8d0a-3f1f6e2b9c11",
+         *         "seasonId": "test-fc-2000-01",
+         *         "status": "in_progress",
+         *         "version": 0,
+         *         "block": {
+         *           "number": 1,
+         *           "total": 5,
+         *           "label": "August"
+         *         },
+         *         "pendingDilemmas": [
+         *           {
+         *             "id": "summer-striker",
+         *             "title": "Summer striker",
+         *             "prompt": "The board offers a budget for one striker. Who do you want?",
+         *             "options": [
+         *               {
+         *                 "id": "sign-the-veteran",
+         *                 "label": "Sign the veteran striker"
+         *               },
+         *               {
+         *                 "id": "promote-the-youth",
+         *                 "label": "Promote the academy striker"
+         *               }
+         *             ]
+         *           }
+         *         ],
+         *         "decisions": [],
+         *         "state": {
+         *           "morale": 70,
+         *           "boardConfidence": 65,
+         *           "fitness": 90
+         *         },
+         *         "squad": {
+         *           "size": 1,
+         *           "averageRating": 84,
+         *           "players": [
+         *             {
+         *               "id": "ivan-delantero",
+         *               "displayName": "Ivan Delantero",
+         *               "position": "FW",
+         *               "age": 27,
+         *               "rating": 84,
+         *               "key": true,
+         *               "morale": 72,
+         *               "fitness": 91,
+         *               "injury": null
+         *             }
+         *           ]
+         *         },
+         *         "tactic": {
+         *           "style": "balanced",
+         *           "system": "4-4-2"
+         *         },
+         *         "competitionPriorities": [
+         *           {
+         *             "competitionId": "liga-test",
+         *             "priority": "normal"
+         *           }
+         *         ],
+         *         "lastBlockSummary": null,
+         *         "sackedMonth": null
+         *       }
+         *     }
+         */
+        StartRunResponse: {
+            /** @description Secret bearer token: opaque, server-generated, at least 32 bytes encoded URL-safe. The client stores it; it is never returned again. */
+            runToken: string;
+            run: components["schemas"]["RunView"];
+        };
+        /**
          * @description The option chosen for a pending dilemma.
          * @example {
          *       "dilemmaId": "summer-striker",
-         *       "optionId": "sign-the-veteran"
+         *       "optionId": "sign-the-veteran",
+         *       "expectedVersion": 0
          *     }
          */
         TakeDecisionRequest: {
             dilemmaId: components["schemas"]["Slug"];
             optionId: components["schemas"]["Slug"];
+            /** @description Last `RunView.version` the client saw. A mismatch is `409 version_conflict`. */
+            expectedVersion: number;
+        };
+        /**
+         * @description Request to simulate the current block.
+         * @example {
+         *       "expectedVersion": 1
+         *     }
+         */
+        AdvanceBlockRequest: {
+            /** @description Last `RunView.version` the client saw. A mismatch is `409 version_conflict`. */
+            expectedVersion: number;
         };
         /**
          * @description Public alias to publish the run under.
@@ -522,12 +625,6 @@ export interface components {
             label: string;
         };
         /**
-         * @description Kind of decision.
-         * @example market
-         * @enum {string}
-         */
-        DilemmaCategory: "market" | "dressing_room" | "tactics" | "rotation" | "youth" | "historical";
-        /**
          * @description An option of a dilemma. Effects and the historical flag are deliberately not exposed until the end of the run.
          * @example {
          *       "id": "sign-the-veteran",
@@ -546,7 +643,7 @@ export interface components {
          * @description A decision the player has to take in the current block.
          * @example {
          *       "id": "summer-striker",
-         *       "category": "market",
+         *       "title": "Summer striker",
          *       "prompt": "The board offers a budget for one striker. Who do you want?",
          *       "options": [
          *         {
@@ -562,7 +659,8 @@ export interface components {
          */
         Dilemma: {
             id: components["schemas"]["Slug"];
-            category: components["schemas"]["DilemmaCategory"];
+            /** @description Short title of the dilemma. */
+            title: string;
             /** @description The question presented to the player. */
             prompt: string;
             options: components["schemas"]["DilemmaOption"][];
@@ -612,7 +710,7 @@ export interface components {
          * @example {
          *       "id": "ivan-delantero",
          *       "displayName": "Ivan Delantero",
-         *       "position": "forward",
+         *       "position": "FW",
          *       "age": 27,
          *       "rating": 84,
          *       "key": true,
@@ -642,7 +740,7 @@ export interface components {
          *         {
          *           "id": "ivan-delantero",
          *           "displayName": "Ivan Delantero",
-         *           "position": "forward",
+         *           "position": "FW",
          *           "age": 27,
          *           "rating": 84,
          *           "key": true,
@@ -659,15 +757,25 @@ export interface components {
             players: components["schemas"]["SquadMember"][];
         };
         /**
-         * @description A team taking part in a match or a table.
+         * @description A team taking part in a match or a table, with what the client needs to draw its generic crest.
          * @example {
+         *       "clubSeasonId": "test-fc-2000-01",
          *       "name": "Test FC",
+         *       "shortName": "TFC",
+         *       "colors": {
+         *         "primary": "#1d4ed8",
+         *         "secondary": "#f8fafc"
+         *       },
          *       "isUser": true
          *     }
          */
         TeamRef: {
+            clubSeasonId: components["schemas"]["ClubSeasonId"];
             /** @description Club name. */
             name: string;
+            /** @description Short club name. */
+            shortName: string;
+            colors: components["schemas"]["TeamColors"];
             /** @description Whether it is the team coached by the player. */
             isUser: boolean;
         };
@@ -702,11 +810,23 @@ export interface components {
          *       "round": "Matchday 7",
          *       "date": "2000-10-14",
          *       "home": {
+         *         "clubSeasonId": "test-fc-2000-01",
          *         "name": "Test FC",
+         *         "shortName": "TFC",
+         *         "colors": {
+         *           "primary": "#1d4ed8",
+         *           "secondary": "#f8fafc"
+         *         },
          *         "isUser": true
          *       },
          *       "away": {
+         *         "clubSeasonId": "rovers-prueba-2000-01",
          *         "name": "Rovers Prueba",
+         *         "shortName": "ROV",
+         *         "colors": {
+         *           "primary": "#b91c1c",
+         *           "secondary": "#fde68a"
+         *         },
          *         "isUser": false
          *       },
          *       "homeGoals": 2,
@@ -752,7 +872,13 @@ export interface components {
          *       "position": 1,
          *       "previousPosition": 3,
          *       "team": {
+         *         "clubSeasonId": "test-fc-2000-01",
          *         "name": "Test FC",
+         *         "shortName": "TFC",
+         *         "colors": {
+         *           "primary": "#1d4ed8",
+         *           "secondary": "#f8fafc"
+         *         },
          *         "isUser": true
          *       },
          *       "played": 10,
@@ -787,7 +913,13 @@ export interface components {
          *           "position": 1,
          *           "previousPosition": 3,
          *           "team": {
+         *             "clubSeasonId": "test-fc-2000-01",
          *             "name": "Test FC",
+         *             "shortName": "TFC",
+         *             "colors": {
+         *               "primary": "#1d4ed8",
+         *               "secondary": "#f8fafc"
+         *             },
          *             "isUser": true
          *           },
          *           "played": 10,
@@ -851,11 +983,23 @@ export interface components {
          *           "round": "Matchday 7",
          *           "date": "2000-10-14",
          *           "home": {
+         *             "clubSeasonId": "test-fc-2000-01",
          *             "name": "Test FC",
+         *             "shortName": "TFC",
+         *             "colors": {
+         *               "primary": "#1d4ed8",
+         *               "secondary": "#f8fafc"
+         *             },
          *             "isUser": true
          *           },
          *           "away": {
+         *             "clubSeasonId": "rovers-prueba-2000-01",
          *             "name": "Rovers Prueba",
+         *             "shortName": "ROV",
+         *             "colors": {
+         *               "primary": "#b91c1c",
+         *               "secondary": "#fde68a"
+         *             },
          *             "isUser": false
          *           },
          *           "homeGoals": 2,
@@ -876,7 +1020,13 @@ export interface components {
          *               "position": 1,
          *               "previousPosition": null,
          *               "team": {
+         *                 "clubSeasonId": "test-fc-2000-01",
          *                 "name": "Test FC",
+         *                 "shortName": "TFC",
+         *                 "colors": {
+         *                   "primary": "#1d4ed8",
+         *                   "secondary": "#f8fafc"
+         *                 },
          *                 "isUser": true
          *               },
          *               "played": 10,
@@ -924,7 +1074,7 @@ export interface components {
          *       "pendingDilemmas": [
          *         {
          *           "id": "summer-striker",
-         *           "category": "market",
+         *           "title": "Summer striker",
          *           "prompt": "The board offers a budget for one striker. Who do you want?",
          *           "options": [
          *             {
@@ -951,7 +1101,7 @@ export interface components {
          *           {
          *             "id": "ivan-delantero",
          *             "displayName": "Ivan Delantero",
-         *             "position": "forward",
+         *             "position": "FW",
          *             "age": 27,
          *             "rating": 84,
          *             "key": true,
@@ -961,6 +1111,16 @@ export interface components {
          *           }
          *         ]
          *       },
+         *       "tactic": {
+         *         "style": "balanced",
+         *         "system": "4-4-2"
+         *       },
+         *       "competitionPriorities": [
+         *         {
+         *           "competitionId": "liga-test",
+         *           "priority": "normal"
+         *         }
+         *       ],
          *       "lastBlockSummary": null,
          *       "sackedMonth": null
          *     }
@@ -979,28 +1139,75 @@ export interface components {
             decisions: components["schemas"]["Decision"][];
             state: components["schemas"]["TeamState"];
             squad: components["schemas"]["SquadStatus"];
+            tactic: components["schemas"]["Tactic"];
+            /** @description Current priority of every competition of the season. */
+            competitionPriorities: components["schemas"]["CompetitionPriority"][];
             /** @description Summary of the last simulated block, or null before the first one. */
             lastBlockSummary: components["schemas"]["BlockSummary"] | null;
             /** @description Calendar month in which the manager was sacked, or null otherwise. */
             sackedMonth: number | null;
         };
         /**
-         * @description How a team ended a competition.
+         * @description Playing style.
+         * @example balanced
+         * @enum {string}
+         */
+        TacticStyle: "pressing" | "counter" | "possession" | "balanced";
+        /**
+         * @description Current tactic of the team.
          * @example {
-         *       "won": true,
-         *       "finish": "winner",
-         *       "position": 1
+         *       "style": "balanced",
+         *       "system": "4-4-2"
+         *     }
+         */
+        Tactic: {
+            style: components["schemas"]["TacticStyle"];
+            /** @description Formation, for example `4-4-2`. */
+            system: string;
+        };
+        /**
+         * @description How much the squad is rotated in a competition against the others.
+         * @example normal
+         * @enum {string}
+         */
+        CompetitionPriorityLevel: "low" | "normal" | "high";
+        /**
+         * @description The priority given to one competition.
+         * @example {
+         *       "competitionId": "liga-test",
+         *       "priority": "normal"
+         *     }
+         */
+        CompetitionPriority: {
+            competitionId: components["schemas"]["Slug"];
+            priority: components["schemas"]["CompetitionPriorityLevel"];
+        };
+        /**
+         * @description Stage of a knockout competition.
+         * @example semi_final
+         * @enum {string}
+         */
+        KnockoutRound: "qualifying" | "playoff" | "group_stage" | "round_of_32" | "round_of_16" | "quarter_final" | "semi_final" | "final";
+        /**
+         * @description How a team ended a competition. For cups `finish` and `round` (furthest stage reached) are what matters; for leagues, `position`.
+         * @example {
+         *       "finish": "champion",
+         *       "round": "final",
+         *       "stageName": "Final",
+         *       "position": null
          *     }
          */
         Placement: {
-            /** @description Whether the competition was won. */
-            won: boolean;
             /**
-             * @description Furthest stage reached.
+             * @description Outcome of the competition.
              * @enum {string}
              */
-            finish: "winner" | "runner_up" | "semi_final" | "quarter_final" | "round_of_16" | "group_stage" | "eliminated" | "not_played";
-            /** @description Final league position, or null for cups. */
+            finish: "champion" | "runner_up" | "eliminated";
+            /** @description Furthest stage reached in a cup. Null for leagues. */
+            round: components["schemas"]["KnockoutRound"] | null;
+            /** @description Localised name of that stage. Null for leagues. */
+            stageName: string | null;
+            /** @description Final league position. Null for cups. */
             position: number | null;
         };
         /**
@@ -1010,13 +1217,15 @@ export interface components {
          *       "competitionName": "Liga Test",
          *       "kind": "league",
          *       "user": {
-         *         "won": true,
-         *         "finish": "winner",
+         *         "finish": "champion",
+         *         "round": null,
+         *         "stageName": null,
          *         "position": 1
          *       },
          *       "historical": {
-         *         "won": false,
          *         "finish": "runner_up",
+         *         "round": null,
+         *         "stageName": null,
          *         "position": 2
          *       }
          *     }
@@ -1024,8 +1233,7 @@ export interface components {
         CompetitionComparison: {
             competitionId: components["schemas"]["Slug"];
             competitionName: string;
-            /** @enum {string} */
-            kind: "league" | "cup" | "supercup" | "continental";
+            kind: components["schemas"]["CompetitionKind"];
             user: components["schemas"]["Placement"];
             historical: components["schemas"]["Placement"];
         };
@@ -1071,13 +1279,15 @@ export interface components {
          *           "competitionName": "Liga Test",
          *           "kind": "league",
          *           "user": {
-         *             "won": true,
-         *             "finish": "winner",
+         *             "finish": "champion",
+         *             "round": null,
+         *             "stageName": null,
          *             "position": 1
          *           },
          *           "historical": {
-         *             "won": false,
          *             "finish": "runner_up",
+         *             "round": null,
+         *             "stageName": null,
          *             "position": 2
          *           }
          *         }
@@ -1230,6 +1440,42 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
+        /** @description The `Authorization: Bearer <runToken>` header is missing. */
+        Unauthorized: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "https://misterhistorico.example/problems/run-token-required",
+                 *       "title": "Run token required",
+                 *       "status": 401,
+                 *       "code": "run_token_required",
+                 *       "detail": "Send the run token as a Bearer token."
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description The run token does not match the run. */
+        Forbidden: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "https://misterhistorico.example/problems/run-token-invalid",
+                 *       "title": "Run token invalid",
+                 *       "status": 403,
+                 *       "code": "run_token_invalid",
+                 *       "detail": "The run token is not valid for this run."
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
         /** @description The season or run does not exist. */
         NotFound: {
             headers: {
@@ -1248,7 +1494,7 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description The command conflicts with the current state of the run: `version_conflict` (stale `If-Match`), `pending_dilemmas` (advancing with unresolved dilemmas), `dilemma_already_decided`, `run_already_finished` (the run has ended) or `run_not_finished` (result or alias requested too early). */
+        /** @description The command conflicts with the current state of the run: `version_conflict` (stale `expectedVersion`), `pending_dilemmas` (advancing with unresolved dilemmas), `dilemma_already_decided`, `run_already_finished` (the run has ended) or `run_not_finished` (result or alias requested too early) or `alias_already_set`. */
         Conflict: {
             headers: {
                 [name: string]: unknown;
@@ -1321,11 +1567,6 @@ export interface components {
          * @example 7d1c2f4e-5a6b-4c7d-8e9f-0a1b2c3d4e5f
          */
         IdempotencyKey: string;
-        /**
-         * @description Optional optimistic lock: the last known `RunView.version` as a quoted string. A mismatch answers `409 version_conflict`.
-         * @example "3"
-         */
-        IfMatch: string;
     };
     requestBodies: never;
     headers: never;
@@ -1396,7 +1637,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description The run was created. */
+            /** @description The run was created. The `runToken` is shown only in this reply; store it. */
             201: {
                 headers: {
                     /** @description Relative URL of the new run. */
@@ -1404,12 +1645,11 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RunView"];
+                    "application/json": components["schemas"]["StartRunResponse"];
                 };
             };
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
-            422: components["responses"]["UnprocessableEntity"];
             429: components["responses"]["TooManyRequests"];
         };
     };
@@ -1438,6 +1678,8 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
         };
@@ -1451,11 +1693,6 @@ export interface operations {
                  * @example 7d1c2f4e-5a6b-4c7d-8e9f-0a1b2c3d4e5f
                  */
                 "Idempotency-Key": components["parameters"]["IdempotencyKey"];
-                /**
-                 * @description Optional optimistic lock: the last known `RunView.version` as a quoted string. A mismatch answers `409 version_conflict`.
-                 * @example "3"
-                 */
-                "If-Match"?: components["parameters"]["IfMatch"];
             };
             path: {
                 /**
@@ -1482,6 +1719,8 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             422: components["responses"]["UnprocessableEntity"];
@@ -1491,12 +1730,12 @@ export interface operations {
     advanceBlock: {
         parameters: {
             query?: never;
-            header?: {
+            header: {
                 /**
-                 * @description Optional optimistic lock: the last known `RunView.version` as a quoted string. A mismatch answers `409 version_conflict`.
-                 * @example "3"
+                 * @description Client-generated unique key (a UUID is recommended) that makes the request safe to retry. Keep it stable across retries of the same user action.
+                 * @example 7d1c2f4e-5a6b-4c7d-8e9f-0a1b2c3d4e5f
                  */
-                "If-Match"?: components["parameters"]["IfMatch"];
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
             };
             path: {
                 /**
@@ -1507,7 +1746,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdvanceBlockRequest"];
+            };
+        };
         responses: {
             /** @description The block was simulated; the updated run. */
             200: {
@@ -1519,8 +1762,11 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
             429: components["responses"]["TooManyRequests"];
         };
     };
@@ -1583,6 +1829,8 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             422: components["responses"]["UnprocessableEntity"];

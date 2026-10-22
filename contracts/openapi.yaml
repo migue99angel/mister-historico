@@ -18,11 +18,25 @@ info:
       `code`. Clients branch on `code`, never on `title` or `detail`.
     - `runId` is a UUID. Every other identifier (season, dilemma, option, player, competition,
       fixture) is a lowercase slug.
-    - Mutating run commands are serialised per run with an optimistic `version`. Clients may send
-      `If-Match: "<version>"` to detect a lost update; a mismatch answers `409 version_conflict`.
-    - `POST /runs/{runId}/decisions` requires an `Idempotency-Key` header. Repeating a request
-      with the same key and the same body returns the original reply without recording the
-      decision twice.
+    - Request validation errors (malformed JSON, missing or invalid fields, malformed ids) are
+      always `400 validation_error`. `422` is reserved for well-formed requests that break a rule
+      (`invalid_option`, `idempotency_key_conflict`, `alias_rejected`). A backend framework that
+      defaults to 422 for validation must map it to 400.
+    - **Run token.** `POST /runs` returns a secret `runToken` (opaque, server-generated, at least
+      32 bytes, URL-safe). The client keeps it and sends `Authorization: Bearer <runToken>` on
+      `GET /runs/{runId}`, `POST /runs/{runId}/decisions`, `POST /runs/{runId}/advance` and
+      `POST /runs/{runId}/alias`. A missing token answers `401 run_token_required`, a wrong one
+      `403 run_token_invalid`. `GET /runs/{runId}/result` stays public because the share link
+      uses it.
+    - **Optimistic locking.** `decisions` and `advance` carry a mandatory `expectedVersion` in
+      the body (the last `RunView.version` the client saw); a mismatch answers
+      `409 version_conflict`.
+    - **Idempotency.** `decisions` and `advance` require an `Idempotency-Key` header. Order of
+      evaluation: token, then request validation, then the idempotent replay (the same key with
+      the same body returns the original reply even if `expectedVersion` is now stale and
+      records nothing twice; the same key with another body is `422 idempotency_key_conflict`),
+      then `expectedVersion`, then the business rules.
+    - An alias can be set only once per run; the second attempt is `409 alias_already_set`.
     - The raw option effects, the historical option of each dilemma and the seed are never
       exposed.
     - Club crests, photos and kits are never part of the API: clubs are identified by name and
@@ -100,8 +114,9 @@ paths:
       tags: [Runs]
       summary: Start a run
       description: >-
-        Starts a new run of a playable season and returns its initial `RunView`. The random seed
-        is generated and kept by the server and is never exposed.
+        Starts a new run of a playable season and returns its initial `RunView` plus the secret
+        `runToken` that authorises every later command on the run. The random seed is generated
+        and kept by the server and is never exposed.
       requestBody:
         required: true
         content:
@@ -110,7 +125,7 @@ paths:
               $ref: '#/components/schemas/StartRunRequest'
       responses:
         '201':
-          description: The run was created.
+          description: The run was created. The `runToken` is shown only in this reply; store it.
           headers:
             Location:
               description: Relative URL of the new run.
@@ -120,13 +135,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RunView'
+                $ref: '#/components/schemas/StartRunResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
-        '422':
-          $ref: '#/components/responses/UnprocessableEntity'
         '429':
           $ref: '#/components/responses/TooManyRequests'
 
@@ -138,6 +151,8 @@ paths:
       description: >-
         Returns the `RunView`: current block, pending dilemmas, decisions taken, team state, squad
         and the summary of the last simulated block.
+      security:
+        - runToken: []
       parameters:
         - $ref: '#/components/parameters/RunId'
       responses:
@@ -149,6 +164,10 @@ paths:
                 $ref: '#/components/schemas/RunView'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '429':
@@ -163,12 +182,14 @@ paths:
         Records the chosen option of a pending dilemma of the current block. The
         `Idempotency-Key` header is mandatory: repeating the same key with the same body returns
         the original reply and records nothing twice, while the same key with a different body is
-        rejected with `422 idempotency_key_conflict`. Optionally send `If-Match` with the last
-        known `version` for optimistic locking.
+        rejected with `422 idempotency_key_conflict`. The replay is evaluated before
+        `expectedVersion`, which is mandatory in the body and answers `409 version_conflict` when
+        stale. Requires the run token.
+      security:
+        - runToken: []
       parameters:
         - $ref: '#/components/parameters/RunId'
         - $ref: '#/components/parameters/IdempotencyKey'
-        - $ref: '#/components/parameters/IfMatch'
       requestBody:
         required: true
         content:
@@ -184,6 +205,10 @@ paths:
                 $ref: '#/components/schemas/RunView'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
@@ -202,10 +227,20 @@ paths:
         Simulates the matches of the current block and returns the `RunView` with its
         `BlockSummary`. Answers `409 pending_dilemmas` while dilemmas are unresolved and
         `409 run_already_finished` once the run has ended. When the board confidence falls below
-        the threshold the run ends with status `sacked`.
+        the threshold the run ends with status `sacked`. Like decisions, it requires an
+        `Idempotency-Key` (a replay returns the original reply and never simulates twice), a
+        mandatory `expectedVersion` in the body and the run token.
+      security:
+        - runToken: []
       parameters:
         - $ref: '#/components/parameters/RunId'
-        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdvanceBlockRequest'
       responses:
         '200':
           description: The block was simulated; the updated run.
@@ -215,10 +250,16 @@ paths:
                 $ref: '#/components/schemas/RunView'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
         '429':
           $ref: '#/components/responses/TooManyRequests'
 
@@ -230,7 +271,9 @@ paths:
       description: >-
         Returns the final result of a finished or sacked run: titles against the real history,
         league position against the real one, the Mister score, the verdict, the percentile and
-        the share links. Answers `409 run_not_finished` while the run is in progress.
+        the share links. Answers `409 run_not_finished` while the run is in progress. Public: it
+        needs no run token because the share link relies on it.
+      security: []
       parameters:
         - $ref: '#/components/parameters/RunId'
       responses:
@@ -256,8 +299,11 @@ paths:
       summary: Publish a finished run under an alias
       description: >-
         Publishes a finished or sacked run in the leaderboard under a public alias (3 to 20
-        characters, filtered). Answers `422 alias_rejected` when the alias is not allowed and
-        `409 run_not_finished` while the run is in progress.
+        characters, filtered). Answers `422 alias_rejected` when the alias is not allowed,
+        `409 run_not_finished` while the run is in progress and `409 alias_already_set` when the
+        run already has an alias (it can be set only once). Requires the run token.
+      security:
+        - runToken: []
       parameters:
         - $ref: '#/components/parameters/RunId'
       requestBody:
@@ -275,6 +321,10 @@ paths:
                 $ref: '#/components/schemas/LeaderboardEntry'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
@@ -347,6 +397,13 @@ paths:
           $ref: '#/components/responses/TooManyRequests'
 
 components:
+  securitySchemes:
+    runToken:
+      type: http
+      scheme: bearer
+      description: >-
+        Secret token returned once by `POST /runs`. Opaque, at least 32 bytes, URL-safe. The
+        client stores it and sends it as `Authorization: Bearer <runToken>`.
   parameters:
     SeasonId:
       name: seasonId
@@ -377,17 +434,6 @@ components:
         minLength: 8
         maxLength: 128
       example: 7d1c2f4e-5a6b-4c7d-8e9f-0a1b2c3d4e5f
-    IfMatch:
-      name: If-Match
-      in: header
-      required: false
-      description: >-
-        Optional optimistic lock: the last known `RunView.version` as a quoted string. A mismatch
-        answers `409 version_conflict`.
-      schema:
-        type: string
-        pattern: '^"[0-9]+"$'
-      example: '"3"'
 
   responses:
     BadRequest:
@@ -407,6 +453,30 @@ components:
             errors:
               - field: seasonId
                 message: Required.
+    Unauthorized:
+      description: 'The `Authorization: Bearer <runToken>` header is missing.'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://misterhistorico.example/problems/run-token-required
+            title: Run token required
+            status: 401
+            code: run_token_required
+            detail: Send the run token as a Bearer token.
+    Forbidden:
+      description: The run token does not match the run.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://misterhistorico.example/problems/run-token-invalid
+            title: Run token invalid
+            status: 403
+            code: run_token_invalid
+            detail: The run token is not valid for this run.
     NotFound:
       description: The season or run does not exist.
       content:
@@ -422,9 +492,9 @@ components:
     Conflict:
       description: >-
         The command conflicts with the current state of the run: `version_conflict` (stale
-        `If-Match`), `pending_dilemmas` (advancing with unresolved dilemmas),
+        `expectedVersion`), `pending_dilemmas` (advancing with unresolved dilemmas),
         `dilemma_already_decided`, `run_already_finished` (the run has ended) or
-        `run_not_finished` (result or alias requested too early).
+        `run_not_finished` (result or alias requested too early) or `alias_already_set`.
       content:
         application/problem+json:
           schema:
@@ -476,7 +546,17 @@ components:
       description: Lowercase slug identifier (letters, digits and single hyphens).
       pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
       minLength: 1
-      maxLength: 80
+      maxLength: 64
+      examples: [test-fc-2000-01]
+
+    ClubSeasonId:
+      type: string
+      description: >-
+        Identifier of a club in a season. Unlike every other slug it may start with an
+        underscore, which marks aggregate (squad-less) rivals.
+      pattern: '^_?[a-z0-9]+(-[a-z0-9]+)*$'
+      minLength: 1
+      maxLength: 64
       examples: [test-fc-2000-01]
 
     HexColor:
@@ -509,6 +589,9 @@ components:
           enum:
             - validation_error
             - idempotency_key_required
+            - run_token_required
+            - run_token_invalid
+            - alias_already_set
             - season_not_found
             - run_not_found
             - version_conflict
@@ -644,10 +727,27 @@ components:
           description: Finish the league in the top four.
           competitionId: liga-test
 
+    CompetitionKind:
+      type: string
+      description: Competition format.
+      enum: [league, cup, super_cup, continental_cup]
+      examples: [league]
+
+    CompetitionTier:
+      type: string
+      description: Importance tier of the competition.
+      enum:
+        - domestic_league
+        - domestic_cup
+        - domestic_super_cup
+        - continental_primary
+        - continental_secondary
+      examples: [domestic_league]
+
     Competition:
       type: object
       description: A competition the club plays in that season.
-      required: [id, name, kind]
+      required: [id, name, kind, tier]
       additionalProperties: false
       properties:
         id:
@@ -656,19 +756,20 @@ components:
           type: string
           description: Competition name.
         kind:
-          type: string
-          description: Competition format.
-          enum: [league, cup, supercup, continental]
+          $ref: '#/components/schemas/CompetitionKind'
+        tier:
+          $ref: '#/components/schemas/CompetitionTier'
       examples:
         - id: liga-test
           name: Liga Test
           kind: league
+          tier: domestic_league
 
     PlayerPosition:
       type: string
       description: Line the player belongs to.
-      enum: [goalkeeper, defender, midfielder, forward]
-      examples: [forward]
+      enum: [GK, DF, MF, FW]
+      examples: [FW]
 
     PlayerSummary:
       type: object
@@ -698,7 +799,7 @@ components:
       examples:
         - id: ivan-delantero
           displayName: Ivan Delantero
-          position: forward
+          position: FW
           age: 27
           rating: 84
           key: true
@@ -727,7 +828,7 @@ components:
           keyPlayers:
             - id: ivan-delantero
               displayName: Ivan Delantero
-              position: forward
+              position: FW
               age: 27
               rating: 84
               key: true
@@ -801,7 +902,7 @@ components:
             keyPlayers:
               - id: ivan-delantero
                 displayName: Ivan Delantero
-                position: forward
+                position: FW
                 age: 27
                 rating: 84
                 key: true
@@ -809,6 +910,7 @@ components:
             - id: liga-test
               name: Liga Test
               kind: league
+              tier: domestic_league
           blockCount: 5
 
     StartRunRequest:
@@ -822,19 +924,100 @@ components:
       examples:
         - seasonId: test-fc-2000-01
 
+    StartRunResponse:
+      type: object
+      description: The new run and the secret token that authorises its commands.
+      required: [runToken, run]
+      additionalProperties: false
+      properties:
+        runToken:
+          type: string
+          minLength: 43
+          maxLength: 128
+          pattern: '^[A-Za-z0-9_-]+$'
+          description: >-
+            Secret bearer token: opaque, server-generated, at least 32 bytes encoded URL-safe.
+            The client stores it; it is never returned again.
+        run:
+          $ref: '#/components/schemas/RunView'
+      examples:
+        - runToken: kq3Z8mWb1xJrT0yH5sVnC2dEoPfLuA7iBgR4tYjN6Xw
+          run:
+            runId: 0b6f3a52-6c0e-4d3e-8d0a-3f1f6e2b9c11
+            seasonId: test-fc-2000-01
+            status: in_progress
+            version: 0
+            block:
+              number: 1
+              total: 5
+              label: August
+            pendingDilemmas:
+              - id: summer-striker
+                title: Summer striker
+                prompt: The board offers a budget for one striker. Who do you want?
+                options:
+                  - id: sign-the-veteran
+                    label: Sign the veteran striker
+                  - id: promote-the-youth
+                    label: Promote the academy striker
+            decisions: []
+            state:
+              morale: 70
+              boardConfidence: 65
+              fitness: 90
+            squad:
+              size: 1
+              averageRating: 84
+              players:
+                - id: ivan-delantero
+                  displayName: Ivan Delantero
+                  position: FW
+                  age: 27
+                  rating: 84
+                  key: true
+                  morale: 72
+                  fitness: 91
+                  injury: null
+            tactic:
+              style: balanced
+              system: 4-4-2
+            competitionPriorities:
+              - competitionId: liga-test
+                priority: normal
+            lastBlockSummary: null
+            sackedMonth: null
+
     TakeDecisionRequest:
       type: object
       description: The option chosen for a pending dilemma.
-      required: [dilemmaId, optionId]
+      required: [dilemmaId, optionId, expectedVersion]
       additionalProperties: false
       properties:
         dilemmaId:
           $ref: '#/components/schemas/Slug'
         optionId:
           $ref: '#/components/schemas/Slug'
+        expectedVersion:
+          type: integer
+          minimum: 0
+          description: Last `RunView.version` the client saw. A mismatch is `409 version_conflict`.
       examples:
         - dilemmaId: summer-striker
           optionId: sign-the-veteran
+          expectedVersion: 0
+
+    AdvanceBlockRequest:
+      type: object
+      description: Request to simulate the current block.
+      required: [expectedVersion]
+      additionalProperties: false
+      properties:
+        expectedVersion:
+          type: integer
+          minimum: 0
+          description: Last `RunView.version` the client saw. A mismatch is `409 version_conflict`.
+      examples:
+        - expectedVersion: 1
 
     SetAliasRequest:
       type: object
@@ -882,12 +1065,6 @@ components:
           total: 5
           label: August
 
-    DilemmaCategory:
-      type: string
-      description: Kind of decision.
-      enum: [market, dressing_room, tactics, rotation, youth, historical]
-      examples: [market]
-
     DilemmaOption:
       type: object
       description: >-
@@ -912,13 +1089,14 @@ components:
     Dilemma:
       type: object
       description: A decision the player has to take in the current block.
-      required: [id, category, prompt, options]
+      required: [id, title, prompt, options]
       additionalProperties: false
       properties:
         id:
           $ref: '#/components/schemas/Slug'
-        category:
-          $ref: '#/components/schemas/DilemmaCategory'
+        title:
+          type: string
+          description: Short title of the dilemma.
         prompt:
           type: string
           description: The question presented to the player.
@@ -929,7 +1107,7 @@ components:
             $ref: '#/components/schemas/DilemmaOption'
       examples:
         - id: summer-striker
-          category: market
+          title: Summer striker
           prompt: The board offers a budget for one striker. Who do you want?
           options:
             - id: sign-the-veteran
@@ -1033,7 +1211,7 @@ components:
       examples:
         - id: ivan-delantero
           displayName: Ivan Delantero
-          position: forward
+          position: FW
           age: 27
           rating: 84
           key: true
@@ -1064,7 +1242,7 @@ components:
           players:
             - id: ivan-delantero
               displayName: Ivan Delantero
-              position: forward
+              position: FW
               age: 27
               rating: 84
               key: true
@@ -1074,18 +1252,32 @@ components:
 
     TeamRef:
       type: object
-      description: A team taking part in a match or a table.
-      required: [name, isUser]
+      description: >-
+        A team taking part in a match or a table, with what the client needs to draw its generic
+        crest.
+      required: [clubSeasonId, name, shortName, colors, isUser]
       additionalProperties: false
       properties:
+        clubSeasonId:
+          $ref: '#/components/schemas/ClubSeasonId'
         name:
           type: string
           description: Club name.
+        shortName:
+          type: string
+          description: Short club name.
+        colors:
+          $ref: '#/components/schemas/TeamColors'
         isUser:
           type: boolean
           description: Whether it is the team coached by the player.
       examples:
-        - name: Test FC
+        - clubSeasonId: test-fc-2000-01
+          name: Test FC
+          shortName: TFC
+          colors:
+            primary: '#1d4ed8'
+            secondary: '#f8fafc'
           isUser: true
 
     ExtraTimeScore:
@@ -1192,10 +1384,20 @@ components:
           round: Matchday 7
           date: '2000-10-14'
           home:
+            clubSeasonId: test-fc-2000-01
             name: Test FC
+            shortName: TFC
+            colors:
+              primary: '#1d4ed8'
+              secondary: '#f8fafc'
             isUser: true
           away:
+            clubSeasonId: rovers-prueba-2000-01
             name: Rovers Prueba
+            shortName: ROV
+            colors:
+              primary: '#b91c1c'
+              secondary: '#fde68a'
             isUser: false
           homeGoals: 2
           awayGoals: 1
@@ -1247,7 +1449,12 @@ components:
         - position: 1
           previousPosition: 3
           team:
+            clubSeasonId: test-fc-2000-01
             name: Test FC
+            shortName: TFC
+            colors:
+              primary: '#1d4ed8'
+              secondary: '#f8fafc'
             isUser: true
           played: 10
           won: 7
@@ -1278,7 +1485,12 @@ components:
             - position: 1
               previousPosition: 3
               team:
+                clubSeasonId: test-fc-2000-01
                 name: Test FC
+                shortName: TFC
+                colors:
+                  primary: '#1d4ed8'
+                  secondary: '#f8fafc'
                 isUser: true
               played: 10
               won: 7
@@ -1370,10 +1582,20 @@ components:
               round: Matchday 7
               date: '2000-10-14'
               home:
+                clubSeasonId: test-fc-2000-01
                 name: Test FC
+                shortName: TFC
+                colors:
+                  primary: '#1d4ed8'
+                  secondary: '#f8fafc'
                 isUser: true
               away:
+                clubSeasonId: rovers-prueba-2000-01
                 name: Rovers Prueba
+                shortName: ROV
+                colors:
+                  primary: '#b91c1c'
+                  secondary: '#fde68a'
                 isUser: false
               homeGoals: 2
               awayGoals: 1
@@ -1389,7 +1611,12 @@ components:
                 - position: 1
                   previousPosition: null
                   team:
+                    clubSeasonId: test-fc-2000-01
                     name: Test FC
+                    shortName: TFC
+                    colors:
+                      primary: '#1d4ed8'
+                      secondary: '#f8fafc'
                     isUser: true
                   played: 10
                   won: 7
@@ -1419,6 +1646,8 @@ components:
         - decisions
         - state
         - squad
+        - tactic
+        - competitionPriorities
         - lastBlockSummary
         - sackedMonth
       additionalProperties: false
@@ -1450,6 +1679,13 @@ components:
           $ref: '#/components/schemas/TeamState'
         squad:
           $ref: '#/components/schemas/SquadStatus'
+        tactic:
+          $ref: '#/components/schemas/Tactic'
+        competitionPriorities:
+          type: array
+          description: Current priority of every competition of the season.
+          items:
+            $ref: '#/components/schemas/CompetitionPriority'
         lastBlockSummary:
           oneOf:
             - $ref: '#/components/schemas/BlockSummary'
@@ -1473,7 +1709,7 @@ components:
             label: August
           pendingDilemmas:
             - id: summer-striker
-              category: market
+              title: Summer striker
               prompt: The board offers a budget for one striker. Who do you want?
               options:
                 - id: sign-the-veteran
@@ -1491,39 +1727,111 @@ components:
             players:
               - id: ivan-delantero
                 displayName: Ivan Delantero
-                position: forward
+                position: FW
                 age: 27
                 rating: 84
                 key: true
                 morale: 72
                 fitness: 91
                 injury: null
+          tactic:
+            style: balanced
+            system: 4-4-2
+          competitionPriorities:
+            - competitionId: liga-test
+              priority: normal
           lastBlockSummary: null
           sackedMonth: null
 
-    Placement:
+    TacticStyle:
+      type: string
+      description: Playing style.
+      enum: [pressing, counter, possession, balanced]
+      examples: [balanced]
+
+    Tactic:
       type: object
-      description: How a team ended a competition.
-      required: [won, finish, position]
+      description: Current tactic of the team.
+      required: [style, system]
       additionalProperties: false
       properties:
-        won:
-          type: boolean
-          description: Whether the competition was won.
+        style:
+          $ref: '#/components/schemas/TacticStyle'
+        system:
+          type: string
+          description: Formation, for example `4-4-2`.
+          pattern: '^[0-9]-[0-9](-[0-9]){1,2}$'
+      examples:
+        - style: balanced
+          system: 4-4-2
+
+    CompetitionPriorityLevel:
+      type: string
+      description: How much the squad is rotated in a competition against the others.
+      enum: [low, normal, high]
+      examples: [normal]
+
+    CompetitionPriority:
+      type: object
+      description: The priority given to one competition.
+      required: [competitionId, priority]
+      additionalProperties: false
+      properties:
+        competitionId:
+          $ref: '#/components/schemas/Slug'
+        priority:
+          $ref: '#/components/schemas/CompetitionPriorityLevel'
+      examples:
+        - competitionId: liga-test
+          priority: normal
+
+    KnockoutRound:
+      type: string
+      description: Stage of a knockout competition.
+      enum:
+        - qualifying
+        - playoff
+        - group_stage
+        - round_of_32
+        - round_of_16
+        - quarter_final
+        - semi_final
+        - final
+      examples: [semi_final]
+
+    Placement:
+      type: object
+      description: >-
+        How a team ended a competition. For cups `finish` and `round` (furthest stage reached)
+        are what matters; for leagues, `position`.
+      required: [finish, round, stageName, position]
+      additionalProperties: false
+      properties:
         finish:
           type: string
-          description: Furthest stage reached.
-          enum: [winner, runner_up, semi_final, quarter_final, round_of_16, group_stage, eliminated, not_played]
+          description: Outcome of the competition.
+          enum: [champion, runner_up, eliminated]
+        round:
+          oneOf:
+            - $ref: '#/components/schemas/KnockoutRound'
+            - type: 'null'
+          description: Furthest stage reached in a cup. Null for leagues.
+        stageName:
+          type:
+            - string
+            - 'null'
+          description: Localised name of that stage. Null for leagues.
         position:
           type:
             - integer
             - 'null'
           minimum: 1
-          description: Final league position, or null for cups.
+          description: Final league position. Null for cups.
       examples:
-        - won: true
-          finish: winner
-          position: 1
+        - finish: champion
+          round: final
+          stageName: Final
+          position: null
 
     CompetitionComparison:
       type: object
@@ -1536,8 +1844,7 @@ components:
         competitionName:
           type: string
         kind:
-          type: string
-          enum: [league, cup, supercup, continental]
+          $ref: '#/components/schemas/CompetitionKind'
         user:
           $ref: '#/components/schemas/Placement'
         historical:
@@ -1547,12 +1854,14 @@ components:
           competitionName: Liga Test
           kind: league
           user:
-            won: true
-            finish: winner
+            finish: champion
+            round: null
+            stageName: null
             position: 1
           historical:
-            won: false
             finish: runner_up
+            round: null
+            stageName: null
             position: 2
 
     LeaguePosition:
@@ -1674,12 +1983,14 @@ components:
               competitionName: Liga Test
               kind: league
               user:
-                won: true
-                finish: winner
+                finish: champion
+                round: null
+                stageName: null
                 position: 1
               historical:
-                won: false
                 finish: runner_up
+                round: null
+                stageName: null
                 position: 2
           leaguePosition:
             user: 1
