@@ -8,6 +8,9 @@ manager:
   sources:
   - https://example.org/test-content/manager/mister-ficticio
   verify: ok
+initial_tactic:
+  style: balanced
+  system: 4-4-2
 blocks:
 - id: b1
   label: Agosto-septiembre
@@ -31,6 +34,7 @@ blocks:
   end: 2001-05-31
 competitions:
 - kind: league
+  tier: domestic_league
   id: liga-test
   name: Liga Test
   participants:
@@ -47,7 +51,15 @@ competitions:
   - head_to_head_points
   - goal_difference
   - goals_for
+  league_stats:
+    matches: 30
+    home_goals: 40
+    away_goals: 27
+    sources:
+    - https://example.org/test-content/stats/liga-test
+    verify: ok
 - kind: cup
+  tier: domestic_cup
   id: copa-test
   name: Copa Test
   participants:
@@ -55,28 +67,97 @@ competitions:
   - placeholder-town-2000-01
   - sample-united-2000-01
   - mock-city-2000-01
+  goal_baseline:
+    from_league: liga-test
   stages:
   - id: semifinal
     name: Semifinal
+    round: semi_final
     legs: 2
     away_goals_rule: true
     extra_time: false
     penalties: true
-  - id: final
+  - &id001
+    id: final
     name: Final
+    round: final
     legs: 1
     away_goals_rule: false
     extra_time: true
     penalties: true
+- kind: super_cup
+  tier: domestic_super_cup
+  id: supercopa-test
+  name: Supercopa Test
+  participants:
+  - test-fc-2000-01
+  - sample-united-2000-01
+  goal_baseline:
+    from_league: liga-test
+  stages:
+  - *id001
+- kind: continental_cup
+  tier: continental_primary
+  id: copa-continental-test
+  name: Copa Continental Test
+  participants:
+  - test-fc-2000-01
+  - overseas-fc-2000-01
+  - abroad-athletic-2000-01
+  - faraway-city-2000-01
+  goal_baseline:
+    matches: 12
+    home_goals: 17
+    away_goals: 11
+    sources:
+    - https://example.org/test-content/stats/copa-continental-test
+    verify: ok
+  stages:
+  - id: groups
+    name: Fase de grupos
+    round: group_stage
+    legs: 2
+    away_goals_rule: false
+    extra_time: false
+    penalties: false
+    groups:
+    - id: a
+      participants:
+      - test-fc-2000-01
+      - overseas-fc-2000-01
+      - abroad-athletic-2000-01
+      - faraway-city-2000-01
+    points_per_win: 3
+    points_per_draw: 1
+    tiebreakers:
+    - head_to_head_points
+    - goal_difference
+    advance_per_group: 2
+  - *id001
+forced_events:
+- type: injury
+  player_id: tfc-07
+  date: 2000-11-10
+  days: 21
+  sources:
+  - https://example.org/test-content/events/tfc-07-injury
+  verify: ok
 board_objectives:
-- competition: liga-test
+- id: obj-liga
+  competition: liga-test
   kind: finish_top
   target_position: 3
   text: Terminar entre los tres primeros de la Liga Test.
-- competition: copa-test
+- id: obj-copa
+  competition: copa-test
   kind: reach_stage
   target_stage: final
   text: Llegar a la final de la Copa Test.
+- id: obj-continental
+  competition: copa-continental-test
+  kind: reach_stage
+  target_stage: groups
+  text: Disputar la fase de grupos de la Copa Continental Test.
 historical_outcome:
 - competition: liga-test
   champion: false
@@ -91,4 +172,18 @@ historical_outcome:
   eliminated_in: null
   sources:
   - https://example.org/test-content/outcome/copa-test
+  verify: ok
+- competition: supercopa-test
+  champion: true
+  final_position: null
+  eliminated_in: null
+  sources:
+  - https://example.org/test-content/outcome/supercopa-test
+  verify: ok
+- competition: copa-continental-test
+  champion: false
+  final_position: null
+  eliminated_in: final
+  sources:
+  - https://example.org/test-content/outcome/copa-continental-test
   verify: ok

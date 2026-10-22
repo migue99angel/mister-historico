@@ -4,16 +4,16 @@ cutoffs:
   competition: liga-test
   date: 2000-09-30
   table:
-  - club_season: dummy-rovers-2000-01
+  - club_season: fixture-wanderers-2000-01
     position: 1
     played: 2
-    won: 1
-    drawn: 1
+    won: 2
+    drawn: 0
     lost: 0
-    goals_for: 5
-    goals_against: 3
-    points: 4
-  - club_season: sample-united-2000-01
+    goals_for: 2
+    goals_against: 0
+    points: 6
+  - club_season: demo-athletic-2000-01
     position: 2
     played: 2
     won: 1
@@ -22,41 +22,41 @@ cutoffs:
     goals_for: 3
     goals_against: 2
     points: 4
-  - club_season: demo-athletic-2000-01
+  - club_season: dummy-rovers-2000-01
     position: 3
     played: 2
     won: 1
-    drawn: 0
-    lost: 1
+    drawn: 1
+    lost: 0
     goals_for: 3
-    goals_against: 1
-    points: 3
-  - club_season: mock-city-2000-01
+    goals_against: 2
+    points: 4
+  - club_season: test-fc-2000-01
     position: 4
     played: 2
-    won: 1
-    drawn: 0
-    lost: 1
-    goals_for: 3
-    goals_against: 4
-    points: 3
-  - club_season: test-fc-2000-01
-    position: 5
-    played: 2
-    won: 1
-    drawn: 0
+    won: 0
+    drawn: 1
     lost: 1
     goals_for: 2
     goals_against: 3
-    points: 3
-  - club_season: fixture-wanderers-2000-01
+    points: 1
+  - club_season: sample-united-2000-01
+    position: 5
+    played: 2
+    won: 0
+    drawn: 1
+    lost: 1
+    goals_for: 1
+    goals_against: 2
+    points: 1
+  - club_season: mock-city-2000-01
     position: 6
     played: 2
     won: 0
     drawn: 0
     lost: 2
     goals_for: 1
-    goals_against: 4
+    goals_against: 3
     points: 0
   sources:
   - https://example.org/test-content/standings/liga-test
@@ -68,57 +68,57 @@ cutoffs:
   - club_season: demo-athletic-2000-01
     position: 1
     played: 4
-    won: 3
-    drawn: 0
-    lost: 1
-    goals_for: 8
-    goals_against: 2
-    points: 9
-  - club_season: mock-city-2000-01
+    won: 2
+    drawn: 2
+    lost: 0
+    goals_for: 7
+    goals_against: 4
+    points: 8
+  - club_season: fixture-wanderers-2000-01
     position: 2
     played: 4
     won: 2
     drawn: 1
     lost: 1
-    goals_for: 4
+    goals_for: 5
     goals_against: 4
     points: 7
-  - club_season: fixture-wanderers-2000-01
+  - club_season: sample-united-2000-01
     position: 3
     played: 4
     won: 2
-    drawn: 0
-    lost: 2
-    goals_for: 6
-    goals_against: 6
-    points: 6
-  - club_season: sample-united-2000-01
+    drawn: 1
+    lost: 1
+    goals_for: 4
+    goals_against: 3
+    points: 7
+  - club_season: dummy-rovers-2000-01
     position: 4
     played: 4
     won: 1
-    drawn: 1
-    lost: 2
-    goals_for: 4
-    goals_against: 5
-    points: 4
+    drawn: 2
+    lost: 1
+    goals_for: 6
+    goals_against: 7
+    points: 5
   - club_season: test-fc-2000-01
     position: 5
     played: 4
-    won: 1
-    drawn: 1
-    lost: 2
+    won: 0
+    drawn: 3
+    lost: 1
     goals_for: 3
-    goals_against: 5
-    points: 4
-  - club_season: dummy-rovers-2000-01
+    goals_against: 4
+    points: 3
+  - club_season: mock-city-2000-01
     position: 6
     played: 4
-    won: 1
+    won: 0
     drawn: 1
-    lost: 2
-    goals_for: 6
-    goals_against: 9
-    points: 4
+    lost: 3
+    goals_for: 1
+    goals_against: 4
+    points: 1
   sources:
   - https://example.org/test-content/standings/liga-test
   verify: ok
@@ -126,60 +126,60 @@ cutoffs:
   competition: liga-test
   date: 2001-01-31
   table:
-  - club_season: demo-athletic-2000-01
+  - club_season: fixture-wanderers-2000-01
     position: 1
     played: 6
-    won: 4
-    drawn: 1
+    won: 3
+    drawn: 2
     lost: 1
-    goals_for: 10
-    goals_against: 3
-    points: 13
-  - club_season: test-fc-2000-01
+    goals_for: 8
+    goals_against: 6
+    points: 11
+  - club_season: dummy-rovers-2000-01
     position: 2
     played: 6
     won: 3
-    drawn: 1
-    lost: 2
-    goals_for: 9
-    goals_against: 7
-    points: 10
-  - club_season: mock-city-2000-01
+    drawn: 2
+    lost: 1
+    goals_for: 10
+    goals_against: 9
+    points: 11
+  - club_season: demo-athletic-2000-01
     position: 3
     played: 6
     won: 2
-    drawn: 3
-    lost: 1
-    goals_for: 5
-    goals_against: 5
-    points: 9
-  - club_season: dummy-rovers-2000-01
+    drawn: 2
+    lost: 2
+    goals_for: 7
+    goals_against: 6
+    points: 8
+  - club_season: test-fc-2000-01
     position: 4
     played: 6
     won: 1
-    drawn: 3
-    lost: 2
+    drawn: 4
+    lost: 1
     goals_for: 8
-    goals_against: 11
-    points: 6
-  - club_season: fixture-wanderers-2000-01
+    goals_against: 7
+    points: 7
+  - club_season: sample-united-2000-01
     position: 5
     played: 6
     won: 2
-    drawn: 0
-    lost: 4
-    goals_for: 6
+    drawn: 1
+    lost: 3
+    goals_for: 7
     goals_against: 9
-    points: 6
-  - club_season: sample-united-2000-01
+    points: 7
+  - club_season: mock-city-2000-01
     position: 6
     played: 6
     won: 1
-    drawn: 2
-    lost: 3
-    goals_for: 8
-    goals_against: 11
-    points: 5
+    drawn: 1
+    lost: 4
+    goals_for: 2
+    goals_against: 5
+    points: 4
   sources:
   - https://example.org/test-content/standings/liga-test
   verify: ok
@@ -187,7 +187,7 @@ cutoffs:
   competition: liga-test
   date: 2001-03-31
   table:
-  - club_season: mock-city-2000-01
+  - club_season: fixture-wanderers-2000-01
     position: 1
     played: 8
     won: 4
@@ -196,51 +196,51 @@ cutoffs:
     goals_for: 9
     goals_against: 6
     points: 15
-  - club_season: demo-athletic-2000-01
+  - club_season: dummy-rovers-2000-01
     position: 2
     played: 8
     won: 4
     drawn: 2
     lost: 2
-    goals_for: 11
-    goals_against: 6
+    goals_for: 14
+    goals_against: 11
     points: 14
   - club_season: test-fc-2000-01
     position: 3
     played: 8
-    won: 4
-    drawn: 1
-    lost: 3
-    goals_for: 12
-    goals_against: 11
+    won: 3
+    drawn: 4
+    lost: 1
+    goals_for: 11
+    goals_against: 8
     points: 13
-  - club_season: dummy-rovers-2000-01
+  - club_season: sample-united-2000-01
     position: 4
     played: 8
-    won: 2
-    drawn: 3
+    won: 3
+    drawn: 2
     lost: 3
-    goals_for: 12
-    goals_against: 14
-    points: 9
-  - club_season: fixture-wanderers-2000-01
+    goals_for: 9
+    goals_against: 10
+    points: 11
+  - club_season: demo-athletic-2000-01
     position: 5
     played: 8
-    won: 3
-    drawn: 0
-    lost: 5
-    goals_for: 8
-    goals_against: 11
-    points: 9
-  - club_season: sample-united-2000-01
+    won: 2
+    drawn: 2
+    lost: 4
+    goals_for: 9
+    goals_against: 12
+    points: 8
+  - club_season: mock-city-2000-01
     position: 6
     played: 8
     won: 1
-    drawn: 3
-    lost: 4
-    goals_for: 9
-    goals_against: 13
-    points: 6
+    drawn: 1
+    lost: 6
+    goals_for: 3
+    goals_against: 8
+    points: 4
   sources:
   - https://example.org/test-content/standings/liga-test
   verify: ok
@@ -248,62 +248,197 @@ cutoffs:
   competition: liga-test
   date: 2001-05-31
   table:
-  - club_season: demo-athletic-2000-01
+  - club_season: fixture-wanderers-2000-01
     position: 1
     played: 10
     won: 5
-    drawn: 2
-    lost: 3
-    goals_for: 15
-    goals_against: 9
-    points: 17
+    drawn: 3
+    lost: 2
+    goals_for: 11
+    goals_against: 8
+    points: 18
   - club_season: test-fc-2000-01
     position: 2
+    played: 10
+    won: 4
+    drawn: 5
+    lost: 1
+    goals_for: 14
+    goals_against: 8
+    points: 17
+  - club_season: dummy-rovers-2000-01
+    position: 3
     played: 10
     won: 5
     drawn: 2
     lost: 3
-    goals_for: 14
-    goals_against: 11
+    goals_for: 17
+    goals_against: 13
     points: 17
-  - club_season: mock-city-2000-01
-    position: 3
-    played: 10
-    won: 4
-    drawn: 4
-    lost: 2
-    goals_for: 9
-    goals_against: 8
-    points: 16
-  - club_season: fixture-wanderers-2000-01
+  - club_season: sample-united-2000-01
     position: 4
     played: 10
     won: 4
-    drawn: 0
-    lost: 6
+    drawn: 3
+    lost: 3
     goals_for: 11
-    goals_against: 15
-    points: 12
-  - club_season: sample-united-2000-01
+    goals_against: 11
+    points: 15
+  - club_season: demo-athletic-2000-01
     position: 5
     played: 10
-    won: 2
-    drawn: 4
-    lost: 4
-    goals_for: 11
-    goals_against: 13
-    points: 10
-  - club_season: dummy-rovers-2000-01
+    won: 3
+    drawn: 2
+    lost: 5
+    goals_for: 10
+    goals_against: 15
+    points: 11
+  - club_season: mock-city-2000-01
     position: 6
     played: 10
-    won: 2
-    drawn: 4
-    lost: 4
-    goals_for: 12
-    goals_against: 16
-    points: 10
+    won: 1
+    drawn: 1
+    lost: 8
+    goals_for: 4
+    goals_against: 12
+    points: 4
   sources:
   - https://example.org/test-content/standings/liga-test
+  verify: ok
+- block: b1
+  competition: copa-continental-test
+  stage: groups
+  group: a
+  date: 2000-09-30
+  table:
+  - club_season: abroad-athletic-2000-01
+    position: 1
+    played: 2
+    won: 2
+    drawn: 0
+    lost: 0
+    goals_for: 4
+    goals_against: 2
+    points: 6
+  - club_season: overseas-fc-2000-01
+    position: 2
+    played: 2
+    won: 1
+    drawn: 0
+    lost: 1
+    goals_for: 4
+    goals_against: 4
+    points: 3
+  - club_season: faraway-city-2000-01
+    position: 3
+    played: 2
+    won: 0
+    drawn: 1
+    lost: 1
+    goals_for: 2
+    goals_against: 3
+    points: 1
+  - club_season: test-fc-2000-01
+    position: 4
+    played: 2
+    won: 0
+    drawn: 1
+    lost: 1
+    goals_for: 1
+    goals_against: 2
+    points: 1
+  sources:
+  - https://example.org/test-content/standings/copa-continental-test/group-a
+  verify: ok
+- block: b2
+  competition: copa-continental-test
+  stage: groups
+  group: a
+  date: 2000-11-30
+  table:
+  - club_season: test-fc-2000-01
+    position: 1
+    played: 4
+    won: 2
+    drawn: 1
+    lost: 1
+    goals_for: 4
+    goals_against: 2
+    points: 7
+  - club_season: overseas-fc-2000-01
+    position: 2
+    played: 4
+    won: 2
+    drawn: 0
+    lost: 2
+    goals_for: 6
+    goals_against: 6
+    points: 6
+  - club_season: abroad-athletic-2000-01
+    position: 3
+    played: 4
+    won: 2
+    drawn: 0
+    lost: 2
+    goals_for: 4
+    goals_against: 5
+    points: 6
+  - club_season: faraway-city-2000-01
+    position: 4
+    played: 4
+    won: 1
+    drawn: 1
+    lost: 2
+    goals_for: 3
+    goals_against: 4
+    points: 4
+  sources:
+  - https://example.org/test-content/standings/copa-continental-test/group-a
+  verify: ok
+- block: b3
+  competition: copa-continental-test
+  stage: groups
+  group: a
+  date: 2001-01-31
+  table:
+  - club_season: test-fc-2000-01
+    position: 1
+    played: 6
+    won: 3
+    drawn: 2
+    lost: 1
+    goals_for: 7
+    goals_against: 4
+    points: 11
+  - club_season: overseas-fc-2000-01
+    position: 2
+    played: 6
+    won: 3
+    drawn: 1
+    lost: 2
+    goals_for: 10
+    goals_against: 9
+    points: 10
+  - club_season: faraway-city-2000-01
+    position: 3
+    played: 6
+    won: 2
+    drawn: 1
+    lost: 3
+    goals_for: 6
+    goals_against: 7
+    points: 7
+  - club_season: abroad-athletic-2000-01
+    position: 4
+    played: 6
+    won: 2
+    drawn: 0
+    lost: 4
+    goals_for: 5
+    goals_against: 8
+    points: 6
+  sources:
+  - https://example.org/test-content/standings/copa-continental-test/group-a
   verify: ok
 ties:
 - competition: copa-test
@@ -335,4 +470,24 @@ ties:
   aggregate: 1-1 (4-3 pens)
   sources:
   - https://example.org/test-content/bracket/copa-test
+  verify: ok
+- competition: supercopa-test
+  stage: final
+  clubs:
+  - test-fc-2000-01
+  - sample-united-2000-01
+  winner: test-fc-2000-01
+  aggregate: 2-1
+  sources:
+  - https://example.org/test-content/bracket/supercopa-test
+  verify: ok
+- competition: copa-continental-test
+  stage: final
+  clubs:
+  - test-fc-2000-01
+  - overseas-fc-2000-01
+  winner: overseas-fc-2000-01
+  aggregate: 0-1
+  sources:
+  - https://example.org/test-content/bracket/copa-continental-test
   verify: ok

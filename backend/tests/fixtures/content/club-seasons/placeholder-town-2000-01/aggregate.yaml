@@ -4,7 +4,7 @@ club: placeholder-town
 season: 2000-01
 attack: 40
 defense: 38
-rating_rationale: 'Fictional lower-league side: aggregate strength below every Liga Test club.'
+rating_rationale: 'Fictional aggregate side: strength indices set for the test data.'
 sources:
 - https://example.org/test-content/aggregates/placeholder-town-2000-01
 verify: ok

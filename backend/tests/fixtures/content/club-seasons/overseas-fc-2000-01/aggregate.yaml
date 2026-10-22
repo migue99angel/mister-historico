@@ -1,0 +1,10 @@
+schema_version: 1
+club_season: overseas-fc-2000-01
+club: overseas-fc
+season: 2000-01
+attack: 66
+defense: 64
+rating_rationale: 'Fictional aggregate side: strength indices set for the test data.'
+sources:
+- https://example.org/test-content/aggregates/overseas-fc-2000-01
+verify: ok

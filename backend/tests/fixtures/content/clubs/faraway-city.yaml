@@ -1,0 +1,7 @@
+schema_version: 1
+club_id: faraway-city
+name: Faraway City
+short_name: FWC
+colors:
+  primary: '#00008B'
+  secondary: '#FFFFFF'

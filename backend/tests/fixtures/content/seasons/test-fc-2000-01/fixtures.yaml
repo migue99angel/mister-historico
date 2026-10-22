@@ -1,16 +1,44 @@
 schema_version: 1
 fixtures:
+- id: tfc-super-final
+  date: 2000-08-20
+  competition: supercopa-test
+  stage: final
+  opponent: sample-united-2000-01
+  venue: neutral
+  key: true
+  result:
+    goals_for: 2
+    goals_against: 1
+  sources:
+  - https://example.org/test-content/fixtures/supercopa-test/final
+  verify: ok
 - id: tfc-liga-01
   date: 2000-09-02
   competition: liga-test
   round: 1
   opponent: fixture-wanderers-2000-01
   venue: home
+  key: false
   result:
-    goals_for: 1
-    goals_against: 0
+    goals_for: 0
+    goals_against: 1
   sources:
   - https://example.org/test-content/fixtures/liga-test/round-1
+  verify: ok
+- id: tfc-cont-g1
+  date: 2000-09-12
+  competition: copa-continental-test
+  stage: groups
+  group: a
+  round: 1
+  opponent: faraway-city-2000-01
+  venue: home
+  result:
+    goals_for: 0
+    goals_against: 0
+  sources:
+  - https://example.org/test-content/fixtures/copa-continental-test/matchday-1
   verify: ok
 - id: tfc-liga-02
   date: 2000-09-16
@@ -18,11 +46,26 @@ fixtures:
   round: 2
   opponent: dummy-rovers-2000-01
   venue: away
+  key: false
   result:
-    goals_for: 1
-    goals_against: 3
+    goals_for: 2
+    goals_against: 2
   sources:
   - https://example.org/test-content/fixtures/liga-test/round-2
+  verify: ok
+- id: tfc-cont-g2
+  date: 2000-09-26
+  competition: copa-continental-test
+  stage: groups
+  group: a
+  round: 2
+  opponent: abroad-athletic-2000-01
+  venue: away
+  result:
+    goals_for: 1
+    goals_against: 2
+  sources:
+  - https://example.org/test-content/fixtures/copa-continental-test/matchday-2
   verify: ok
 - id: tfc-liga-03
   date: 2000-10-14
@@ -30,11 +73,26 @@ fixtures:
   round: 3
   opponent: mock-city-2000-01
   venue: home
+  key: false
   result:
     goals_for: 0
     goals_against: 0
   sources:
   - https://example.org/test-content/fixtures/liga-test/round-3
+  verify: ok
+- id: tfc-cont-g3
+  date: 2000-10-24
+  competition: copa-continental-test
+  stage: groups
+  group: a
+  round: 3
+  opponent: overseas-fc-2000-01
+  venue: home
+  result:
+    goals_for: 2
+    goals_against: 0
+  sources:
+  - https://example.org/test-content/fixtures/copa-continental-test/matchday-3
   verify: ok
 - id: tfc-liga-04
   date: 2000-11-04
@@ -42,11 +100,26 @@ fixtures:
   round: 4
   opponent: demo-athletic-2000-01
   venue: away
+  key: false
   result:
     goals_for: 1
-    goals_against: 2
+    goals_against: 1
   sources:
   - https://example.org/test-content/fixtures/liga-test/round-4
+  verify: ok
+- id: tfc-cont-g4
+  date: 2000-11-14
+  competition: copa-continental-test
+  stage: groups
+  group: a
+  round: 4
+  opponent: faraway-city-2000-01
+  venue: away
+  result:
+    goals_for: 1
+    goals_against: 0
+  sources:
+  - https://example.org/test-content/fixtures/copa-continental-test/matchday-4
   verify: ok
 - id: tfc-copa-sf-1
   date: 2000-11-22
@@ -61,17 +134,46 @@ fixtures:
   sources:
   - https://example.org/test-content/fixtures/copa-test/sf-1
   verify: ok
+- id: tfc-cont-g5
+  date: 2000-12-05
+  competition: copa-continental-test
+  stage: groups
+  group: a
+  round: 5
+  opponent: abroad-athletic-2000-01
+  venue: home
+  result:
+    goals_for: 1
+    goals_against: 0
+  sources:
+  - https://example.org/test-content/fixtures/copa-continental-test/matchday-5
+  verify: ok
 - id: tfc-liga-05
   date: 2000-12-09
   competition: liga-test
   round: 5
   opponent: sample-united-2000-01
   venue: home
+  key: true
   result:
-    goals_for: 4
-    goals_against: 2
+    goals_for: 3
+    goals_against: 1
   sources:
   - https://example.org/test-content/fixtures/liga-test/round-5
+  verify: ok
+- id: tfc-cont-g6
+  date: 2000-12-12
+  competition: copa-continental-test
+  stage: groups
+  group: a
+  round: 6
+  opponent: overseas-fc-2000-01
+  venue: away
+  result:
+    goals_for: 2
+    goals_against: 2
+  sources:
+  - https://example.org/test-content/fixtures/copa-continental-test/matchday-6
   verify: ok
 - id: tfc-liga-06
   date: 2001-01-13
@@ -79,9 +181,10 @@ fixtures:
   round: 6
   opponent: fixture-wanderers-2000-01
   venue: away
+  key: false
   result:
     goals_for: 2
-    goals_against: 0
+    goals_against: 2
   sources:
   - https://example.org/test-content/fixtures/liga-test/round-6
   verify: ok
@@ -104,9 +207,10 @@ fixtures:
   round: 7
   opponent: dummy-rovers-2000-01
   venue: home
+  key: false
   result:
-    goals_for: 2
-    goals_against: 1
+    goals_for: 1
+    goals_against: 0
   sources:
   - https://example.org/test-content/fixtures/liga-test/round-7
   verify: ok
@@ -116,9 +220,10 @@ fixtures:
   round: 8
   opponent: mock-city-2000-01
   venue: away
+  key: false
   result:
-    goals_for: 1
-    goals_against: 3
+    goals_for: 2
+    goals_against: 1
   sources:
   - https://example.org/test-content/fixtures/liga-test/round-8
   verify: ok
@@ -128,8 +233,9 @@ fixtures:
   round: 9
   opponent: demo-athletic-2000-01
   venue: home
+  key: false
   result:
-    goals_for: 2
+    goals_for: 3
     goals_against: 0
   sources:
   - https://example.org/test-content/fixtures/liga-test/round-9
@@ -140,11 +246,25 @@ fixtures:
   round: 10
   opponent: sample-united-2000-01
   venue: away
+  key: true
   result:
     goals_for: 0
     goals_against: 0
   sources:
   - https://example.org/test-content/fixtures/liga-test/round-10
+  verify: ok
+- id: tfc-cont-final
+  date: 2001-05-23
+  competition: copa-continental-test
+  stage: final
+  opponent: overseas-fc-2000-01
+  venue: neutral
+  key: true
+  result:
+    goals_for: 0
+    goals_against: 1
+  sources:
+  - https://example.org/test-content/fixtures/copa-continental-test/final
   verify: ok
 - id: tfc-copa-final
   date: 2001-05-26
@@ -152,6 +272,7 @@ fixtures:
   stage: final
   opponent: sample-united-2000-01
   venue: neutral
+  key: true
   result:
     goals_for: 1
     goals_against: 1

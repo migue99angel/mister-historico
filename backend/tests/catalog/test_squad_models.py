@@ -254,7 +254,7 @@ def test_a_pending_real_league_may_be_null() -> None:
 
 
 def test_a_verified_real_league_cannot_have_null_goals() -> None:
-    league = squad()["real_league"]
+    league: dict[str, Any] = squad()["real_league"]
     league["goals_for"] = None
 
     with pytest.raises(ValidationError, match="goals_for is null"):

@@ -1,0 +1,7 @@
+schema_version: 1
+club_id: abroad-athletic
+name: Abroad Athletic
+short_name: ABA
+colors:
+  primary: '#8B0000'
+  secondary: '#FFFFFF'
