@@ -7,19 +7,21 @@ them from ever comparing equal at runtime either.
 
 - Content IDs (`ClubSeasonId`, `PlayableSeasonId`, `PlayerId`, `ClubId`, `CompetitionId`,
   `FixtureId`, `DilemmaId`, `OptionId`) are kebab-case slugs (`str`) that come from the content
-  files. A single leading underscore is allowed for system slugs such as `_market-2012-13`.
+  files, at most 64 characters. Only `ClubSeasonId` allows a single leading underscore, for
+  system slugs such as `_market-2012-13`.
 - `RunId` is a UUID, because runs are created at play time and need no human-readable name.
 """
 
 import re
 import uuid
 from dataclasses import dataclass
-from typing import Self
+from typing import ClassVar, Self
 
 from mister.shared_kernel.errors import InvalidValueError
 
-_SLUG_PATTERN = re.compile(r"_?[a-z0-9]+(-[a-z0-9]+)*")
-_SLUG_MAX_LENGTH = 100
+_SLUG_BODY = r"[a-z0-9]+(-[a-z0-9]+)*"
+_SLUG_MAX_LENGTH = 64
+_UUID_PATTERN = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,11 +30,14 @@ class _SlugId:
 
     value: str
 
+    #: Pattern the whole value must match; subclasses may widen it.
+    _pattern: ClassVar[re.Pattern[str]] = re.compile(_SLUG_BODY)
+
     def __post_init__(self) -> None:
         name = type(self).__name__
         if not isinstance(self.value, str):
             raise InvalidValueError(f"{name} must be a string, got {type(self.value).__name__}")
-        if len(self.value) > _SLUG_MAX_LENGTH or _SLUG_PATTERN.fullmatch(self.value) is None:
+        if len(self.value) > _SLUG_MAX_LENGTH or self._pattern.fullmatch(self.value) is None:
             raise InvalidValueError(
                 f"{name} must be a kebab-case slug of at most {_SLUG_MAX_LENGTH} characters, "
                 f"got {self.value!r}"
@@ -44,7 +49,12 @@ class _SlugId:
 
 @dataclass(frozen=True, slots=True)
 class ClubSeasonId(_SlugId):
-    """A club in a specific season (ADR-015), e.g. `real-madrid-2012-13`."""
+    """A club in a specific season (ADR-015), e.g. `real-madrid-2012-13`.
+
+    The only ID that accepts a leading underscore (`_market-2012-13`).
+    """
+
+    _pattern: ClassVar[re.Pattern[str]] = re.compile(rf"_?{_SLUG_BODY}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,6 +88,11 @@ class DilemmaId(_SlugId):
 
 
 @dataclass(frozen=True, slots=True)
+class BlockId(_SlugId):
+    """A block of the season."""
+
+
+@dataclass(frozen=True, slots=True)
 class OptionId(_SlugId):
     """An option of a dilemma."""
 
@@ -99,11 +114,10 @@ class RunId:
 
     @classmethod
     def parse(cls, text: str) -> Self:
-        """Build a run ID from its canonical string form."""
-        try:
-            return cls(uuid.UUID(text))
-        except ValueError as error:
-            raise InvalidValueError(f"RunId is not a valid UUID: {text!r}") from error
+        """Build a run ID from its canonical form only: lowercase, hyphenated UUID."""
+        if _UUID_PATTERN.fullmatch(text) is None:
+            raise InvalidValueError(f"RunId is not a canonical lowercase UUID: {text!r}")
+        return cls(uuid.UUID(text))
 
     def __str__(self) -> str:
         return str(self.value)
