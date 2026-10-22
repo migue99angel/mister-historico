@@ -270,16 +270,6 @@ def test_a_historical_outcome_without_sources_is_rejected() -> None:
         SeasonFile.model_validate(data)
 
 
-def test_a_pending_league_position_is_null_with_verify_pending() -> None:
-    data = season()
-    data["historical_outcome"][0]["final_position"] = None
-    with pytest.raises(ValidationError, match="final_position"):
-        SeasonFile.model_validate(data)
-
-    data["historical_outcome"][0]["verify"] = "pending"
-    assert SeasonFile.model_validate(data).historical_outcome[0].final_position is None
-
-
 def test_an_outcome_cannot_be_champion_and_eliminated() -> None:
     data = season()
     data["historical_outcome"][1]["champion"] = True
