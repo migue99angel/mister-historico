@@ -6,12 +6,22 @@ card always yields the same bytes and the image URL can be immutable and CDN-cac
 """
 
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Protocol
 
 from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.ids import RunId
 
 MAX_SCORE = 100
+
+
+class VerdictKind(StrEnum):
+    """Category of the final verdict (the values of the API `VerdictKind`)."""
+
+    SURPASSED_HISTORY = "surpassed_history"
+    MATCHED_HISTORY = "matched_history"
+    BELOW_HISTORY = "below_history"
+    SACKED = "sacked"
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,7 +40,7 @@ class ShareCard:
     run_id: RunId
     club_name: str
     historical_manager: str
-    verdict_kind: str
+    verdict_kind: VerdictKind
     verdict_text: str
     mister_score: int
     comparisons: tuple[ShareCardComparison, ...]

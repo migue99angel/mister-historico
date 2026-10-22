@@ -14,6 +14,7 @@ Decisions:
 
 from dataclasses import dataclass
 from datetime import datetime
+from enum import StrEnum
 from typing import Protocol
 
 from mister.shared_kernel.errors import DomainError, InvalidValueError
@@ -23,6 +24,15 @@ MIN_SCORE = 0
 MAX_SCORE = 100
 SCORE_BUCKETS = MAX_SCORE - MIN_SCORE + 1
 MAX_PAGE_SIZE = 100
+
+
+class VerdictKind(StrEnum):
+    """Category of the final verdict (the values of the API `VerdictKind`)."""
+
+    SURPASSED_HISTORY = "surpassed_history"
+    MATCHED_HISTORY = "matched_history"
+    BELOW_HISTORY = "below_history"
+    SACKED = "sacked"
 
 
 class AliasAlreadySetError(DomainError):
@@ -49,7 +59,7 @@ class LeaderboardEntry:
     season_id: PlayableSeasonId
     alias: str
     mister_score: int
-    verdict_kind: str
+    verdict_kind: VerdictKind
     finished_at: datetime
 
     def __post_init__(self) -> None:
