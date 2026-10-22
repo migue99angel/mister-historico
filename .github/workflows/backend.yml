@@ -20,7 +20,8 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
+  # Only superseded PR runs are cancelled; runs on main and scheduled runs always finish.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 defaults:
   run:
@@ -36,10 +37,16 @@ jobs:
         with:
           persist-credentials: false
 
+      # Python and uv versions must match infra/docker/api.Dockerfile (python:3.12.15, uv 0.9.7).
+      # uv 0.9.7 cannot download 3.12.15, so setup-python provides it and uv picks it up.
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12.15"
+
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
-          # Same uv as infra/docker/api.Dockerfile.
           version: "0.9.7"
+          python-version: "3.12.15"
           working-directory: backend
           enable-cache: true
           cache-dependency-glob: uv.lock # relative to working-directory
