@@ -12,6 +12,8 @@
 | 2 | Nombres de jugadores | **Reales, pero desactivables.** Cada jugador tiene `display_name` (el real) y `alias_name`. Una política de nombres (`NamePolicy`) en la capa de presentación decide cuál se muestra según un flag. El dominio solo trabaja con IDs. |
 | 3 | Equipos V1 | **Real Madrid 2012-13, FC Barcelona 2008-09, Atlético 2013-14, Valencia 2003-04 y Sevilla 2005-06.** Orden de producción: RM (es el piloto que valida el pipeline), Barça, Atleti, Valencia y Sevilla. Si falta tiempo, se lanza con los tres primeros. |
 | 4 | Medias | **Escala 1-99 con una rúbrica propia documentada.** Cada media se guarda con su justificación y su fuente. |
+| — | Calibración | Banda del triplete del Barça 2008-09: **5-15 %**, sin excepciones a la regla general (mínimo 5 %). No hay `calibration_overrides` en el esquema. |
+| — | Jugadores de referencia de la rúbrica | **Pendiente.** El autor los elige antes de empezar la F2 (ver T1.7). |
 | — | Rivales | **Con plantilla real desde la V1** (antes era la propuesta P1, que se ha descartado). La plantilla pertenece a un `ClubSeason` (club + temporada), compartido entre tu equipo y los rivales. Es la base del mercado de fichajes: fichar a un jugador de un rival lo saca de la plantilla de ese rival dentro de tu partida. Los rivales de fuera de Primera, como los de las primeras rondas de Copa, usan una fuerza agregada por falta de datos fiables. |
 | 5 | Frontend | **React + Vite + TypeScript** (estricto). |
 | 6 | Hosting | **Se decide más tarde** (tarea T7.1). Hasta entonces, todo va en Docker portable y sin depender de ningún proveedor. |

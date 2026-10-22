@@ -207,6 +207,12 @@
   - `MatchResult.winner` funciona con prórroga y con penaltis.
 - **Aceptación:** `model.py` tiene menos de 200 líneas y no contiene lógica de simulación. Un test de arquitectura demuestra que `mister.game` no puede importar `mister.simulation.domain`.
 
+### T1.7 · Jugadores de referencia de la rúbrica [HUMANO]
+- **Oleada:** antes de empezar la F2 · **Tamaño:** S · **Depende de:** T1.3 integrada
+- **Propiedad:** la tabla `[PENDIENTE autor]` de `docs/content/rating-rubric.md`
+- **Qué hacer:** el autor elige jugadores reales de referencia por banda y posición, cada uno con su temporada concreta. Son el anclaje común de todos los agentes investigadores.
+- **Aceptación:** la tabla está completa. **Bloquea T2.11, T2.16 y T6.x.**
+
 ---
 
 ## F2 · Motor, catálogo y piloto (Real Madrid 2012-13)
@@ -358,7 +364,7 @@
 - **Aceptación:** `content validate` en verde y todos los datos con `sources`.
 
 #### T2.11 · Plantilla y medias
-- **Oleada:** F2-A · **Tamaño:** L · **Depende de:** T1.2, T1.3 (rúbrica aprobada)
+- **Oleada:** F2-A · **Tamaño:** L · **Depende de:** T1.2, T1.3 (rúbrica aprobada), T1.7 (jugadores de referencia)
 - **Propiedad:** `content/club-seasons/real-madrid-2012-13/squad.yaml`
 - **Qué hacer:** la plantilla completa de esa temporada (incluidas las altas y bajas con su fecha), posición, edad, media según la rúbrica completa y `rating_rationale` para todos. Los fichajes posibles de los dilemas que vienen de un rival se referencian con `from_club_season`. Los que no vienen de ningún rival del juego van en `content/club-seasons/_market-2012-13/squad.yaml`.
 - **Aceptación:** validación en verde y medias justificadas.
@@ -379,7 +385,7 @@
 - **Aceptación:** validación en verde y una opción histórica en cada dilema.
 
 #### T2.16 · Plantillas de los rivales del RM 2012-13 (por lotes)
-- **Oleada:** F2-A, en cuanto T2.12 publica la lista de participantes · **Tamaño:** M por lote · **Depende de:** T1.2, T1.3 (procedimiento ligero) y la lista de rivales de T2.12
+- **Oleada:** F2-A, en cuanto T2.12 publica la lista de participantes · **Tamaño:** M por lote · **Depende de:** T1.2, T1.3 (procedimiento ligero), T1.7 (jugadores de referencia) y la lista de rivales de T2.12
 - **Propiedad:** cada lote es dueño de sus `content/club-seasons/<club>-2012-13/**` y `content/clubs/<club>.yaml`. Lotes propuestos (cada uno lo hace un agente, en paralelo):
   - Lote 1: los 6 primeros de la Liga (salvo el RM).
   - Lote 2: los clasificados del 7.º al 13.º.
