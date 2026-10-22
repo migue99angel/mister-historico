@@ -1040,3 +1040,41 @@ def test_repeated_qualifying_stages_still_need_distinct_ids() -> None:
 
     with pytest.raises(ValidationError, match="duplicate stage id"):
         SeasonFile.model_validate(data)
+
+
+def test_a_result_model_does_not_judge_penalties_against_the_match_score() -> None:
+    """In a second leg the aggregate is level, not the match; the tree check judges that."""
+    parsed = FixturesFile.model_validate(
+        fixtures_file(
+            fixture(
+                round=None,
+                stage="final",
+                result={
+                    "goals_for": 0,
+                    "goals_against": 1,
+                    "penalties_for": 4,
+                    "penalties_against": 3,
+                },
+            )
+        )
+    )
+
+    assert parsed.fixtures[0].result is not None
+
+
+def test_penalties_cannot_end_level() -> None:
+    with pytest.raises(ValidationError, match="level"):
+        FixturesFile.model_validate(
+            fixtures_file(
+                fixture(
+                    round=None,
+                    stage="final",
+                    result={
+                        "goals_for": 1,
+                        "goals_against": 1,
+                        "penalties_for": 3,
+                        "penalties_against": 3,
+                    },
+                )
+            )
+        )
