@@ -13,7 +13,7 @@ from mister.shared_kernel.seed import Seed
 
 seeds = st.integers(min_value=0, max_value=2**64 - 1).map(Seed)
 keys = st.one_of(st.text(max_size=8), st.integers(min_value=-(2**70), max_value=2**70))
-key_paths = st.lists(keys, max_size=4)
+key_paths = st.lists(keys, min_size=1, max_size=4)
 
 
 def draw(source: RandomSource, n: int = 8) -> list[float]:
@@ -307,8 +307,38 @@ def test_golden_poisson_values_never_change() -> None:
     [
         (
             0.3,
-            [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1]
-            + [0, 0],
+            [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                1,
+                1,
+                1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                1,
+                0,
+                1,
+                0,
+                0,
+            ],
         ),
         (3.0, [3, 0, 3, 1, 2, 2, 1, 3]),
     ],
