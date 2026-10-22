@@ -45,7 +45,7 @@
 | Texto | `texts` | Texto de interfaz o narrativa con estado `draft` o `reviewed` y `reviewed_by`. |
 | Política de nombres | `NamePolicy` | Regla de presentación que decide si se muestra el nombre real o el alias. |
 | Nivel de competición | `tier` | Categoría de una competición: `domestic_league`, `domestic_cup`, `domestic_super_cup`, `continental_primary` o `continental_secondary`. |
-| Etapa | `stage` / `round` | Ronda de una competición (`qualifying`, `group_stage`, `round_of_16`, `quarter_final`, `semi_final`, `final`...). La fase de grupos es una etapa más. |
+| Etapa | `stage` / `round` | Ronda de una competición, en este orden: `qualifying`, `playoff`, `group_stage`, `round_of_128`, `round_of_64`, `round_of_32`, `round_of_16`, `quarter_final`, `semi_final`, `final`. La fase de grupos es una etapa más y solo `qualifying` puede repetirse. |
 | Estadísticas de goles | `league_stats` / `goal_baseline` | Partidos, goles locales y goles visitantes de una liga (o de otra competición, o los de una liga de la temporada): base de goles y ventaja de campo del motor. |
 | Liga real del club | `real_league` | La liga que un club jugó de verdad esa temporada, con sus partidos y goles; sirve para calibrar la fuerza de un rival. |
 | Eventos forzados | `forced_events` | Hechos reales de la temporada (por ahora, lesiones) que se repiten en cada partida. |

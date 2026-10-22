@@ -40,8 +40,8 @@ content/
 |---|---|---|
 | Slug (club, competición, etapa, grupo, bloque, dilema, opción, objetivo, fixture) | minúsculas y guiones: `^[a-z0-9]+(-[a-z0-9]+)*$` | `test-fc`, `copa-test`, `b1` |
 | Temporada | `yyyy-yy`, con años consecutivos | `2000-01`, `1999-00` |
-| Club-season | `<club>-<yyyy>-<yy>` | `test-fc-2000-01` |
-| Mercado | `_market-<yyyy>-<yy>` | `_market-2000-01` |
+| Club-season | `<club>-<yyyy>-<yy>`, de **64 caracteres como máximo** | `test-fc-2000-01` |
+| Mercado | `_market-<yyyy>-<yy>`; es el **único** club-season que puede empezar por `_` | `_market-2000-01` |
 | `player_id` | slug, **estable entre temporadas** (la misma persona, el mismo id) | `tfc-05` |
 | Fecha | `AAAA-MM-DD` (YAML la lee como fecha) | `2000-09-02` |
 
@@ -120,7 +120,7 @@ Reglas:
 - **`subrole`** es opcional y coherente con la posición: `DF` → `CB`, `LB`, `RB`; `MF` → `DM`, `CM`, `AM`, `WG`; `FW` → `WG`, `ST`; `GK` no tiene. `WG` (extremo) es válido con `MF` y con `FW`.
 - **`sources` y `verify` de cada jugador** respaldan su **pertenencia** a la plantilla (y su media). Ver la regla de oro.
 - **`joined_on` / `left_on`** (inclusivos, dentro de la temporada: del 1 de julio al 30 de junio). Sin ellos, el jugador está toda la temporada. `left_on` no puede ser anterior a `joined_on`.
-- **Tamaño y cobertura de las plantillas rivales** (procedimiento ligero P6): de **18 a 22** jugadores, con al menos **2 `GK`, 6 `DF`, 6 `MF` y 4 `FW`**. La plantilla jugable y la de mercado no están sujetas a esta regla.
+- **Tamaño y cobertura de las plantillas rivales** (procedimiento ligero P6): de **18 a 22** jugadores, con al menos **2 `GK`, 6 `DF`, 6 `MF` y 4 `FW`**, y **entre 6 y 10 jugadores `key: true`**. La plantilla jugable y la de mercado no están sujetas a esta regla.
 - No se repite un `player_id` en la plantilla.
 - **Un jugador no está en dos plantillas de la misma temporada en la misma fecha**, salvo traspaso con fechas sin solape (por ejemplo, `left_on: 2000-12-31` en un club y `joined_on: 2001-01-01` en otro). Ese jugador conserva el mismo `player_id`, `display_name` y `alias_name` en todas las plantillas.
 - **`real_league`** es la liga que el club jugó esa temporada, con sus partidos y goles reales (`played`, `goals_for` y `goals_against`); `competition_label` es texto libre con el nombre de esa liga. Un rival de otro país o categoría tiene su propia liga. Se compara con la última clasificación de `standings.yaml` **solo si `competition_label` es el `name` de una liga de la temporada jugable**; en ese caso tiene que coincidir. La calibración comprueba además que la fuerza de la plantilla encaja con esos goles.
@@ -199,6 +199,7 @@ Una lista con un tipo (`kind`) y un nivel (`tier`) por competición. Cada una ti
   tiebreakers: [head_to_head_points, goal_difference, goals_for]
   league_stats:              # goles de TODA la liga: base de goles y ventaja de campo
     matches: 30              # = n·(n-1)/2·rounds; el validador lo comprueba
+    # home_goals y away_goals: al menos 1 cada uno (con 0 se rompe la base de goles)
     home_goals: 41
     away_goals: 31
     sources: [https://example.org/test-content/stats/liga-test]
@@ -222,7 +223,7 @@ Desempates posibles, en el orden en que se aplican: `head_to_head_points`, `head
 ```
 
 - **`goal_baseline`** es la base de goles de la competición. O bien `{from_league: <id de una liga de la temporada>}`, o bien sus propias estadísticas, con la misma forma que `league_stats`: `{matches, home_goals, away_goals, sources, verify}`. Una final puede jugarse en campo neutral (`venue: neutral` en el fixture).
-- **Etapas (`stages`)**: `id`, `name` y `round`, que es una de `qualifying`, `playoff`, `group_stage`, `round_of_32`, `round_of_16`, `quarter_final`, `semi_final`, `final`. Se listan **en el orden de las rondas** y no se repite ninguna.
+- **Etapas (`stages`)**: `id`, `name` y `round`, que es una de `qualifying`, `playoff`, `group_stage`, `round_of_32`, `round_of_16`, `quarter_final`, `semi_final`, `final`. Se listan **en este orden**, estrictamente creciente: `qualifying` < `playoff` < `group_stage` < `round_of_128` < `round_of_64` < `round_of_32` < `round_of_16` < `quarter_final` < `semi_final` < `final`. **Solo `qualifying` puede repetirse** en varias etapas consecutivas (con `id` de etapa distintos); ninguna otra ronda se repite.
 - `legs`: 1 (partido único) o 2 (ida y vuelta).
 - `away_goals_rule`: valor doble de los goles fuera; solo con `legs: 2`. Es una regla de **esa** competición **esa** temporada: ponla explícitamente.
 - `extra_time` y `penalties`: si se desempata con prórroga y penaltis.
@@ -252,7 +253,7 @@ Desempates posibles, en el orden en que se aplican: `head_to_head_points`, `head
     - {id: final, name: Final, round: final, legs: 1, away_goals_rule: false, extra_time: true, penalties: true}
 ```
 
-Los participantes de cada grupo tienen que ser participantes de la competición. Los partidos del equipo propio en la fase de grupos llevan `stage`, `group` y `round` (la jornada) en `fixtures.yaml`, y las clasificaciones de cada grupo van en `standings.yaml`.
+Los participantes de cada grupo tienen que ser participantes de la competición, y `advance_per_group` tiene que ser **menor que el tamaño del grupo**. Los partidos del equipo propio en la fase de grupos llevan `stage`, `group` y `round` (la jornada) en `fixtures.yaml`, y las clasificaciones de cada grupo van en `standings.yaml`.
 
 ### Eventos forzados (`forced_events`)
 
@@ -264,7 +265,7 @@ forced_events:
      sources: [https://example.org/test-content/events/tfc-07-injury], verify: ok}
 ```
 
-El jugador tiene que ser de la plantilla propia y la fecha tiene que caer dentro de la temporada (1 de julio a 30 de junio). `days` va de 1 a 365.
+El jugador tiene que ser de la plantilla propia. El intervalo `[date, date + days)` tiene que **solaparse** con el de la temporada (del inicio del primer bloque al final del último), de modo que se admiten las lesiones de pretemporada que llegan a la temporada. `days` va de 1 a 365.
 
 ### Objetivos de la directiva (`board_objectives`)
 
@@ -344,7 +345,7 @@ fixtures:
 - El resultado real lleva `sources`, como cualquier dato histórico.
 - La fecha tiene que caer dentro de algún bloque, y **el equipo propio no juega dos partidos el mismo día**.
 - **La liga tiene que estar completa:** el equipo propio juega `(participantes - 1) × rounds` partidos de liga, una vez en cada jornada, y en una doble vuelta se enfrenta a cada rival una vez en casa y otra fuera. Lo mismo vale para su grupo: `(equipos del grupo - 1) × legs` partidos.
-- **Las eliminatorias tienen que ser coherentes:** una eliminatoria a doble partido no puede tener solo la ida (ni dos partidos con `leg: 1`), y las etapas se juegan en orden (una final no puede ser anterior a la semifinal).
+- **Las eliminatorias tienen que ser coherentes:** una eliminatoria a doble partido no puede tener solo la ida (ni dos partidos con `leg: 1`), tiene **una pierna en casa y la otra fuera**, la pierna 1 se juega **antes** que la 2, y las etapas se juegan en orden (una final no puede ser anterior a la semifinal).
 - Los puntos y goles que suman los resultados de la liga y de cada grupo tienen que coincidir con la fila del equipo propio en `standings.yaml` (el validador lo comprueba en cada fecha de corte).
 
 ## 7. `seasons/<slug>/standings.yaml`
@@ -446,7 +447,7 @@ Un efecto es un mapa con un `type` y los campos de ese tipo. **No existen otros 
 Vocabulario cerrado:
 
 - `style`: `pressing`, `counter`, `possession` o `balanced` (en la interfaz, "equilibrado").
-- `system`: las líneas de jugadores de campo separadas por guiones, como `4-3-3` o `4-2-3-1`. **Tienen que sumar 10**, con entre 3 y 5 líneas y entre 1 y 6 jugadores en cada una (`4-3-2` o `7-2-1` fallan).
+- `system`: las líneas de jugadores de campo separadas por guiones, como `4-3-3` o `4-2-3-1`. Formato canónico `^[1-9](-[1-9]){2,4}$` **y además**: entre 3 y 5 líneas, entre 1 y 6 jugadores en cada línea y una suma de **exactamente 10** (`4-3-2`, `7-2-1` o `4-3` fallan).
 - `priority`: `low`, `normal` o `high` (en la interfaz, "normal" es la prioridad intermedia, la de partida).
 
 Referencias que se validan:
@@ -454,7 +455,7 @@ Referencias que se validan:
 - `sign_player` sin `from_club_season`: el jugador tiene que existir en alguna plantilla **y no pertenecer a un rival** (si es de un rival, hay que poner `from_club_season`); los fichables de fuera van en la plantilla de mercado. Con `from_club_season`: ese club-season tiene que tener plantilla, no ser el propio y contener al jugador. Fichar a un jugador que ya es de tu plantilla falla.
 - `sell_player`, `player_morale`, `youth_minutes`, `injury` y `fitness` con jugador: el jugador tiene que ser de la plantilla propia (o haberse fichado en otro dilema). `to_club_season` tiene que ser un club-season con plantilla.
 - `competition_priority`: la competición tiene que existir en `season.yaml`.
-- `injury`: la fecha tiene que caer dentro de la temporada (1 de julio a 30 de junio).
+- `injury`: la fecha (`date`) tiene que ser igual o posterior al inicio del bloque del dilema e igual o anterior al final del último bloque de la temporada.
 
 ## 9. `seasons/<slug>/texts.yaml`
 
