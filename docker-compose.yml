@@ -10,7 +10,7 @@ name: mister-historico
 
 services:
   postgres:
-    image: postgres:16
+    image: postgres:16.15
     environment:
       POSTGRES_USER: mister
       POSTGRES_PASSWORD: mister
