@@ -40,8 +40,14 @@ def squad(**overrides: Any) -> dict[str, Any]:
         "club_season": "test-fc-2000-01",
         "club": "test-fc",
         "season": "2000-01",
-        "real_goals_for": 20,
-        "real_goals_against": 12,
+        "real_league": {
+            "competition_label": "Liga Test",
+            "played": 10,
+            "goals_for": 20,
+            "goals_against": 12,
+            "sources": [_SOURCE],
+            "verify": "ok",
+        },
         "sources": [_SOURCE],
         "verify": "ok",
         "players": [player(i) for i in range(18)],
@@ -149,28 +155,6 @@ def test_duplicate_player_ids_in_a_squad_are_rejected() -> None:
         SquadFile.model_validate(data)
 
 
-def test_a_squad_needs_a_goalkeeper() -> None:
-    data = squad()
-    data["players"][0]["position"] = "DF"
-
-    with pytest.raises(ValidationError, match="goalkeeper"):
-        SquadFile.model_validate(data)
-
-
-def test_a_club_squad_needs_at_least_18_players() -> None:
-    with pytest.raises(ValidationError, match="between 18 and 40"):
-        SquadFile.model_validate(squad(players=[player(i) for i in range(17)]))
-
-
-def test_real_league_goals_are_null_only_when_pending() -> None:
-    with pytest.raises(ValidationError, match="real_goals_for"):
-        SquadFile.model_validate(squad(real_goals_for=None))
-
-    parsed = SquadFile.model_validate(squad(real_goals_for=None, verify="pending"))
-
-    assert parsed.real_goals_for is None
-
-
 def test_a_squad_id_must_be_club_and_season() -> None:
     with pytest.raises(ValidationError, match="club_season"):
         SquadFile.model_validate(squad(club_season="other-fc-2000-01"))
@@ -186,8 +170,7 @@ def test_a_market_squad_has_no_club_and_any_size() -> None:
         squad(
             club_season="_market-2000-01",
             club=None,
-            real_goals_for=None,
-            real_goals_against=None,
+            real_league=None,
             players=[player(0)],
         )
     )
@@ -250,3 +233,95 @@ def test_a_valid_club_parses() -> None:
 def test_a_club_color_must_be_a_hex_code() -> None:
     with pytest.raises(ValidationError, match=r"colors\.primary"):
         ClubFile.model_validate(club(colors={"primary": "red", "secondary": "#FFFFFF"}))
+
+
+def test_a_club_squad_needs_real_league_data() -> None:
+    with pytest.raises(ValidationError, match="real_league"):
+        SquadFile.model_validate(squad(real_league=None))
+
+
+def test_a_pending_real_league_may_be_null() -> None:
+    league = {
+        "competition_label": "Liga Test",
+        "played": None,
+        "goals_for": None,
+        "goals_against": None,
+        "sources": [],
+        "verify": "pending",
+    }
+
+    assert SquadFile.model_validate(squad(real_league=league)).real_league is not None
+
+
+def test_a_verified_real_league_cannot_have_null_goals() -> None:
+    league = squad()["real_league"]
+    league["goals_for"] = None
+
+    with pytest.raises(ValidationError, match="goals_for is null"):
+        SquadFile.model_validate(squad(real_league=league))
+
+
+def test_the_old_real_goals_fields_are_gone() -> None:
+    with pytest.raises(ValidationError, match="extra_forbidden"):
+        SquadFile.model_validate(squad(real_goals_for=10))
+
+
+def test_a_pending_rating_is_null_and_a_null_rating_is_pending() -> None:
+    with pytest.raises(ValidationError, match="rating is null"):
+        SquadFile.model_validate(with_player(3, rating=None))
+
+    parsed = SquadFile.model_validate(with_player(3, rating=None, verify="pending"))
+
+    assert parsed.players[3].rating is None
+
+
+def test_a_pending_key_player_does_not_need_a_rationale_yet() -> None:
+    parsed = SquadFile.model_validate(with_player(3, key=True, rating=None, verify="pending"))
+
+    assert parsed.players[3].key
+
+
+def test_a_blank_rating_rationale_is_rejected() -> None:
+    with pytest.raises(ValidationError, match="rating_rationale"):
+        SquadFile.model_validate(with_player(3, key=True, rating_rationale="   "))
+
+
+@pytest.mark.parametrize("age", [14, 51])
+def test_an_age_outside_15_to_50_is_rejected(age: int) -> None:
+    with pytest.raises(ValidationError, match=r"players\.3\.age"):
+        SquadFile.model_validate(with_player(3, age=age))
+
+
+def test_an_age_of_15_is_accepted() -> None:
+    assert SquadFile.model_validate(with_player(3, age=15)).players[3].age == 15
+
+
+def test_a_string_rating_is_rejected_in_strict_mode() -> None:
+    with pytest.raises(ValidationError, match=r"players\.3\.rating"):
+        SquadFile.model_validate(with_player(3, rating="80"))
+
+
+def test_a_string_for_a_boolean_is_rejected_in_strict_mode() -> None:
+    with pytest.raises(ValidationError, match=r"players\.3\.key"):
+        SquadFile.model_validate(with_player(3, key="true"))
+
+
+def test_a_default_tactic_is_optional_and_balanced_442_by_default() -> None:
+    assert SquadFile.model_validate(squad()).default_tactic.system == "4-4-2"
+    assert SquadFile.model_validate(squad()).default_tactic.style == "balanced"
+
+    parsed = SquadFile.model_validate(squad(default_tactic={"style": "counter", "system": "5-3-2"}))
+    assert parsed.default_tactic.style == "counter"
+
+
+def test_a_pending_aggregate_strength_may_be_null() -> None:
+    parsed = AggregateFile.model_validate(
+        aggregate(attack=None, defense=None, rating_rationale=None, verify="pending")
+    )
+
+    assert parsed.attack is None
+
+
+def test_a_verified_aggregate_needs_a_rationale() -> None:
+    with pytest.raises(ValidationError, match="rating_rationale"):
+        AggregateFile.model_validate(aggregate(rating_rationale=None))

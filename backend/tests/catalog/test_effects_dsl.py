@@ -90,7 +90,10 @@ def test_out_of_range_effect_values_are_rejected(data: dict[str, Any]) -> None:
         _parse(data)
 
 
-@pytest.mark.parametrize("system", ["433", "4-3", "four-three-three", "4-3-3-"])
+@pytest.mark.parametrize(
+    "system",
+    ["433", "4-3", "four-three-three", "4-3-3-", "4-3-2", "4-4-3", "7-2-1", "1-1-1-1-1-5", "9-1"],
+)
 def test_set_tactic_rejects_malformed_systems(system: str) -> None:
     with pytest.raises(ValidationError, match="system"):
         _parse({"type": "set_tactic", "style": "balanced", "system": system})
@@ -110,3 +113,20 @@ def test_effects_are_immutable() -> None:
     effect = MoraleEffect(type="morale", delta=3)
     with pytest.raises(ValidationError, match="frozen"):
         effect.delta = 4  # type: ignore[misc]
+
+
+@pytest.mark.parametrize("system", ["4-4-2", "4-3-3", "4-2-3-1", "5-3-2", "3-4-1-2", "3-5-2"])
+def test_set_tactic_accepts_systems_with_ten_outfield_players(system: str) -> None:
+    assert isinstance(
+        _parse({"type": "set_tactic", "style": "balanced", "system": system}), SetTacticEffect
+    )
+
+
+def test_a_boolean_delta_is_rejected_in_strict_mode() -> None:
+    with pytest.raises(ValidationError, match="delta"):
+        _parse({"type": "morale", "delta": True})
+
+
+def test_a_string_delta_is_rejected_in_strict_mode() -> None:
+    with pytest.raises(ValidationError, match="delta"):
+        _parse({"type": "morale", "delta": "5"})

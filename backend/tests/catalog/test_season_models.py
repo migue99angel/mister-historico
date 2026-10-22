@@ -35,6 +35,41 @@ def _blocks(count: int = 5) -> list[dict[str, Any]]:
     return out
 
 
+_STATS = {"matches": 2, "home_goals": 3, "away_goals": 2, "sources": _SRC, "verify": "ok"}
+_TACTIC = {"style": "balanced", "system": "4-4-2"}
+
+
+def _stage(stage_id: str, round_: str, legs: int, **overrides: Any) -> dict[str, Any]:
+    data: dict[str, Any] = {
+        "id": stage_id,
+        "name": stage_id.title(),
+        "round": round_,
+        "legs": legs,
+        "away_goals_rule": legs == 2,
+        "extra_time": legs == 1,
+        "penalties": True,
+    }
+    data.update(overrides)
+    return data
+
+
+def _group_stage(**overrides: Any) -> dict[str, Any]:
+    return _stage(
+        "groups",
+        "group_stage",
+        2,
+        away_goals_rule=False,
+        extra_time=False,
+        penalties=False,
+        groups=[{"id": "a", "participants": [_OWN, _RIVAL]}],
+        points_per_win=3,
+        points_per_draw=1,
+        tiebreakers=["head_to_head_points", "goal_difference"],
+        advance_per_group=1,
+        **overrides,
+    )
+
+
 def season(**overrides: Any) -> dict[str, Any]:
     data: dict[str, Any] = {
         "schema_version": 1,
@@ -47,10 +82,12 @@ def season(**overrides: Any) -> dict[str, Any]:
             "sources": _SRC,
             "verify": "ok",
         },
+        "initial_tactic": _TACTIC,
         "blocks": _blocks(),
         "competitions": [
             {
                 "kind": "league",
+                "tier": "domestic_league",
                 "id": "liga",
                 "name": "Liga Test",
                 "participants": [_OWN, _RIVAL],
@@ -58,34 +95,36 @@ def season(**overrides: Any) -> dict[str, Any]:
                 "points_per_win": 3,
                 "points_per_draw": 1,
                 "tiebreakers": ["goal_difference", "goals_for"],
+                "league_stats": _STATS,
             },
             {
                 "kind": "cup",
+                "tier": "domestic_cup",
                 "id": "copa",
                 "name": "Copa Test",
                 "participants": [_OWN, _RIVAL],
-                "stages": [
-                    {
-                        "id": "semi",
-                        "name": "Semi",
-                        "legs": 2,
-                        "away_goals_rule": True,
-                        "extra_time": False,
-                        "penalties": True,
-                    },
-                    {
-                        "id": "final",
-                        "name": "Final",
-                        "legs": 1,
-                        "away_goals_rule": False,
-                        "extra_time": True,
-                        "penalties": True,
-                    },
-                ],
+                "goal_baseline": {"from_league": "liga"},
+                "stages": [_stage("semi", "semi_final", 2), _stage("final", "final", 1)],
             },
         ],
+        "forced_events": [
+            {
+                "type": "injury",
+                "player_id": "tfc-07",
+                "date": date(2000, 11, 10),
+                "days": 21,
+                "sources": _SRC,
+                "verify": "ok",
+            }
+        ],
         "board_objectives": [
-            {"competition": "liga", "kind": "finish_top", "target_position": 2, "text": "Top 2."}
+            {
+                "id": "obj-liga",
+                "competition": "liga",
+                "kind": "finish_top",
+                "target_position": 2,
+                "text": "Top 2.",
+            }
         ],
         "historical_outcome": [
             {
@@ -158,35 +197,25 @@ def test_an_unknown_competition_kind_is_rejected() -> None:
 
 def test_all_four_competition_kinds_are_accepted() -> None:
     data = season()
-    stage = {
-        "id": "final",
-        "name": "Final",
-        "legs": 1,
-        "away_goals_rule": False,
-        "extra_time": True,
-        "penalties": True,
-    }
+    final = _stage("final", "final", 1)
     data["competitions"] += [
         {
             "kind": "super_cup",
+            "tier": "domestic_super_cup",
             "id": "supercopa",
             "name": "Supercopa",
             "participants": [_OWN, _RIVAL],
-            "stages": [stage],
+            "goal_baseline": {"from_league": "liga"},
+            "stages": [final],
         },
         {
             "kind": "continental_cup",
+            "tier": "continental_primary",
             "id": "europa",
             "name": "Copa Continental",
             "participants": [_OWN, _RIVAL],
-            "group_stage": {
-                "groups": [{"id": "a", "participants": [_OWN, _RIVAL]}],
-                "legs": 2,
-                "points_per_win": 3,
-                "tiebreakers": ["head_to_head_points", "goal_difference"],
-                "advance_per_group": 1,
-            },
-            "stages": [stage],
+            "goal_baseline": dict(_STATS),
+            "stages": [_group_stage(), final],
         },
     ]
     data["historical_outcome"] += [
@@ -202,6 +231,175 @@ def test_all_four_competition_kinds_are_accepted() -> None:
     ]
 
     assert len(SeasonFile.model_validate(data).competitions) == 4
+
+
+@pytest.mark.parametrize(
+    ("index", "tier"),
+    [(0, "domestic_cup"), (1, "domestic_league"), (1, "continental_primary")],
+)
+def test_the_tier_must_match_the_competition_kind(index: int, tier: str) -> None:
+    data = season()
+    data["competitions"][index]["tier"] = tier
+
+    with pytest.raises(ValidationError, match="tier"):
+        SeasonFile.model_validate(data)
+
+
+def test_an_unknown_tier_is_rejected() -> None:
+    data = season()
+    data["competitions"][0]["tier"] = "regional"
+
+    with pytest.raises(ValidationError, match="tier"):
+        SeasonFile.model_validate(data)
+
+
+def test_stages_must_follow_the_order_of_the_rounds() -> None:
+    data = season()
+    data["competitions"][1]["stages"].reverse()
+
+    with pytest.raises(ValidationError, match="order"):
+        SeasonFile.model_validate(data)
+
+
+def test_a_stage_needs_a_known_round() -> None:
+    data = season()
+    data["competitions"][1]["stages"][0]["round"] = "eighth_final"
+
+    with pytest.raises(ValidationError, match="round"):
+        SeasonFile.model_validate(data)
+
+
+def test_a_group_stage_needs_its_group_configuration() -> None:
+    data = season()
+    stage = _group_stage()
+    del stage["groups"]
+    data["competitions"][1]["stages"] = [stage, _stage("final", "final", 1)]
+
+    with pytest.raises(ValidationError, match="groups"):
+        SeasonFile.model_validate(data)
+
+
+def test_a_knockout_stage_cannot_have_groups() -> None:
+    data = season()
+    data["competitions"][1]["stages"][0]["groups"] = [{"id": "a", "participants": [_OWN, _RIVAL]}]
+
+    with pytest.raises(ValidationError, match="group"):
+        SeasonFile.model_validate(data)
+
+
+def test_group_participants_must_belong_to_the_competition() -> None:
+    data = season()
+    stage = _group_stage()
+    stage["groups"][0]["participants"] = [_OWN, "stranger-fc-2000-01"]
+    data["competitions"][1]["stages"] = [stage, _stage("final", "final", 1)]
+
+    with pytest.raises(ValidationError, match="participants"):
+        SeasonFile.model_validate(data)
+
+
+def test_league_stats_matches_must_agree_with_the_league_format() -> None:
+    data = season()
+    data["competitions"][0]["league_stats"]["matches"] = 3  # 2 teams, double round = 2
+
+    with pytest.raises(ValidationError, match="matches"):
+        SeasonFile.model_validate(data)
+
+
+def test_a_league_needs_league_stats() -> None:
+    data = season()
+    del data["competitions"][0]["league_stats"]
+
+    with pytest.raises(ValidationError, match="league_stats"):
+        SeasonFile.model_validate(data)
+
+
+def test_league_stats_without_sources_are_rejected() -> None:
+    data = season()
+    data["competitions"][0]["league_stats"]["sources"] = []
+
+    with pytest.raises(ValidationError, match="at least one source"):
+        SeasonFile.model_validate(data)
+
+
+def test_pending_league_stats_may_be_null() -> None:
+    data = season()
+    data["competitions"][0]["league_stats"] = {
+        "matches": None,
+        "home_goals": None,
+        "away_goals": None,
+        "sources": [],
+        "verify": "pending",
+    }
+
+    assert SeasonFile.model_validate(data)
+
+
+def test_a_cup_needs_a_goal_baseline() -> None:
+    data = season()
+    del data["competitions"][1]["goal_baseline"]
+
+    with pytest.raises(ValidationError, match="goal_baseline"):
+        SeasonFile.model_validate(data)
+
+
+def test_a_goal_baseline_can_only_point_to_a_league_of_the_season() -> None:
+    data = season()
+    data["competitions"][1]["goal_baseline"] = {"from_league": "nope"}
+
+    with pytest.raises(ValidationError, match="from_league"):
+        SeasonFile.model_validate(data)
+
+
+def test_a_goal_baseline_can_carry_its_own_stats() -> None:
+    data = season()
+    data["competitions"][1]["goal_baseline"] = dict(_STATS)
+
+    assert SeasonFile.model_validate(data)
+
+
+def test_a_goal_baseline_cannot_mix_both_forms() -> None:
+    data = season()
+    data["competitions"][1]["goal_baseline"] = {**_STATS, "from_league": "liga"}
+
+    with pytest.raises(ValidationError, match="goal_baseline"):
+        SeasonFile.model_validate(data)
+
+
+def test_the_initial_tactic_is_required_and_validated() -> None:
+    data = season()
+    del data["initial_tactic"]
+    with pytest.raises(ValidationError, match="initial_tactic"):
+        SeasonFile.model_validate(data)
+
+    with pytest.raises(ValidationError, match="system"):
+        SeasonFile.model_validate(season(initial_tactic={"style": "balanced", "system": "4-3-2"}))
+
+
+def test_a_forced_injury_needs_sources_and_a_date_inside_the_season() -> None:
+    data = season()
+    data["forced_events"][0]["sources"] = []
+    with pytest.raises(ValidationError, match="at least one source"):
+        SeasonFile.model_validate(data)
+
+    data = season()
+    data["forced_events"][0]["date"] = date(2003, 1, 1)
+    with pytest.raises(ValidationError, match="season"):
+        SeasonFile.model_validate(data)
+
+
+def test_an_unknown_forced_event_type_is_rejected() -> None:
+    data = season()
+    data["forced_events"][0]["type"] = "suspension"
+
+    with pytest.raises(ValidationError, match="type"):
+        SeasonFile.model_validate(data)
+
+
+def test_forced_events_are_optional() -> None:
+    data = season()
+    del data["forced_events"]
+
+    assert SeasonFile.model_validate(data).forced_events == ()
 
 
 def test_away_goals_rule_needs_a_two_legged_stage() -> None:
@@ -247,7 +445,13 @@ def test_duplicate_competition_ids_are_rejected() -> None:
 def test_an_objective_pointing_to_a_missing_stage_is_rejected() -> None:
     data = season(
         board_objectives=[
-            {"competition": "copa", "kind": "reach_stage", "target_stage": "nope", "text": "x"}
+            {
+                "id": "o1",
+                "competition": "copa",
+                "kind": "reach_stage",
+                "target_stage": "nope",
+                "text": "x",
+            }
         ]
     )
 
@@ -256,10 +460,55 @@ def test_an_objective_pointing_to_a_missing_stage_is_rejected() -> None:
 
 
 def test_a_finish_top_objective_needs_a_target_position() -> None:
-    data = season(board_objectives=[{"competition": "liga", "kind": "finish_top", "text": "x"}])
+    data = season(
+        board_objectives=[{"id": "o1", "competition": "liga", "kind": "finish_top", "text": "x"}]
+    )
 
     with pytest.raises(ValidationError, match="target_position"):
         SeasonFile.model_validate(data)
+
+
+def test_an_objective_needs_an_id_and_ids_are_unique() -> None:
+    objective = {"id": "o1", "competition": "liga", "kind": "win", "text": "Win it."}
+    no_id = {k: v for k, v in objective.items() if k != "id"}
+    with pytest.raises(ValidationError, match="id"):
+        SeasonFile.model_validate(season(board_objectives=[no_id]))
+
+    with pytest.raises(ValidationError, match="duplicate objective id"):
+        SeasonFile.model_validate(season(board_objectives=[objective, objective]))
+
+
+def test_target_position_cannot_exceed_the_number_of_teams() -> None:
+    objective = {
+        "id": "o1",
+        "competition": "liga",
+        "kind": "finish_top",
+        "target_position": 3,
+        "text": "x",
+    }
+
+    with pytest.raises(ValidationError, match="target_position"):
+        SeasonFile.model_validate(season(board_objectives=[objective]))
+
+
+def test_finish_top_only_applies_to_a_league() -> None:
+    objective = {
+        "id": "o1",
+        "competition": "copa",
+        "kind": "finish_top",
+        "target_position": 1,
+        "text": "x",
+    }
+
+    with pytest.raises(ValidationError, match="league"):
+        SeasonFile.model_validate(season(board_objectives=[objective]))
+
+
+def test_a_blank_objective_text_is_rejected() -> None:
+    objective = {"id": "o1", "competition": "liga", "kind": "win", "text": "   "}
+
+    with pytest.raises(ValidationError, match="text"):
+        SeasonFile.model_validate(season(board_objectives=[objective]))
 
 
 def test_a_historical_outcome_without_sources_is_rejected() -> None:
@@ -325,9 +574,9 @@ def test_a_negative_score_is_rejected() -> None:
 
 
 def test_a_fixture_needs_either_a_round_or_a_stage() -> None:
-    with pytest.raises(ValidationError, match="round or a stage"):
+    with pytest.raises(ValidationError, match="needs a round"):
         FixturesFile.model_validate(fixtures_file(fixture(round=None)))
-    with pytest.raises(ValidationError, match="round or a stage"):
+    with pytest.raises(ValidationError, match="needs a round"):
         FixturesFile.model_validate(fixtures_file(fixture(stage="final")))
 
 
@@ -593,3 +842,84 @@ def test_an_unknown_text_status_is_rejected() -> None:
 def test_duplicate_text_ids_are_rejected() -> None:
     with pytest.raises(ValidationError, match="duplicate text id"):
         TextsFile.model_validate(texts_file(text(), text()))
+
+
+# --------------------------------------------------------------------------- v2 additions
+def test_a_fixture_can_be_marked_as_key_and_is_not_by_default() -> None:
+    parsed = FixturesFile.model_validate(fixtures_file(fixture(), fixture(id="f02", key=True)))
+
+    assert [f.key for f in parsed.fixtures] == [False, True]
+
+
+def test_a_group_stage_fixture_carries_stage_group_and_matchday() -> None:
+    parsed = FixturesFile.model_validate(
+        fixtures_file(fixture(competition="europa", stage="groups", group="a", round=1, leg=None))
+    )
+
+    assert parsed.fixtures[0].group == "a"
+
+
+def test_a_group_needs_a_stage() -> None:
+    with pytest.raises(ValidationError, match="group"):
+        FixturesFile.model_validate(fixtures_file(fixture(group="a")))
+
+
+def test_tied_penalties_are_rejected() -> None:
+    with pytest.raises(ValidationError, match="penalties"):
+        FixturesFile.model_validate(
+            fixtures_file(
+                fixture(
+                    round=None,
+                    stage="final",
+                    result={
+                        "goals_for": 1,
+                        "goals_against": 1,
+                        "penalties_for": 3,
+                        "penalties_against": 3,
+                    },
+                )
+            )
+        )
+
+
+def test_penalties_need_a_level_score() -> None:
+    with pytest.raises(ValidationError, match="penalties"):
+        FixturesFile.model_validate(
+            fixtures_file(
+                fixture(
+                    round=None,
+                    stage="final",
+                    result={
+                        "goals_for": 2,
+                        "goals_against": 1,
+                        "penalties_for": 4,
+                        "penalties_against": 3,
+                    },
+                )
+            )
+        )
+
+
+def test_two_fixtures_on_the_same_day_are_rejected() -> None:
+    with pytest.raises(ValidationError, match="same date"):
+        FixturesFile.model_validate(fixtures_file(fixture(), fixture(id="f02", round=2)))
+
+
+def test_a_standings_cutoff_for_a_group_carries_stage_and_group() -> None:
+    data = standings_file()
+    data["cutoffs"][0].update(stage="groups", group="a")
+    assert StandingsFile.model_validate(data).cutoffs[0].group == "a"
+
+    data["cutoffs"][0].pop("group")
+    with pytest.raises(ValidationError, match="stage and group"):
+        StandingsFile.model_validate(data)
+
+
+def test_a_blank_reviewed_by_is_rejected() -> None:
+    with pytest.raises(ValidationError, match="reviewed_by"):
+        TextsFile.model_validate(texts_file(text(reviewed_by="   ")))
+
+
+def test_a_blank_dilemma_title_is_rejected() -> None:
+    with pytest.raises(ValidationError, match="title"):
+        DilemmasFile.model_validate(dilemmas_file(dilemma(title="  ")))
