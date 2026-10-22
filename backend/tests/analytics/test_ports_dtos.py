@@ -4,11 +4,11 @@ from dataclasses import fields
 from datetime import datetime
 
 import pytest
+from tests.contracts.suites.product_event_sink import T0
 
 from mister.analytics.application.ports import ProductEvent, ProductEventName
 from mister.analytics.infrastructure.in_memory.product_events import InMemoryProductEventSink
 from mister.shared_kernel.errors import InvalidValueError
-from tests.contracts.suites.product_event_sink import T0
 
 
 def test_the_event_names_are_exactly_the_six_of_the_product_metrics() -> None:
@@ -43,7 +43,7 @@ def test_the_referrer_is_at_most_255_characters_and_not_blank() -> None:
 
 def test_the_event_time_must_be_timezone_aware() -> None:
     with pytest.raises(InvalidValueError, match="timezone"):
-        ProductEvent(ProductEventName.SEASON_VIEWED, datetime(2026, 10, 22))  # noqa: DTZ001
+        ProductEvent(ProductEventName.SEASON_VIEWED, datetime(2026, 10, 22))
 
 
 def test_the_fake_sink_exposes_what_it_recorded() -> None:

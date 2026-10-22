@@ -3,10 +3,10 @@
 from dataclasses import replace
 
 import pytest
+from tests.contracts.suites.share_card_renderer import make_card
 
 from mister.shared_kernel.errors import InvalidValueError
 from mister.sharing.infrastructure.in_memory.share_card import FakeShareCardRenderer
-from tests.contracts.suites.share_card_renderer import make_card
 
 
 @pytest.mark.parametrize("score", [-1, 101])
