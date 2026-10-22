@@ -109,21 +109,6 @@ def test_a_player_without_sources_reports_the_file_and_field(root: Path) -> None
     assert_issue(issues_of(root), SQUAD, "players.2", "at least one source")
 
 
-def test_a_key_player_without_rationale_is_reported(root: Path) -> None:
-    def mutate(d: dict[str, Any]) -> None:
-        d["players"][2].pop("rating_rationale", None)
-        d["players"][2]["key"] = True
-
-    edit(root, "club-seasons/sample-united-2000-01/squad.yaml", mutate)
-
-    assert_issue(
-        issues_of(root),
-        "club-seasons/sample-united-2000-01/squad.yaml",
-        "players",
-        "rating_rationale",
-    )
-
-
 def test_an_unknown_effect_type_is_reported(root: Path) -> None:
     edit(
         root,
@@ -350,12 +335,6 @@ def test_a_league_opponent_must_be_met_once_at_home_and_once_away(root: Path) ->
     edit(root, f"{SEASON}/fixtures.yaml", mutate)
 
     assert_issue(issues_of(root), f"{SEASON}/fixtures.yaml", "fixtures", "home and once away")
-
-
-def test_the_playable_squad_needs_a_rationale_for_every_player(root: Path) -> None:
-    edit(root, SQUAD, lambda d: d["players"][0].pop("rating_rationale"))
-
-    assert_issue(issues_of(root), SQUAD, "players.0.rating_rationale", "playable")
 
 
 def test_a_player_in_two_squads_on_the_same_date_is_reported(root: Path) -> None:
@@ -889,37 +868,32 @@ def test_a_real_league_of_another_competition_is_not_compared_with_the_standings
 
 
 # --- pending ratings (B1)
-def test_a_pending_rating_is_accepted_outside_release_mode(root: Path) -> None:
-    def mutate(d: dict[str, Any]) -> None:
-        d["players"][2].update(rating=None, verify="pending")
+def make_unrated(player: dict[str, Any]) -> None:
+    """Leave a player without a rating: no minutes were found, so nothing can be computed."""
+    player["season_stats"].update(minutes_league=None, minutes_all=None, verify="pending")
+    player.update(rating=None, verify="pending")
 
-    edit(root, "club-seasons/sample-united-2000-01/squad.yaml", mutate)
+
+def test_a_pending_rating_is_accepted_outside_release_mode(root: Path) -> None:
+    edit(
+        root,
+        "club-seasons/sample-united-2000-01/squad.yaml",
+        lambda d: make_unrated(d["players"][2]),
+    )
 
     load_content_tree(root, release=False)
 
 
 def test_a_pending_rating_is_rejected_in_release_mode(root: Path) -> None:
-    edit(root, SQUAD, lambda d: d["players"][2].update(rating=None, verify="pending"))
+    edit(root, SQUAD, lambda d: make_unrated(d["players"][2]))
 
     assert_issue(issues_of(root, release=True), SQUAD, "players.2.verify", "pending")
 
 
-def test_a_pending_playable_player_does_not_need_a_rationale_yet(root: Path) -> None:
-    def mutate(d: dict[str, Any]) -> None:
-        d["players"][2].pop("rating_rationale")
-        d["players"][2].update(rating=None, verify="pending")
-
-    edit(root, SQUAD, mutate)
+def test_a_pending_playable_player_needs_no_statistics_yet(root: Path) -> None:
+    edit(root, SQUAD, lambda d: make_unrated(d["players"][2]))
 
     load_content_tree(root, release=False)
-
-
-def test_a_pending_aggregate_is_rejected_in_release_mode(root: Path) -> None:
-    path = "club-seasons/placeholder-town-2000-01/aggregate.yaml"
-    edit(root, path, lambda d: d.update(attack=None, defense=None, verify="pending"))
-
-    load_content_tree(root, release=False)
-    assert_issue(issues_of(root, release=True), path, "verify", "pending")
 
 
 def test_a_string_rating_in_a_yaml_file_is_rejected(root: Path) -> None:
@@ -982,10 +956,6 @@ def test_a_rival_squad_needs_between_6_and_10_key_players(root: Path, keys: int)
     def mutate(d: dict[str, Any]) -> None:
         for index, player in enumerate(d["players"]):
             player["key"] = index < keys
-            if player["key"]:
-                player["rating_rationale"] = "Fictional rationale."
-            else:
-                player.pop("rating_rationale", None)
 
     edit(root, "club-seasons/mock-city-2000-01/squad.yaml", mutate)
 

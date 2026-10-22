@@ -19,6 +19,7 @@ from mister.catalog.domain.ratings import (
     PlayerStats,
     Position,
     compute_rating,
+    override_problem,
     round_raw,
 )
 
@@ -551,3 +552,28 @@ def test_the_formula_is_deterministic(case: tuple[PlayerStats, ClubContext]) -> 
     player, club = case
 
     assert compute_rating(player, club) == compute_rating(player, club)
+
+
+# ------------------------------------------------------------------------------ overrides
+@pytest.mark.parametrize(
+    ("formula", "value", "sources"),
+    [(70, 70, 1), (70, 76, 1), (70, 64, 1), (70, 77, 2), (70, 58, 2), (70, 82, 3)],
+)
+def test_an_override_within_the_documented_limits_has_no_problem(
+    formula: int, value: int, sources: int
+) -> None:
+    assert override_problem(formula, value, sources) is None
+
+
+def test_an_override_seven_to_twelve_points_away_needs_two_distinct_sources() -> None:
+    problem = override_problem(70, 77, 1)
+
+    assert problem is not None
+    assert "two distinct sources" in problem
+
+
+def test_an_override_more_than_twelve_points_away_is_never_allowed() -> None:
+    problem = override_problem(70, 83, 5)
+
+    assert problem is not None
+    assert "more than 12" in problem
