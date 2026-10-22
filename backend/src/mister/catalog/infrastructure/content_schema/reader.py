@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import yaml  # type: ignore[import-untyped]
+import yaml
 from pydantic import ValidationError
 
 from mister.catalog.infrastructure.content_schema.base import ContentModel
@@ -25,7 +25,7 @@ class _DuplicateKeyError(Exception):
         self.key = str(key)
 
 
-class _UniqueKeyLoader(yaml.SafeLoader):  # type: ignore[misc]
+class _UniqueKeyLoader(yaml.SafeLoader):
     """A safe loader that refuses duplicate mapping keys instead of silently keeping the last."""
 
     def construct_mapping(self, node: Any, deep: bool = False) -> dict[Any, Any]:
