@@ -8,6 +8,7 @@ import { resetMockState } from './handlers';
 type RunView = components['schemas']['RunView'];
 type RunResult = components['schemas']['RunResult'];
 type Problem = components['schemas']['Problem'];
+type StartRunResponse = components['schemas']['StartRunResponse'];
 
 interface Reply<T = unknown> {
   status: number;
@@ -20,7 +21,13 @@ interface CallOptions {
   query?: string;
   body?: unknown;
   headers?: Record<string, string>;
+  /** Bearer token to send; by default the one issued when the run was started. `false` sends none. */
+  token?: string | false;
 }
+
+/** Every successful or failed reply of the current test, to scan for secrets. */
+let replies: unknown[] = [];
+const tokens = new Map<string, string>();
 
 /** Calls the mocked API and asserts that the reply conforms to the OpenAPI contract. */
 async function call<T = unknown>(
@@ -28,14 +35,17 @@ async function call<T = unknown>(
   template: string,
   options: CallOptions = {},
 ): Promise<Reply<T>> {
-  const path = Object.entries(options.params ?? {}).reduce(
+  const params = options.params ?? {};
+  const path = Object.entries(params).reduce(
     (acc, [name, value]) => acc.replace(`{${name}}`, value),
     template,
   );
+  const token = options.token === undefined ? tokens.get(params.runId ?? '') : options.token;
   const response = await fetch(`http://localhost:3000/api${path}${options.query ?? ''}`, {
     method,
     headers: {
       ...(options.body === undefined ? {} : { 'Content-Type': 'application/json' }),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
     ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) }),
@@ -45,24 +55,42 @@ async function call<T = unknown>(
   const body = (text ? JSON.parse(text) : undefined) as T;
   const errors = validateResponse(method, template, response.status, body, contentType);
   expect(errors, `${method} ${path} -> ${String(response.status)}`).toEqual([]);
+  replies.push(body);
   return { status: response.status, contentType, body };
 }
 
 async function startRun(seasonId = TEST_SEASON_ID): Promise<RunView> {
-  const reply = await call<RunView>('POST', '/runs', { body: { seasonId } });
+  const reply = await call<StartRunResponse>('POST', '/runs', { body: { seasonId } });
   expect(reply.status).toBe(201);
-  return reply.body;
+  tokens.set(reply.body.run.runId, reply.body.runToken);
+  return reply.body.run;
 }
 
 let keyCounter = 0;
+function nextKey(): string {
+  keyCounter += 1;
+  return `test-key-${String(keyCounter).padStart(8, '0')}`;
+}
+
 async function decide(run: RunView, optionId?: string): Promise<Reply<RunView>> {
   const dilemma = run.pendingDilemmas[0];
   if (!dilemma) throw new Error('no pending dilemma');
-  keyCounter += 1;
   return call<RunView>('POST', '/runs/{runId}/decisions', {
     params: { runId: run.runId },
-    headers: { 'Idempotency-Key': `test-key-${String(keyCounter).padStart(8, '0')}` },
-    body: { dilemmaId: dilemma.id, optionId: optionId ?? dilemma.options[0]?.id },
+    headers: { 'Idempotency-Key': nextKey() },
+    body: {
+      dilemmaId: dilemma.id,
+      optionId: optionId ?? dilemma.options[0]?.id,
+      expectedVersion: run.version,
+    },
+  });
+}
+
+async function advance(run: RunView, headers?: Record<string, string>): Promise<Reply<RunView>> {
+  return call<RunView>('POST', '/runs/{runId}/advance', {
+    params: { runId: run.runId },
+    headers: { 'Idempotency-Key': nextKey(), ...headers },
+    body: { expectedVersion: run.version },
   });
 }
 
@@ -71,9 +99,7 @@ async function playBlock(run: RunView): Promise<RunView> {
   while (current.pendingDilemmas.length > 0) {
     current = (await decide(current)).body;
   }
-  const advanced = await call<RunView>('POST', '/runs/{runId}/advance', {
-    params: { runId: current.runId },
-  });
+  const advanced = await advance(current);
   expect(advanced.status).toBe(200);
   return advanced.body;
 }
@@ -88,8 +114,16 @@ async function playSeason(run: RunView): Promise<{ run: RunView; sawPenalties: b
   return { run: current, sawPenalties };
 }
 
+function keysOf(value: unknown): string[] {
+  if (Array.isArray(value)) return value.flatMap(keysOf);
+  if (typeof value !== 'object' || value === null) return [];
+  return Object.entries(value).flatMap(([key, child]) => [key, ...keysOf(child)]);
+}
+
 beforeEach(() => {
   resetMockState();
+  replies = [];
+  tokens.clear();
 });
 
 describe('seasons', () => {
@@ -104,7 +138,7 @@ describe('seasons', () => {
     expect(JSON.stringify(body)).not.toMatch(/crest|logo/i);
   });
 
-  it('returns the season context with objectives, squad summary and block count', async () => {
+  it('returns the season context with objectives, squad summary, tiers and block count', async () => {
     const { status, body } = await call<components['schemas']['SeasonDetail']>(
       'GET',
       '/seasons/{seasonId}',
@@ -113,6 +147,7 @@ describe('seasons', () => {
     expect(status).toBe(200);
     expect(body.boardObjectives.length).toBeGreaterThan(0);
     expect(body.squad.keyPlayers.length).toBeGreaterThan(0);
+    expect(body.competitions.map((competition) => competition.tier)).toContain('domestic_league');
     expect(body.blockCount).toBe(5);
   });
 
@@ -127,20 +162,30 @@ describe('seasons', () => {
 });
 
 describe('starting a run', () => {
-  it('returns the initial RunView without leaking the seed, effects or historical options', async () => {
-    const run = await startRun();
+  it('returns the initial RunView, tactic and priorities, and a secret run token', async () => {
+    const reply = await call<StartRunResponse>('POST', '/runs', {
+      body: { seasonId: TEST_SEASON_ID },
+    });
+    expect(reply.body.runToken).toMatch(/^[A-Za-z0-9_-]{43,}$/);
+    const run = reply.body.run;
     expect(run.status).toBe('in_progress');
     expect(run.block).toMatchObject({ number: 1, total: 5 });
     expect(run.pendingDilemmas.length).toBeGreaterThan(0);
     expect(run.decisions).toEqual([]);
     expect(run.lastBlockSummary).toBeNull();
-    expect(JSON.stringify(run)).not.toMatch(/seed|effects|historical/i);
+    expect(run.tactic).toEqual({ style: 'balanced', system: '4-4-2' });
+    expect(run.competitionPriorities.length).toBeGreaterThan(0);
+    expect(run.competitionPriorities.every((entry) => entry.priority === 'normal')).toBe(true);
+  });
+
+  it('issues a different token for every run', async () => {
+    const first = await call<StartRunResponse>('POST', '/runs', { body: { seasonId: TEST_SEASON_ID } });
+    const second = await call<StartRunResponse>('POST', '/runs', { body: { seasonId: TEST_SEASON_ID } });
+    expect(first.body.runToken).not.toBe(second.body.runToken);
   });
 
   it('answers 404 for an unknown season and 400 for a malformed body', async () => {
-    const missing = await call<Problem>('POST', '/runs', {
-      body: { seasonId: 'no-such-season' },
-    });
+    const missing = await call<Problem>('POST', '/runs', { body: { seasonId: 'no-such-season' } });
     expect(missing.status).toBe(404);
     const malformed = await call<Problem>('POST', '/runs', { body: {} });
     expect(malformed.status).toBe(400);
@@ -153,10 +198,67 @@ describe('starting a run', () => {
     expect(fetched.body).toEqual(run);
     const unknown = await call('GET', '/runs/{runId}', {
       params: { runId: '00000000-0000-4000-8000-000000000000' },
+      token: 'some-token-that-is-long-enough-to-pass-format-checks',
     });
     expect(unknown.status).toBe(404);
-    const malformed = await call('GET', '/runs/{runId}', { params: { runId: 'not-a-uuid' } });
+    const malformed = await call('GET', '/runs/{runId}', {
+      params: { runId: 'not-a-uuid' },
+      token: 'x',
+    });
     expect(malformed.status).toBe(400);
+  });
+});
+
+describe('run token', () => {
+  it('answers 401 run_token_required when the Authorization header is missing', async () => {
+    const run = await startRun();
+    const reply = await call<Problem>('GET', '/runs/{runId}', {
+      params: { runId: run.runId },
+      token: false,
+    });
+    expect(reply.status).toBe(401);
+    expect(reply.contentType).toContain('application/problem+json');
+    expect(reply.body.code).toBe('run_token_required');
+  });
+
+  it('answers 403 run_token_invalid on every protected endpoint when the token is wrong', async () => {
+    const run = await startRun();
+    const params = { runId: run.runId };
+    const token = 'wrong-token-wrong-token-wrong-token-wrong-token';
+    const dilemma = run.pendingDilemmas[0];
+    const replies403 = [
+      await call<Problem>('GET', '/runs/{runId}', { params, token }),
+      await call<Problem>('POST', '/runs/{runId}/decisions', {
+        params,
+        token,
+        headers: { 'Idempotency-Key': nextKey() },
+        body: { dilemmaId: dilemma?.id, optionId: dilemma?.options[0]?.id, expectedVersion: 0 },
+      }),
+      await call<Problem>('POST', '/runs/{runId}/advance', {
+        params,
+        token,
+        headers: { 'Idempotency-Key': nextKey() },
+        body: { expectedVersion: 0 },
+      }),
+      await call<Problem>('POST', '/runs/{runId}/alias', {
+        params,
+        token,
+        body: { alias: 'Mister Test' },
+      }),
+    ];
+    for (const reply of replies403) {
+      expect(reply.status).toBe(403);
+      expect(reply.body.code).toBe('run_token_invalid');
+    }
+  });
+
+  it('keeps the result public: it needs no token', async () => {
+    const { run } = await playSeason(await startRun());
+    const reply = await call<RunResult>('GET', '/runs/{runId}/result', {
+      params: { runId: run.runId },
+      token: false,
+    });
+    expect(reply.status).toBe(200);
   });
 });
 
@@ -166,11 +268,23 @@ describe('decisions', () => {
     const dilemma = run.pendingDilemmas[0];
     const reply = await call<Problem>('POST', '/runs/{runId}/decisions', {
       params: { runId: run.runId },
-      body: { dilemmaId: dilemma?.id, optionId: dilemma?.options[0]?.id },
+      body: { dilemmaId: dilemma?.id, optionId: dilemma?.options[0]?.id, expectedVersion: 0 },
     });
     expect(reply.status).toBe(400);
     expect(reply.contentType).toContain('application/problem+json');
     expect(reply.body.code).toBe('idempotency_key_required');
+  });
+
+  it('rejects a decision without expectedVersion with 400 validation_error', async () => {
+    const run = await startRun();
+    const dilemma = run.pendingDilemmas[0];
+    const reply = await call<Problem>('POST', '/runs/{runId}/decisions', {
+      params: { runId: run.runId },
+      headers: { 'Idempotency-Key': nextKey() },
+      body: { dilemmaId: dilemma?.id, optionId: dilemma?.options[0]?.id },
+    });
+    expect(reply.status).toBe(400);
+    expect(reply.body.code).toBe('validation_error');
   });
 
   it('records the decision and bumps the version', async () => {
@@ -188,9 +302,10 @@ describe('decisions', () => {
     const request = {
       params: { runId: run.runId },
       headers: { 'Idempotency-Key': 'repeated-key-0001' },
-      body: { dilemmaId: dilemma?.id, optionId: dilemma?.options[0]?.id },
+      body: { dilemmaId: dilemma?.id, optionId: dilemma?.options[0]?.id, expectedVersion: 0 },
     };
     const first = await call<RunView>('POST', '/runs/{runId}/decisions', request);
+    // The version is now stale, but the idempotent replay is evaluated before the version check.
     const second = await call<RunView>('POST', '/runs/{runId}/decisions', request);
     expect(second.status).toBe(200);
     expect(second.body.decisions).toHaveLength(1);
@@ -205,12 +320,12 @@ describe('decisions', () => {
     await call('POST', '/runs/{runId}/decisions', {
       params,
       headers,
-      body: { dilemmaId: dilemma?.id, optionId: dilemma?.options[0]?.id },
+      body: { dilemmaId: dilemma?.id, optionId: dilemma?.options[0]?.id, expectedVersion: 0 },
     });
     const reply = await call<Problem>('POST', '/runs/{runId}/decisions', {
       params,
       headers,
-      body: { dilemmaId: dilemma?.id, optionId: dilemma?.options[1]?.id },
+      body: { dilemmaId: dilemma?.id, optionId: dilemma?.options[1]?.id, expectedVersion: 0 },
     });
     expect(reply.status).toBe(422);
     expect(reply.body.code).toBe('idempotency_key_conflict');
@@ -226,37 +341,72 @@ describe('decisions', () => {
   it('answers 409 when a dilemma is decided a second time with another key', async () => {
     const run = await startRun();
     const dilemma = run.pendingDilemmas[0];
-    await decide(run);
+    const decided = (await decide(run)).body;
     const reply = await call<Problem>('POST', '/runs/{runId}/decisions', {
       params: { runId: run.runId },
       headers: { 'Idempotency-Key': 'another-key-0003' },
-      body: { dilemmaId: dilemma?.id, optionId: dilemma?.options[0]?.id },
+      body: {
+        dilemmaId: dilemma?.id,
+        optionId: dilemma?.options[0]?.id,
+        expectedVersion: decided.version,
+      },
     });
     expect(reply.status).toBe(409);
     expect(reply.body.code).toBe('dilemma_already_decided');
   });
 
-  it('answers 409 version_conflict when If-Match carries a stale version', async () => {
+  it('answers 409 version_conflict when expectedVersion is stale', async () => {
     const run = await startRun();
     const dilemma = run.pendingDilemmas[0];
     const reply = await call<Problem>('POST', '/runs/{runId}/decisions', {
       params: { runId: run.runId },
-      headers: { 'Idempotency-Key': 'stale-key-00004', 'If-Match': `"${String(run.version + 7)}"` },
-      body: { dilemmaId: dilemma?.id, optionId: dilemma?.options[0]?.id },
+      headers: { 'Idempotency-Key': 'stale-key-00004' },
+      body: {
+        dilemmaId: dilemma?.id,
+        optionId: dilemma?.options[0]?.id,
+        expectedVersion: run.version + 7,
+      },
     });
     expect(reply.status).toBe(409);
     expect(reply.body.code).toBe('version_conflict');
+  });
+
+  it('applies tactical decisions to the RunView tactic and priorities', async () => {
+    let run = await startRun();
+    run = await playBlock(run);
+    run = await playBlock(run);
+    run = await playBlock(run);
+    const tactical = await decide(run, 'press-high');
+    expect(tactical.body.tactic.style).toBe('pressing');
+    const done = await playBlock(tactical.body);
+    const rotation = await decide(done, 'rotate-the-squad');
+    expect(rotation.body.competitionPriorities.some((entry) => entry.priority === 'low')).toBe(true);
   });
 });
 
 describe('advancing', () => {
   it('answers 409 pending_dilemmas while dilemmas are unresolved', async () => {
     const run = await startRun();
-    const reply = await call<Problem>('POST', '/runs/{runId}/advance', {
-      params: { runId: run.runId },
-    });
+    const reply = await advance(run);
     expect(reply.status).toBe(409);
-    expect(reply.body.code).toBe('pending_dilemmas');
+    expect((reply.body as unknown as Problem).code).toBe('pending_dilemmas');
+  });
+
+  it('requires an Idempotency-Key and an expectedVersion', async () => {
+    const run = await startRun();
+    const noKey = await call<Problem>('POST', '/runs/{runId}/advance', {
+      params: { runId: run.runId },
+      body: { expectedVersion: 0 },
+    });
+    expect(noKey.status).toBe(400);
+    expect(noKey.body.code).toBe('idempotency_key_required');
+    const noVersion = await call<Problem>('POST', '/runs/{runId}/advance', {
+      params: { runId: run.runId },
+      headers: { 'Idempotency-Key': nextKey() },
+      body: {},
+    });
+    expect(noVersion.status).toBe(400);
+    expect(noVersion.body.code).toBe('validation_error');
   });
 
   it('simulates the block and returns the summary with key matches and standings', async () => {
@@ -266,7 +416,32 @@ describe('advancing', () => {
     expect(summary?.blockNumber).toBe(1);
     expect(summary?.results.length).toBeGreaterThan(0);
     expect(summary?.results.some((match) => match.isKeyMatch)).toBe(true);
-    expect(summary?.standings.length).toBeGreaterThan(0);
+    const row = summary?.standings[0]?.rows[0];
+    expect(row?.team.colors.primary).toMatch(/^#[0-9a-f]{6}$/i);
+    expect(row?.team.clubSeasonId).toBeTruthy();
+  });
+
+  it('does not advance twice when the same Idempotency-Key is repeated', async () => {
+    let run = await startRun();
+    while (run.pendingDilemmas.length > 0) run = (await decide(run)).body;
+    const headers = { 'Idempotency-Key': 'advance-key-0001' };
+    const first = await advance(run, headers);
+    const second = await advance(run, headers);
+    expect(second.status).toBe(200);
+    expect(second.body).toEqual(first.body);
+    expect(second.body.block.number).toBe(2);
+  });
+
+  it('answers 409 version_conflict when advancing with a stale expectedVersion', async () => {
+    let run = await startRun();
+    while (run.pendingDilemmas.length > 0) run = (await decide(run)).body;
+    const reply = await call<Problem>('POST', '/runs/{runId}/advance', {
+      params: { runId: run.runId },
+      headers: { 'Idempotency-Key': nextKey() },
+      body: { expectedVersion: run.version - 1 },
+    });
+    expect(reply.status).toBe(409);
+    expect(reply.body.code).toBe('version_conflict');
   });
 
   it('plays the whole season, then exposes the result and rejects further commands', async () => {
@@ -282,16 +457,14 @@ describe('advancing', () => {
     expect(result.body.misterScore).toBeLessThanOrEqual(100);
     expect(result.body.shareUrl).toContain(run.runId);
 
-    const advance = await call<Problem>('POST', '/runs/{runId}/advance', {
-      params: { runId: run.runId },
-    });
-    expect(advance.status).toBe(409);
-    expect(advance.body.code).toBe('run_already_finished');
+    const again = await advance(run);
+    expect(again.status).toBe(409);
+    expect((again.body as unknown as Problem).code).toBe('run_already_finished');
 
     const decision = await call<Problem>('POST', '/runs/{runId}/decisions', {
       params: { runId: run.runId },
       headers: { 'Idempotency-Key': 'after-the-end-0005' },
-      body: { dilemmaId: 'any-dilemma', optionId: 'any-option' },
+      body: { dilemmaId: 'any-dilemma', optionId: 'any-option', expectedVersion: run.version },
     });
     expect(decision.status).toBe(409);
     expect(decision.body.code).toBe('run_already_finished');
@@ -319,15 +492,27 @@ describe('advancing', () => {
     expect(reply.status).toBe(409);
     expect(reply.body.code).toBe('run_not_finished');
   });
+});
 
-  it('answers 409 version_conflict when advancing with a stale If-Match', async () => {
+describe('secrets', () => {
+  const FORBIDDEN_KEYS = /^(seed|effects?|historicalOption|historical_option|isHistorical)$/i;
+
+  it('never leaks the seed, effects or the historical option in a whole season', async () => {
+    const { run } = await playSeason(await startRun());
+    await call<RunResult>('GET', '/runs/{runId}/result', { params: { runId: run.runId } });
+    expect(replies.length).toBeGreaterThan(10);
+    for (const reply of replies) {
+      expect(keysOf(reply).filter((key) => FORBIDDEN_KEYS.test(key))).toEqual([]);
+    }
+  });
+
+  it('never leaks them in a sacked run either', async () => {
     const run = await startRun();
-    const reply = await call<Problem>('POST', '/runs/{runId}/advance', {
-      params: { runId: run.runId },
-      headers: { 'If-Match': `"${String(run.version + 3)}"` },
-    });
-    expect(reply.status).toBe(409);
-    expect(reply.body.code).toBe('version_conflict');
+    await playBlock((await decide(run, SACK_OPTION_ID)).body);
+    await call<RunResult>('GET', '/runs/{runId}/result', { params: { runId: run.runId } });
+    for (const reply of replies) {
+      expect(keysOf(reply).filter((key) => FORBIDDEN_KEYS.test(key))).toEqual([]);
+    }
   });
 });
 
@@ -350,6 +535,18 @@ describe('alias and leaderboard', () => {
     expect(page.body.items.map((item) => item.alias)).toContain('Mister Test');
     const scores = page.body.items.map((item) => item.misterScore);
     expect(scores).toEqual([...scores].sort((a, b) => b - a));
+  });
+
+  it('answers 409 alias_already_set when the alias is set a second time', async () => {
+    const { run } = await playSeason(await startRun());
+    const params = { runId: run.runId };
+    await call('POST', '/runs/{runId}/alias', { params, body: { alias: 'First Alias' } });
+    const second = await call<Problem>('POST', '/runs/{runId}/alias', {
+      params,
+      body: { alias: 'Second Alias' },
+    });
+    expect(second.status).toBe(409);
+    expect(second.body.code).toBe('alias_already_set');
   });
 
   it('rejects a filtered alias with 422 and a too short one with 400', async () => {
@@ -406,8 +603,12 @@ describe('events', () => {
 describe('mock state', () => {
   it('is cleared by resetMockState', async () => {
     const run = await startRun();
+    const token = tokens.get(run.runId);
     resetMockState();
-    const reply = await call('GET', '/runs/{runId}', { params: { runId: run.runId } });
+    const reply = await call('GET', '/runs/{runId}', {
+      params: { runId: run.runId },
+      ...(token ? { token } : {}),
+    });
     expect(reply.status).toBe(404);
   });
 });
