@@ -14,7 +14,8 @@
 | Reloj | `Clock` | Puerto que da la fecha y hora actual; en los tests se usa su fake. |
 | Error de dominio | `DomainError` | Violación de una regla de negocio; la API lo traduce a `problem+json`. |
 | Evento de dominio | `DomainEvent` | Hecho ya ocurrido que se publica en el bus (`EventBus`) para otros contextos. |
-| Identificadores | `RunId`, `PlayerId`, `ClubSeasonId`… | IDs tipados; el dominio trabaja con IDs y nunca con nombres. |
+| Identificadores | `RunId`, `ClubSeasonId`, `PlayableSeasonId`, `PlayerId`… | IDs tipados; el dominio trabaja con IDs y nunca con nombres. |
+| API publicada | `application/api.py` | DTOs y fachada de un contexto: lo único que otro contexto puede importar de él, desde un adaptador. |
 
 ## Catalog · Catálogo histórico (soporte)
 

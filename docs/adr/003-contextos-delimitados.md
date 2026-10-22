@@ -35,6 +35,8 @@ Siete contextos delimitados, cada uno con su paquete en `backend/src/mister/<con
 | **Sharing** | Soporte | Tarjeta OG y página pública `/r/<id>`. |
 | **Analytics** | Genérico | Eventos de producto sin cookies. |
 
+**Regla de integración** (PLAN §3.2, regla 4; [ADR-002](./002-arquitectura-hexagonal.md)): un contexto solo puede importar de otro su API publicada, `<contexto>/application/api.py` (DTOs y fachada), y siempre desde un adaptador de su propia `infrastructure`. Nunca su `domain`.
+
 Lo que se comparte de verdad entre todos (IDs tipados, `Seed`, `RandomSource`, `Clock`, `DomainError`, `DomainEvent`, `EventBus`) va en un **shared kernel** pequeño y estable.
 
 **Mapa de contextos:**
@@ -49,8 +51,8 @@ flowchart LR
   Game -. "eventos" .-> Analytics
 ```
 
-- **Catalog → Game (*published language* + ACL):** Catalog publica el contenido como DTOs de solo lectura. Game los consume a través del puerto `SeasonContentProvider` y los traduce a su propio modelo en un adaptador. Game no conoce el YAML ni las tablas del catálogo.
-- **Game → Simulation (cliente/proveedor):** Game depende del puerto `SeasonSimulator`; su adaptador traduce `RunState` al modelo publicado del motor (`SimTeam`, `FixtureSpec`, `Tactic`…). El motor no sabe nada de partidas, dilemas ni HTTP.
+- **Catalog → Game (*published language* + ACL):** Catalog publica el contenido como DTOs de solo lectura en su API publicada (`catalog/application/api.py`). Game los consume a través del puerto `SeasonContentProvider`, desde un adaptador de `game/infrastructure` que los traduce a su propio modelo. Game no conoce el YAML, ni las tablas, ni el dominio del catálogo.
+- **Game → Simulation (cliente/proveedor):** Game depende del puerto `SeasonSimulator`; su adaptador (`game/infrastructure/simulation_adapter.py`) traduce `RunState` a los DTOs de la API publicada del motor (`simulation/application/api.py`: `SeasonSimInput`, `BlockSimRequest`, `BlockSummaryDTO` y la fachada `SimulationService`). Nunca importa `simulation.domain` (`SimTeam`, `Tactic`… son internos del motor). El motor no sabe nada de partidas, dilemas ni HTTP.
 - **Game → Evaluation → Leaderboard / Sharing (eventos):** al terminar una partida, Game publica `RunFinished`; Evaluation calcula la puntuación y publica `RunEvaluated`, que consumen Leaderboard y Sharing. En la V1 el bus es **síncrono y en proceso**.
 - **Game → Analytics (eventos):** Analytics escucha eventos y nunca influye en el juego.
 
@@ -78,5 +80,5 @@ flowchart LR
   - Más traducciones entre modelos (ACL, adaptador del simulador) y más DTOs.
   - Con P2, en la V1 fichar a un jugador de un rival solo lo debilita **en sus partidos contra ti**; el resto de sus resultados siguen siendo los históricos. Es una simplificación consciente que hay que explicar si alguien la detecta.
   - El bus síncrono hace que un fallo en un manejador (por ejemplo, el ranking) pueda afectar al cierre de la partida; los casos de uso tienen que delimitar bien la unidad de trabajo.
-  - El modelo publicado del motor es una frontera que Game consume directamente; debe mantenerse estable y pequeño (T1.6) y su uso desde otro contexto se limita al adaptador.
+  - La API publicada de cada contexto (`application/api.py`) es un contrato: cambiarla requiere una tarea CR, y sus DTOs duplican parte de los VOs internos a cambio de poder cambiar el dominio sin romper a los consumidores.
 - **Seguimiento:** si el mercado completo o el calendario de liga entero entran en el alcance, se añade `SimulatedExternalResults` y se revisa este ADR.

@@ -16,10 +16,11 @@ Por último, la estrategia de testing (PLAN §4) se basa en **fakes en memoria a
 
 Cada contexto del backend (`backend/src/mister/<contexto>/`) se organiza en tres capas, más un `shared_kernel/`, unos `entrypoints/` y un composition root:
 
-- **`domain/`**: entidades, value objects, servicios de dominio y eventos. **Python puro** con `dataclasses` (inmutables cuando son VOs) y la biblioteca estándar. **Sin Pydantic**, ni FastAPI, ni SQLAlchemy, ni Redis. El dominio no llama a puertos: recibe lo que necesita ya calculado (por ejemplo, `advance_block` recibe el resultado del simulador).
-- **`application/`**: casos de uso (comandos y consultas), DTOs y **puertos**, definidos con `typing.Protocol` en `ports.py`. Orquesta el dominio y los puertos dentro de una unidad de trabajo.
+- **`domain/`**: entidades, value objects, servicios de dominio y eventos. **Python puro** con `dataclasses` (inmutables cuando son VOs) y la biblioteca estándar. **Sin Pydantic**, ni FastAPI, ni SQLAlchemy, ni Redis. El dominio no hace IO ni llama a puertos de infraestructura: recibe lo que necesita ya calculado (por ejemplo, `advance_block` recibe el resultado del simulador). Sí puede definir, en `domain/ports.py`, **protocolos de estrategias puras sin IO** (como `GoalModel` o `MatchSimulator` en `simulation`) y recibirlas por parámetro, igual que recibe el `RandomSource` del shared kernel.
+- **`application/`**: casos de uso (comandos y consultas), DTOs y **puertos de IO** (repositorios, proveedores de contenido, renderizadores, `UnitOfWork`, sumideros de eventos…), definidos con `typing.Protocol` en `ports.py`. Orquesta el dominio y los puertos dentro de una unidad de trabajo. Además, `application/api.py` es la **API publicada** del contexto: DTOs y fachada, lo único que otro contexto puede importar.
 - **`infrastructure/`**: adaptadores que implementan los puertos (SQLAlchemy, YAML con Pydantic, Pillow, Redis…) y los fakes en memoria (`in_memory/`).
 - **`entrypoints/`**: FastAPI (routers y mapeo de `DomainError` a `problem+json`) y la CLI con typer. Solo invocan casos de uso.
+- **`shared_kernel/`**: IDs tipados, `Seed`, `DomainError`, `DomainEvent` y los puertos transversales `RandomSource`, `Clock` y `EventBus`. El dominio recibe `RandomSource` por parámetro; `Clock` y `EventBus` los usan los casos de uso.
 - **`bootstrap.py`**: **composition root**. Es el único sitio que instancia adaptadores y los inyecta en los casos de uso.
 
 Reglas de dependencia (PLAN §3.2), comprobadas con **`import-linter`** en `make lint` y en la CI:
@@ -27,12 +28,12 @@ Reglas de dependencia (PLAN §3.2), comprobadas con **`import-linter`** en `make
 1. `domain` solo importa la biblioteca estándar y `shared_kernel`.
 2. `application` importa `domain` y define puertos; no importa `infrastructure`.
 3. `infrastructure` implementa puertos; solo la importa `bootstrap.py` (y los tests).
-4. Un contexto no importa el `domain` de otro: usa sus DTOs publicados o su API de aplicación, siempre a través de un adaptador (ACL).
+4. Un contexto no importa el `domain` de otro. Solo puede importar su **API publicada** (`<contexto>/application/api.py`: DTOs y fachada), y siempre desde un adaptador de su propia `infrastructure` (ACL). Por ejemplo, `game/infrastructure/simulation_adapter.py` importa `mister.simulation.application.api` y nunca `mister.simulation.domain`.
 5. `entrypoints` solo llama a `application`.
 
-Los contratos de `import-linter` se escriben de forma genérica sobre `mister.*.domain`, `mister.*.application` y `mister.*.infrastructure`, de modo que un contexto nuevo queda cubierto sin tocar la configuración. Un test (T0.2) demuestra que una violación hace fallar el linter.
+Los contratos de `import-linter` viven en la sección `[tool.importlinter]` de `backend/pyproject.toml` y se escriben de forma genérica sobre `mister.*.domain`, `mister.*.application` y `mister.*.infrastructure`, de modo que un contexto nuevo queda cubierto sin tocar la configuración. Los tests de `backend/tests/architecture/` demuestran que una violación hace fallar el linter.
 
-En el frontend se aplica una versión ligera de las mismas reglas con **`dependency-cruiser`** (detalle en el [ADR-011](./011-arquitectura-frontend.md)); su composition root es `frontend/src/app/` (con `main.tsx`).
+En el frontend se aplica una versión ligera de las mismas reglas con **`dependency-cruiser`** (detalle en el [ADR-011](./011-arquitectura-frontend.md)); su composition root es `frontend/src/app/` (incluido `main.tsx`), lo único que importa `infrastructure/`.
 
 Cada puerto tiene **un fake en memoria y una suite de contrato parametrizable** (por ejemplo, `run_repository_contract(make_repo)`) que se ejecuta contra el fake y contra el adaptador real. Así el fake no puede mentir.
 
@@ -55,5 +56,6 @@ Cada puerto tiene **un fake en memoria y una suite de contrato parametrizable** 
   - Más ficheros y más código de traducción (DTOs, mapeadores entre el modelo de dominio y el de persistencia o la API). Es el precio de mantener el dominio limpio.
   - Hace falta disciplina para no convertir `application` en un cajón de lógica de negocio: las reglas van en el dominio.
   - Los fakes y las suites de contrato son código que también hay que mantener.
-  - La regla 4 es estricta: los modelos que un contexto publica para otro (por ejemplo, el modelo de entrada del motor de `simulation`) tienen que vivir en un módulo explícitamente publicado, y los contratos de `import-linter` deben reflejar esa excepción de forma acotada.
-- **Seguimiento:** cualquier excepción a estas reglas se documenta en `.importlinter` con un comentario y, si es estructural, con un ADR nuevo.
+  - La regla 4 es estricta: todo lo que un contexto ofrece a otro tiene que pasar por su `application/api.py`, con DTOs propios y no con sus VOs de dominio. Eso duplica algunos tipos (por ejemplo, los VOs del motor y los DTOs de `SeasonSimInput`), a cambio de poder cambiar el dominio interno sin romper a los consumidores.
+  - La frontera entre «estrategia pura» (protocolo en `domain/ports.py`) y «puerto de IO» (protocolo en `application/ports.py`) exige criterio: si la implementación puede tocar red, disco, base de datos o el reloj, es un puerto de aplicación.
+- **Seguimiento:** cualquier excepción a estas reglas se documenta con un comentario junto al contrato correspondiente en `[tool.importlinter]` de `backend/pyproject.toml` y, si es estructural, con un ADR nuevo.
