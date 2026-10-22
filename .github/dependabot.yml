@@ -1,5 +1,10 @@
 # Keeps the SHA-pinned actions and the pinned Docker images up to date.
 # Application dependencies (uv, npm) are bumped by hand through their owning task or a CR.
+#
+# Image bumps are restricted to the series the project is on: python 3.12.x, postgres 16.x
+# and node 22.x. When the compose Postgres image changes, update
+# backend/tests/integration/test_migrations.py too (docker.yml checks that both match), and
+# keep the Python/Node versions in the workflows in sync with the Dockerfiles.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -18,6 +23,11 @@ updates:
       - /infra/docker
     schedule:
       interval: weekly
+    ignore:
+      - dependency-name: python
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: chore
       include: scope
@@ -26,6 +36,11 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # Postgres tags are MAJOR.MINOR (16.15): its "minor" is the patch release, so only
+      # major upgrades are ignored here.
+      - dependency-name: postgres
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: chore
       include: scope
