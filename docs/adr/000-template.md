@@ -1,6 +1,6 @@
 # ADR-NNN · Título corto en forma de decisión
 
-- **Estado:** Propuesta | Aceptada | Sustituida por [ADR-XXX](./XXX-slug.md) | Obsoleta
+- **Estado:** Propuesta | Aceptada | Sustituida por ADR-XXX (enlazado) | Obsoleta
 - **Fecha:** AAAA-MM-DD
 - **Relacionado con:** PLAN §x.y, brief §z, ADR-XXX (opcional)
 
