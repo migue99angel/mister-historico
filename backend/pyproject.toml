@@ -141,6 +141,58 @@ root_packages = ["mister"]
 # Required to forbid external libraries (fastapi, sqlalchemy...) in domain.
 include_external_packages = true
 
+# Why R0 and R1 use a blacklist of external libraries instead of a whitelist ("only the
+# stdlib"): with include_external_packages, grimp puts stdlib modules in the graph as
+# external packages just like third-party ones, and import-linter 2.15 has no way to tell
+# them apart. Forbidding "*" would therefore forbid `dataclasses` too, and the only
+# alternative (ignoring every module in sys.stdlib_module_names) is not maintainable.
+# To keep the blacklist honest, tests/architecture/test_layer_contracts.py fails if any
+# runtime dependency in [project.dependencies] is missing from it. Keep both lists in sync.
+[[tool.importlinter.contracts]]
+name = "R0 shared_kernel only imports the stdlib"
+type = "forbidden"
+# A plain "mister.shared_kernel" fails while the package does not exist (import-linter only
+# tolerates missing modules behind wildcards), so this matches its submodules instead.
+# Limitation: `shared_kernel/__init__.py` itself is not covered; switch to
+# "mister.shared_kernel" once T1.1 creates the package.
+source_modules = ["mister.shared_kernel.**"]
+forbidden_modules = [
+    "mister.*.domain",
+    "mister.*.application",
+    "mister.*.infrastructure",
+    "mister.entrypoints",
+    "mister.bootstrap",
+    "mister.settings",
+    "alembic",
+    "anthropic",
+    "click",
+    "fastapi",
+    "httpx",
+    "hypothesis",
+    "numpy",
+    "PIL",
+    "psycopg",
+    "pydantic",
+    "pydantic_core",
+    "pydantic_settings",
+    "pytest",
+    "redis",
+    "requests",
+    "sqlalchemy",
+    "starlette",
+    "typer",
+    "uvicorn",
+    "yaml",
+]
+# Shared kernel adapters (e.g. a numpy-backed RandomSource) may use external libraries.
+# `*` only matches top-level modules, so their imports of other `mister` modules are still
+# checked. The ignore entries match nothing until those adapters exist, hence "none".
+ignore_imports = [
+    "mister.shared_kernel.infrastructure -> *",
+    "mister.shared_kernel.infrastructure.** -> *",
+]
+unmatched_ignore_imports_alerting = "none"
+
 [[tool.importlinter.contracts]]
 name = "R1 domain only imports the stdlib and shared_kernel"
 type = "forbidden"
@@ -151,15 +203,26 @@ forbidden_modules = [
     "mister.entrypoints",
     "mister.bootstrap",
     "mister.settings",
-    "fastapi",
-    "starlette",
-    "sqlalchemy",
     "alembic",
+    "anthropic",
+    "click",
+    "fastapi",
+    "httpx",
+    "hypothesis",
+    "numpy",
+    "PIL",
     "psycopg",
     "pydantic",
+    "pydantic_core",
     "pydantic_settings",
+    "pytest",
     "redis",
+    "requests",
+    "sqlalchemy",
+    "starlette",
+    "typer",
     "uvicorn",
+    "yaml",
 ]
 
 [[tool.importlinter.contracts]]
