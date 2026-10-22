@@ -15,7 +15,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "e2e": "playwright test",
-    "size": "size-limit"
+    "size": "size-limit",
+    "gen:api": "openapi-typescript ../contracts/openapi.yaml -o src/infrastructure/api/generated/schema.d.ts",
+    "lint:contract": "redocly lint ../contracts/openapi.yaml"
   },
   "dependencies": {
     "react": "^19.3.1",
@@ -24,6 +26,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.64.1",
+    "@redocly/cli": "^2.67.1",
     "@size-limit/file": "^14.2.0",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/jest-dom": "^7.0.1",
@@ -34,6 +37,8 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
     "@vitest/coverage-v8": "^5.0.5",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
     "dependency-cruiser": "^18.7.0",
     "eslint": "^10.13.0",
     "eslint-config-prettier": "^10.1.8",
@@ -42,12 +47,20 @@
     "globals": "^17.13.0",
     "jsdom": "^30.1.3",
     "msw": "^3.0.3",
+    "openapi-fetch": "^0.17.0",
+    "openapi-typescript": "^7.13.0",
     "prettier": "^3.9.10",
     "size-limit": "^14.2.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.72.0",
     "vite": "^8.3.5",
-    "vitest": "^5.0.5"
+    "vitest": "^5.0.5",
+    "yaml": "^2.9.1"
+  },
+  "overrides": {
+    "openapi-typescript": {
+      "typescript": "$typescript"
+    }
   }
 }
