@@ -360,7 +360,7 @@
         "to_club_season": {
           "anyOf": [
             {
-              "maxLength": 80,
+              "maxLength": 64,
               "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
               "type": "string"
             },
@@ -425,7 +425,7 @@
         "from_club_season": {
           "anyOf": [
             {
-              "maxLength": 80,
+              "maxLength": 64,
               "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
               "type": "string"
             },

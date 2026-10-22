@@ -205,7 +205,7 @@
         },
         "participants": {
           "items": {
-            "maxLength": 80,
+            "maxLength": 64,
             "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
             "type": "string"
           },
@@ -275,7 +275,7 @@
         },
         "participants": {
           "items": {
-            "maxLength": 80,
+            "maxLength": 64,
             "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
             "type": "string"
           },
@@ -333,7 +333,7 @@
         "away_goals": {
           "anyOf": [
             {
-              "minimum": 0,
+              "minimum": 1,
               "type": "integer"
             },
             {
@@ -345,7 +345,7 @@
         "home_goals": {
           "anyOf": [
             {
-              "minimum": 0,
+              "minimum": 1,
               "type": "integer"
             },
             {
@@ -408,7 +408,7 @@
         },
         "participants": {
           "items": {
-            "maxLength": 80,
+            "maxLength": 64,
             "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
             "type": "string"
           },
@@ -506,7 +506,7 @@
         },
         "participants": {
           "items": {
-            "maxLength": 80,
+            "maxLength": 64,
             "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
             "type": "string"
           },
@@ -703,6 +703,8 @@
             "qualifying",
             "playoff",
             "group_stage",
+            "round_of_128",
+            "round_of_64",
             "round_of_32",
             "round_of_16",
             "quarter_final",
@@ -774,7 +776,7 @@
         },
         "participants": {
           "items": {
-            "maxLength": 80,
+            "maxLength": 64,
             "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
             "type": "string"
           },
@@ -871,7 +873,7 @@
       "type": "array"
     },
     "club_season": {
-      "maxLength": 80,
+      "maxLength": 64,
       "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
       "title": "Club Season",
       "type": "string"

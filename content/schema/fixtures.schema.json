@@ -57,7 +57,7 @@
           "title": "Leg"
         },
         "opponent": {
-          "maxLength": 80,
+          "maxLength": 64,
           "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
           "title": "Opponent",
           "type": "string"
