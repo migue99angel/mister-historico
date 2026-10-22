@@ -1,7 +1,8 @@
 """Sanity of the Test FC oracle: it must say what the fixture content says."""
 
-from mister.catalog.application.api import CompetitionKind, GoalStatsDTO
 from tests.contracts.suites.expected_test_fc import build_expected_test_fc_season
+
+from mister.catalog.application.api import CompetitionKind, GoalStatsDTO
 
 
 def test_the_oracle_covers_the_whole_test_fc_season() -> None:
@@ -9,7 +10,7 @@ def test_the_oracle_covers_the_whole_test_fc_season() -> None:
 
     assert season.id.value == "test-fc-2000-01"
     assert len(season.blocks) == 5
-    assert [c.kind for c in season.competitions][0] is CompetitionKind.LEAGUE
+    assert season.competitions[0].kind is CompetitionKind.LEAGUE
     assert season.own_club_season.name == "Test FC"
     assert 8 <= len(season.dilemmas) <= 12
     assert all(d.id for d in season.dilemmas)
@@ -34,4 +35,6 @@ def test_rivals_without_a_squad_are_published_as_aggregates() -> None:
 
     assert aggregates
     assert squads
-    assert [c.id.value for c in season.club_seasons] == sorted(c.id.value for c in season.club_seasons)
+    assert [c.id.value for c in season.club_seasons] == sorted(
+        c.id.value for c in season.club_seasons
+    )

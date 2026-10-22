@@ -18,10 +18,10 @@ from mister.game.application.ports import (
     InternalError,
     NoActiveTransactionError,
     Priority,
-    TacticStyle,
-    TacticSystem,
     RunAlreadyExistsError,
     RunNotFoundError,
+    TacticStyle,
+    TacticSystem,
 )
 from mister.shared_kernel.errors import DomainError, InvalidValueError
 from mister.shared_kernel.ids import RunId

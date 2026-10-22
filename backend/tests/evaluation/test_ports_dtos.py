@@ -6,8 +6,8 @@ from mister.evaluation.application.ports import (
     CompetitionHistory,
     CompetitionKind,
     CompetitionTier,
-    ObjectiveKind,
     HistoricalOutcomeNotFoundError,
+    ObjectiveKind,
 )
 from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.ids import CompetitionId, PlayableSeasonId

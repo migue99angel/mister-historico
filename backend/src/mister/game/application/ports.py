@@ -13,17 +13,25 @@ Decisions recorded here:
   SHA-256 is enough (there is nothing to brute-force, unlike a human password); the port lets
   a real adapter pick another algorithm without touching the use cases. Generating the token is
   a separate port (`RunTokenGenerator`) so tests get deterministic tokens.
-- **Version.** `save(record, expected_version)` succeeds only if the stored version equals
-  `expected_version`, and `record.version` must be `expected_version + 1`. The caller bumps the
-  version; the repository only checks it, so the stored record equals the saved one.
+- **Version.** It starts at 0, like `RunView.version` in the OpenAPI. `save(record,
+  expected_version)` succeeds only if the stored version equals `expected_version`, and
+  `record.version` must be `expected_version + 1`. The caller bumps the version; the repository
+  only checks it, so the stored record equals the saved one. `seed`, `run_token_hash`,
+  `playable_season_id` and `created_at` never change after `add`.
+- **JSON.** `snapshot` and the idempotent `response` are normalised as JSON on construction
+  (tuples become lists, keys become strings), so a record equals what a JSONB column returns.
 - **Idempotency.** The reply to a command is stored per `(run_id, key)` together with a hash of
   the request body (to tell a replay from `422 idempotency_key_conflict`). Stored replies are
-  immutable: `put_idempotent` never overwrites.
+  immutable: `put_idempotent` never overwrites. Keys have 8 to 128 characters (OpenAPI).
 - **Transactions.** `UnitOfWork` groups the repository calls of one command: the run and its
-  idempotency reply commit or roll back together.
+  idempotency reply commit or roll back together. Repositories exist only inside a transaction.
+- **Internal errors.** Errors that are not in the OpenAPI catalogue derive from `InternalError`:
+  they signal a bug or an infrastructure fault, and the API layer (T3.6) maps them to
+  `500` without exposing their `code`.
 """
 
 import json
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
@@ -44,7 +52,10 @@ from mister.shared_kernel.ids import (
 )
 from mister.shared_kernel.seed import Seed
 
-MAX_IDEMPOTENCY_KEY_LENGTH = 255
+MIN_IDEMPOTENCY_KEY_LENGTH = 8
+MAX_IDEMPOTENCY_KEY_LENGTH = 128
+_SYSTEM_PATTERN = re.compile(r"[1-9](-[1-9]){2,4}")
+_OUTFIELD_PLAYERS = 10
 
 # ----------------------------------------------------------------------------- errors
 
@@ -70,8 +81,17 @@ class RunNotFoundError(DomainError):
         self.run_id = run_id
 
 
-class RunAlreadyExistsError(DomainError):
-    """`add` received a run id that is already stored."""
+class InternalError(DomainError):
+    """A bug or an infrastructure fault, not part of the API error catalogue.
+
+    The API layer maps it to `500` and never exposes its `code`.
+    """
+
+    code = "internal_error"
+
+
+class RunAlreadyExistsError(InternalError):
+    """`add` received a run id that is already stored (ids are generated, so this is a bug)."""
 
     code = "run_already_exists"
 
@@ -80,7 +100,7 @@ class RunAlreadyExistsError(DomainError):
         self.run_id = run_id
 
 
-class DecisionLogRewrittenError(DomainError):
+class DecisionLogRewrittenError(InternalError):
     """A save tried to change or drop decisions already logged (the log is append-only)."""
 
     code = "decision_log_rewritten"
@@ -90,8 +110,13 @@ class DecisionLogRewrittenError(DomainError):
         self.run_id = run_id
 
 
-class IdempotencyKeyExistsError(DomainError):
-    """A reply is already stored for this run and `Idempotency-Key`."""
+class IdempotencyKeyExistsError(InternalError):
+    """A reply is already stored for this run and `Idempotency-Key`.
+
+    Two concurrent requests with the same key can both miss `get_idempotent`; the loser may get
+    this error or a `ConcurrencyError` from `save`. In either case the use case reads
+    `get_idempotent` again and answers with the stored reply (see `RunRepository`).
+    """
 
     code = "idempotency_key_exists"
 
@@ -99,6 +124,15 @@ class IdempotencyKeyExistsError(DomainError):
         super().__init__(f"run {run_id} already has a reply for idempotency key {key!r}")
         self.run_id = run_id
         self.key = key
+
+
+class NoActiveTransactionError(InternalError):
+    """A repository was used outside a `with uow:` block."""
+
+    code = "no_active_transaction"
+
+    def __init__(self) -> None:
+        super().__init__("the repositories can only be used inside a transaction")
 
 
 # ----------------------------------------------------------------------------- persistence DTOs
@@ -109,11 +143,13 @@ def _require_aware(name: str, value: datetime) -> None:
         raise InvalidValueError(f"{name} must be a timezone-aware datetime")
 
 
-def _require_json(name: str, value: Mapping[str, object]) -> None:
+def _as_json(name: str, value: Mapping[str, object]) -> Mapping[str, object]:
+    """`value` as a JSON round trip returns it (tuples to lists, keys to strings)."""
     try:
-        json.dumps(value, allow_nan=False)
+        normalised: Mapping[str, object] = json.loads(json.dumps(value, allow_nan=False))
     except (TypeError, ValueError) as error:
         raise InvalidValueError(f"{name} must be JSON-serialisable: {error}") from error
+    return normalised
 
 
 class RunStatus(StrEnum):
@@ -152,11 +188,11 @@ class RunRecord:
     updated_at: datetime
 
     def __post_init__(self) -> None:
-        if self.version < 1:
-            raise InvalidValueError(f"version starts at 1, got {self.version}")
+        if self.version < 0:
+            raise InvalidValueError(f"version starts at 0, got {self.version}")
         if not self.run_token_hash.strip():
             raise InvalidValueError("run_token_hash must not be blank")
-        _require_json("snapshot", self.snapshot)
+        object.__setattr__(self, "snapshot", _as_json("snapshot", self.snapshot))
         _require_aware("created_at", self.created_at)
         _require_aware("updated_at", self.updated_at)
         if self.updated_at < self.created_at:
@@ -176,13 +212,14 @@ class IdempotencyRecord:
     created_at: datetime
 
     def __post_init__(self) -> None:
-        if not 1 <= len(self.key) <= MAX_IDEMPOTENCY_KEY_LENGTH:
+        if not MIN_IDEMPOTENCY_KEY_LENGTH <= len(self.key) <= MAX_IDEMPOTENCY_KEY_LENGTH:
             raise InvalidValueError(
-                f"idempotency key must have 1 to {MAX_IDEMPOTENCY_KEY_LENGTH} characters"
+                f"idempotency key must have {MIN_IDEMPOTENCY_KEY_LENGTH} to "
+                f"{MAX_IDEMPOTENCY_KEY_LENGTH} characters"
             )
         if not self.request_hash:
             raise InvalidValueError("request_hash must not be empty")
-        _require_json("response", self.response)
+        object.__setattr__(self, "response", _as_json("response", self.response))
         _require_aware("created_at", self.created_at)
 
 
@@ -205,8 +242,9 @@ class RunRepository(Protocol):
 
         Raises `RunNotFoundError` if unknown, `ConcurrencyError` if the stored version is not
         `expected_version`, `InvalidValueError` if `record.version` is not
-        `expected_version + 1`, and `DecisionLogRewrittenError` if the stored decisions are not
-        a prefix of `record.decisions`.
+        `expected_version + 1` or if `seed`, `run_token_hash`, `playable_season_id` or
+        `created_at` differ from the stored ones ("immutable"), and `DecisionLogRewrittenError`
+        if the stored decisions are not a prefix of `record.decisions`.
         """
         ...
 
@@ -215,7 +253,16 @@ class RunRepository(Protocol):
         ...
 
     def put_idempotent(self, record: IdempotencyRecord) -> None:
-        """Store a reply; raises `IdempotencyKeyExistsError` if the key already has one."""
+        """Store a reply for an existing run, never overwriting one.
+
+        Raises `RunNotFoundError` for an unknown run and `IdempotencyKeyExistsError` if the key
+        already has a reply.
+
+        Concurrent requests with the same key: both miss `get_idempotent` and both try to
+        write. The loser gets `ConcurrencyError` (its `save` runs first) or
+        `IdempotencyKeyExistsError`. The use case must then roll back, call `get_idempotent`
+        again and return the stored original reply instead of failing.
+        """
         ...
 
 
@@ -227,7 +274,12 @@ class UnitOfWork(Protocol):
     """
 
     @property
-    def runs(self) -> RunRepository: ...
+    def runs(self) -> RunRepository:
+        """The repository of the current transaction.
+
+        Raises `NoActiveTransactionError` outside a `with` block.
+        """
+        ...
 
     def __enter__(self) -> Self: ...
 
@@ -267,6 +319,40 @@ class RunTokenHasher(Protocol):
 # ----------------------------------------------------------------------------- simulator
 
 
+class TacticStyle(StrEnum):
+    """Playing styles (canonical vocabulary of the content format and the API)."""
+
+    PRESSING = "pressing"
+    COUNTER = "counter"
+    POSSESSION = "possession"
+    BALANCED = "balanced"
+
+
+class Priority(StrEnum):
+    """How much the manager prioritises a competition."""
+
+    LOW = "low"
+    NORMAL = "normal"
+    HIGH = "high"
+
+
+@dataclass(frozen=True, slots=True)
+class TacticSystem:
+    """A formation as outfield lines (`4-3-3`): 3 to 5 lines of 1 to 6 players, 10 in total."""
+
+    value: str
+
+    def __post_init__(self) -> None:
+        if _SYSTEM_PATTERN.fullmatch(self.value) is None:
+            raise InvalidValueError(f"system must look like 4-3-3, got {self.value!r}")
+        lines = [int(line) for line in self.value.split("-")]
+        if sum(lines) != _OUTFIELD_PLAYERS or max(lines) > 6:  # noqa: PLR2004
+            raise InvalidValueError(f"system must add up to 10 outfield players: {self.value!r}")
+
+    def __str__(self) -> str:
+        return self.value
+
+
 @dataclass(frozen=True, slots=True)
 class SquadMemberState:
     """A player of the effective squad as the engine needs him (morale and fitness 0-100)."""
@@ -290,9 +376,9 @@ class BlockSimulationRequest:
     seed: Seed
     block_id: BlockId
     squad: tuple[SquadMemberState, ...]
-    tactic_style: str
-    tactic_system: str
-    competition_priorities: Mapping[CompetitionId, str]
+    tactic_style: TacticStyle
+    tactic_system: TacticSystem
+    competition_priorities: Mapping[CompetitionId, Priority]
 
 
 @dataclass(frozen=True, slots=True)

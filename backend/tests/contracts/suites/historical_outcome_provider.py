@@ -11,13 +11,13 @@ import pytest
 
 from mister.evaluation.application.ports import (
     BoardObjectiveSpec,
+    CompetitionHistory,
     CompetitionKind,
     CompetitionTier,
-    ObjectiveKind,
-    CompetitionHistory,
     HistoricalOutcomeNotFoundError,
     HistoricalOutcomeProvider,
     HistoricalSeasonOutcome,
+    ObjectiveKind,
 )
 from mister.shared_kernel.errors import DomainError
 from mister.shared_kernel.ids import CompetitionId, PlayableSeasonId

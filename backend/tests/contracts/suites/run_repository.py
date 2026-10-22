@@ -262,9 +262,8 @@ class RunRepositoryContract:
 
     def test_the_snapshot_is_stored_as_json_would_return_it(self, make_repo: RepoFactory) -> None:
         repo = make_repo()
-        record = replace(
-            make_run_record(), snapshot={"squad": ("a", "b"), 7: {"nested": (1, 2)}, "ok": True}
-        )
+        raw: dict[object, object] = {"squad": ("a", "b"), 7: {"nested": (1, 2)}, "ok": True}
+        record = replace(make_run_record(), snapshot=cast("dict[str, object]", raw))
         repo.add(record)
 
         loaded = repo.get(record.run_id)
@@ -280,7 +279,8 @@ class RunRepositoryContract:
         repo = make_repo()
         run = make_run_record()
         repo.add(run)
-        reply = replace(make_idempotency_record(run), response={"ids": (1, 2), 3: None})
+        raw: dict[object, object] = {"ids": (1, 2), 3: None}
+        reply = replace(make_idempotency_record(run), response=cast("dict[str, object]", raw))
 
         repo.put_idempotent(reply)
 
