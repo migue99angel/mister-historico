@@ -63,7 +63,7 @@ def test_morale_and_fitness_accept_their_bounds(cls: Any, value: int) -> None:
 
 @pytest.mark.parametrize(
     ("attack", "defense"),
-    [(0.0, 1.0), (1.0, -0.5), (float("nan"), 1.0), (1.0, float("inf")), (1, 1.0)],
+    [(0.0, 1.0), (1.0, -0.5), (float("nan"), 1.0), (1.0, float("inf")), ("1.0", 1.0)],
 )
 def test_team_strength_rejects_non_positive_or_non_finite_factors(
     attack: Any, defense: Any
@@ -262,7 +262,9 @@ def test_squad_team_requires_a_tactic_and_an_aggregate_forbids_one() -> None:
     with pytest.raises(InvalidValueError):
         SimTeam(_HOME, squad=_squad())
     with pytest.raises(InvalidValueError):
-        SimTeam(_HOME, aggregate=AggregateIndices(70.0, 70.0), tactic=Tactic(Style.COUNTER, "4-4-2"))
+        SimTeam(
+            _HOME, aggregate=AggregateIndices(70.0, 70.0), tactic=Tactic(Style.COUNTER, "4-4-2")
+        )
 
 
 def test_squad_needs_eleven_distinct_players() -> None:

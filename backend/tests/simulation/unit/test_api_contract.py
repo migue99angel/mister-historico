@@ -58,7 +58,7 @@ def _request() -> BlockSimRequest:
 def test_simulate_block_is_not_implemented_until_t2_6() -> None:
     rng = StdlibRandomSource(Seed(1))
 
-    with pytest.raises(NotImplementedError, match="T2.6"):
+    with pytest.raises(NotImplementedError, match=r"T2\.6"):
         SimulationService().simulate_block(_request(), rng)
 
 
