@@ -18,7 +18,8 @@ El esbozo del brief (§12) usaba un único `TeamSeason` que mezclaba contenido y
 - **Fichajes desde fuera de los rivales del juego:** los jugadores que se pueden fichar y no están en ninguna plantilla del juego van en una plantilla de mercado, `content/club-seasons/_market-<yyyy>-<yy>/squad.yaml`, sin club.
 - **Plantilla efectiva en una partida** = la del contenido más las diferencias guardadas en `SquadRegistry` (fichajes y ventas, propios y de los rivales), que vive en el contexto Game. El contenido no se muta nunca.
 - **Rivales de fuera de Primera** (por ejemplo, los de las primeras rondas de Copa) usan `aggregate.yaml` con ataque y defensa agregados y su justificación.
-- **Cómo se pone a prueba la fuerza de un rival (P6):** cada plantilla de liga lleva `real_goals_for` y `real_goals_against` reales, que la calibración compara con los goles que resultan de su fuerza. El validador exige además que coincidan con la última clasificación real de la temporada.
+- **Cómo se pone a prueba la fuerza de un rival (P6):** cada plantilla de club lleva `real_league` (`competition_label`, `played`, `goals_for`, `goals_against`, con fuentes): la liga que ese club jugó de verdad, que no siempre es la de la temporada jugable. La calibración compara esos goles con los que resultan de su fuerza. El validador los contrasta con la última clasificación real solo si la liga es una de la temporada.
+- **Plantillas rivales (procedimiento ligero):** de 18 a 22 jugadores con al menos 2 porteros, 6 defensas, 6 centrocampistas y 4 delanteros. Una media (`rating`) puede ser `null` mientras el jugador está `pending`; la fuerza agregada (`attack` y `defense`, en puntos de media de la rúbrica; una `defense` alta es mejor defensa) también.
 
 La traducción de estos modelos al dominio de la partida se hace en el adaptador ACL de `game/infrastructure` (ADR-003); aquí solo se fija el formato.
 

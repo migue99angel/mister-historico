@@ -33,7 +33,7 @@
 | Rival agregado | `aggregate` | Rival sin plantilla (fuera de Primera) que solo tiene fuerza agregada. |
 | Competición | `Competition` | Liga, Copa, Supercopa, Champions o UEFA de una temporada, con sus participantes y reglas. |
 | Partido del calendario | `Fixture` | Partido real: fecha, competición, rival, local o visitante, resultado real y fuente. |
-| Clasificación real | `standings` | Clasificación histórica de liga en cada fecha de corte de bloque. |
+| Clasificación real | `standings` | Clasificación histórica de liga (y de cada grupo) en cada fecha de corte de bloque, más el cuadro real de las eliminatorias. |
 | Historia real | `HistoricalOutcome` | Lo que pasó de verdad: títulos y posición en cada competición, con fuentes. |
 | Dilema | `Dilemma` | Decisión que se presenta al jugador en un bloque, con sus opciones y su fuente histórica. |
 | Opción | `Option` | Cada respuesta posible a un dilema, con sus efectos. |
@@ -44,6 +44,15 @@
 | Pendiente de verificar | `verify: pending` | Dato no confirmado o no encontrado; hace fallar la validación en modo release. |
 | Texto | `texts` | Texto de interfaz o narrativa con estado `draft` o `reviewed` y `reviewed_by`. |
 | Política de nombres | `NamePolicy` | Regla de presentación que decide si se muestra el nombre real o el alias. |
+| Nivel de competición | `tier` | Categoría de una competición: `domestic_league`, `domestic_cup`, `domestic_super_cup`, `continental_primary` o `continental_secondary`. |
+| Etapa | `stage` / `round` | Ronda de una competición (`qualifying`, `group_stage`, `round_of_16`, `quarter_final`, `semi_final`, `final`...). La fase de grupos es una etapa más. |
+| Estadísticas de goles | `league_stats` / `goal_baseline` | Partidos, goles locales y goles visitantes de una liga (o de otra competición, o los de una liga de la temporada): base de goles y ventaja de campo del motor. |
+| Liga real del club | `real_league` | La liga que un club jugó de verdad esa temporada, con sus partidos y goles; sirve para calibrar la fuerza de un rival. |
+| Eventos forzados | `forced_events` | Hechos reales de la temporada (por ahora, lesiones) que se repiten en cada partida. |
+| Partido clave | `key` (de un `Fixture`) | Partido destacado (clásico, final...) que el resumen del bloque resalta. |
+| Táctica inicial | `initial_tactic` | Estilo y sistema con los que arranca el equipo propio. |
+| Equilibrado | `balanced` | Estilo táctico neutro, el de partida de los rivales (con `4-4-2`). |
+| Prioridad normal | `normal` | Prioridad intermedia de `competition_priority` (entre `low` y `high`): la de partida. |
 
 ## Simulation · Motor (núcleo)
 
@@ -53,7 +62,7 @@
 | Simulador de partido | `MatchSimulator` | Produce el resultado de un partido a partir de dos `SimTeam` y un flujo de azar. |
 | Equipo simulado | `SimTeam` | Lo que el motor sabe de un equipo: su once, su fuerza, su táctica, su moral y su estado físico. |
 | Fuerza | `TeamStrength` | Par de valores de ataque y defensa que resulta de la plantilla y los ajustes. |
-| Táctica | `Tactic` | Estilo (presión, contragolpe, posesión) y sistema de juego. |
+| Táctica | `Tactic` | Estilo (presión, contragolpe, posesión o equilibrado) y sistema de juego. |
 | Alineación / once | `Lineup` | Los once titulares elegidos para un partido. |
 | Marcador | `Score` | Goles de cada equipo; nunca negativos. |
 | Resultado del partido | `MatchResult` | Marcador final, con prórroga y penaltis si los hubo, y el ganador. |
