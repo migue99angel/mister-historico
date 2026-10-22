@@ -1,0 +1,163 @@
+schema_version: 1
+fixtures:
+- id: tfc-liga-01
+  date: 2000-09-02
+  competition: liga-test
+  round: 1
+  opponent: fixture-wanderers-2000-01
+  venue: home
+  result:
+    goals_for: 1
+    goals_against: 0
+  sources:
+  - https://example.org/test-content/fixtures/liga-test/round-1
+  verify: ok
+- id: tfc-liga-02
+  date: 2000-09-16
+  competition: liga-test
+  round: 2
+  opponent: dummy-rovers-2000-01
+  venue: away
+  result:
+    goals_for: 1
+    goals_against: 3
+  sources:
+  - https://example.org/test-content/fixtures/liga-test/round-2
+  verify: ok
+- id: tfc-liga-03
+  date: 2000-10-14
+  competition: liga-test
+  round: 3
+  opponent: mock-city-2000-01
+  venue: home
+  result:
+    goals_for: 0
+    goals_against: 0
+  sources:
+  - https://example.org/test-content/fixtures/liga-test/round-3
+  verify: ok
+- id: tfc-liga-04
+  date: 2000-11-04
+  competition: liga-test
+  round: 4
+  opponent: demo-athletic-2000-01
+  venue: away
+  result:
+    goals_for: 1
+    goals_against: 2
+  sources:
+  - https://example.org/test-content/fixtures/liga-test/round-4
+  verify: ok
+- id: tfc-copa-sf-1
+  date: 2000-11-22
+  competition: copa-test
+  stage: semifinal
+  leg: 1
+  opponent: placeholder-town-2000-01
+  venue: away
+  result:
+    goals_for: 2
+    goals_against: 1
+  sources:
+  - https://example.org/test-content/fixtures/copa-test/sf-1
+  verify: ok
+- id: tfc-liga-05
+  date: 2000-12-09
+  competition: liga-test
+  round: 5
+  opponent: sample-united-2000-01
+  venue: home
+  result:
+    goals_for: 4
+    goals_against: 2
+  sources:
+  - https://example.org/test-content/fixtures/liga-test/round-5
+  verify: ok
+- id: tfc-liga-06
+  date: 2001-01-13
+  competition: liga-test
+  round: 6
+  opponent: fixture-wanderers-2000-01
+  venue: away
+  result:
+    goals_for: 2
+    goals_against: 0
+  sources:
+  - https://example.org/test-content/fixtures/liga-test/round-6
+  verify: ok
+- id: tfc-copa-sf-2
+  date: 2001-01-24
+  competition: copa-test
+  stage: semifinal
+  leg: 2
+  opponent: placeholder-town-2000-01
+  venue: home
+  result:
+    goals_for: 3
+    goals_against: 1
+  sources:
+  - https://example.org/test-content/fixtures/copa-test/sf-2
+  verify: ok
+- id: tfc-liga-07
+  date: 2001-02-17
+  competition: liga-test
+  round: 7
+  opponent: dummy-rovers-2000-01
+  venue: home
+  result:
+    goals_for: 2
+    goals_against: 1
+  sources:
+  - https://example.org/test-content/fixtures/liga-test/round-7
+  verify: ok
+- id: tfc-liga-08
+  date: 2001-03-17
+  competition: liga-test
+  round: 8
+  opponent: mock-city-2000-01
+  venue: away
+  result:
+    goals_for: 1
+    goals_against: 3
+  sources:
+  - https://example.org/test-content/fixtures/liga-test/round-8
+  verify: ok
+- id: tfc-liga-09
+  date: 2001-04-14
+  competition: liga-test
+  round: 9
+  opponent: demo-athletic-2000-01
+  venue: home
+  result:
+    goals_for: 2
+    goals_against: 0
+  sources:
+  - https://example.org/test-content/fixtures/liga-test/round-9
+  verify: ok
+- id: tfc-liga-10
+  date: 2001-05-12
+  competition: liga-test
+  round: 10
+  opponent: sample-united-2000-01
+  venue: away
+  result:
+    goals_for: 0
+    goals_against: 0
+  sources:
+  - https://example.org/test-content/fixtures/liga-test/round-10
+  verify: ok
+- id: tfc-copa-final
+  date: 2001-05-26
+  competition: copa-test
+  stage: final
+  opponent: sample-united-2000-01
+  venue: neutral
+  result:
+    goals_for: 1
+    goals_against: 1
+    extra_time: true
+    penalties_for: 4
+    penalties_against: 3
+  sources:
+  - https://example.org/test-content/fixtures/copa-test/final
+  verify: ok

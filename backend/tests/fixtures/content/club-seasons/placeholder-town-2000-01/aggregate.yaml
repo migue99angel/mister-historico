@@ -1,0 +1,10 @@
+schema_version: 1
+club_season: placeholder-town-2000-01
+club: placeholder-town
+season: 2000-01
+attack: 40
+defense: 38
+rating_rationale: 'Fictional lower-league side: aggregate strength below every Liga Test club.'
+sources:
+- https://example.org/test-content/aggregates/placeholder-town-2000-01
+verify: ok

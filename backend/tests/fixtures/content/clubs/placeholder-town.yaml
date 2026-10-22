@@ -1,0 +1,7 @@
+schema_version: 1
+club_id: placeholder-town
+name: Placeholder Town
+short_name: PHT
+colors:
+  primary: '#555555'
+  secondary: '#EEEEEE'

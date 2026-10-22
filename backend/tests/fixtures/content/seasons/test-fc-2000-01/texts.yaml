@@ -1,0 +1,42 @@
+schema_version: 1
+texts:
+- id: presentation.intro
+  kind: presentation
+  body: Bienvenido a Test FC, un club ficticio con una temporada de mentira.
+  status: reviewed
+  reviewed_by: Test Reviewer
+- id: presentation.objectives
+  kind: presentation
+  body: La directiva espera que termines entre los tres primeros y llegues a la final.
+  status: reviewed
+  reviewed_by: Test Reviewer
+- id: event.winter-market
+  kind: event
+  body: Se abre el mercado de invierno de la Liga Test.
+  status: reviewed
+  reviewed_by: Test Reviewer
+- id: event.cup-final
+  kind: event
+  body: La final de la Copa Test se juega en campo neutral.
+  status: reviewed
+  reviewed_by: Test Reviewer
+- id: verdict.above
+  kind: verdict
+  body: Superaste a la historia.
+  status: reviewed
+  reviewed_by: Test Reviewer
+- id: verdict.equal
+  kind: verdict
+  body: Igualaste la historia.
+  status: reviewed
+  reviewed_by: Test Reviewer
+- id: verdict.below
+  kind: verdict
+  body: Te quedaste por debajo de la historia.
+  status: reviewed
+  reviewed_by: Test Reviewer
+- id: verdict.sacked
+  kind: verdict
+  body: La directiva te destituyó.
+  status: reviewed
+  reviewed_by: Test Reviewer

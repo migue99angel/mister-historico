@@ -1,0 +1,196 @@
+schema_version: 1
+club_season: fixture-wanderers-2000-01
+club: fixture-wanderers
+season: 2000-01
+real_goals_for: 11
+real_goals_against: 15
+sources:
+- https://example.org/test-content/squads/fixture-wanderers-2000-01
+verify: ok
+players:
+- player_id: fxw-01
+  display_name: Vito Simulado
+  alias_name: Jugador FXW-01
+  position: GK
+  age: 19
+  rating: 50
+  key: false
+  sources:
+  - https://example.org/test-content/squads/fixture-wanderers-2000-01
+  verify: ok
+- player_id: fxw-02
+  display_name: Wilo Prueba
+  alias_name: Jugador FXW-02
+  position: GK
+  age: 20
+  rating: 63
+  key: false
+  sources:
+  - https://example.org/test-content/squads/fixture-wanderers-2000-01
+  verify: ok
+- player_id: fxw-03
+  display_name: Xavi Falso
+  alias_name: Jugador FXW-03
+  position: DF
+  age: 25
+  rating: 64
+  key: true
+  sources:
+  - https://example.org/test-content/squads/fixture-wanderers-2000-01
+  verify: ok
+  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+    rated above the squad average.'
+- player_id: fxw-04
+  display_name: Yago Dummy
+  alias_name: Jugador FXW-04
+  position: DF
+  age: 33
+  rating: 64
+  key: true
+  sources:
+  - https://example.org/test-content/squads/fixture-wanderers-2000-01
+  verify: ok
+  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+    rated above the squad average.'
+- player_id: fxw-05
+  display_name: Zeno Mocko
+  alias_name: Jugador FXW-05
+  position: DF
+  age: 35
+  rating: 51
+  key: false
+  sources:
+  - https://example.org/test-content/squads/fixture-wanderers-2000-01
+  verify: ok
+- player_id: fxw-06
+  display_name: Aldo Sampleton
+  alias_name: Jugador FXW-06
+  position: DF
+  age: 31
+  rating: 47
+  key: false
+  sources:
+  - https://example.org/test-content/squads/fixture-wanderers-2000-01
+  verify: ok
+- player_id: fxw-07
+  display_name: Beto Fakerson
+  alias_name: Jugador FXW-07
+  position: DF
+  age: 30
+  rating: 52
+  key: false
+  sources:
+  - https://example.org/test-content/squads/fixture-wanderers-2000-01
+  verify: ok
+- player_id: fxw-08
+  display_name: Cleo Testoni
+  alias_name: Jugador FXW-08
+  position: DF
+  age: 25
+  rating: 49
+  key: false
+  sources:
+  - https://example.org/test-content/squads/fixture-wanderers-2000-01
+  verify: ok
+- player_id: fxw-09
+  display_name: Dani Placebo
+  alias_name: Jugador FXW-09
+  position: DF
+  age: 32
+  rating: 64
+  key: true
+  sources:
+  - https://example.org/test-content/squads/fixture-wanderers-2000-01
+  verify: ok
+  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+    rated above the squad average.'
+- player_id: fxw-10
+  display_name: Eloy Ficticio
+  alias_name: Jugador FXW-10
+  position: MF
+  age: 25
+  rating: 64
+  key: false
+  sources:
+  - https://example.org/test-content/squads/fixture-wanderers-2000-01
+  verify: ok
+- player_id: fxw-11
+  display_name: Fito Inventado
+  alias_name: Jugador FXW-11
+  position: MF
+  age: 22
+  rating: 61
+  key: false
+  sources:
+  - https://example.org/test-content/squads/fixture-wanderers-2000-01
+  verify: ok
+- player_id: fxw-12
+  display_name: Gael Muestra
+  alias_name: Jugador FXW-12
+  position: MF
+  age: 28
+  rating: 58
+  key: false
+  sources:
+  - https://example.org/test-content/squads/fixture-wanderers-2000-01
+  verify: ok
+- player_id: fxw-13
+  display_name: Hugo Ejemplo
+  alias_name: Jugador FXW-13
+  position: MF
+  age: 34
+  rating: 62
+  key: false
+  sources:
+  - https://example.org/test-content/squads/fixture-wanderers-2000-01
+  verify: ok
+- player_id: fxw-14
+  display_name: Ivo Simulado
+  alias_name: Jugador FXW-14
+  position: MF
+  age: 29
+  rating: 46
+  key: false
+  sources:
+  - https://example.org/test-content/squads/fixture-wanderers-2000-01
+  verify: ok
+- player_id: fxw-15
+  display_name: Jano Prueba
+  alias_name: Jugador FXW-15
+  position: MF
+  age: 28
+  rating: 58
+  key: false
+  sources:
+  - https://example.org/test-content/squads/fixture-wanderers-2000-01
+  verify: ok
+- player_id: fxw-16
+  display_name: Kiko Falso
+  alias_name: Jugador FXW-16
+  position: MF
+  age: 24
+  rating: 46
+  key: false
+  sources:
+  - https://example.org/test-content/squads/fixture-wanderers-2000-01
+  verify: ok
+- player_id: fxw-17
+  display_name: Lalo Dummy
+  alias_name: Jugador FXW-17
+  position: FW
+  age: 29
+  rating: 52
+  key: false
+  sources:
+  - https://example.org/test-content/squads/fixture-wanderers-2000-01
+  verify: ok
+- player_id: fxw-18
+  display_name: Mati Mocko
+  alias_name: Jugador FXW-18
+  position: FW
+  age: 23
+  rating: 64
+  key: false
+  sources:
+  - https://example.org/test-content/squads/fixture-wanderers-2000-01
+  verify: ok

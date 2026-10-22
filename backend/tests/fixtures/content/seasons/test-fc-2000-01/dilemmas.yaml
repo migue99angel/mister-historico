@@ -1,0 +1,262 @@
+schema_version: 1
+dilemmas:
+- id: d01
+  block: b1
+  title: Refuerzo para el centro del campo
+  prompt: La directiva te deja reforzar la medular. ¿A quién fichas?
+  options:
+  - id: a
+    label: Fichar a un agente libre del mercado
+    effects:
+    - type: sign_player
+      player_id: mkt-01
+    - type: board_confidence
+      delta: 3
+  - id: b
+    label: Pagar por una pieza de Sample United
+    effects:
+    - type: sign_player
+      player_id: smu-10
+      from_club_season: sample-united-2000-01
+    - type: morale
+      delta: -2
+  - id: c
+    label: Confiar en la plantilla
+    effects:
+    - type: morale
+      delta: 3
+  historical_option:
+    option: a
+    sources:
+    - https://example.org/test-content/dilemmas/d01
+    verify: ok
+- id: d02
+  block: b1
+  title: Plan de juego inicial
+  prompt: Defines el estilo con el que arrancará el equipo.
+  options:
+  - id: a
+    label: Presión alta
+    effects:
+    - type: set_tactic
+      style: pressing
+      system: 4-3-3
+  - id: b
+    label: Contragolpe
+    effects:
+    - type: set_tactic
+      style: counter
+      system: 4-4-2
+  - id: c
+    label: Posesión
+    effects:
+    - type: set_tactic
+      style: possession
+      system: 4-2-3-1
+  historical_option:
+    option: b
+    sources:
+    - https://example.org/test-content/dilemmas/d02
+    verify: ok
+- id: d03
+  block: b2
+  title: Tensión en el vestuario
+  prompt: Un veterano se queja de su rol. ¿Cómo lo gestionas?
+  options:
+  - id: a
+    label: Respaldarle
+    effects:
+    - type: player_morale
+      player_id: tfc-05
+      delta: 10
+    - type: morale
+      delta: -3
+  - id: b
+    label: Imponer tu autoridad
+    effects:
+    - type: player_morale
+      player_id: tfc-05
+      delta: -15
+    - type: morale
+      delta: 5
+  historical_option:
+    option: a
+    sources:
+    - https://example.org/test-content/dilemmas/d03
+    verify: ok
+- id: d04
+  block: b2
+  title: Prioridad de la Copa
+  prompt: La semifinal de Copa coincide con un tramo exigente de Liga.
+  options:
+  - id: a
+    label: Ir a por la Copa
+    effects:
+    - type: competition_priority
+      competition_id: copa-test
+      priority: high
+    - type: fitness
+      delta: -8
+  - id: b
+    label: Rotar en la Copa
+    effects:
+    - type: competition_priority
+      competition_id: copa-test
+      priority: low
+    - type: board_confidence
+      delta: -4
+  historical_option:
+    option: a
+    sources:
+    - https://example.org/test-content/dilemmas/d04
+    verify: ok
+- id: d05
+  block: b3
+  title: Mercado de invierno
+  prompt: Llegan ofertas por dos suplentes.
+  options:
+  - id: a
+    label: Vender a un suplente a Mock City
+    effects:
+    - type: sell_player
+      player_id: tfc-18
+      to_club_season: mock-city-2000-01
+    - type: board_confidence
+      delta: 4
+  - id: b
+    label: Vender a otro suplente fuera de la liga
+    effects:
+    - type: sell_player
+      player_id: tfc-17
+  - id: c
+    label: No vender a nadie
+    effects:
+    - type: morale
+      delta: 2
+  historical_option:
+    option: b
+    sources:
+    - https://example.org/test-content/dilemmas/d05
+    verify: ok
+- id: d06
+  block: b3
+  title: Lesión de un titular
+  prompt: Un titular llega justo de forma a un partido importante.
+  options:
+  - id: a
+    label: Forzar su regreso
+    effects:
+    - type: injury
+      player_id: tfc-04
+      date: 2001-01-20
+      days: 25
+    - type: morale
+      delta: 3
+  - id: b
+    label: Descanso completo
+    effects:
+    - type: fitness
+      delta: 10
+      player_id: tfc-04
+  historical_option:
+    option: b
+    sources:
+    - https://example.org/test-content/dilemmas/d06
+    verify: ok
+- id: d07
+  block: b4
+  title: Minutos para la cantera
+  prompt: Un joven de la cantera pide su oportunidad.
+  options:
+  - id: a
+    label: Darle minutos
+    effects:
+    - type: youth_minutes
+      player_id: tfc-20
+    - type: morale
+      delta: 2
+  - id: b
+    label: Mantener el once
+    effects:
+    - type: fitness
+      delta: -5
+  historical_option:
+    option: a
+    sources:
+    - https://example.org/test-content/dilemmas/d07
+    verify: ok
+- id: d08
+  block: b4
+  title: Rotaciones antes del tramo final
+  prompt: Quedan pocas jornadas y el equipo llega cansado.
+  options:
+  - id: a
+    label: Rotar y descansar
+    effects:
+    - type: fitness
+      delta: 10
+    - type: competition_priority
+      competition_id: liga-test
+      priority: normal
+  - id: b
+    label: Mantener el once a tope
+    effects:
+    - type: fitness
+      delta: -10
+    - type: competition_priority
+      competition_id: liga-test
+      priority: high
+  historical_option:
+    option: a
+    sources:
+    - https://example.org/test-content/dilemmas/d08
+    verify: ok
+- id: d09
+  block: b5
+  title: Presión de la directiva
+  prompt: La directiva exige resultados inmediatos.
+  options:
+  - id: a
+    label: Aceptar la presión
+    effects:
+    - type: board_confidence
+      delta: 8
+    - type: morale
+      delta: -5
+  - id: b
+    label: Proteger al vestuario
+    effects:
+    - type: board_confidence
+      delta: -8
+    - type: morale
+      delta: 5
+  historical_option:
+    option: a
+    sources:
+    - https://example.org/test-content/dilemmas/d09
+    verify: ok
+- id: d10
+  block: b5
+  title: La final de Copa
+  prompt: Preparas la final contra Sample United.
+  options:
+  - id: a
+    label: Plan conservador
+    effects:
+    - type: set_tactic
+      style: balanced
+      system: 5-3-2
+  - id: b
+    label: Salir a presionar
+    effects:
+    - type: set_tactic
+      style: pressing
+      system: 4-3-3
+    - type: player_morale
+      player_id: tfc-09
+      delta: 5
+  historical_option:
+    option: b
+    sources:
+    - https://example.org/test-content/dilemmas/d10
+    verify: ok
