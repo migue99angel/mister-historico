@@ -1,6 +1,6 @@
 import { defineConfig, mergeConfig } from 'vitest/config';
 
-import viteConfig from './vite.config';
+import viteConfig from './vite.config.ts';
 
 const coreLayerThreshold = { lines: 90, branches: 90, functions: 90, statements: 90 };
 
