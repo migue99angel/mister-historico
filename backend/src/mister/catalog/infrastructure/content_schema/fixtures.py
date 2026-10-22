@@ -17,7 +17,9 @@ Goals = Annotated[int, Field(ge=0, le=30)]
 
 
 class RealResult(ContentModel):
-    """Real score from the own team's point of view (after extra time, before penalties)."""
+    """Real score of the match from the own team's point of view (after extra time, before
+    penalties). Whether a shoot-out is consistent with the score depends on the leg, so the
+    content tree checks it: level score for a single match, level aggregate for a second leg."""
 
     goals_for: Goals
     goals_against: Goals
@@ -29,11 +31,8 @@ class RealResult(ContentModel):
     def _check_penalties(self) -> Self:
         if (self.penalties_for is None) != (self.penalties_against is None):
             raise ValueError("penalties_for and penalties_against go together")
-        if self.penalties_for is not None:
-            if self.goals_for != self.goals_against:
-                raise ValueError("penalties are only taken when the score is level")
-            if self.penalties_for == self.penalties_against:
-                raise ValueError("penalties cannot end level")
+        if self.penalties_for is not None and self.penalties_for == self.penalties_against:
+            raise ValueError("penalties cannot end level")
         return self
 
 
