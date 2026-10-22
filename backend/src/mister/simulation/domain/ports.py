@@ -43,9 +43,10 @@ class MatchSimulator(Protocol):
 
     def extra_time(self, setup: MatchSetup, rng: RandomSource) -> Score:
         """Goals of the extra 30 minutes, from `("match", fixture_id, "extra_time", side)`.
-        For ties decided on aggregate, where the single match was not level."""
+        Called when the tie is level on aggregate, even if this match was not level."""
         ...
 
     def penalty_shootout(self, setup: MatchSetup, rng: RandomSource) -> Score:
-        """A shootout that cannot end level, from `("match", fixture_id, "penalties")`."""
+        """A shootout that cannot end level, from `("match", fixture_id, "penalties")`.
+        Called when the tie is still level after extra time (or when there is none)."""
         ...
