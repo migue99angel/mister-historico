@@ -1,0 +1,31 @@
+# Keeps the SHA-pinned actions and the pinned Docker images up to date.
+# Application dependencies (uv, npm) are bumped by hand through their owning task or a CR.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: chore
+      include: scope
+
+  - package-ecosystem: docker
+    directories:
+      - /infra/docker
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+      include: scope
+
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+      include: scope

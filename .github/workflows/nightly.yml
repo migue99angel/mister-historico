@@ -1,0 +1,32 @@
+# Nightly mutation testing with mutmut (installed from the backend dev dependencies).
+#
+# Placeholder: no context has a domain layer yet, so there is nothing to mutate.
+# Once they exist, this job will:
+#   - set up uv (same pinned setup-uv and uv 0.9.7 as backend.yml) and `uv sync --frozen`;
+#   - mutate `backend/src/mister/simulation/domain/` and `backend/src/mister/evaluation/domain/`
+#     (configured in `[tool.mutmut]` in backend/pyproject.toml, owned by its task or a CR);
+#   - run `uv run mutmut run`, then fail if the mutation score (killed / total) is below 80 %.
+name: nightly
+
+on:
+  schedule:
+    - cron: "41 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mutation:
+    name: mutation testing (mutmut)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Mutation testing (placeholder)
+        run: |
+          echo "mutmut is enabled once simulation/domain and evaluation/domain exist"
+          echo "(target: mutation score >= 80 %)."

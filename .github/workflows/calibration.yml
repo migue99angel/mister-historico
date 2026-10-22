@@ -1,0 +1,65 @@
+# Engine calibration (Monte Carlo, `pytest -m calibration`). Slow, so it runs only when the
+# engine or the content change, every night and on demand.
+name: calibration
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/src/mister/simulation/**"
+      - "content/**"
+      - ".github/workflows/calibration.yml"
+  pull_request:
+    paths:
+      - "backend/src/mister/simulation/**"
+      - "content/**"
+      - ".github/workflows/calibration.yml"
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  calibration:
+    name: calibration
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.9.7"
+          working-directory: backend
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      # --no-cov: calibration runs a subset of the suite, so the global coverage threshold
+      # does not apply. Exit code 5 ("no tests collected") is accepted only while no
+      # calibration test exists yet (they arrive in T2.7); any other failure fails the job.
+      - name: pytest -m calibration
+        run: |
+          set +e
+          uv run pytest -m calibration --no-cov
+          status=$?
+          set -e
+          if [ "${status}" -eq 5 ]; then
+            echo "::notice title=Calibration::No calibration tests collected yet (T2.7); nothing to run."
+            exit 0
+          fi
+          exit "${status}"

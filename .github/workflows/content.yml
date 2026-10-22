@@ -1,0 +1,46 @@
+# Historical content validation (`mister content validate --release`).
+# Placeholder until T2.20 creates the CLI command: it only reports that it is pending.
+name: content
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "content/**"
+      - "backend/src/mister/catalog/**"
+      - ".github/workflows/content.yml"
+  pull_request:
+    paths:
+      - "content/**"
+      - "backend/src/mister/catalog/**"
+      - ".github/workflows/content.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: validate content
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # T2.20: uncomment this step, and replace the placeholder below with
+      #   working-directory: backend
+      #   run: uv run mister content validate --release
+      # - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      #   with:
+      #     version: "0.9.7"
+      #     working-directory: backend
+      #     enable-cache: true
+      #     cache-dependency-glob: backend/uv.lock
+
+      - name: Validate content (placeholder)
+        run: echo "Content validation is enabled in T2.20 (uv run mister content validate --release)."
