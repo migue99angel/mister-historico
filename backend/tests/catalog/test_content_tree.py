@@ -995,3 +995,275 @@ def test_a_rival_squad_needs_between_6_and_10_key_players(root: Path, keys: int)
         "players",
         "between 6 and 10 key players",
     )
+
+
+# --------------------------------------------------------------------------- branch coverage
+def test_the_own_team_cannot_be_its_own_opponent(root: Path) -> None:
+    edit(root, FIXTURES, lambda d: fixture_of(d, "tfc-liga-01").update(opponent=OWN))
+
+    assert_issue(issues_of(root), FIXTURES, ".opponent", "own team")
+
+
+def test_a_league_fixture_with_a_stage_and_no_round_is_reported(root: Path) -> None:
+    def mutate(d: dict[str, Any]) -> None:
+        fixture = fixture_of(d, "tfc-liga-01")
+        fixture.pop("round")
+        fixture["stage"] = "final"
+
+    edit(root, FIXTURES, mutate)
+
+    issues = issues_of(root)
+    assert_issue(issues, FIXTURES, ".round", "needs a round")
+    assert_issue(issues, FIXTURES, ".stage", "no stage or group")
+
+
+def test_a_league_round_beyond_the_last_is_reported(root: Path) -> None:
+    edit(root, FIXTURES, lambda d: fixture_of(d, "tfc-liga-01").update(round=11))
+
+    assert_issue(issues_of(root), FIXTURES, ".round", "beyond the last round")
+
+
+def test_a_league_match_on_neutral_ground_is_reported(root: Path) -> None:
+    edit(root, FIXTURES, lambda d: fixture_of(d, "tfc-liga-01").update(venue="neutral"))
+
+    assert_issue(issues_of(root), FIXTURES, ".venue", "neutral")
+
+
+def test_a_league_round_played_twice_is_reported(root: Path) -> None:
+    edit(root, FIXTURES, lambda d: fixture_of(d, "tfc-liga-02").update(round=1))
+
+    assert_issue(issues_of(root), FIXTURES, "fixtures", "round 1 appears twice")
+
+
+def test_a_cup_fixture_without_a_stage_is_reported(root: Path) -> None:
+    def mutate(d: dict[str, Any]) -> None:
+        fixture = fixture_of(d, "tfc-copa-final")
+        fixture.pop("stage")
+        fixture["round"] = 1
+
+    edit(root, FIXTURES, mutate)
+
+    assert_issue(issues_of(root), FIXTURES, ".stage", "needs a stage")
+
+
+def test_a_group_fixture_without_a_group_is_reported(root: Path) -> None:
+    def mutate(d: dict[str, Any]) -> None:
+        fixture = fixture_of(d, "tfc-cont-g1")
+        fixture.pop("group")
+        fixture.pop("round")
+
+    edit(root, FIXTURES, mutate)
+
+    assert_issue(issues_of(root), FIXTURES, ".group", "unknown group")
+
+
+def test_a_group_matchday_out_of_range_is_reported(root: Path) -> None:
+    edit(root, FIXTURES, lambda d: fixture_of(d, "tfc-cont-g1").update(round=9))
+
+    assert_issue(issues_of(root), FIXTURES, ".round", "matchday")
+
+
+def test_a_group_match_on_neutral_ground_is_reported(root: Path) -> None:
+    edit(root, FIXTURES, lambda d: fixture_of(d, "tfc-cont-g1").update(venue="neutral"))
+
+    assert_issue(issues_of(root), FIXTURES, ".venue", "group match")
+
+
+def test_a_knockout_fixture_with_a_group_is_reported(root: Path) -> None:
+    edit(root, FIXTURES, lambda d: fixture_of(d, "tfc-copa-final").update(group="a"))
+
+    assert_issue(issues_of(root), FIXTURES, ".group", "only group-stage")
+
+
+def test_a_single_leg_stage_with_leg_two_is_reported(root: Path) -> None:
+    edit(root, FIXTURES, lambda d: fixture_of(d, "tfc-copa-final").update(leg=2))
+
+    assert_issue(issues_of(root), FIXTURES, ".leg", "single leg")
+
+
+def test_a_two_legged_tie_on_neutral_ground_is_reported(root: Path) -> None:
+    edit(root, FIXTURES, lambda d: fixture_of(d, "tfc-copa-sf-1").update(venue="neutral"))
+
+    assert_issue(issues_of(root), FIXTURES, ".venue", "two-legged")
+
+
+def test_a_single_round_robin_league_meets_each_rival_exactly_once(root: Path) -> None:
+    def mutate(d: dict[str, Any]) -> None:
+        d["competitions"][0]["rounds"] = 1
+        d["competitions"][0]["league_stats"]["matches"] = 15
+
+    edit(root, SEASON_FILE, mutate)
+
+    assert_issue(issues_of(root), FIXTURES, "fixtures", "exactly once")
+
+
+# --- season.yaml
+def test_a_market_squad_cannot_take_part_in_a_competition(root: Path) -> None:
+    edit(
+        root,
+        SEASON_FILE,
+        lambda d: d["competitions"][1]["participants"].__setitem__(1, "_market-2000-01"),
+    )
+
+    assert_issue(issues_of(root), SEASON_FILE, "competitions.1.participants.1", "unknown")
+
+
+def test_an_outcome_of_an_unknown_competition_is_reported(root: Path) -> None:
+    edit(
+        root,
+        SEASON_FILE,
+        lambda d: d["historical_outcome"][1].update(competition="nope"),
+    )
+
+    assert_issue(issues_of(root), SEASON_FILE, "historical_outcome.1.competition", "nope")
+
+
+def test_a_league_outcome_cannot_have_an_elimination_stage(root: Path) -> None:
+    edit(
+        root,
+        SEASON_FILE,
+        lambda d: d["historical_outcome"][0].update(eliminated_in="final"),
+    )
+
+    assert_issue(issues_of(root), SEASON_FILE, "eliminated_in", "no elimination")
+
+
+def test_a_cup_outcome_cannot_have_a_final_position(root: Path) -> None:
+    edit(root, SEASON_FILE, lambda d: d["historical_outcome"][1].update(final_position=1))
+
+    assert_issue(issues_of(root), SEASON_FILE, "historical_outcome.1.final_position", "leagues")
+
+
+def test_an_elimination_in_an_unknown_stage_is_reported(root: Path) -> None:
+    edit(
+        root,
+        SEASON_FILE,
+        lambda d: d["historical_outcome"][3].update(eliminated_in="nope"),
+    )
+
+    assert_issue(issues_of(root), SEASON_FILE, "historical_outcome.3.eliminated_in", "nope")
+
+
+def test_an_objective_on_an_unknown_competition_is_reported(root: Path) -> None:
+    edit(
+        root,
+        SEASON_FILE,
+        lambda d: d["board_objectives"][0].update(competition="nope"),
+    )
+
+    assert_issue(issues_of(root), SEASON_FILE, "board_objectives.0.competition", "nope")
+
+
+def test_outcomes_are_not_contradicted_when_the_real_data_is_incomplete(root: Path) -> None:
+    """Without the brackets, group tables or the final league table nothing can be derived."""
+
+    def mutate(d: dict[str, Any]) -> None:
+        d["ties"] = []
+        d["cutoffs"] = [c for c in d["cutoffs"] if c.get("stage") is None and c["block"] != "b5"]
+        d["cutoffs"].append(next(c for c in d["cutoffs"]))  # keep the shape non-trivial
+
+    edit(root, STANDINGS, mutate)
+    issues = issues_of(root)
+
+    assert not [i for i in issues if "contradicts" in i.message]
+
+
+def test_a_pending_tie_winner_cannot_contradict_the_outcome(root: Path) -> None:
+    def mutate(d: dict[str, Any]) -> None:
+        for tie in d["ties"]:
+            tie.update(winner=None, verify="pending")
+
+    edit(root, STANDINGS, mutate)
+
+    load_content_tree(root, release=False)
+
+
+# --- standings.yaml
+def test_a_cutoff_in_an_unknown_block_is_reported(root: Path) -> None:
+    edit(root, STANDINGS, lambda d: d["cutoffs"][0].update(block="b9"))
+
+    assert_issue(issues_of(root), STANDINGS, "cutoffs.0.block", "b9")
+
+
+def test_a_league_cutoff_of_a_cup_is_reported(root: Path) -> None:
+    edit(root, STANDINGS, lambda d: d["cutoffs"][0].update(competition="copa-test"))
+
+    assert_issue(issues_of(root), STANDINGS, "cutoffs.0.competition", "not a league")
+
+
+def test_a_group_cutoff_of_a_knockout_stage_is_reported(root: Path) -> None:
+    def mutate(d: dict[str, Any]) -> None:
+        group = next(c for c in d["cutoffs"] if c.get("stage") == "groups")
+        group["stage"] = "final"
+
+    edit(root, STANDINGS, mutate)
+
+    assert_issue(issues_of(root), STANDINGS, ".stage", "not a group stage")
+
+
+def test_a_group_cutoff_of_an_unknown_group_is_reported(root: Path) -> None:
+    def mutate(d: dict[str, Any]) -> None:
+        group = next(c for c in d["cutoffs"] if c.get("stage") == "groups")
+        group["group"] = "z"
+
+    edit(root, STANDINGS, mutate)
+
+    assert_issue(issues_of(root), STANDINGS, ".group", "unknown group")
+
+
+def test_a_wrong_points_total_in_a_group_table_is_reported(root: Path) -> None:
+    def mutate(d: dict[str, Any]) -> None:
+        group = next(c for c in d["cutoffs"] if c.get("stage") == "groups")
+        group["table"][0]["points"] += 0  # keep order valid
+        group["table"][-1]["points"] = 0
+        group["table"][-1]["won"] = 1
+        group["table"][-1]["played"] = group["table"][-1]["won"] + group["table"][-1]["drawn"]
+        group["table"][-1]["lost"] = 0
+
+    edit(root, STANDINGS, mutate)
+
+    assert any(i.path == STANDINGS for i in issues_of(root))
+
+
+def test_a_tie_of_a_league_is_reported(root: Path) -> None:
+    edit(root, STANDINGS, lambda d: d["ties"][0].update(competition="liga-test"))
+
+    assert_issue(issues_of(root), STANDINGS, "ties.0.competition", "not a knockout")
+
+
+def test_a_tie_in_a_group_stage_is_reported(root: Path) -> None:
+    def mutate(d: dict[str, Any]) -> None:
+        tie = d["ties"][-1]
+        tie["stage"] = "groups"
+
+    edit(root, STANDINGS, mutate)
+
+    assert_issue(issues_of(root), STANDINGS, ".stage", "unknown knockout stage")
+
+
+def test_the_real_league_played_must_match_the_final_table(root: Path) -> None:
+    edit(root, SQUAD, lambda d: d["real_league"].update(played=d["real_league"]["played"] + 1))
+
+    assert_issue(issues_of(root), SQUAD, "real_league.played", "standings")
+
+
+def test_a_dilemma_effect_on_a_squadless_rival_is_reported(root: Path) -> None:
+    edit(
+        root,
+        DILEMMAS,
+        lambda d: d["dilemmas"][4]["options"][0]["effects"][0].update(
+            to_club_season="placeholder-town-2000-01"
+        ),
+    )
+
+    assert_issue(issues_of(root), DILEMMAS, "to_club_season", "no squad")
+
+
+def test_a_dilemma_effect_that_targets_the_own_team_is_reported(root: Path) -> None:
+    edit(
+        root,
+        DILEMMAS,
+        lambda d: d["dilemmas"][4]["options"][0]["effects"][0].update(to_club_season=OWN),
+    )
+
+    assert_issue(issues_of(root), DILEMMAS, "to_club_season", "own team")
