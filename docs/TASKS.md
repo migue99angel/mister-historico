@@ -3,6 +3,7 @@
 > Parte de [`PLAN.md`](./PLAN.md): arquitectura en §3, testing en §4, fases en §5 y reglas de trabajo en paralelo en §6.
 > **Formato de cada tarea:** ID · capa · oleada · tamaño (S < ½ día de agente, M ≈ 1 día, L > 1 día) · dependencias · **propiedad** (los únicos ficheros que puede tocar) · qué hacer · **tests primero** (los casos que se escriben en rojo antes de implementar) · criterios de aceptación.
 > Los ADR se nombran `NNN-slug-en-espanol.md` y los redacta la tarea que los tiene en su propiedad.
+> **Fuente de verdad de los contratos ya integrados:** `contracts/openapi.yaml` (API), `docs/content/content-format.md` y `content/schema/` (contenido), `docs/adr/005-*` (azar). Si el texto de una tarea contradice esos ficheros, mandan ellos.
 > Todas las tareas comparten esta definición de hecho: **ciclo TDD con commits separados, CI en verde, umbrales de cobertura de §4.3, ninguna regla de capas violada y una PR revisada.**
 > Las tareas marcadas **[HUMANO]** las cierra el autor. Las marcas [P2], [P6], etc. indican la decisión de PLAN §2 en la que se basa la tarea.
 
@@ -127,7 +128,7 @@
 - **Qué hacer:**
   - Modelos Pydantic para cada fichero de contenido (ADR-007 y ADR-015):
     - `content/clubs/<club>.yaml`: nombre, nombre corto y colores.
-    - `content/club-seasons/<club>-<temporada>/squad.yaml`: jugadores con `player_id` estable entre temporadas, `display_name`, `alias_name`, posición, edad, `rating` de 1 a 99, `key: bool`, `rating_rationale` (obligatorio si `key: true`), `sources` y `joined_on`/`left_on` (para las altas y bajas a mitad de temporada). Además, `real_goals_for/against` en la liga, que se usan para calibrar la fuerza (P6).
+    - `content/club-seasons/<club>-<temporada>/squad.yaml`: jugadores con `player_id` estable entre temporadas, `display_name`, `alias_name`, posición, edad, `rating` de 1 a 99, `key: bool`, `rating_rationale` (obligatorio si `key: true`), `sources` y `joined_on`/`left_on` (para las altas y bajas a mitad de temporada). Además, `real_league {competition_label, played, goals_for, goals_against}`, que se usa para calibrar la fuerza (P6).
     - `content/club-seasons/<club>-<temporada>/aggregate.yaml`: la alternativa sin plantilla para los rivales de fuera de Primera (solo fuerza agregada).
     - `content/seasons/<slug>/season.yaml`: el `ClubSeason` propio, el entrenador real, las competiciones con la lista de participantes (referencias a club-seasons), los objetivos de la directiva y el `historical_outcome` con sus fuentes.
     - `fixtures.yaml`: fecha, competición, rival (una referencia a un club-season), condición de local o visitante, resultado real y fuente.
@@ -168,9 +169,9 @@
   - Diseñar el contrato antes que el código, con estos endpoints:
     - `GET /seasons`
     - `GET /seasons/{id}`: contexto, objetivos y plantilla resumida.
-    - `POST /runs`: devuelve `run_id` y el estado inicial; la semilla vive en el servidor.
+    - `POST /runs`: devuelve `{runToken, run}`; la semilla vive en el servidor y las escrituras exigen `Authorization: Bearer <runToken>`.
     - `GET /runs/{id}`
-    - `POST /runs/{id}/decisions`: `{dilemma_id, option_id}` con la cabecera `Idempotency-Key`.
+    - `POST /runs/{id}/decisions`: `{dilemmaId, optionId, expectedVersion}` con la cabecera `Idempotency-Key`.
     - `POST /runs/{id}/advance`
     - `GET /runs/{id}/result`
     - `POST /runs/{id}/alias`
