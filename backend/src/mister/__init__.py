@@ -1,1 +1,1 @@
-"""Míster Histórico: backend."""
+"""Míster Histórico backend."""
