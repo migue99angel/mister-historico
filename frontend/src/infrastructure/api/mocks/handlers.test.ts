@@ -266,6 +266,67 @@ describe('run token', () => {
   });
 });
 
+describe('order of checks', () => {
+  const unknownRun = '00000000-0000-4000-8000-000000000000';
+  const wrongToken = 'wrong-token-wrong-token-wrong-token-wrong-token';
+
+  it('answers 400 for a malformed runId before looking at the token', async () => {
+    const reply = await call<Problem>('GET', '/runs/{runId}', {
+      params: { runId: 'not-a-uuid' },
+      token: false,
+    });
+    expect(reply.status).toBe(400);
+  });
+
+  it('answers 401 for a missing token before looking for the run', async () => {
+    const reply = await call<Problem>('GET', '/runs/{runId}', {
+      params: { runId: unknownRun },
+      token: false,
+    });
+    expect(reply.status).toBe(401);
+  });
+
+  it('answers 404 for an unknown run before checking the token', async () => {
+    const reply = await call<Problem>('GET', '/runs/{runId}', {
+      params: { runId: unknownRun },
+      token: wrongToken,
+    });
+    expect(reply.status).toBe(404);
+  });
+
+  it('answers 403 for a wrong token before validating the body', async () => {
+    const run = await startRun();
+    const reply = await call<Problem>('POST', '/runs/{runId}/advance', {
+      params: { runId: run.runId },
+      token: wrongToken,
+      body: {},
+    });
+    expect(reply.status).toBe(403);
+  });
+
+  it('validates the body (400) before the idempotent replay and the version', async () => {
+    const run = await startRun();
+    const reply = await call<Problem>('POST', '/runs/{runId}/advance', {
+      params: { runId: run.runId },
+      headers: { 'Idempotency-Key': nextKey() },
+      body: { expectedVersion: 'not-a-number' },
+    });
+    expect(reply.status).toBe(400);
+  });
+
+  it('checks expectedVersion (409) before the business rules', async () => {
+    const run = await startRun();
+    const dilemma = run.pendingDilemmas[0];
+    const reply = await call<Problem>('POST', '/runs/{runId}/decisions', {
+      params: { runId: run.runId },
+      headers: { 'Idempotency-Key': nextKey() },
+      body: { dilemmaId: dilemma?.id, optionId: 'not-an-option', expectedVersion: run.version + 1 },
+    });
+    expect(reply.status).toBe(409);
+    expect(reply.body.code).toBe('version_conflict');
+  });
+});
+
 describe('decisions', () => {
   it('rejects a decision without Idempotency-Key with 400 problem+json', async () => {
     const run = await startRun();
@@ -425,6 +486,10 @@ describe('advancing', () => {
     const row = summary?.standings[0]?.rows[0];
     expect(row?.team.colors.primary).toMatch(/^#[0-9a-f]{6}$/i);
     expect(row?.team.clubSeasonId).toBeTruthy();
+    const teams = summary?.standings.flatMap((table) => table.rows.map((r) => r.team)) ?? [];
+    expect(teams.every((team) => !team.clubSeasonId.startsWith('_'))).toBe(true);
+    const venues = ['home', 'away', 'neutral'];
+    expect(summary?.results.every((match) => venues.includes(match.venue))).toBe(true);
   });
 
   it('does not advance twice when the same Idempotency-Key is repeated', async () => {

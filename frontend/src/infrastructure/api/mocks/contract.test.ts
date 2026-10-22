@@ -129,15 +129,84 @@ describe('OpenAPI contract', () => {
     expect(info.description).toContain('validation_error');
   });
 
-  it('limits slugs to 64 characters and only allows a leading underscore in ClubSeasonId', () => {
-    const schemas = (
-      openApiDocument.components as {
-        schemas: Record<string, { pattern?: string; maxLength?: number }>;
-      }
-    ).schemas;
-    expect(schemas.Slug?.maxLength).toBe(64);
-    expect(new RegExp(schemas.Slug?.pattern ?? '').test('_aggregate')).toBe(false);
-    expect(new RegExp(schemas.ClubSeasonId?.pattern ?? '').test('_aggregate-2000-01')).toBe(true);
-    expect(schemas.ClubSeasonId?.maxLength).toBe(64);
+  type SchemaMap = Record<
+    string,
+    {
+      pattern?: string;
+      maxLength?: number;
+      enum?: string[];
+      required?: string[];
+      properties?: Record<string, unknown>;
+    }
+  >;
+  const schemas = (): SchemaMap => (openApiDocument.components as { schemas: SchemaMap }).schemas;
+  const systemPattern = (): RegExp =>
+    new RegExp((schemas().Tactic?.properties as { system: { pattern: string } }).system.pattern);
+
+  it('limits slugs to 64 characters and only allows the _market- prefix in ClubSeasonId', () => {
+    expect(schemas().Slug?.maxLength).toBe(64);
+    expect(new RegExp(schemas().Slug?.pattern ?? '').test('_market-2000-01')).toBe(false);
+    const clubSeason = new RegExp(schemas().ClubSeasonId?.pattern ?? '');
+    expect(clubSeason.test('_market-2000-01')).toBe(true);
+    expect(clubSeason.test('athletic-ensayo-2000-01')).toBe(true);
+    expect(clubSeason.test('_aggregate-2000-01')).toBe(false);
+    expect(schemas().ClubSeasonId?.maxLength).toBe(64);
+  });
+
+  it.each(['4-4-2', '4-1-2-1-2', '3-4-1-2', '1-1-1-1-6'])(
+    'accepts the tactic system %s',
+    (system) => {
+      expect(systemPattern().test(system)).toBe(true);
+    },
+  );
+
+  it.each(['4-4', '4-4-0', '1-1-1-1-1-6', '10-0-0'])('rejects the tactic system %s', (system) => {
+    expect(systemPattern().test(system)).toBe(false);
+  });
+
+  it('lists the knockout rounds in canonical order', () => {
+    expect(schemas().KnockoutRound?.enum).toEqual([
+      'qualifying',
+      'playoff',
+      'group_stage',
+      'round_of_128',
+      'round_of_64',
+      'round_of_32',
+      'round_of_16',
+      'quarter_final',
+      'semi_final',
+      'final',
+    ]);
+  });
+
+  it('documents the exact order of checks of run commands', () => {
+    const info = openApiDocument.info as { description: string };
+    const steps = [
+      'malformed `runId`',
+      'missing token',
+      'unknown run',
+      'wrong token',
+      'body validation',
+      'idempotent replay',
+      '`expectedVersion`',
+      'business rules',
+    ];
+    const positions = steps.map((step) => info.description.indexOf(step));
+    expect(positions.every((position) => position >= 0)).toBe(true);
+    expect(positions).toEqual([...positions].sort((a, b) => a - b));
+  });
+
+  it('adds venue to MatchReport and optional stageId and groupId to Standings', () => {
+    expect(schemas().MatchReport?.required).toContain('venue');
+    expect(schemas().Venue?.enum).toEqual(['home', 'away', 'neutral']);
+    expect(Object.keys(schemas().Standings?.properties ?? {})).toEqual(
+      expect.arrayContaining(['stageId', 'groupId']),
+    );
+    expect(schemas().Standings?.required).not.toContain('stageId');
+    expect(schemas().Standings?.required).not.toContain('groupId');
+  });
+
+  it('gives a dilemma option only an id and a label', () => {
+    expect(Object.keys(schemas().DilemmaOption?.properties ?? {})).toEqual(['id', 'label']);
   });
 });
