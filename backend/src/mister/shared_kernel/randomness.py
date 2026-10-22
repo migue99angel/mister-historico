@@ -40,7 +40,7 @@ class RandomSource(Protocol):
     """Port for deterministic randomness. Same seed and same keys give the same values."""
 
     def stream(self, *keys: Key) -> Self:
-        """Derive an independent child source for `keys`, without consuming this one."""
+        """Derive an independent child source for `keys` (at least one), without consuming this one."""
         ...
 
     def random(self) -> float:
@@ -95,6 +95,8 @@ class StdlibRandomSource:
     def stream(self, *keys: Key) -> Self:
         """Derive `stream(*keys)`. Nesting composes: `s.stream("a").stream("b")` equals
         `s.stream("a", "b")`. The parent state is not touched."""
+        if len(keys) == 0:
+            raise InvalidValueError("stream needs at least one key")
         return type(self)(self._seed, (*self._keys, *keys))
 
     def random(self) -> float:
@@ -106,6 +108,11 @@ class StdlibRandomSource:
 
         Valid for `0 < lam <= POISSON_MAX_LAMBDA`; expected cost is O(lam). Using a single
         draw per call keeps the number of draws consumed independent of the outcome.
+
+        The search stops at `k_max = ceil(lam + 12 * sqrt(lam) + 20)`. Without the cut, a
+        draw above the largest representable cdf (rounding leaves it just below 1) would
+        walk far into the tail. The cut biases only outcomes beyond 12 standard deviations,
+        whose probability is below 1e-30: negligible.
         """
         if not math.isfinite(lam) or not 0.0 < lam <= POISSON_MAX_LAMBDA:
             raise InvalidValueError(
@@ -115,8 +122,8 @@ class StdlibRandomSource:
         k = 0
         p = math.exp(-lam)
         cdf = p
-        # `p > 0.0` bounds the loop if rounding leaves the accumulated cdf just below u.
-        while u > cdf and p > 0.0:
+        k_max = math.ceil(lam + 12 * math.sqrt(lam) + 20)
+        while u > cdf and k < k_max:
             k += 1
             p *= lam / k
             cdf += p
