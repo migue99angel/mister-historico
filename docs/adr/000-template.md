@@ -4,7 +4,7 @@
 - **Fecha:** AAAA-MM-DD
 - **Relacionado con:** PLAN §x.y, brief §z, ADR-XXX (opcional)
 
-> Plantilla MADR ligera. Copia este fichero como `NNN-slug.md` (número de tres cifras y slug corto en kebab-case).
+> Plantilla MADR ligera. Copia este fichero como `NNN-slug.md` (número de tres cifras y slug corto en español, en kebab-case y sin tildes).
 > Un ADR registra **una** decisión y su porqué. No se reescribe después de aceptarse: si la decisión cambia, se escribe un ADR nuevo que la sustituye y en este solo se actualiza el estado.
 
 ## Contexto

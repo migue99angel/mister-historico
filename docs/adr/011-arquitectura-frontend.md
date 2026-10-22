@@ -20,10 +20,10 @@
 | Capa | Contenido | Puede importar |
 |---|---|---|
 | `domain/` | View models y funciones puras (narrativa del bloque, formato de resultados con prórroga y penaltis, progreso). | Nada de las otras capas. |
-| `application/` | Hooks de casos de uso (`useStartRun`, `useTakeDecision`…) y puertos (`ports.ts`, por ejemplo `GameApi`). | `domain/`. |
-| `infrastructure/` | Adaptador HTTP sobre el cliente generado, configuración de TanStack Query, analítica y handlers de MSW. | `application/` (para implementar puertos) y `domain/`. |
+| `application/` | Hooks de casos de uso (`useStartRun`, `useTakeDecision`…) sobre TanStack Query, y puertos (`ports.ts`, por ejemplo `GameApi`). | `domain/` y `@tanstack/react-query`. Nunca `infrastructure/`. |
+| `infrastructure/` | Adaptadores: el HTTP sobre el cliente generado, la analítica y los handlers de MSW. | `application/` (para implementar puertos) y `domain/`. |
 | `ui/` | Componentes y pantallas, y el sistema de diseño. | Solo `application/` y `domain/`. **Nunca `infrastructure/`.** |
-| `app/` y `main.tsx` | Composition root: rutas, proveedores y cableado de adaptadores. | Todo. |
+| `app/` (incluido `main.tsx`) | Composition root: rutas, proveedores (el `QueryClient`, entre otros) y cableado de los puertos con sus adaptadores. | Todo. **Es la única capa que importa `infrastructure/`.** |
 
 Además:
 
@@ -31,7 +31,7 @@ Además:
 - **Tailwind CSS** con tokens propios (color, tipografía, espaciado) en el sistema de diseño. Objetivos táctiles de al menos 44 px. Sin escudos ni logos reales: `GenericCrest` se genera a partir de los colores del club.
 - **Contract-first:** el cliente TypeScript se genera con `openapi-typescript` a partir de `contracts/openapi.yaml`, y la CI falla si hay diferencias. Los handlers de **MSW** sirven datos de Test FC que validan contra el esquema, y se usan en los tests y en el modo de desarrollo hasta que la API real está lista.
 - **Presupuesto de rendimiento bloqueante:** **< 100 KB gz de JS inicial** (comprobado con `size-limit`) y **Lighthouse móvil ≥ 90** en rendimiento y accesibilidad (Lighthouse CI).
-- **Pruebas:** Vitest y Testing Library para `domain/`, hooks y componentes (cobertura ≥ 90 % en `domain` + `application`), y Playwright con perfiles de Pixel 7 e iPhone 14 para los E2E, primero contra MSW y después contra el backend real.
+- **Pruebas:** Vitest y Testing Library para `domain/`, hooks y componentes (cobertura ≥ 90 % en `domain` + `application`), y Playwright con perfiles de Pixel 7 e iPhone 14 (los dos emulados sobre Chromium, para no depender de WebKit en la CI) para los E2E, primero contra MSW y después contra el backend real.
 - **Textos de usuario en español de España** según el [glosario](../glossary.md); identificadores en inglés.
 - La página pública `/r/<id>` la sirve el backend con las meta OG (ADR-010), porque los crawlers no ejecutan la SPA; la SPA se monta encima.
 
@@ -49,10 +49,12 @@ Además:
 - **Positivas:**
   - El frontend avanza en paralelo con el backend desde la F1 gracias a MSW y al contrato congelado.
   - La lógica de presentación (narrativa, formatos) es pura y se prueba con tablas de casos, sin renderizar.
-  - Cambiar el transporte o la caché solo toca `infrastructure/`.
+  - Cambiar el transporte solo toca `infrastructure/` y el cableado de `app/`; `ui/` y `application/` no se enteran.
   - El presupuesto y Lighthouse en la CI evitan que el bundle crezca sin que nadie se dé cuenta.
 - **Negativas y trade-offs:**
   - React parte de un tamaño base mayor que Svelte: cada dependencia nueva tiene que justificarse frente al presupuesto, y puede hacer falta *code splitting* por ruta.
+  - Los hooks de `application/` dependen de TanStack Query: es un acoplamiento aceptado a una biblioteca, no a un adaptador, porque reescribir la caché a mano no compensa.
+  - El iPhone 14 emulado sobre Chromium no detecta fallos propios de Safari/WebKit; si aparecen en la beta, habrá que añadir un proyecto WebKit a Playwright.
   - Más capas de las que una SPA pequeña suele tener; hay que evitar crear abstracciones vacías (un hook de `application/` que solo reenvía una llamada está bien si mantiene `ui/` libre de `infrastructure/`).
   - Los handlers de MSW son una segunda implementación del contrato: hay que validarlos contra el esquema para que no mientan.
   - Sin store global, el estado compartido entre pantallas tiene que vivir en la caché de TanStack Query o en la URL; eso obliga a diseñar bien las claves de las consultas.
