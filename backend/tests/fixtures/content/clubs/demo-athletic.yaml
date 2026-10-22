@@ -1,0 +1,7 @@
+schema_version: 1
+club_id: demo-athletic
+name: Demo Athletic
+short_name: DMA
+colors:
+  primary: '#2E8B57'
+  secondary: '#FFFF00'

@@ -1,0 +1,7 @@
+schema_version: 1
+club_id: test-fc
+name: Test FC
+short_name: TFC
+colors:
+  primary: '#1F4E79'
+  secondary: '#FFFFFF'

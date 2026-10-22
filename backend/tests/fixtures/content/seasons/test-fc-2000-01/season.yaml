@@ -1,0 +1,94 @@
+schema_version: 1
+slug: test-fc-2000-01
+club_season: test-fc-2000-01
+season: 2000-01
+manager:
+  display_name: Mister Ficticio
+  alias_name: El Profesor
+  sources:
+  - https://example.org/test-content/manager/mister-ficticio
+  verify: ok
+blocks:
+- id: b1
+  label: Agosto-septiembre
+  start: 2000-08-01
+  end: 2000-09-30
+- id: b2
+  label: Octubre-noviembre
+  start: 2000-10-01
+  end: 2000-11-30
+- id: b3
+  label: Diciembre-enero
+  start: 2000-12-01
+  end: 2001-01-31
+- id: b4
+  label: Febrero-marzo
+  start: 2001-02-01
+  end: 2001-03-31
+- id: b5
+  label: Abril-mayo
+  start: 2001-04-01
+  end: 2001-05-31
+competitions:
+- kind: league
+  id: liga-test
+  name: Liga Test
+  participants:
+  - test-fc-2000-01
+  - sample-united-2000-01
+  - demo-athletic-2000-01
+  - mock-city-2000-01
+  - dummy-rovers-2000-01
+  - fixture-wanderers-2000-01
+  rounds: 2
+  points_per_win: 3
+  points_per_draw: 1
+  tiebreakers:
+  - head_to_head_points
+  - goal_difference
+  - goals_for
+- kind: cup
+  id: copa-test
+  name: Copa Test
+  participants:
+  - test-fc-2000-01
+  - placeholder-town-2000-01
+  - sample-united-2000-01
+  - mock-city-2000-01
+  stages:
+  - id: semifinal
+    name: Semifinal
+    legs: 2
+    away_goals_rule: true
+    extra_time: false
+    penalties: true
+  - id: final
+    name: Final
+    legs: 1
+    away_goals_rule: false
+    extra_time: true
+    penalties: true
+board_objectives:
+- competition: liga-test
+  kind: finish_top
+  target_position: 3
+  text: Terminar entre los tres primeros de la Liga Test.
+- competition: copa-test
+  kind: reach_stage
+  target_stage: final
+  text: Llegar a la final de la Copa Test.
+historical_outcome:
+- competition: liga-test
+  champion: false
+  final_position: 2
+  eliminated_in: null
+  sources:
+  - https://example.org/test-content/outcome/liga-test
+  verify: ok
+- competition: copa-test
+  champion: true
+  final_position: null
+  eliminated_in: null
+  sources:
+  - https://example.org/test-content/outcome/copa-test
+  verify: ok

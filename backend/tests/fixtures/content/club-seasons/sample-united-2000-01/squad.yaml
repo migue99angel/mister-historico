@@ -1,0 +1,216 @@
+schema_version: 1
+club_season: sample-united-2000-01
+club: sample-united
+season: 2000-01
+real_goals_for: 11
+real_goals_against: 13
+sources:
+- https://example.org/test-content/squads/sample-united-2000-01
+verify: ok
+players:
+- player_id: smu-01
+  display_name: Wilo Mocko
+  alias_name: Jugador SMU-01
+  position: GK
+  age: 28
+  rating: 68
+  key: false
+  sources:
+  - https://example.org/test-content/squads/sample-united-2000-01
+  verify: ok
+- player_id: smu-02
+  display_name: Xavi Stubby
+  alias_name: Jugador SMU-02
+  position: GK
+  age: 29
+  rating: 66
+  key: false
+  sources:
+  - https://example.org/test-content/squads/sample-united-2000-01
+  verify: ok
+- player_id: smu-03
+  display_name: Yago Sampleton
+  alias_name: Jugador SMU-03
+  position: DF
+  age: 32
+  rating: 79
+  key: false
+  sources:
+  - https://example.org/test-content/squads/sample-united-2000-01
+  verify: ok
+- player_id: smu-04
+  display_name: Zeno Fakerson
+  alias_name: Jugador SMU-04
+  position: DF
+  age: 25
+  rating: 79
+  key: false
+  sources:
+  - https://example.org/test-content/squads/sample-united-2000-01
+  verify: ok
+- player_id: smu-05
+  display_name: Aldo Placebo
+  alias_name: Jugador SMU-05
+  position: DF
+  age: 28
+  rating: 72
+  key: false
+  sources:
+  - https://example.org/test-content/squads/sample-united-2000-01
+  verify: ok
+- player_id: smu-06
+  display_name: Beto Ficticio
+  alias_name: Jugador SMU-06
+  position: DF
+  age: 34
+  rating: 81
+  key: true
+  sources:
+  - https://example.org/test-content/squads/sample-united-2000-01
+  verify: ok
+  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+    rated above the squad average.'
+- player_id: smu-07
+  display_name: Cleo Inventado
+  alias_name: Jugador SMU-07
+  position: DF
+  age: 31
+  rating: 79
+  key: false
+  sources:
+  - https://example.org/test-content/squads/sample-united-2000-01
+  verify: ok
+- player_id: smu-08
+  display_name: Dani Muestra
+  alias_name: Jugador SMU-08
+  position: DF
+  age: 20
+  rating: 81
+  key: true
+  sources:
+  - https://example.org/test-content/squads/sample-united-2000-01
+  verify: ok
+  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+    rated above the squad average.'
+- player_id: smu-09
+  display_name: Eloy Ejemplo
+  alias_name: Jugador SMU-09
+  position: DF
+  age: 26
+  rating: 78
+  key: false
+  sources:
+  - https://example.org/test-content/squads/sample-united-2000-01
+  verify: ok
+- player_id: smu-10
+  display_name: Fito Simulado
+  alias_name: Jugador SMU-10
+  position: MF
+  age: 32
+  rating: 75
+  key: false
+  sources:
+  - https://example.org/test-content/squads/sample-united-2000-01
+  verify: ok
+- player_id: smu-11
+  display_name: Gael Prueba
+  alias_name: Jugador SMU-11
+  position: MF
+  age: 30
+  rating: 68
+  key: false
+  sources:
+  - https://example.org/test-content/squads/sample-united-2000-01
+  verify: ok
+- player_id: smu-12
+  display_name: Hugo Falso
+  alias_name: Jugador SMU-12
+  position: MF
+  age: 30
+  rating: 80
+  key: true
+  sources:
+  - https://example.org/test-content/squads/sample-united-2000-01
+  verify: ok
+  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+    rated above the squad average.'
+- player_id: smu-13
+  display_name: Ivo Dummy
+  alias_name: Jugador SMU-13
+  position: MF
+  age: 33
+  rating: 65
+  key: false
+  sources:
+  - https://example.org/test-content/squads/sample-united-2000-01
+  verify: ok
+- player_id: smu-14
+  display_name: Jano Mocko
+  alias_name: Jugador SMU-14
+  position: MF
+  age: 22
+  rating: 79
+  key: false
+  sources:
+  - https://example.org/test-content/squads/sample-united-2000-01
+  verify: ok
+- player_id: smu-15
+  display_name: Kiko Stubby
+  alias_name: Jugador SMU-15
+  position: MF
+  age: 35
+  rating: 68
+  key: false
+  sources:
+  - https://example.org/test-content/squads/sample-united-2000-01
+  verify: ok
+- player_id: smu-16
+  display_name: Lalo Sampleton
+  alias_name: Jugador SMU-16
+  position: MF
+  age: 30
+  rating: 75
+  key: false
+  sources:
+  - https://example.org/test-content/squads/sample-united-2000-01
+  verify: ok
+- player_id: smu-17
+  display_name: Mati Fakerson
+  alias_name: Jugador SMU-17
+  position: FW
+  age: 19
+  rating: 78
+  key: false
+  sources:
+  - https://example.org/test-content/squads/sample-united-2000-01
+  verify: ok
+- player_id: smu-18
+  display_name: Nico Testoni
+  alias_name: Jugador SMU-18
+  position: FW
+  age: 20
+  rating: 78
+  key: false
+  sources:
+  - https://example.org/test-content/squads/sample-united-2000-01
+  verify: ok
+- player_id: smu-19
+  display_name: Oleg Placebo
+  alias_name: Jugador SMU-19
+  position: FW
+  age: 31
+  rating: 72
+  key: false
+  sources:
+  - https://example.org/test-content/squads/sample-united-2000-01
+  verify: ok
+- player_id: smu-20
+  display_name: Pepe Ficticio
+  alias_name: Jugador SMU-20
+  position: FW
+  age: 24
+  rating: 68
+  key: false
+  sources:
+  - https://example.org/test-content/squads/sample-united-2000-01
+  verify: ok

@@ -1,0 +1,207 @@
+schema_version: 1
+club_season: demo-athletic-2000-01
+club: demo-athletic
+season: 2000-01
+real_goals_for: 15
+real_goals_against: 9
+sources:
+- https://example.org/test-content/squads/demo-athletic-2000-01
+verify: ok
+players:
+- player_id: dma-01
+  display_name: Quim Inventado
+  alias_name: Jugador DMA-01
+  position: GK
+  age: 26
+  rating: 73
+  key: false
+  sources:
+  - https://example.org/test-content/squads/demo-athletic-2000-01
+  verify: ok
+- player_id: dma-02
+  display_name: Rafa Muestra
+  alias_name: Jugador DMA-02
+  position: GK
+  age: 25
+  rating: 57
+  key: false
+  sources:
+  - https://example.org/test-content/squads/demo-athletic-2000-01
+  verify: ok
+- player_id: dma-03
+  display_name: Saul Ejemplo
+  alias_name: Jugador DMA-03
+  position: DF
+  age: 26
+  rating: 74
+  key: true
+  sources:
+  - https://example.org/test-content/squads/demo-athletic-2000-01
+  verify: ok
+  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+    rated above the squad average.'
+- player_id: dma-04
+  display_name: Teo Simulado
+  alias_name: Jugador DMA-04
+  position: DF
+  age: 35
+  rating: 69
+  key: false
+  sources:
+  - https://example.org/test-content/squads/demo-athletic-2000-01
+  verify: ok
+- player_id: dma-05
+  display_name: Uri Prueba
+  alias_name: Jugador DMA-05
+  position: DF
+  age: 30
+  rating: 68
+  key: false
+  sources:
+  - https://example.org/test-content/squads/demo-athletic-2000-01
+  verify: ok
+- player_id: dma-06
+  display_name: Vito Falso
+  alias_name: Jugador DMA-06
+  position: DF
+  age: 27
+  rating: 71
+  key: false
+  sources:
+  - https://example.org/test-content/squads/demo-athletic-2000-01
+  verify: ok
+- player_id: dma-07
+  display_name: Wilo Dummy
+  alias_name: Jugador DMA-07
+  position: DF
+  age: 19
+  rating: 74
+  key: true
+  sources:
+  - https://example.org/test-content/squads/demo-athletic-2000-01
+  verify: ok
+  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+    rated above the squad average.'
+- player_id: dma-08
+  display_name: Xavi Mocko
+  alias_name: Jugador DMA-08
+  position: DF
+  age: 35
+  rating: 69
+  key: false
+  sources:
+  - https://example.org/test-content/squads/demo-athletic-2000-01
+  verify: ok
+- player_id: dma-09
+  display_name: Yago Stubby
+  alias_name: Jugador DMA-09
+  position: DF
+  age: 35
+  rating: 61
+  key: false
+  sources:
+  - https://example.org/test-content/squads/demo-athletic-2000-01
+  verify: ok
+- player_id: dma-10
+  display_name: Zeno Sampleton
+  alias_name: Jugador DMA-10
+  position: MF
+  age: 25
+  rating: 74
+  key: false
+  sources:
+  - https://example.org/test-content/squads/demo-athletic-2000-01
+  verify: ok
+- player_id: dma-11
+  display_name: Aldo Testoni
+  alias_name: Jugador DMA-11
+  position: MF
+  age: 20
+  rating: 70
+  key: false
+  sources:
+  - https://example.org/test-content/squads/demo-athletic-2000-01
+  verify: ok
+- player_id: dma-12
+  display_name: Beto Placebo
+  alias_name: Jugador DMA-12
+  position: MF
+  age: 30
+  rating: 72
+  key: false
+  sources:
+  - https://example.org/test-content/squads/demo-athletic-2000-01
+  verify: ok
+- player_id: dma-13
+  display_name: Cleo Ficticio
+  alias_name: Jugador DMA-13
+  position: MF
+  age: 25
+  rating: 75
+  key: true
+  sources:
+  - https://example.org/test-content/squads/demo-athletic-2000-01
+  verify: ok
+  rating_rationale: 'Fictional rationale: one of the three best outfield players of this synthetic squad,
+    rated above the squad average.'
+- player_id: dma-14
+  display_name: Dani Inventado
+  alias_name: Jugador DMA-14
+  position: MF
+  age: 32
+  rating: 73
+  key: false
+  sources:
+  - https://example.org/test-content/squads/demo-athletic-2000-01
+  verify: ok
+- player_id: dma-15
+  display_name: Eloy Muestra
+  alias_name: Jugador DMA-15
+  position: MF
+  age: 30
+  rating: 72
+  key: false
+  sources:
+  - https://example.org/test-content/squads/demo-athletic-2000-01
+  verify: ok
+- player_id: dma-16
+  display_name: Fito Ejemplo
+  alias_name: Jugador DMA-16
+  position: MF
+  age: 30
+  rating: 70
+  key: false
+  sources:
+  - https://example.org/test-content/squads/demo-athletic-2000-01
+  verify: ok
+- player_id: dma-17
+  display_name: Gael Simulado
+  alias_name: Jugador DMA-17
+  position: FW
+  age: 29
+  rating: 57
+  key: false
+  sources:
+  - https://example.org/test-content/squads/demo-athletic-2000-01
+  verify: ok
+- player_id: dma-18
+  display_name: Hugo Prueba
+  alias_name: Jugador DMA-18
+  position: FW
+  age: 19
+  rating: 71
+  key: false
+  sources:
+  - https://example.org/test-content/squads/demo-athletic-2000-01
+  verify: ok
+- player_id: xfer-01
+  display_name: Trasp Inventado
+  alias_name: Jugador XFER-01
+  position: MF
+  age: 27
+  rating: 61
+  key: false
+  verify: ok
+  left_on: 2000-12-31
+  sources:
+  - https://example.org/test-content/squads/demo-athletic-2000-01

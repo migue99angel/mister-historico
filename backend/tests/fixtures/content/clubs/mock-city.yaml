@@ -1,0 +1,7 @@
+schema_version: 1
+club_id: mock-city
+name: Mock City
+short_name: MCT
+colors:
+  primary: '#4682B4'
+  secondary: '#F5F5F5'

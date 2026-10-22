@@ -1,0 +1,7 @@
+schema_version: 1
+club_id: sample-united
+name: Sample United
+short_name: SMU
+colors:
+  primary: '#B22222'
+  secondary: '#FFFFFF'
