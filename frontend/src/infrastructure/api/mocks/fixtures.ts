@@ -18,7 +18,7 @@ const KEY_PLAYERS: Schemas['PlayerSummary'][] = [
   {
     id: 'ivan-delantero',
     displayName: 'Ivan Delantero',
-    position: 'forward',
+    position: 'FW',
     age: 27,
     rating: 84,
     key: true,
@@ -26,7 +26,7 @@ const KEY_PLAYERS: Schemas['PlayerSummary'][] = [
   {
     id: 'marco-medio',
     displayName: 'Marco Medio',
-    position: 'midfielder',
+    position: 'MF',
     age: 30,
     rating: 79,
     key: true,
@@ -34,12 +34,25 @@ const KEY_PLAYERS: Schemas['PlayerSummary'][] = [
   {
     id: 'pablo-portero',
     displayName: 'Pablo Portero',
-    position: 'goalkeeper',
+    position: 'GK',
     age: 33,
     rating: 77,
     key: true,
   },
 ];
+
+const LEAGUE: Schemas['Competition'] = {
+  id: 'liga-test',
+  name: 'Liga Test',
+  kind: 'league',
+  tier: 'domestic_league',
+};
+const CUP: Schemas['Competition'] = {
+  id: 'copa-test',
+  name: 'Copa Test',
+  kind: 'cup',
+  tier: 'domestic_cup',
+};
 
 export const SEASON_DETAILS: Schemas['SeasonDetail'][] = [
   {
@@ -63,10 +76,7 @@ export const SEASON_DETAILS: Schemas['SeasonDetail'][] = [
       },
     ],
     squad: { size: 22, averageRating: 74.5, keyPlayers: KEY_PLAYERS },
-    competitions: [
-      { id: 'liga-test', name: 'Liga Test', kind: 'league' },
-      { id: 'copa-test', name: 'Copa Test', kind: 'cup' },
-    ],
+    competitions: [LEAGUE, CUP],
     blockCount: 5,
   },
   {
@@ -85,7 +95,7 @@ export const SEASON_DETAILS: Schemas['SeasonDetail'][] = [
       },
     ],
     squad: { size: 21, averageRating: 70, keyPlayers: KEY_PLAYERS.slice(0, 2) },
-    competitions: [{ id: 'liga-test', name: 'Liga Test', kind: 'league' }],
+    competitions: [LEAGUE],
     blockCount: 5,
   },
 ];
@@ -93,29 +103,32 @@ export const SEASON_DETAILS: Schemas['SeasonDetail'][] = [
 export interface OptionDef {
   option: Schemas['DilemmaOption'];
   /** Hidden effects, never exposed through the API. */
-  effects: { morale: number; boardConfidence: number };
+  effects: {
+    morale: number;
+    boardConfidence: number;
+    tactic?: Schemas['TacticStyle'];
+    /** Priority applied to the cup, when the season has one. */
+    cupPriority?: Schemas['CompetitionPriorityLevel'];
+  };
 }
 
 export interface DilemmaDef {
   id: string;
-  category: Schemas['DilemmaCategory'];
+  title: string;
   prompt: string;
   options: OptionDef[];
 }
 
-function dilemma(
-  id: string,
-  category: Schemas['DilemmaCategory'],
-  prompt: string,
-  options: [string, string, number, number][],
-): DilemmaDef {
+type OptionTuple = [string, string, number, number, OptionDef['effects']?];
+
+function dilemma(id: string, title: string, prompt: string, options: OptionTuple[]): DilemmaDef {
   return {
     id,
-    category,
+    title,
     prompt,
-    options: options.map(([optionId, label, morale, boardConfidence]) => ({
+    options: options.map(([optionId, label, morale, boardConfidence, extra]) => ({
       option: { id: optionId, label },
-      effects: { morale, boardConfidence },
+      effects: { ...extra, morale, boardConfidence },
     })),
   };
 }
@@ -123,13 +136,13 @@ function dilemma(
 /** Dilemmas of each block, indexed by zero-based block. */
 export const DILEMMAS_BY_BLOCK: DilemmaDef[][] = [
   [
-    dilemma('board-meeting', 'dressing_room', 'The board questions your plan. How do you answer?', [
+    dilemma('board-meeting', 'Board meeting', 'The board questions your plan. How do you answer?', [
       ['support-the-board', 'Back the board in public', 0, 5],
       [SACK_OPTION_ID, 'Publicly confront the board', 10, -45],
     ]),
     dilemma(
       'summer-striker',
-      'market',
+      'Summer striker',
       'The board offers a budget for one striker. Who do you want?',
       [
         ['sign-the-veteran', 'Sign the veteran striker', 5, 0],
@@ -138,27 +151,50 @@ export const DILEMMAS_BY_BLOCK: DilemmaDef[][] = [
     ),
   ],
   [
-    dilemma('captain-complaint', 'dressing_room', 'The captain wants more say in the line-up.', [
-      ['listen-to-captain', 'Listen to the captain', 8, -2],
-      ['impose-authority', 'Impose your authority', -5, 3],
-    ]),
+    dilemma(
+      'captain-complaint',
+      'Captain complaint',
+      'The captain wants more say in the line-up.',
+      [
+        ['listen-to-captain', 'Listen to the captain', 8, -2],
+        ['impose-authority', 'Impose your authority', -5, 3],
+      ],
+    ),
   ],
   [
-    dilemma('winter-signing', 'market', 'A midfielder is available in the winter window.', [
+    dilemma('winter-signing', 'Winter signing', 'A midfielder is available in the winter window.', [
       ['sign-the-midfielder', 'Sign the midfielder', 4, 2],
       ['keep-the-squad', 'Keep the current squad', 2, 0],
     ]),
   ],
   [
-    dilemma('tactical-style', 'tactics', 'Your side is predictable. Change the style?', [
-      ['press-high', 'Press high', 3, 2],
-      ['counter-attack', 'Play on the counter', 1, 3],
+    dilemma('tactical-style', 'Tactical style', 'Your side is predictable. Change the style?', [
+      ['press-high', 'Press high', 3, 2, { morale: 3, boardConfidence: 2, tactic: 'pressing' }],
+      [
+        'counter-attack',
+        'Play on the counter',
+        1,
+        3,
+        { morale: 1, boardConfidence: 3, tactic: 'counter' },
+      ],
     ]),
   ],
   [
-    dilemma('final-rotation', 'rotation', 'A cup final is close and the squad is tired.', [
-      ['rotate-the-squad', 'Rotate the squad', -2, 1],
-      ['play-the-best-eleven', 'Play the best eleven', 4, 2],
+    dilemma('final-rotation', 'Final rotation', 'A cup final is close and the squad is tired.', [
+      [
+        'rotate-the-squad',
+        'Rotate the squad',
+        -2,
+        1,
+        { morale: -2, boardConfidence: 1, cupPriority: 'low' },
+      ],
+      [
+        'play-the-best-eleven',
+        'Play the best eleven',
+        4,
+        2,
+        { morale: 4, boardConfidence: 2, cupPriority: 'high' },
+      ],
     ]),
   ],
 ];
@@ -174,8 +210,38 @@ export const BLOCK_LABELS = [
 export const BLOCK_END_MONTH = [9, 11, 1, 3, 5];
 const BLOCK_DATES = ['2000-09-16', '2000-11-18', '2001-01-20', '2001-03-17', '2001-05-19'];
 
+const TEAMS: Record<string, Omit<Schemas['TeamRef'], 'isUser'>> = {
+  'Test FC': {
+    clubSeasonId: 'test-fc-2000-01',
+    name: 'Test FC',
+    shortName: 'TFC',
+    colors: { primary: '#1d4ed8', secondary: '#f8fafc' },
+  },
+  'Rovers Prueba': {
+    clubSeasonId: 'rovers-prueba-2000-01',
+    name: 'Rovers Prueba',
+    shortName: 'ROV',
+    colors: { primary: '#b91c1c', secondary: '#fde68a' },
+  },
+  'Union Ficticia': {
+    clubSeasonId: 'union-ficticia-2000-01',
+    name: 'Union Ficticia',
+    shortName: 'UFI',
+    colors: { primary: '#15803d', secondary: '#ffffff' },
+  },
+  // An aggregate rival (no squad): its id starts with an underscore.
+  'Athletic Ensayo': {
+    clubSeasonId: '_athletic-ensayo-2000-01',
+    name: 'Athletic Ensayo',
+    shortName: 'ATE',
+    colors: { primary: '#7e22ce', secondary: '#f1f5f9' },
+  },
+};
+
 function team(name: string, isUser = false): Schemas['TeamRef'] {
-  return { name, isUser };
+  const base = TEAMS[name];
+  if (!base) throw new Error(`unknown fixture team: ${name}`);
+  return { ...base, isUser };
 }
 
 /** Matches of each block. Block 3 has an extra-time cup tie and block 4 a shoot-out. */
@@ -254,25 +320,26 @@ export function resultsForBlock(block: number): Schemas['MatchReport'][] {
 export function standingsForBlock(block: number): Schemas['Standings'] {
   const played = (block + 1) * 4;
   const userPoints = played * 2 + 1;
-  const rows: Schemas['StandingRow'][] = [
+  const table: [string, boolean, number][] = [
     ['Test FC', true, userPoints],
     ['Rovers Prueba', false, userPoints - 2],
     ['Union Ficticia', false, userPoints - 4],
     ['Athletic Ensayo', false, userPoints - 7],
-  ].map(([name, isUser, points], index) => {
-    const pts = points as number;
-    const won = Math.floor(pts / 3);
+  ];
+  const rows = table.map(([name, isUser, points], index): Schemas['StandingRow'] => {
+    const won = Math.floor(points / 3);
+    const drawn = points - won * 3;
     return {
       position: index + 1,
       previousPosition: block === 0 ? null : index + 1,
-      team: team(name as string, isUser as boolean),
+      team: team(name, isUser),
       played,
       won,
-      drawn: pts - won * 3,
-      lost: Math.max(played - won - (pts - won * 3), 0),
+      drawn,
+      lost: Math.max(played - won - drawn, 0),
       goalsFor: won * 2 + 3,
       goalsAgainst: Math.max(played - won, 1),
-      points: pts,
+      points,
     };
   });
   return { competitionId: 'liga-test', competitionName: 'Liga Test', rows };

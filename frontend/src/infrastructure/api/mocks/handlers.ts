@@ -78,16 +78,18 @@ export const handlers: RequestHandler[] = [
   http.post(`${API}/runs`, ({ request }) =>
     respond(async () => {
       const body = await jsonBody(request);
-      const run = startRun(body.seasonId);
-      return HttpResponse.json(run, {
+      const started = startRun(body.seasonId);
+      return HttpResponse.json(started, {
         status: 201,
-        headers: { Location: `/api/runs/${run.runId}` },
+        headers: { Location: `/api/runs/${started.run.runId}` },
       });
     }),
   ),
 
-  http.get(`${API}/runs/:runId`, ({ params }) =>
-    respond(() => HttpResponse.json(getRun(String(params.runId)))),
+  http.get(`${API}/runs/:runId`, ({ params, request }) =>
+    respond(() =>
+      HttpResponse.json(getRun(String(params.runId), request.headers.get('Authorization'))),
+    ),
   ),
 
   http.post(`${API}/runs/:runId/decisions`, ({ params, request }) =>
@@ -96,18 +98,30 @@ export const handlers: RequestHandler[] = [
       return HttpResponse.json(
         takeDecision(
           String(params.runId),
+          request.headers.get('Authorization'),
           request.headers.get('Idempotency-Key'),
-          request.headers.get('If-Match'),
-          { dilemmaId: body.dilemmaId, optionId: body.optionId },
+          {
+            dilemmaId: body.dilemmaId,
+            optionId: body.optionId,
+            expectedVersion: body.expectedVersion,
+          },
         ),
       );
     }),
   ),
 
   http.post(`${API}/runs/:runId/advance`, ({ params, request }) =>
-    respond(() =>
-      HttpResponse.json(advanceBlock(String(params.runId), request.headers.get('If-Match'))),
-    ),
+    respond(async () => {
+      const body = await jsonBody(request);
+      return HttpResponse.json(
+        advanceBlock(
+          String(params.runId),
+          request.headers.get('Authorization'),
+          request.headers.get('Idempotency-Key'),
+          { expectedVersion: body.expectedVersion },
+        ),
+      );
+    }),
   ),
 
   http.get(`${API}/runs/:runId/result`, ({ params }) =>
@@ -117,7 +131,9 @@ export const handlers: RequestHandler[] = [
   http.post(`${API}/runs/:runId/alias`, ({ params, request }) =>
     respond(async () => {
       const body = await jsonBody(request);
-      return HttpResponse.json(setAlias(String(params.runId), body.alias));
+      return HttpResponse.json(
+        setAlias(String(params.runId), request.headers.get('Authorization'), body.alias),
+      );
     }),
   ),
 
