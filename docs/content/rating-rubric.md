@@ -124,12 +124,12 @@ Entran los jugadores con **minutos relevantes** en esa temporada, con este crite
 Marca `key: true` a los jugadores cuya media **cambia de forma apreciable la fuerza del equipo** o que son los más conocidos. Debe haber **entre 6 y 10** por plantilla. Se marca `key: true` si cumple **cualquiera** de estos criterios, hasta llegar a ese máximo:
 
 - Es el **portero titular** (pesa mucho en la defensa, ADR-004).
-- Tiene una media provisional de **78 o más** según la sección 2.
+- Tiene una media provisional **por encima del techo del titular regular de la tabla 6.4** para el nivel de su club (más de 83 en A, más de 79 en B, más de 73 en C y más de 68 en D): es un jugador por encima de lo que se espera de un titular normal de ese club.
 - Ganó un premio individual ese año o estuvo en un once ideal, o fue convocado con la selección absoluta de un país de primer nivel esa temporada.
 - Es el **máximo goleador** o el **máximo asistente** del club en la liga.
 - Es **capitán** y titular indiscutible.
 
-Si hay más de 10 candidatos, deja como `key` a los de mayor media provisional. Si hay menos de 6, añade a los titulares con más minutos hasta llegar a 6.
+Los titulares sin evidencia individual que dentro de la tabla 6.4 quedan en su rango **no son `key` por su media**: el umbral de `key` es el techo de la tabla, no una cifra fija. Si hay más de 10 candidatos, deja como `key` a los de mayor media provisional. Si hay menos de 6, añade a los titulares con más minutos hasta llegar a 6.
 
 ### 6.3 Cómo se rellenan los jugadores clave
 
@@ -152,28 +152,30 @@ Los no clave llevan `rating`, `sources` (con la fuente de los minutos) y `verify
 
 | Nivel del club | Titular regular | Rotación | Suplente |
 |---|---|---|---|
-| A | 74-79 | 70-75 | 64-69 |
-| B | 70-75 | 66-71 | 60-65 |
-| C | 66-71 | 62-67 | 57-62 |
-| D | 62-67 | 58-63 | 54-59 |
+| A | 78-83 | 72-77 | 66-71 |
+| B | 74-79 | 68-73 | 62-67 |
+| C | 68-73 | 63-68 | 58-63 |
+| D | 63-68 | 59-64 | 54-59 |
 
+   Coherencia con la sección 2: un titular regular de un club de nivel A, sin evidencia individual, es un "titular de un grande" y no puede quedar sistemáticamente por debajo de la banda 80-84; por eso su rango (78-83) cubre la parte baja de esa banda. Los rangos de B, C y D siguen las bandas 75-79, 70-74 y 65-69.
 4. **Punto dentro del rango:** sube hacia el techo si hay evidencia individual de rendimiento (estadística destacada, premio menor) y baja hacia el suelo si no la hay. No salgas del rango sin convertir al jugador en `key` y justificarlo.
 
-> El nivel del club es aquí un **indicio débil**, no un bonus. Si un no clave tiene evidencia individual clara que lo lleve a 78 o más, deja de ser un no clave: márcalo `key: true`.
+> El nivel del club es aquí un **indicio débil**, no un bonus. Si un no clave tiene evidencia individual clara que lo lleve por encima del techo de su rango (6.2), deja de ser un no clave: márcalo `key: true`.
 
 ### 6.5 Comprobación de conjunto (P6)
 
-La media de cada jugador de un rival no se valida una por una, sino **en conjunto**. T2.7 calcula, para cada rival, la fuerza que resulta de su mejor once (ADR-004, secciones "Fuerza del equipo") y la compara con sus **goles a favor y en contra reales por partido en la liga** (`real_goals_for/against`, dividido por los partidos jugados):
+La media de cada jugador de un rival no se valida una por una, sino **en conjunto**. T2.7 calcula, para cada rival, la fuerza que resulta de su mejor once (ADR-004, sección 2) y la compara con sus **goles a favor y en contra reales por partido en la liga** (`real_league {played, goals_for, goals_against}`, dividido por `played`):
 
 - **Qué se compara:** los goles esperados por partido frente a un rival medio de la liga (ataque) y de un rival medio (defensa), calculados con el modelo, frente a los reales.
 - **Banda de tolerancia propuesta:** la diferencia tiene que ser menor o igual que el **mayor** de estos dos valores: **±0,25 goles por partido** o **±20 % del valor real**. La banda cubre la variación aleatoria de una temporada de unas 38 jornadas y la imprecisión de las medias; el razonamiento está en el ADR-004 (sección "Bandas de calibración").
+- **Efecto:** esta comprobación **rompe la CI** (junto con la de títulos). Las de posición y puntos de una temporada son solo avisos (ADR-004, sección 7).
 - **Resultado:** T2.7 produce una lista de rivales fuera de banda con las medias que habría que revisar. **No las corrige automáticamente.**
 - **Qué hace el agente investigador:** aporta los goles reales con su fuente y sus medias. **No ajusta una media para que cuadre la banda.** Si la banda falla, la corrección se hace con evidencia nueva (por ejemplo, un jugador clave mal valorado), no con un retoque numérico. Ajustar medias sin evidencia para acercarse a los goles es inventar el dato.
 - **Circularidad:** como la comprobación usa los goles reales, el agente **no debe** mirar la clasificación final ni los goles para asignar medias. Las medias salen de la evidencia individual; la comprobación detecta errores sistemáticos.
 
 ### 6.6 Rivales sin plantilla (`aggregate`)
 
-Si no hay datos fiables de minutos y jugadores (típicamente clubes de fuera de Primera en las primeras rondas de Copa), el rival va como `aggregate.yaml`: no lleva medias individuales sino una fuerza fija (ADR-004). Anota en el fichero el nivel equivalente (qué banda de la sección 2 tendrían sus titulares de media), la fuente y por qué no hay plantilla. Si no puedes justificar el nivel, `verify: pending`.
+Si no hay datos fiables de minutos y jugadores (típicamente clubes de fuera de Primera en las primeras rondas de Copa), el rival va como `aggregate.yaml`: no lleva medias individuales sino una fuerza fija: `attack` y `defense`, que son los índices `A` y `C` del ADR-004 (sección 2), en puntos de media (con una `defense` alta, mejor defensa). Elige los valores como la media que tendría el once de ese club según las bandas de la sección 2, y anota la fuente y por qué no hay plantilla. Si no puedes justificar el nivel, `attack` y `defense` van en `null` con `verify: pending`.
 
 ## 7. Cuando no hay datos suficientes: `verify: pending`
 
@@ -293,13 +295,13 @@ Se usan el club ficticio **Real Atlántico FC**, la **Liga Ficticia** y la tempo
   verify: ok
 ```
 
-Para un no clave de un club de nivel B con 120 minutos en total (suplente), la tabla de 6.4 daría 60-65. Aquí la media baja a 55 porque es un jugador del filial convocado en 3 partidos, y esa evidencia individual (que no es la de un suplente de Primera) justifica salir del rango. Como se sale de 6.4, el agente lo explica en la PR. Con `verify: pending` si faltasen sus minutos.
+Para un no clave de un club de nivel B con 120 minutos en total (suplente), la tabla de 6.4 daría 62-67. Aquí la media baja a 55 porque es un jugador del filial convocado en 3 partidos, y esa evidencia individual (que no es la de un suplente de Primera) justifica salir del rango. Como se sale de 6.4, el agente lo explica en la PR. Con `verify: pending` si faltasen sus minutos.
 
 ### 9.5 Rival: un no clave aplicando la tabla rápida de 6.4
 
 Rival inventado: **CD Ficticio Norte** (nivel C: mitad baja de una gran liga). Jugador no clave, centrocampista con el 45 % de los minutos posibles (rotación).
 
-- Rango de la tabla (C, rotación): **62-67**.
+- Rango de la tabla (C, rotación): **63-68**.
 - Sin premios ni estadística destacada: se asigna **64**.
 
 ```yaml
