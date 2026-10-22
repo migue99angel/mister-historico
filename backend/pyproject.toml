@@ -256,3 +256,16 @@ type = "forbidden"
 source_modules = ["mister.entrypoints"]
 forbidden_modules = ["mister.*.domain", "mister.*.infrastructure"]
 allow_indirect_imports = true
+
+# R6 (CR of T0.2, T1.6): the engine's domain is private to its context. Other contexts reach
+# the engine only through `mister.simulation.application.api` (PLAN §3.2, rule 4). A
+# `protected` contract fits because it checks direct imports only: `application` importing
+# `domain` is fine, and so is another context importing `application.api`, which reaches the
+# domain indirectly. import-linter has no "every module except one context" wildcard, so the
+# contract is written from the other side, as a whitelist of importers; `entrypoints` and
+# `bootstrap` are covered too.
+[[tool.importlinter.contracts]]
+name = "R6 only simulation itself imports simulation.domain"
+type = "protected"
+protected_modules = ["mister.simulation.domain", "mister.simulation.domain.**"]
+allowed_importers = ["mister.simulation", "mister.simulation.**"]
