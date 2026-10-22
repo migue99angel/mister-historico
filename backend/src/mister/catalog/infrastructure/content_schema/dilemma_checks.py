@@ -43,7 +43,8 @@ def check_dilemmas(ctx: SeasonContext) -> None:
         ctx.add(
             "dilemmas",
             "dilemmas",
-            f"{len(dilemmas)} dilemmas in total; expected between {MIN_DILEMMAS} and {MAX_DILEMMAS}",
+            f"{len(dilemmas)} dilemmas in total; "
+            f"expected between {MIN_DILEMMAS} and {MAX_DILEMMAS}",
         )
     signed = {
         e.player_id

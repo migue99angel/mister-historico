@@ -1,12 +1,19 @@
 """Checks of `standings.yaml`: league tables, group tables, real brackets and real league goals."""
 
 from collections.abc import Sequence
+from typing import NamedTuple
 
 from mister.catalog.infrastructure.content_schema.context import SeasonContext, stage_of
 from mister.catalog.infrastructure.content_schema.fixtures import Fixture
 from mister.catalog.infrastructure.content_schema.integrity import squad_path
 from mister.catalog.infrastructure.content_schema.season import LeagueCompetition
 from mister.catalog.infrastructure.content_schema.standings import StandingRow, StandingsCutoff
+
+
+class _TableRules(NamedTuple):
+    participants: set[str]
+    points: tuple[int, int]
+    fixtures: Sequence[Fixture]
 
 
 def check_standings(ctx: SeasonContext) -> None:
@@ -54,14 +61,10 @@ def _check_league_cutoff(ctx: SeasonContext, field: str, cutoff: StandingsCutoff
         ctx.add("standings", f"{field}.competition", f"{cutoff.competition!r} is not a league")
         return
     fixtures = [f for f in ctx.content.fixtures.fixtures if f.competition == league.id]
-    _check_table(
-        ctx,
-        field,
-        cutoff,
-        set(league.participants),
-        (league.points_per_win, league.points_per_draw),
-        fixtures,
+    rules = _TableRules(
+        set(league.participants), (league.points_per_win, league.points_per_draw), fixtures
     )
+    _check_table(ctx, field, cutoff, rules)
 
 
 def _check_group_cutoff(ctx: SeasonContext, field: str, cutoff: StandingsCutoff) -> None:
@@ -81,17 +84,13 @@ def _check_group_cutoff(ctx: SeasonContext, field: str, cutoff: StandingsCutoff)
         if (f.competition, f.stage, f.group) == (competition.id, stage.id, group.id)
     ]
     points = (stage.points_per_win or 3, stage.points_per_draw or 0)
-    _check_table(ctx, field, cutoff, set(group.participants), points, fixtures)
+    _check_table(ctx, field, cutoff, _TableRules(set(group.participants), points, fixtures))
 
 
 def _check_table(
-    ctx: SeasonContext,
-    field: str,
-    cutoff: StandingsCutoff,
-    expected: set[str],
-    points: tuple[int, int],
-    fixtures: Sequence[Fixture],
+    ctx: SeasonContext, field: str, cutoff: StandingsCutoff, rules: _TableRules
 ) -> None:
+    expected, points = rules.participants, rules.points
     listed = {row.club_season for row in cutoff.table}
     if listed != expected:
         ctx.add(
@@ -100,7 +99,7 @@ def _check_table(
             "the table must list exactly the participants of the competition "
             f"(missing: {sorted(expected - listed)}, unexpected: {sorted(listed - expected)})",
         )
-    played = [f for f in fixtures if f.date <= cutoff.date]
+    played = [f for f in rules.fixtures if f.date <= cutoff.date]
     for row_index, row in enumerate(cutoff.table):
         row_field = f"{field}.table.{row_index}"
         wanted = row.won * points[0] + row.drawn * points[1]
