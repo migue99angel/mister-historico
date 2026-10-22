@@ -1,0 +1,87 @@
+# Backend CI: lint, types, layer rules, tests (with Postgres via testcontainers) and coverage.
+# Thresholds from PLAN §4.3: global >= 85 % (pyproject.toml) and domain + application >= 95 %.
+name: backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend.yml"
+      - ".github/scripts/layer-coverage.sh"
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend.yml"
+      - ".github/scripts/layer-coverage.sh"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  backend:
+    name: lint, types, layers and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          # Same uv as infra/docker/api.Dockerfile.
+          version: "0.9.7"
+          working-directory: backend
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Install dependencies
+        id: sync
+        run: uv sync --frozen
+
+      # The checks below run independently of each other (as long as the install worked),
+      # so a single PR reports every failure at once.
+      - name: ruff check
+        if: ${{ !cancelled() && steps.sync.outcome == 'success' }}
+        run: uv run ruff check --output-format=github .
+
+      - name: ruff format
+        if: ${{ !cancelled() && steps.sync.outcome == 'success' }}
+        run: uv run ruff format --check .
+
+      - name: mypy (strict)
+        if: ${{ !cancelled() && steps.sync.outcome == 'success' }}
+        run: uv run mypy
+
+      - name: Layer rules (import-linter)
+        if: ${{ !cancelled() && steps.sync.outcome == 'success' }}
+        run: uv run lint-imports
+
+      # pyproject.toml already adds --cov=mister and the global fail_under = 85.
+      # Docker is available on ubuntu-latest, so the integration tests run for real.
+      - name: pytest
+        id: tests
+        if: ${{ !cancelled() && steps.sync.outcome == 'success' }}
+        run: uv run pytest --cov-report=xml
+
+      - name: Coverage of domain + application (>= 95 %)
+        if: ${{ !cancelled() && steps.tests.outcome != 'skipped' }}
+        run: ../.github/scripts/layer-coverage.sh
+
+      - name: Upload coverage report
+        if: ${{ !cancelled() && steps.tests.outcome != 'skipped' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: backend-coverage
+          path: backend/coverage.xml
+          if-no-files-found: warn
+          retention-days: 14

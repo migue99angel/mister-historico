@@ -1,5 +1,8 @@
 # Míster Histórico
 
+[![backend](https://github.com/migue99angel/mister-historico/actions/workflows/backend.yml/badge.svg?branch=main)](https://github.com/migue99angel/mister-historico/actions/workflows/backend.yml)
+[![frontend](https://github.com/migue99angel/mister-historico/actions/workflows/frontend.yml/badge.svg?branch=main)](https://github.com/migue99angel/mister-historico/actions/workflows/frontend.yml)
+
 > *¿Lo habrías hecho mejor que el míster?*
 
 Juego de navegador gratuito, sin registro y con partidas de 3 a 5 minutos. Eres el entrenador de un equipo histórico real (por ejemplo, el Real Madrid 2012-13), con su plantilla de esa temporada, y tomas las decisiones de la temporada: mercado, vestuario, táctica, rotaciones y dilemas que ocurrieron de verdad. Al final, el juego compara tu temporada con lo que pasó en la realidad y genera una tarjeta para compartir.
