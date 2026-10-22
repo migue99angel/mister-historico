@@ -1,0 +1,207 @@
+{
+  "$defs": {
+    "Fixture": {
+      "additionalProperties": false,
+      "description": "A real match. League matches carry `round`; knockout matches carry `stage` (and `leg`).",
+      "properties": {
+        "competition": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Competition",
+          "type": "string"
+        },
+        "date": {
+          "format": "date",
+          "title": "Date",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "leg": {
+          "anyOf": [
+            {
+              "enum": [
+                1,
+                2
+              ],
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Leg"
+        },
+        "opponent": {
+          "maxLength": 80,
+          "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
+          "title": "Opponent",
+          "type": "string"
+        },
+        "result": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RealResult"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "round": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Round"
+        },
+        "sources": {
+          "description": "URLs backing the datum.",
+          "items": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "stage": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stage"
+        },
+        "venue": {
+          "enum": [
+            "home",
+            "away",
+            "neutral"
+          ],
+          "title": "Venue",
+          "type": "string"
+        },
+        "verify": {
+          "enum": [
+            "ok",
+            "pending"
+          ],
+          "title": "Verify",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sources",
+        "verify",
+        "id",
+        "date",
+        "competition",
+        "opponent",
+        "venue",
+        "result"
+      ],
+      "title": "Fixture",
+      "type": "object"
+    },
+    "RealResult": {
+      "additionalProperties": false,
+      "description": "Real score from the own team's point of view (after extra time, before penalties).",
+      "properties": {
+        "extra_time": {
+          "default": false,
+          "title": "Extra Time",
+          "type": "boolean"
+        },
+        "goals_against": {
+          "maximum": 30,
+          "minimum": 0,
+          "title": "Goals Against",
+          "type": "integer"
+        },
+        "goals_for": {
+          "maximum": 30,
+          "minimum": 0,
+          "title": "Goals For",
+          "type": "integer"
+        },
+        "penalties_against": {
+          "anyOf": [
+            {
+              "maximum": 30,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Penalties Against"
+        },
+        "penalties_for": {
+          "anyOf": [
+            {
+              "maximum": 30,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Penalties For"
+        }
+      },
+      "required": [
+        "goals_for",
+        "goals_against"
+      ],
+      "title": "RealResult",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "All real matches of the own team in the season.",
+  "properties": {
+    "fixtures": {
+      "items": {
+        "$ref": "#/$defs/Fixture"
+      },
+      "minItems": 1,
+      "title": "Fixtures",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "schema_version",
+    "fixtures"
+  ],
+  "title": "FixturesFile",
+  "type": "object"
+}

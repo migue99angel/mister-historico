@@ -1,0 +1,685 @@
+{
+  "$defs": {
+    "Block": {
+      "additionalProperties": false,
+      "description": "A stretch of the season. Blocks must not overlap; each ends on a standings cutoff.",
+      "properties": {
+        "end": {
+          "format": "date",
+          "title": "End",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 60,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "start": {
+          "format": "date",
+          "title": "Start",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "start",
+        "end"
+      ],
+      "title": "Block",
+      "type": "object"
+    },
+    "BoardObjective": {
+      "additionalProperties": false,
+      "description": "What the board expects in a competition. Editorial, not a historical datum.",
+      "properties": {
+        "competition": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Competition",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "win",
+            "finish_top",
+            "reach_stage"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "target_position": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Position"
+        },
+        "target_stage": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Stage"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "competition",
+        "kind",
+        "text"
+      ],
+      "title": "BoardObjective",
+      "type": "object"
+    },
+    "CompetitionOutcome": {
+      "additionalProperties": false,
+      "description": "What really happened in a competition.",
+      "properties": {
+        "champion": {
+          "title": "Champion",
+          "type": "boolean"
+        },
+        "competition": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Competition",
+          "type": "string"
+        },
+        "eliminated_in": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Eliminated In"
+        },
+        "final_position": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Final Position"
+        },
+        "sources": {
+          "description": "URLs backing the datum.",
+          "items": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "verify": {
+          "enum": [
+            "ok",
+            "pending"
+          ],
+          "title": "Verify",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sources",
+        "verify",
+        "competition",
+        "champion",
+        "final_position",
+        "eliminated_in"
+      ],
+      "title": "CompetitionOutcome",
+      "type": "object"
+    },
+    "ContinentalCupCompetition": {
+      "additionalProperties": false,
+      "description": "A continental cup, with an optional group stage before the knockout rounds.",
+      "properties": {
+        "group_stage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/GroupStage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "id": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "continental_cup",
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 60,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "participants": {
+          "items": {
+            "maxLength": 80,
+            "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
+            "type": "string"
+          },
+          "minItems": 2,
+          "title": "Participants",
+          "type": "array"
+        },
+        "stages": {
+          "items": {
+            "$ref": "#/$defs/KnockoutStage"
+          },
+          "minItems": 1,
+          "title": "Stages",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "participants",
+        "stages",
+        "kind"
+      ],
+      "title": "ContinentalCupCompetition",
+      "type": "object"
+    },
+    "CupCompetition": {
+      "additionalProperties": false,
+      "description": "A domestic cup.",
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "cup",
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 60,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "participants": {
+          "items": {
+            "maxLength": 80,
+            "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
+            "type": "string"
+          },
+          "minItems": 2,
+          "title": "Participants",
+          "type": "array"
+        },
+        "stages": {
+          "items": {
+            "$ref": "#/$defs/KnockoutStage"
+          },
+          "minItems": 1,
+          "title": "Stages",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "participants",
+        "stages",
+        "kind"
+      ],
+      "title": "CupCompetition",
+      "type": "object"
+    },
+    "Group": {
+      "additionalProperties": false,
+      "description": "A group of a group stage.",
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "participants": {
+          "items": {
+            "maxLength": 80,
+            "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
+            "type": "string"
+          },
+          "minItems": 2,
+          "title": "Participants",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "participants"
+      ],
+      "title": "Group",
+      "type": "object"
+    },
+    "GroupStage": {
+      "additionalProperties": false,
+      "description": "Group stage of a continental competition.",
+      "properties": {
+        "advance_per_group": {
+          "minimum": 1,
+          "title": "Advance Per Group",
+          "type": "integer"
+        },
+        "groups": {
+          "items": {
+            "$ref": "#/$defs/Group"
+          },
+          "minItems": 1,
+          "title": "Groups",
+          "type": "array"
+        },
+        "legs": {
+          "enum": [
+            1,
+            2
+          ],
+          "title": "Legs",
+          "type": "integer"
+        },
+        "points_per_win": {
+          "maximum": 3,
+          "minimum": 2,
+          "title": "Points Per Win",
+          "type": "integer"
+        },
+        "tiebreakers": {
+          "items": {
+            "$ref": "#/$defs/Tiebreaker"
+          },
+          "minItems": 1,
+          "title": "Tiebreakers",
+          "type": "array"
+        }
+      },
+      "required": [
+        "groups",
+        "legs",
+        "points_per_win",
+        "tiebreakers",
+        "advance_per_group"
+      ],
+      "title": "GroupStage",
+      "type": "object"
+    },
+    "KnockoutStage": {
+      "additionalProperties": false,
+      "description": "A knockout round. Format and rules are set per competition and per season.",
+      "properties": {
+        "away_goals_rule": {
+          "title": "Away Goals Rule",
+          "type": "boolean"
+        },
+        "extra_time": {
+          "title": "Extra Time",
+          "type": "boolean"
+        },
+        "id": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "legs": {
+          "enum": [
+            1,
+            2
+          ],
+          "title": "Legs",
+          "type": "integer"
+        },
+        "name": {
+          "maxLength": 60,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "penalties": {
+          "title": "Penalties",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "legs",
+        "away_goals_rule",
+        "extra_time",
+        "penalties"
+      ],
+      "title": "KnockoutStage",
+      "type": "object"
+    },
+    "LeagueCompetition": {
+      "additionalProperties": false,
+      "description": "A league: single or double round robin, with configurable points and tiebreakers.",
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "league",
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 60,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "participants": {
+          "items": {
+            "maxLength": 80,
+            "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
+            "type": "string"
+          },
+          "minItems": 2,
+          "title": "Participants",
+          "type": "array"
+        },
+        "points_per_draw": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Points Per Draw",
+          "type": "integer"
+        },
+        "points_per_win": {
+          "maximum": 3,
+          "minimum": 2,
+          "title": "Points Per Win",
+          "type": "integer"
+        },
+        "rounds": {
+          "enum": [
+            1,
+            2
+          ],
+          "title": "Rounds",
+          "type": "integer"
+        },
+        "tiebreakers": {
+          "items": {
+            "$ref": "#/$defs/Tiebreaker"
+          },
+          "minItems": 1,
+          "title": "Tiebreakers",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "participants",
+        "kind",
+        "rounds",
+        "points_per_win",
+        "points_per_draw",
+        "tiebreakers"
+      ],
+      "title": "LeagueCompetition",
+      "type": "object"
+    },
+    "Manager": {
+      "additionalProperties": false,
+      "description": "The real manager of the season.",
+      "properties": {
+        "alias_name": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Alias Name",
+          "type": "string"
+        },
+        "display_name": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Display Name",
+          "type": "string"
+        },
+        "sources": {
+          "description": "URLs backing the datum.",
+          "items": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "verify": {
+          "enum": [
+            "ok",
+            "pending"
+          ],
+          "title": "Verify",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sources",
+        "verify",
+        "display_name",
+        "alias_name"
+      ],
+      "title": "Manager",
+      "type": "object"
+    },
+    "SuperCupCompetition": {
+      "additionalProperties": false,
+      "description": "A super cup.",
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "super_cup",
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 60,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "participants": {
+          "items": {
+            "maxLength": 80,
+            "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
+            "type": "string"
+          },
+          "minItems": 2,
+          "title": "Participants",
+          "type": "array"
+        },
+        "stages": {
+          "items": {
+            "$ref": "#/$defs/KnockoutStage"
+          },
+          "minItems": 1,
+          "title": "Stages",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "participants",
+        "stages",
+        "kind"
+      ],
+      "title": "SuperCupCompetition",
+      "type": "object"
+    },
+    "Tiebreaker": {
+      "description": "Tiebreak criteria for league tables, applied in the listed order.",
+      "enum": [
+        "head_to_head_points",
+        "head_to_head_goal_difference",
+        "head_to_head_goals_for",
+        "head_to_head_away_goals",
+        "goal_difference",
+        "goals_for",
+        "wins"
+      ],
+      "title": "Tiebreaker",
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "The playable season: everything that references club-seasons but is not a squad.",
+  "properties": {
+    "blocks": {
+      "items": {
+        "$ref": "#/$defs/Block"
+      },
+      "title": "Blocks",
+      "type": "array"
+    },
+    "board_objectives": {
+      "items": {
+        "$ref": "#/$defs/BoardObjective"
+      },
+      "minItems": 1,
+      "title": "Board Objectives",
+      "type": "array"
+    },
+    "club_season": {
+      "maxLength": 80,
+      "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
+      "title": "Club Season",
+      "type": "string"
+    },
+    "competitions": {
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "continental_cup": "#/$defs/ContinentalCupCompetition",
+            "cup": "#/$defs/CupCompetition",
+            "league": "#/$defs/LeagueCompetition",
+            "super_cup": "#/$defs/SuperCupCompetition"
+          },
+          "propertyName": "kind"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/LeagueCompetition"
+          },
+          {
+            "$ref": "#/$defs/CupCompetition"
+          },
+          {
+            "$ref": "#/$defs/SuperCupCompetition"
+          },
+          {
+            "$ref": "#/$defs/ContinentalCupCompetition"
+          }
+        ]
+      },
+      "minItems": 1,
+      "title": "Competitions",
+      "type": "array"
+    },
+    "historical_outcome": {
+      "items": {
+        "$ref": "#/$defs/CompetitionOutcome"
+      },
+      "minItems": 1,
+      "title": "Historical Outcome",
+      "type": "array"
+    },
+    "manager": {
+      "$ref": "#/$defs/Manager"
+    },
+    "schema_version": {
+      "const": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "season": {
+      "pattern": "^\\d{4}-\\d{2}$",
+      "title": "Season",
+      "type": "string"
+    },
+    "slug": {
+      "maxLength": 64,
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "title": "Slug",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "slug",
+    "club_season",
+    "season",
+    "manager",
+    "blocks",
+    "competitions",
+    "board_objectives",
+    "historical_outcome"
+  ],
+  "title": "SeasonFile",
+  "type": "object"
+}

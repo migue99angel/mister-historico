@@ -1,0 +1,66 @@
+{
+  "$defs": {
+    "ClubColors": {
+      "additionalProperties": false,
+      "description": "Primary and secondary colors, used to draw a generic crest (never a real one).",
+      "properties": {
+        "primary": {
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "title": "Primary",
+          "type": "string"
+        },
+        "secondary": {
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "title": "Secondary",
+          "type": "string"
+        }
+      },
+      "required": [
+        "primary",
+        "secondary"
+      ],
+      "title": "ClubColors",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A club. The file name must be `<club_id>.yaml`.",
+  "properties": {
+    "club_id": {
+      "maxLength": 64,
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "title": "Club Id",
+      "type": "string"
+    },
+    "colors": {
+      "$ref": "#/$defs/ClubColors"
+    },
+    "name": {
+      "maxLength": 60,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "short_name": {
+      "maxLength": 8,
+      "minLength": 2,
+      "title": "Short Name",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "club_id",
+    "name",
+    "short_name",
+    "colors"
+  ],
+  "title": "ClubFile",
+  "type": "object"
+}

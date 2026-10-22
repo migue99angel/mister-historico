@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A rival without a squad (outside the top flight): only an aggregate strength.",
+  "properties": {
+    "attack": {
+      "maximum": 99,
+      "minimum": 1,
+      "title": "Attack",
+      "type": "integer"
+    },
+    "club": {
+      "anyOf": [
+        {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Club"
+    },
+    "club_season": {
+      "maxLength": 80,
+      "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
+      "title": "Club Season",
+      "type": "string"
+    },
+    "defense": {
+      "maximum": 99,
+      "minimum": 1,
+      "title": "Defense",
+      "type": "integer"
+    },
+    "rating_rationale": {
+      "minLength": 1,
+      "title": "Rating Rationale",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "season": {
+      "pattern": "^\\d{4}-\\d{2}$",
+      "title": "Season",
+      "type": "string"
+    },
+    "sources": {
+      "description": "URLs backing the datum.",
+      "items": {
+        "format": "uri",
+        "maxLength": 2083,
+        "minLength": 1,
+        "type": "string"
+      },
+      "title": "Sources",
+      "type": "array"
+    },
+    "verify": {
+      "enum": [
+        "ok",
+        "pending"
+      ],
+      "title": "Verify",
+      "type": "string"
+    }
+  },
+  "required": [
+    "sources",
+    "verify",
+    "schema_version",
+    "club_season",
+    "club",
+    "season",
+    "attack",
+    "defense",
+    "rating_rationale"
+  ],
+  "title": "AggregateFile",
+  "type": "object"
+}

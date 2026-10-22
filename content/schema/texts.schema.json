@@ -1,0 +1,83 @@
+{
+  "$defs": {
+    "Text": {
+      "additionalProperties": false,
+      "description": "A user-facing text (Spanish). Only `reviewed` texts ship in release mode.",
+      "properties": {
+        "body": {
+          "minLength": 1,
+          "title": "Body",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 80,
+          "pattern": "^[a-z0-9]+([.-][a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "presentation",
+            "event",
+            "verdict"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "reviewed_by": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reviewed By"
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "reviewed"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "body",
+        "status"
+      ],
+      "title": "Text",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "All texts of the season.",
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "texts": {
+      "items": {
+        "$ref": "#/$defs/Text"
+      },
+      "minItems": 1,
+      "title": "Texts",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "texts"
+  ],
+  "title": "TextsFile",
+  "type": "object"
+}
