@@ -1,6 +1,6 @@
 # Rúbrica de medias (escala 1-99): fórmula a partir de estadísticas
 
-> Estado: **propuesta, pendiente de aprobación del autor** (T1.3) · Decisión: [ADR-006](../adr/006-medias.md) · Modelo que consume las medias: [ADR-004](../adr/004-modelo-de-goles.md)
+> Estado: **aprobada (2026-10-22)**: fórmula y estructura aprobadas por el autor; las anclas de T1.7 siguen pendientes y los pesos siguen siendo valores iniciales a calibrar (sección 9) · Decisión: [ADR-006](../adr/006-medias.md) · Modelo que consume las medias: [ADR-004](../adr/004-modelo-de-goles.md)
 > Público: los agentes investigadores que recogen estadísticas (T2.11, T2.16, etc.), quien implementa el calculador (T1.8) y quien revise el contenido. Este documento es autosuficiente: no hace falta consultar ninguna otra fuente de medias.
 
 ## En una frase
@@ -56,6 +56,8 @@ Todas son **hechos verificables** de una temporada concreta de un club (el club-
 | `awards` | Lista de premios individuales **de esa temporada**, cada uno con `name`, `tier` y su fuente. `[]` si la fuente confirma que no hay. `tier` solo puede ser: **`W`** (mundial): quedar entre los 3 primeros de un premio individual al mejor jugador del mundo, o figurar en el once ideal mundial de la temporada; **`L`** (liga): premio oficial de la liga del club (mejor jugador, mejor portero, máximo goleador, máximo asistente) o figurar en su once ideal oficial. Los demás premios (jugador del mes, mejor joven, etc.) **no se registran**. | Sí | `null` + `pending` |
 | `available_matches_all` | **Partidos de `all` que el club jugó mientras el jugador estaba inscrito** (llegadas y salidas a mitad de temporada). Si estuvo toda la temporada, se omite y se usa `club_matches_all`. Se justifica con la fecha de alta o de baja y el calendario. | No | se usa `club_matches_all` |
 
+**Jugadores de mercado** (`_market-*`): no tienen un club del juego, así que cada jugador lleva sus `season_stats` y, a nivel de jugador, un bloque `club_data` con los datos de **su club real** de esa temporada (más `club_name`). La media se calcula con la misma fórmula.
+
 **Datos del club-season** (los rellena quien hace la plantilla, con fuente; no son del jugador):
 
 | Campo | Definición |
@@ -91,7 +93,7 @@ Cada club-season tiene un **nivel** `A`, `B`, `C` o `D`, con criterio objetivo y
 
 Para un jugador con `position`, estadísticas y club-season con `level_tier`:
 
-**Paso 0: partidos disponibles.** `avail = available_matches_all` si existe y, si no, `club_matches_all`.
+**Paso 0: partidos disponibles.** `avail = available_matches_all` si existe y, si no, `club_matches_all`. **Es la base de la producción en todos los casos** (también si la importancia usa la liga, sección 5).
 
 **Paso 1: importancia en el equipo `I` (0 a 1).**
 
@@ -105,13 +107,13 @@ I = 0,70 × share_min + 0,30 × share_start        # si starts_all es null: I = 
 
 ```
 FW, MF, DF:
-  con asistencias:   tasa = (goals_all + 0,5 × assists_all) / avail ;  P = min(1, tasa / TOPE[position])
-  assists_all null:  tasa = goals_all / avail                       ;  P = min(1, tasa / (0,80 × TOPE[position]))
+  tasa = (goals_all + 0,5 × assists_all) / avail ;  P = min(1, tasa / TOPE[position])
+  assists_all null: se cuentan 0 asistencias (mismo tope)
   TOPE:  FW = 0,80   MF = 0,45   DF = 0,20
 
 GK:
-  con porterías a cero:  tasa = clean_sheets_all / avail ;  P = min(1, tasa / 0,55)
-  clean_sheets_all null: P = 0,35
+  tasa = clean_sheets_all / avail ;  P = min(1, tasa / 0,55)
+  clean_sheets_all null: se cuentan 0 porterías a cero
 ```
 
 **Paso 3: bonus de selección `N` (0 a 1).**
@@ -143,7 +145,7 @@ Para que dos implementaciones den **el mismo resultado**: calcula con decimales 
 
 ### 4.2 Valores iniciales
 
-**Todos los números de esta sección son "valor inicial a calibrar"** (sección 9): `46`, `22`, `14`, `6`, `7`, `0,70/0,30`, `0,5` (peso de la asistencia), `0,80` (descuento sin asistencias), los `TOPE`, `0,55`, `0,35`, el `8` de las internacionalidades, los `0,60/0,35` de los premios y los valores de `T`.
+**Todos los números de esta sección son "valor inicial a calibrar"** (sección 9): `46`, `22`, `14`, `6`, `7`, `0,70/0,30`, `0,5` (peso de la asistencia), los `TOPE`, `0,55`, el `8` de las internacionalidades, los `0,60/0,35` de los premios y los valores de `T`.
 
 ### 4.3 Por qué cada pieza
 
@@ -160,7 +162,7 @@ Para que dos implementaciones den **el mismo resultado**: calcula con decimales 
 
 ### 4.4 Propiedades que cumple (y que T1.8 comprueba con tests)
 
-- **Monotonía:** para el mismo jugador y club, la media **nunca baja** al subir `minutes_all`, `starts_all`, `goals_all`, `assists_all`, `clean_sheets_all`, `caps` o el número de premios. Tampoco baja si el nivel del club sube (`D` a `A`). Baja (o no sube) al **aumentar `avail`** con las mismas estadísticas, porque hubo más partidos que jugar.
+- **Monotonía:** para el mismo jugador y club, la media **nunca baja** al subir `minutes_all`, `starts_all`, `goals_all`, `assists_all`, `clean_sheets_all`, `caps` o el número de premios. Tampoco baja si el nivel del club sube (`D` a `A`). Baja (o no sube) al **aumentar `avail`** con las mismas estadísticas, porque hubo más partidos que jugar. **Encontrar un dato que faltaba** (`assists_all` o `clean_sheets_all`, que son opcionales) **nunca baja la media**: sin dato se cuenta 0, así que cualquier valor encontrado es mayor o igual.
 - **Acotada:** el resultado siempre está en `[1, 99]`. Sin evidencia de ningún tipo, el máximo teórico es `46 + 22 + 14 + 6 + 7 + 6 = 101`, que se acota a 99.
 - **Determinista y pura:** no usa azar, ni fecha, ni orden de los jugadores.
 - **No depende de la `age`.**
@@ -171,10 +173,10 @@ La regla es siempre la misma: **no se inventa**. Esto es lo que ocurre con cada 
 
 | Falta | Qué pasa |
 |---|---|
-| `assists_all` (`null`) | **Permitido.** Se usa la tasa solo con goles y un tope un 20 % más bajo (paso 2). La CLI anota `assists: null` en el resultado. |
-| `clean_sheets_all` de un portero (`null`) | **Permitido.** `P = 0,35` (un valor neutro: ni premia ni castiga). |
+| `assists_all` (`null`) | **Permitido.** Se cuentan 0 asistencias con el tope normal (paso 2): así encontrar el dato nunca baja la media. La CLI anota `assists: null`. |
+| `clean_sheets_all` de un portero (`null`) | **Permitido.** Se cuentan 0 porterías a cero, por el mismo motivo. La CLI anota `clean_sheets: null`. (Antes se usaba un valor neutro `P = 0,35`, pero entonces un `clean_sheets_all` real bajo habría bajado la media.) |
 | `starts_all` (`null`) | **Permitido.** `I = share_min`. |
-| `minutes_all` o `appearances_all` (`null`) pero hay `minutes_league` y `appearances_league` | **Permitido, con aviso.** Se usa la liga: en el paso 1, `minutes_league / (90 × club_matches_league)`, y `starts_league` en lugar de `starts_all`. Los demás pasos usan `avail` de la liga (`club_matches_league`). La CLI anota `basis: league`. |
+| `minutes_all` o `appearances_all` (`null`) pero hay `minutes_league` y `appearances_league` | **Permitido, con aviso.** Se usa la liga: en el paso 1, `minutes_league / (90 × club_matches_league)`, y `starts_league` en lugar de `starts_all`. La base de la liga **solo sustituye la importancia**: la producción sigue dividiéndose entre `avail` de todas las competiciones (paso 0), porque `goals_all`, `assists_all` y `clean_sheets_all` son cifras de todas las competiciones. Si el jugador tiene `available_matches_all`, los partidos de liga que puede haber jugado son `min(club_matches_league, available_matches_all)`. La CLI anota `basis: league` en la salida normal. |
 | `minutes_league` y `minutes_all` (`null`) | **No se calcula.** `rating: null` y `verify: pending`. |
 | `goals_all`, `caps`, `awards`, `position`, `age` (`null`) | **No se calcula.** `rating: null` y `verify: pending`. Si la fuente confirma que no hubo goles, no hubo partidos con la selección o no hubo premios, se escribe `0` o `[]`. |
 | Nivel del club (`level_tier`) sin fuente | **No se calcula**, igual que arriba. |
@@ -419,10 +421,12 @@ Estadísticas: `minutes_all: 4900`, `starts_all: 54`, `clean_sheets_all: 24`, `c
 | `N` | 3 / 8 | 0,375 |
 | `V` | 0,35 × 1 | 0,35 |
 | `T` | nivel A | +6 |
-| `bruta` | 46 + 21,71 + 11,10 + 2,25 + 2,45 + 6 | 89,51 |
+| `bruta` | 46 + 21,72 + 11,10 + 2,25 + 2,45 + 6 | 89,53 |
 | **media** | redondeo | **90** |
 
-Si `clean_sheets_all` fuese `null`, `P = 0,35` y la bruta bajaría a 46 + 21,71 + 4,90 + 2,25 + 2,45 + 6 = 83,31, es decir, **83**. El dato que falta no se rellena: se usa el valor neutro.
+Si `clean_sheets_all` fuese `null`, se contarían 0 porterías a cero (`P = 0`) y la bruta bajaría a 46 + 21,72 + 0 + 2,25 + 2,45 + 6 = 78,42, es decir, **78** (antes de la decisión C era 83, con un valor neutro). El dato que falta no se rellena, y encontrarlo nunca baja la media.
+
+> Nota sobre los decimales: las tablas de este apartado redondean cada sumando a 2 o 3 decimales para que se puedan seguir a mano, y por eso la suma puede diferir unas centésimas de la bruta exacta (la de 10.4 es 89,53, no 89,51). La media entera es la que calcula la CLI con fracciones exactas y no cambia.
 
 ### 10.5 Suplente de rotación, con `assists_all` desconocido: Rubén Ostermoon (CD Ficticio Norte, nivel C)
 
@@ -433,10 +437,10 @@ Estadísticas: `position: MF`, `minutes_all: 520`, `starts_all: 4`, `goals_all: 
 | `share_min` | 520 / 3780 | 0,138 |
 | `share_start` | 4 / 42 | 0,095 |
 | `I` | 0,70 × 0,138 + 0,30 × 0,095 | 0,125 |
-| `P` (MF, sin asistencias) | tasa = 1 / 42 = 0,0238; `P` = 0,0238 / (0,80 × 0,45 = 0,36) | 0,066 |
+| `P` (MF, sin asistencias: 0 asistencias) | tasa = 1 / 42 = 0,0238; `P` = 0,0238 / 0,45 | 0,053 |
 | `N`, `V`, `T` | 0 | 0 |
-| `bruta` | 46 + 22 × 0,125 + 14 × 0,066 = 46 + 2,75 + 0,92 | 49,67 |
-| **media** | redondeo | **50** |
+| `bruta` | 46 + 22 × 0,125 + 14 × 0,053 = 46 + 2,75 + 0,74 | 49,49 |
+| **media** | redondeo | **49** (con el tope rebajado de antes era 50) |
 
 ### 10.6 Override por lesión larga: Calisto Marblethorn (Real Atlántico, nivel A)
 

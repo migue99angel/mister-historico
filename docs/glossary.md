@@ -27,8 +27,8 @@
 | Jugador | `Player` | Persona real con `player_id` estable entre temporadas. |
 | Jugador en una temporada | `PlayerSeason` | El jugador dentro de un `ClubSeason`: posición, edad, media, si es clave y fechas de alta y baja. |
 | Media | `Rating` | Valoración de 1 a 99 según la rúbrica del proyecto, con su justificación y sus fuentes. |
-| Justificación de la media | `rating_rationale` | Texto que explica la media; obligatorio para los jugadores clave. |
-| Jugador clave | `key` | Jugador marcado `key: true`, cuya media exige justificación detallada. |
+| Corrección de la media | `rating_override` | Valor manual con `rationale` y fuentes que sustituye a la media calculada; limitado a 12 puntos de la fórmula. |
+| Jugador clave | `key` | Jugador marcado `key: true`, cuya media se revisa a mano. |
 | Nombre real / alias | `display_name` / `alias_name` | Nombre que se muestra según la política de nombres (`NamePolicy`). |
 | Rival agregado | `aggregate` | Rival sin plantilla (fuera de Primera) que solo tiene fuerza agregada. |
 | Competición | `Competition` | Liga, Copa, Supercopa, Champions o UEFA de una temporada, con sus participantes y reglas. |
