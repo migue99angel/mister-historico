@@ -88,20 +88,29 @@ class _RecordingGoalModel:
 def _setup(*, fixture_id: str = "test-match", venue: Venue = Venue.HOME) -> MatchSetup:
     return MatchSetup(
         FixtureSpec(
-            FixtureId(fixture_id), date(2000, 9, 3), CompetitionId("liga-test"),
-            ClubSeasonId("test-fc-2000-01"), ClubSeasonId("demo-athletic-2000-01"), venue,
+            FixtureId(fixture_id),
+            date(2000, 9, 3),
+            CompetitionId("liga-test"),
+            ClubSeasonId("test-fc-2000-01"),
+            ClubSeasonId("demo-athletic-2000-01"),
+            venue,
         ),
-        TeamStrength(1.2, 0.8), TeamStrength(0.9, 1.1), CompetitionParams(1.3, 1.15),
+        TeamStrength(1.2, 0.8),
+        TeamStrength(0.9, 1.1),
+        CompetitionParams(1.3, 1.15),
     )
 
 
-def _period_draws(regulation: Score, extra_time: Score = Score(0, 0)) -> _Draws:
-    return _Draws(goals={
-        ("match", "test-match", "goals", "home"): regulation.home,
-        ("match", "test-match", "goals", "away"): regulation.away,
-        ("match", "test-match", "extra_time", "home"): extra_time.home,
-        ("match", "test-match", "extra_time", "away"): extra_time.away,
-    })
+def _period_draws(regulation: Score, extra_time: Score | None = None) -> _Draws:
+    extra_time = extra_time or Score(0, 0)
+    return _Draws(
+        goals={
+            ("match", "test-match", "goals", "home"): regulation.home,
+            ("match", "test-match", "goals", "away"): regulation.away,
+            ("match", "test-match", "extra_time", "home"): extra_time.home,
+            ("match", "test-match", "extra_time", "away"): extra_time.away,
+        }
+    )
 
 
 @pytest.mark.parametrize("venue", [Venue.HOME, Venue.NEUTRAL])
@@ -126,9 +135,15 @@ def test_regulation_uses_exact_leaf_streams_and_both_teams_point_of_view(venue: 
 def test_extra_time_has_distinct_leaf_streams_and_asks_for_thirty_minute_rates(
     venue: Venue,
 ) -> None:
-    setup, draws, model = _setup(venue=venue), _period_draws(Score(1, 0), Score(0, 2)), _RecordingGoalModel()
+    setup, draws, model = (
+        _setup(venue=venue),
+        _period_draws(Score(1, 0), Score(0, 2)),
+        _RecordingGoalModel(),
+    )
 
-    assert PoissonMatchSimulator(model).extra_time(setup, _ScriptedRandomSource(draws)) == Score(0, 2)
+    assert PoissonMatchSimulator(model).extra_time(setup, _ScriptedRandomSource(draws)) == Score(
+        0, 2
+    )
     assert draws.streams == [
         ("match", "test-match", "extra_time", "home"),
         ("match", "test-match", "extra_time", "away"),
@@ -213,7 +228,10 @@ def test_extra_time_and_penalties_do_not_advance_regulation_or_the_root() -> Non
 
 def test_one_hundred_thousand_matches_have_the_expected_goal_means() -> None:
     setup, simulator, model, rng = (
-        _setup(), PoissonMatchSimulator(), PoissonGoalModel(), StdlibRandomSource(Seed(20261023))
+        _setup(),
+        PoissonMatchSimulator(),
+        PoissonGoalModel(),
+        StdlibRandomSource(Seed(20261023)),
     )
     sample_size = 100_000
     home_goals, away_goals = 0, 0
@@ -231,18 +249,23 @@ def test_one_hundred_thousand_matches_have_the_expected_goal_means() -> None:
         assert abs(goals / sample_size - rate) < 6 * math.sqrt(rate / sample_size)
 
 
-@pytest.mark.parametrize(("uniforms", "expected", "consumed"), [
-    ([0.0, 0.99] * 3, Score(3, 0), 6),
-    ([0.99, 0.0] * 3, Score(0, 3), 6),
-    ([0.99, 0.0] * 2 + [0.99, 0.99, 0.99], Score(0, 2), 7),
-    ([0.0, 0.0] * 4 + [0.99, 0.0], Score(4, 5), 10),
-])
+@pytest.mark.parametrize(
+    ("uniforms", "expected", "consumed"),
+    [
+        ([0.0, 0.99] * 3, Score(3, 0), 6),
+        ([0.99, 0.0] * 3, Score(0, 3), 6),
+        ([0.99, 0.0] * 2 + [0.99, 0.99, 0.99], Score(0, 2), 7),
+        ([0.0, 0.0] * 4 + [0.99, 0.0], Score(4, 5), 10),
+    ],
+)
 def test_shootouts_alternate_and_stop_as_soon_as_the_score_is_irreversible(
     uniforms: list[float], expected: Score, consumed: int
 ) -> None:
     draws = _Draws(uniforms=deque(uniforms))
 
-    assert PoissonMatchSimulator().penalty_shootout(_setup(), _ScriptedRandomSource(draws)) == expected
+    assert (
+        PoissonMatchSimulator().penalty_shootout(_setup(), _ScriptedRandomSource(draws)) == expected
+    )
     assert draws.consumed == consumed
     assert draws.streams == [("match", "test-match", "penalties")]
 
@@ -260,11 +283,16 @@ def test_sudden_death_terminates_for_constant_uniforms_without_an_arbitrary_cap(
     assert draws.consumed == 12
 
 
-@pytest.mark.parametrize(("sudden_draws", "expected"), [
-    ([0.0, 0.0], Score(6, 5)), ([0.5, 0.99], Score(6, 7)),
-])
+@pytest.mark.parametrize(
+    ("sudden_draws", "expected"),
+    [
+        ([0.0, 0.0], Score(6, 5)),
+        ([0.5, 0.99], Score(6, 7)),
+    ],
+)
 def test_sudden_death_counts_joint_goals_before_a_conditionally_drawn_winner(
-    sudden_draws: list[float], expected: Score,
+    sudden_draws: list[float],
+    expected: Score,
 ) -> None:
     draws = _Draws(uniforms=deque([0.0] * 10 + sudden_draws))
     equal = replace(_setup(), home=TeamStrength(1.0, 1.0), away=TeamStrength(1.0, 1.0))
@@ -280,19 +308,25 @@ def test_shootouts_have_no_additional_home_advantage() -> None:
     for seed in range(100):
         rng = StdlibRandomSource(Seed(seed))
         assert simulator.penalty_shootout(setup, rng) == simulator.penalty_shootout(neutral, rng)
-        assert simulator.penalty_shootout(setup, rng) == simulator.penalty_shootout(huge_advantage, rng)
+        assert simulator.penalty_shootout(setup, rng) == simulator.penalty_shootout(
+            huge_advantage, rng
+        )
 
 
 def test_penalty_conversion_uses_both_adjusted_attack_and_opposing_vulnerability() -> None:
     setup = replace(_setup(), home=TeamStrength(2.0, 0.5), away=TeamStrength(0.5, 2.0))
     draws = _Draws(uniforms=deque([0.76, 0.74] * 3))
 
-    assert PoissonMatchSimulator().penalty_shootout(setup, _ScriptedRandomSource(draws)) == Score(3, 0)
+    assert PoissonMatchSimulator().penalty_shootout(setup, _ScriptedRandomSource(draws)) == Score(
+        3, 0
+    )
 
 
 def test_equal_teams_have_symmetric_shootout_win_rates_and_strength_adds_a_bounded_bias() -> None:
     simulator, rng = PoissonMatchSimulator(), StdlibRandomSource(Seed(6021))
-    wins_equal, wins_stronger, wins_weaker = [], [], []
+    wins_equal: list[int] = []
+    wins_stronger: list[int] = []
+    wins_weaker: list[int] = []
     sample_size = 10_000
     for index in range(sample_size):
         setup = _setup(fixture_id=f"shootout-{index}")
@@ -312,6 +346,8 @@ def test_equal_teams_have_symmetric_shootout_win_rates_and_strength_adds_a_bound
 
 @given(seed=st.integers(min_value=0, max_value=2**64 - 1))
 def test_decisive_matches_always_produce_a_winner(seed: int) -> None:
-    result = PoissonMatchSimulator().simulate(_setup(), StdlibRandomSource(Seed(seed)), decisive=True)
+    result = PoissonMatchSimulator().simulate(
+        _setup(), StdlibRandomSource(Seed(seed)), decisive=True
+    )
 
     assert result.winner in (Side.HOME, Side.AWAY)
