@@ -1,6 +1,6 @@
 """Mapping of content models to the inputs of the rating formula."""
 
-from tests.catalog.test_squad_models import player, season_stats, squad
+from tests.catalog.test_squad_models import club_data, player, season_stats, squad
 
 from mister.catalog.domain.ratings import AwardTier, LevelTier, Position
 from mister.catalog.infrastructure.content_schema.ratings_bridge import (
@@ -27,27 +27,36 @@ def test_a_player_maps_to_the_statistics_of_the_formula() -> None:
 
 
 def test_a_club_maps_to_its_match_counts_and_level() -> None:
-    context = club_context(SquadFile.model_validate(squad()))
+    context = club_context(SquadFile.model_validate(squad()).club_data)
 
     assert (context.club_matches_all, context.club_matches_league) == (42, 38)
     assert context.level_tier is LevelTier.C
 
 
-def test_a_market_player_and_a_market_squad_map_to_unknown_data() -> None:
+def test_a_market_player_maps_to_his_own_club() -> None:
     market = SquadFile.model_validate(
         squad(
             club_season="_market-2000-01",
             club=None,
             real_league=None,
             club_data=None,
-            players=[player(1, season_stats=None)],
+            players=[
+                player(1, club_data=club_data(club_name="Fictional Origin FC", level_tier="A"))
+            ],
         )
     )
 
-    stats = player_stats(market.players[0])
-    context = club_context(market)
+    context = club_context(market.players[0].club_data)
 
-    assert stats.position is Position.MF
-    assert stats.minutes_all is None
-    assert stats.awards is None
-    assert (context.club_matches_all, context.level_tier) == (None, None)
+    assert context.level_tier is LevelTier.A
+    assert context.club_matches_all == 42
+
+
+def test_no_club_data_maps_to_unknown_data() -> None:
+    context = club_context(None)
+
+    assert (context.club_matches_all, context.club_matches_league, context.level_tier) == (
+        None,
+        None,
+        None,
+    )

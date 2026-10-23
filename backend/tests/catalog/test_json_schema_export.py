@@ -61,3 +61,10 @@ def test_the_export_command_writes_to_the_given_directory(tmp_path: Path) -> Non
     assert main(["--out", str(tmp_path)]) == 0
 
     assert (tmp_path / "season.schema.json").is_file()
+
+
+def test_the_squad_schema_marks_the_statistics_and_club_data_as_required() -> None:
+    schema = json.loads(render_json_schemas()["squad.schema.json"])
+
+    assert "club_data" in schema["required"]
+    assert "season_stats" in schema["$defs"]["PlayerEntry"]["required"]

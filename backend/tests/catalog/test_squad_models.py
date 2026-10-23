@@ -124,11 +124,9 @@ def test_a_player_source_must_be_an_http_url() -> None:
         SquadFile.model_validate(with_player(3, sources=["not a url"]))
 
 
-def test_a_key_player_needs_no_rating_rationale_without_an_override() -> None:
-    parsed = SquadFile.model_validate(with_player(3, key=True))
-
-    assert parsed.players[3].key
-    assert parsed.players[3].rating_rationale is None
+def test_the_old_rating_rationale_field_is_gone() -> None:
+    with pytest.raises(ValidationError, match="extra_forbidden"):
+        SquadFile.model_validate(with_player(3, key=True, rating_rationale="Fine."))
 
 
 def test_an_unknown_position_is_rejected() -> None:
@@ -203,7 +201,7 @@ def test_a_market_squad_has_no_club_and_any_size() -> None:
             club=None,
             real_league=None,
             club_data=None,
-            players=[player(0, season_stats=None)],
+            players=[player(0, club_data=club_data(club_name="Fictional Origin FC"))],
         )
     )
 
@@ -380,13 +378,41 @@ def test_a_club_squad_without_club_data_is_rejected() -> None:
         SquadFile.model_validate(squad(club_data=None))
 
 
-def test_a_market_squad_has_no_club_data_and_no_season_stats() -> None:
-    market = {"club_season": "_market-2000-01", "club": None, "real_league": None}
+MARKET = {"club_season": "_market-2000-01", "club": None, "real_league": None}
 
-    with pytest.raises(ValidationError, match="club_data"):
-        SquadFile.model_validate(squad(**market))
-    with pytest.raises(ValidationError, match="season_stats"):
-        SquadFile.model_validate(squad(**market, club_data=None))
+
+def market_player(index: int = 0, **overrides: Any) -> dict[str, Any]:
+    data = {"club_data": club_data(club_name="Fictional Origin FC")}
+    data.update(overrides)
+    return player(index, **data)
+
+
+def test_a_market_player_carries_stats_and_the_data_of_his_own_club() -> None:
+    parsed = SquadFile.model_validate(squad(**MARKET, club_data=None, players=[market_player(1)]))
+
+    entry = parsed.players[0]
+    assert entry.season_stats is not None
+    assert entry.club_data is not None
+    assert entry.club_data.club_name == "Fictional Origin FC"
+
+
+def test_a_market_player_needs_his_club_data_with_the_club_name() -> None:
+    without = player(1)
+    with pytest.raises(ValidationError, match=r"players\.0\.club_data is required"):
+        SquadFile.model_validate(squad(**MARKET, club_data=None, players=[without]))
+    nameless = market_player(1, club_data=club_data())
+    with pytest.raises(ValidationError, match=r"players\.0\.club_data\.club_name"):
+        SquadFile.model_validate(squad(**MARKET, club_data=None, players=[nameless]))
+
+
+def test_a_market_squad_has_no_squad_level_club_data() -> None:
+    with pytest.raises(ValidationError, match="a market squad has no club_data"):
+        SquadFile.model_validate(squad(**MARKET, players=[market_player(1)]))
+
+
+def test_a_club_squad_player_cannot_carry_his_own_club_data() -> None:
+    with pytest.raises(ValidationError, match=r"players\.3\.club_data"):
+        SquadFile.model_validate(with_player(3, club_data=club_data(club_name="Other FC")))
 
 
 @pytest.mark.parametrize(
@@ -516,17 +542,6 @@ def test_a_rating_override_without_a_rationale_is_rejected() -> None:
         SquadFile.model_validate(with_player(3, rating_override=data))
 
 
-def test_a_rating_rationale_is_only_allowed_next_to_an_override() -> None:
-    with pytest.raises(ValidationError, match="rating_rationale is only for a rating_override"):
-        SquadFile.model_validate(with_player(3, key=True, rating_rationale="Fine."))
-
-    parsed = SquadFile.model_validate(
-        with_player(3, key=True, rating_rationale="Fine.", rating_override=override())
-    )
-
-    assert parsed.players[3].rating_rationale == "Fine."
-
-
 def test_club_data_is_parsed() -> None:
     parsed = SquadFile.model_validate(squad())
 
@@ -565,3 +580,39 @@ def test_league_matches_cannot_exceed_all_matches() -> None:
         SquadFile.model_validate(
             squad(club_data=club_data(club_matches_all=30, club_matches_league=38))
         )
+
+
+# ------------------------------------------------------------ coherence of the statistics
+@pytest.mark.parametrize(
+    ("stats", "message"),
+    [
+        ({"available_matches_all": 43}, "available_matches_all cannot exceed club_matches_all"),
+        ({"appearances_all": 43}, "appearances_all cannot exceed the matches"),
+        (
+            {"available_matches_all": 10, "appearances_all": 11, "starts_all": 5},
+            "appearances_all cannot exceed the matches",
+        ),
+        ({"appearances_league": 39}, "appearances_league cannot exceed club_matches_league"),
+        ({"minutes_all": 5000}, "minutes_all cannot exceed 120 per appearance"),
+        (
+            {"minutes_league": 3100, "minutes_all": 4000, "appearances_all": 40},
+            "minutes_league cannot exceed 120 per appearance",
+        ),
+        ({"goals_all": 60}, "goals_all cannot exceed 4 per appearance"),
+        ({"assists_all": 60}, "assists_all cannot exceed 4 per appearance"),
+    ],
+)
+def test_statistics_that_cannot_be_true_are_rejected(stats: dict[str, Any], message: str) -> None:
+    with pytest.raises(ValidationError, match=message):
+        SquadFile.model_validate(with_player(3, season_stats=season_stats(**stats)))
+
+
+def test_clean_sheets_cannot_exceed_the_appearances() -> None:
+    with pytest.raises(ValidationError, match="clean_sheets_all cannot exceed appearances_all"):
+        SquadFile.model_validate(with_player(0, season_stats=season_stats(clean_sheets_all=33)))
+
+
+def test_extra_time_leaves_room_for_120_minutes_per_appearance() -> None:
+    ok = season_stats(minutes_all=3840, appearances_all=32, minutes_league=2000)
+
+    assert SquadFile.model_validate(with_player(3, season_stats=ok))

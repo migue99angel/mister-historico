@@ -30,7 +30,8 @@ def root(tmp_path: Path) -> Path:
 
 def formula(root: Path, index: int = PLAYER, club_season: str = OWN) -> int:
     squad = load_content_tree(root, release=False).squads[club_season]
-    result = compute_rating(player_stats(squad.players[index]), club_context(squad))
+    entry = squad.players[index]
+    result = compute_rating(player_stats(entry), club_context(entry.club_data or squad.club_data))
     assert result.rating is not None
     return result.rating
 
@@ -72,10 +73,11 @@ def test_a_rival_squad_is_checked_too(root: Path) -> None:
     assert_issue(issues_of(root), RIVAL, "players.0.rating", f"expected {expected}")
 
 
-def test_a_market_squad_rating_is_not_computed(root: Path) -> None:
-    edit(root, MARKET, lambda d: d["players"][0].update(rating=99))
+def test_a_market_player_rating_is_checked_like_any_other(root: Path) -> None:
+    expected = formula(root, 0, "_market-2000-01")
+    edit(root, MARKET, lambda d: d["players"][0].update(rating=expected + 1))
 
-    load_content_tree(root, release=False)
+    assert_issue(issues_of(root), MARKET, "players.0.rating", f"expected {expected}")
 
 
 def test_a_change_of_club_level_changes_every_expected_rating(root: Path) -> None:
@@ -180,13 +182,3 @@ def test_an_override_cannot_fix_missing_statistics(root: Path) -> None:
         f"players.{PLAYER}.rating_override",
         "statistics are missing: goals_all",
     )
-
-
-def test_a_rating_rationale_next_to_an_override_is_accepted(root: Path) -> None:
-    def mutate(data: dict[str, Any]) -> None:
-        with_override(formula(root) + 2)(data)
-        data["players"][PLAYER]["rating_rationale"] = "Reviewed against the sources."
-
-    edit(root, SQUAD, mutate)
-
-    load_content_tree(root, release=False)

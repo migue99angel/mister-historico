@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from mister.catalog.application.ratings_tool import RatingSheetStore
+from mister.catalog.application.ports import RatingSheetStore
 from mister.catalog.infrastructure.content_schema.rating_sheets import YamlRatingSheetStore
 from mister.catalog.infrastructure.in_memory.rating_sheets import InMemoryRatingSheetStore
 from tests.contracts.suites.rating_sheet_store import CLUB_SEASON, RatingSheetStoreContract
