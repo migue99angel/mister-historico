@@ -52,7 +52,7 @@ players:
   alias_name: Jugador MCT-02
   position: GK
   age: 23
-  rating: 64
+  rating: 59
   key: false
   season_stats:
     minutes_league: 510
@@ -427,7 +427,7 @@ players:
   alias_name: Jugador MCT-18
   position: FW
   age: 34
-  rating: 57
+  rating: 56
   key: false
   season_stats:
     minutes_league: 320

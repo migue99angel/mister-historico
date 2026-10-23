@@ -14,7 +14,6 @@ dependencies = [
     "pydantic>=2",
     "pyyaml>=6.0.3",
     "typer>=0.27.3",
-    "ruamel-yaml>=0.19.1",
 ]
 
 [project.scripts]
@@ -185,7 +184,6 @@ forbidden_modules = [
     "pytest",
     "redis",
     "requests",
-    "ruamel",
     "sqlalchemy",
     "starlette",
     "typer",
@@ -226,7 +224,6 @@ forbidden_modules = [
     "pytest",
     "redis",
     "requests",
-    "ruamel",
     "sqlalchemy",
     "starlette",
     "typer",

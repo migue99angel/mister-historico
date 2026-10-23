@@ -55,7 +55,7 @@ players:
   alias_name: Jugador SMU-02
   position: GK
   age: 19
-  rating: 65
+  rating: 60
   key: false
   season_stats:
     minutes_league: 530
@@ -103,7 +103,7 @@ players:
   alias_name: Jugador SMU-04
   position: DF
   age: 22
-  rating: 69
+  rating: 68
   key: true
   season_stats:
     minutes_league: 615
@@ -433,7 +433,7 @@ players:
   alias_name: Jugador SMU-18
   position: FW
   age: 33
-  rating: 61
+  rating: 60
   key: false
   season_stats:
     minutes_league: 405

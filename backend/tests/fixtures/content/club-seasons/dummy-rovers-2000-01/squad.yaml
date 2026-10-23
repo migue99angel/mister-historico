@@ -52,7 +52,7 @@ players:
   alias_name: Jugador DRV-02
   position: GK
   age: 27
-  rating: 51
+  rating: 46
   key: false
   season_stats:
     minutes_league: 117
@@ -427,7 +427,7 @@ players:
   alias_name: Jugador DRV-18
   position: FW
   age: 23
-  rating: 54
+  rating: 53
   key: true
   season_stats:
     minutes_league: 298

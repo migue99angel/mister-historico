@@ -52,7 +52,7 @@ players:
   alias_name: Jugador FXW-02
   position: GK
   age: 30
-  rating: 55
+  rating: 50
   key: false
   season_stats:
     minutes_league: 294
@@ -427,7 +427,7 @@ players:
   alias_name: Jugador FXW-18
   position: FW
   age: 35
-  rating: 57
+  rating: 56
   key: true
   season_stats:
     minutes_league: 362

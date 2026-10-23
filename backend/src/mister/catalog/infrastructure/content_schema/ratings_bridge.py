@@ -7,32 +7,14 @@ from mister.catalog.domain.ratings import (
     PlayerStats,
     Position,
 )
-from mister.catalog.infrastructure.content_schema.squad import PlayerEntry, SquadFile
+from mister.catalog.infrastructure.content_schema.season_stats import ClubData
+from mister.catalog.infrastructure.content_schema.squad import PlayerEntry
 
 
 def player_stats(entry: PlayerEntry) -> PlayerStats:
-    """The formula's view of a player: his position and age plus his `season_stats`.
-
-    A player without `season_stats` (a market player) maps to all-unknown statistics.
-    """
+    """The formula's view of a player: his position and age plus his `season_stats`."""
     stats = entry.season_stats
     position = None if entry.position is None else Position(entry.position.value)
-    if stats is None:
-        return PlayerStats(
-            position=position,
-            age=entry.age,
-            minutes_league=None,
-            starts_league=None,
-            appearances_league=None,
-            minutes_all=None,
-            starts_all=None,
-            appearances_all=None,
-            goals_all=None,
-            assists_all=None,
-            clean_sheets_all=None,
-            caps=None,
-            awards=None,
-        )
     return PlayerStats(
         position=position,
         age=entry.age,
@@ -51,9 +33,8 @@ def player_stats(entry: PlayerEntry) -> PlayerStats:
     )
 
 
-def club_context(squad: SquadFile) -> ClubContext:
-    """The formula's view of the club-season; unknown when the squad has no `club_data`."""
-    data = squad.club_data
+def club_context(data: ClubData | None) -> ClubContext:
+    """The formula's view of a club-season; unknown when there is no `club_data`."""
     if data is None:
         return ClubContext(None, None, None)
     return ClubContext(

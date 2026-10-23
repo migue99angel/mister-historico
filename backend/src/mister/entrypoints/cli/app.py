@@ -27,7 +27,10 @@ def compute(
     club_season: Annotated[
         str, typer.Argument(help="Slug of the club-season, e.g. test-fc-2000-01.")
     ],
-    root: Annotated[Path, typer.Option(help="Content directory.")] = Path("content"),
+    root: Annotated[
+        Path | None,
+        typer.Option(help="Content directory (default: ./content, else the repository's)."),
+    ] = None,
     check: Annotated[
         bool, typer.Option("--check", help="Write nothing; exit 1 if a rating is out of date.")
     ] = False,
@@ -42,7 +45,7 @@ def compute(
     written and the exit code is 1 when a stored rating differs from the formula (or from its
     override), which makes it usable in CI. Exit code 2 means the club-season could not be read.
     """
-    tool = build_ratings_tool(root)
+    tool = build_ratings_tool(_content_root(root))
     try:
         if explain is not None:
             typer.echo(_explanation(tool.explain(club_season, explain)))
@@ -56,6 +59,20 @@ def compute(
         raise typer.Exit(EXIT_DISCREPANCY)
 
 
+def _content_root(root: Path | None) -> Path:
+    """The given root; else `./content`; else the `content/` of the repository this package is in.
+
+    The last fallback makes the command work from `backend/`, where `uv run` is used.
+    """
+    if root is not None:
+        return root
+    local = Path("content")
+    repository = Path(__file__).resolve().parents[5] / "content"
+    if not local.is_dir() and repository.is_dir():
+        return repository
+    return local
+
+
 def _print_report(report: RatingsReport, *, check: bool) -> None:
     for line in report.lines:
         if line.problem is not None:
@@ -66,6 +83,9 @@ def _print_report(report: RatingsReport, *, check: bool) -> None:
                 f"{line.player_id}: stored {_value(line.stored)}, {action} {_value(line.expected)}"
                 f"{_why(line)}"
             )
+    for line in report.lines:
+        if line.notes:
+            typer.echo(f"note: {line.player_id}: {'; '.join(line.notes)}")
     for alert in report.alerts:
         typer.echo(f"warning: {alert}")
     stale = sum(1 for line in report.lines if line.stale)

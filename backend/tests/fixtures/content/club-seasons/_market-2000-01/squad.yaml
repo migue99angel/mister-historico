@@ -3,6 +3,7 @@ club_season: _market-2000-01
 club: null
 season: 2000-01
 real_league: null
+club_data: null
 sources:
 - https://example.org/test-content/market/2000-01
 verify: ok
@@ -12,8 +13,31 @@ players:
   alias_name: Jugador MKT-01
   position: MF
   age: 25
-  rating: 64
+  rating: 66
   key: false
+  season_stats:
+    minutes_league: 1520
+    starts_league: 19
+    appearances_league: 22
+    minutes_all: 1900
+    starts_all: 24
+    appearances_all: 28
+    goals_all: 3
+    assists_all: 4
+    caps: 1
+    awards: []
+    sources:
+    - https://example.org/test-content/market/stats/mkt-01
+    verify: ok
+  club_data:
+    club_matches_all: 40
+    club_matches_league: 30
+    level_tier: B
+    level_tier_basis: Fictional basis for the origin club of a market player.
+    club_name: Fictional Origin FC
+    sources:
+    - https://example.org/test-content/market/clubs/mkt-01
+    verify: ok
   sources:
   - https://example.org/test-content/market/2000-01
   verify: ok
@@ -22,8 +46,31 @@ players:
   alias_name: Jugador MKT-02
   position: DF
   age: 26
-  rating: 65
+  rating: 67
   key: false
+  season_stats:
+    minutes_league: 2240
+    starts_league: 24
+    appearances_league: 27
+    minutes_all: 2800
+    starts_all: 31
+    appearances_all: 34
+    goals_all: 1
+    assists_all: 1
+    caps: 0
+    awards: []
+    sources:
+    - https://example.org/test-content/market/stats/mkt-02
+    verify: ok
+  club_data:
+    club_matches_all: 38
+    club_matches_league: 34
+    level_tier: C
+    level_tier_basis: Fictional basis for the origin club of a market player.
+    club_name: Imaginary Rovers
+    sources:
+    - https://example.org/test-content/market/clubs/mkt-02
+    verify: ok
   sources:
   - https://example.org/test-content/market/2000-01
   verify: ok
@@ -32,8 +79,31 @@ players:
   alias_name: Jugador MKT-03
   position: FW
   age: 27
-  rating: 66
+  rating: 67
   key: false
+  season_stats:
+    minutes_league: 1200
+    starts_league: 11
+    appearances_league: 17
+    minutes_all: 1500
+    starts_all: 14
+    appearances_all: 22
+    goals_all: 9
+    assists_all: 3
+    caps: 4
+    awards: []
+    sources:
+    - https://example.org/test-content/market/stats/mkt-03
+    verify: ok
+  club_data:
+    club_matches_all: 44
+    club_matches_league: 36
+    level_tier: A
+    level_tier_basis: Fictional basis for the origin club of a market player.
+    club_name: Pretend United
+    sources:
+    - https://example.org/test-content/market/clubs/mkt-03
+    verify: ok
   sources:
   - https://example.org/test-content/market/2000-01
   verify: ok
