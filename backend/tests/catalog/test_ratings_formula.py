@@ -19,6 +19,8 @@ from mister.catalog.domain.ratings import (
     PlayerStats,
     Position,
     compute_rating,
+    distinct_source_count,
+    override_issue,
     override_problem,
     round_raw,
 )
@@ -116,23 +118,23 @@ def test_rubric_example_goalkeeper_with_clean_sheets_rates_90() -> None:
     assert float(result.raw) == pytest.approx(89.51, abs=0.05)  # the rubric rounds each term
 
 
-def test_rubric_example_goalkeeper_without_clean_sheets_rates_83() -> None:
+def test_rubric_example_goalkeeper_without_clean_sheets_counts_zero_and_rates_78() -> None:
     result = compute_rating(_goalkeeper(None), ATLANTIC)
 
-    assert result.rating == 83
+    assert result.rating == 78
     assert result.components is not None
-    assert result.components.production == Fraction(35, 100)
+    assert result.components.production == 0
     assert "clean_sheets: null" in result.notes
 
 
-def test_rubric_example_rotation_substitute_without_assists_rates_50() -> None:
+def test_rubric_example_rotation_substitute_without_assists_counts_zero_and_rates_49() -> None:
     substitute = stats(
         Position.MF, minutes_all=520, starts_all=4, goals_all=1, assists_all=None, caps=0
     )
 
     result = compute_rating(substitute, NORTH)
 
-    assert result.rating == 50
+    assert result.rating == 49
     assert "assists: null" in result.notes
 
 
@@ -327,13 +329,13 @@ def test_league_figures_stand_in_when_the_all_competitions_minutes_are_missing()
 
     result = compute_rating(league_only, NORTH)
 
-    # avail = 38: I = 0.7 * 3000 / 3420 + 0.3 * 30 / 38, P = (12 / 38) / (0.8 * 0.8)
+    # importance on 38 league matches, production on the 42 matches of the club
     assert result.basis is BasisKind.LEAGUE
     assert "basis: league" in result.notes
     assert result.raw is not None
-    expected = 46 + 22 * (0.7 * 3000 / 3420 + 0.3 * 30 / 38) + 14 * (12 / 38) / 0.64
+    expected = 46 + 22 * (0.7 * 3000 / 3420 + 0.3 * 30 / 38) + 14 * (12 / 42) / 0.8
     assert float(result.raw) == pytest.approx(expected, abs=1e-4)
-    assert result.rating == 72
+    assert result.rating == 70
 
 
 def test_league_start_count_is_used_on_the_league_basis_and_may_be_missing() -> None:
@@ -348,6 +350,29 @@ def test_league_start_count_is_used_on_the_league_basis_and_may_be_missing() -> 
     assert without_starts.components is not None
     assert without_starts.components.importance == Fraction(2000, 90 * 38)
     assert with_starts.components.importance > without_starts.components.importance
+
+
+def test_the_league_basis_respects_the_available_matches_of_a_mid_season_arrival() -> None:
+    arrival = stats(
+        minutes_all=None, appearances_all=None, minutes_league=900, available_matches_all=10
+    )
+
+    result = compute_rating(arrival, NORTH)
+
+    assert result.basis is BasisKind.LEAGUE
+    assert result.components is not None
+    # 900 minutes in the 10 matches he could play, not in the 38 of the league
+    assert result.components.importance == 1
+    full = compute_rating(replace(arrival, available_matches_all=None), NORTH)
+    assert full.components is not None
+    assert full.components.importance < 1
+
+
+def test_the_league_basis_still_needs_the_matches_of_the_club_for_production() -> None:
+    result = compute_rating(stats(minutes_all=None), replace(NORTH, club_matches_all=None))
+
+    assert result.rating is None
+    assert result.missing == ("club_matches_all",)
 
 
 def test_missing_appearances_all_falls_back_to_the_league() -> None:
@@ -540,6 +565,27 @@ def test_more_matches_to_play_never_raise_the_rating(
     assert _rating(player, longer) <= _rating(player, club)
 
 
+@given(players(), st.integers(min_value=0, max_value=40))
+def test_finding_the_assists_never_lowers_the_rating(
+    case: tuple[PlayerStats, ClubContext], found: int
+) -> None:
+    player, club = case
+
+    unknown = replace(player, assists_all=None)
+
+    assert _rating(replace(player, assists_all=found), club) >= _rating(unknown, club)
+
+
+@given(players(), st.integers(min_value=0, max_value=40))
+def test_finding_the_clean_sheets_never_lowers_a_goalkeeper_rating(
+    case: tuple[PlayerStats, ClubContext], found: int
+) -> None:
+    player, club = case
+    unknown = replace(player, position=Position.GK, clean_sheets_all=None)
+
+    assert _rating(replace(unknown, clean_sheets_all=found), club) >= _rating(unknown, club)
+
+
 @given(players())
 def test_the_rating_is_always_between_1_and_99(case: tuple[PlayerStats, ClubContext]) -> None:
     player, club = case
@@ -577,3 +623,44 @@ def test_an_override_more_than_twelve_points_away_is_never_allowed() -> None:
 
     assert problem is not None
     assert "more than 12" in problem
+
+
+def test_a_missing_assist_count_is_the_same_as_zero_assists() -> None:
+    assert (
+        compute_rating(stats(assists_all=None), NORTH).rating
+        == compute_rating(stats(assists_all=0), NORTH).rating
+    )
+
+
+def test_override_issue_explains_a_missing_statistic() -> None:
+    result = compute_rating(stats(goals_all=None), NORTH)
+
+    issue = override_issue(result, 70, 2)
+
+    assert issue is not None
+    assert "statistics are missing: goals_all" in issue
+
+
+def test_override_issue_applies_the_limits_to_the_formula_rating() -> None:
+    result = compute_rating(stats(), NORTH)
+    assert result.rating is not None
+
+    assert override_issue(result, result.rating + 5, 1) is None
+    far = override_issue(result, result.rating + 13, 3)
+    assert far is not None
+    assert "more than 12" in far
+
+
+def test_distinct_sources_ignore_trailing_slash_scheme_case_and_host_case() -> None:
+    urls = [
+        "https://example.org/a",
+        "https://example.org/a/",
+        "HTTPS://EXAMPLE.ORG/a",
+        "http://example.org/a",
+    ]
+
+    assert distinct_source_count(urls) == 1
+
+
+def test_distinct_sources_keep_different_paths_apart() -> None:
+    assert distinct_source_count(["https://example.org/a", "https://example.org/b"]) == 2
