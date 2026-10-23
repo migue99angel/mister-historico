@@ -134,3 +134,9 @@ def test_effective_rating_is_clamped(rating: int, morale: int, expected: float) 
         effective_rating(replace(squad()[0], rating=Rating(rating), morale=Morale(morale)))
         == expected
     )
+
+
+def test_duplicate_player_ids_cannot_fill_two_slots() -> None:
+    players = squad()
+    with pytest.raises(InvalidValueError, match="distinct"):
+        select_lineup((*players, players[0]), TACTIC)

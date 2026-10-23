@@ -2,6 +2,7 @@
 
 import math
 from dataclasses import dataclass, replace
+from typing import cast
 
 from mister.shared_kernel.errors import InvalidValueError
 from mister.simulation.domain.lineup import Lineup, select_lineup
@@ -11,6 +12,7 @@ from mister.simulation.domain.model import (
     Morale,
     Position,
     Priority,
+    SimPlayer,
     SimTeam,
     Style,
     Tactic,
@@ -147,8 +149,14 @@ class StrengthReference:
 def _team_indices(team: SimTeam, priority: Priority = Priority.HIGH) -> AggregateIndices:
     if team.aggregate is not None:
         return team.aggregate
-    assert team.squad is not None and team.tactic is not None  # guaranteed by SimTeam
-    return lineup_indices(select_lineup(team.squad, team.tactic, priority=priority))
+    return lineup_indices(_squad_lineup(team, priority))
+
+
+def _squad_lineup(team: SimTeam, priority: Priority) -> Lineup:
+    """SimTeam construction guarantees a squad and tactic on the non-aggregate branch."""
+    return select_lineup(
+        cast("tuple[SimPlayer, ...]", team.squad), cast("Tactic", team.tactic), priority=priority
+    )
 
 
 def calculate_strength(
@@ -166,13 +174,22 @@ def calculate_strength(
     are clamped to 0.4-2.5 before bounded tactic/morale; final lambda safety belongs to T2.1.
     """
     current = _neutral_team(team) if neutral else team
-    indices = _team_indices(current, Priority.HIGH if neutral else priority)
+    lineup = (
+        None
+        if current.aggregate is not None
+        else _squad_lineup(current, Priority.HIGH if neutral else priority)
+    )
+    indices = (
+        current.aggregate
+        if current.aggregate is not None
+        else lineup_indices(cast("Lineup", lineup))
+    )
     attack = _clamp(math.exp(_BETA * indices.attack / 10) / reference.attack_mean, 0.4, 2.5)
     defense = _clamp(math.exp(-_BETA * indices.defense / 10) / reference.defense_mean, 0.4, 2.5)
     if current.aggregate is not None or neutral:
         return TeamStrength(attack, defense)
-    assert current.squad is not None and current.tactic is not None  # guaranteed by SimTeam
-    lineup = select_lineup(current.squad, current.tactic, priority=priority)
-    tactical_attack, tactical_defense = tactical_multipliers(current.tactic, lineup)
+    tactical_attack, tactical_defense = tactical_multipliers(
+        cast("Tactic", current.tactic), cast("Lineup", lineup)
+    )
     morale = morale_multiplier(current.morale)
     return TeamStrength(attack * tactical_attack * morale, defense * tactical_defense / morale)
