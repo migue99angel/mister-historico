@@ -122,6 +122,40 @@ def test_rubric_example_goalkeeper_without_clean_sheets_counts_zero_and_rates_79
     assert "clean_sheets: null" in result.notes
 
 
+@pytest.mark.parametrize("known_all", [None, 24])
+def test_rubric_example_goalkeeper_with_twenty_league_clean_sheets_rates_92(
+    known_all: int | None,
+) -> None:
+    goalkeeper = replace(_goalkeeper(known_all), clean_sheets_league=20)
+
+    result = compute_rating(goalkeeper, ATLANTIC)
+
+    assert result.rating == 92
+    assert result.components is not None
+    assert result.components.production == Fraction(200, 209)
+    assert result.raw == Fraction(192483, 2090)
+
+
+def test_finding_all_competition_minutes_can_lower_a_league_based_rating() -> None:
+    league_only = stats(
+        minutes_league=3420,
+        starts_league=38,
+        appearances_league=38,
+        minutes_all=None,
+        starts_all=39,
+        appearances_all=39,
+    )
+
+    before = compute_rating(league_only, ATLANTIC)
+    after = compute_rating(replace(league_only, minutes_all=3500), ATLANTIC)
+
+    assert before.basis is BasisKind.LEAGUE
+    assert after.basis is BasisKind.ALL
+    assert before.rating is not None
+    assert after.rating is not None
+    assert after.rating < before.rating
+
+
 def test_rubric_example_rotation_substitute_rates_50() -> None:
     substitute = stats(Position.MF, minutes_all=520, starts_all=4, goals_all=1, caps=0)
 
