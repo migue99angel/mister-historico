@@ -22,18 +22,22 @@ Bandas: **90-94** élite mundial · **85-89** estrella internacional · **80-84*
 
 Formato de cada casilla: `Nombre (Club, temporada)`. Ejemplo de formato: `Jugador Ejemplo (Club Ejemplo, 2008-09)`.
 
+> **Estado: propuesta de Claude (2026-10-23), a petición del autor. Pendiente de su visto bueno.** Las bandas son una estimación razonada, no un dato. T1.7b debe verificar con fuentes que cada jugador estuvo en ese club esa temporada y la jugó casi entera; si no se cumple, se sustituye por otro de la misma banda y posición y se avisa.
+
 | Banda | Portero | Defensa | Centrocampista | Delantero |
 |---|---|---|---|---|
-| 90-94 | | | | |
-| 85-89 | | | | |
-| 80-84 | | | | |
-| 75-79 | | | | |
-| 70-74 | | | | |
-| 60-69 | | | | |
+| 90-94 | Petr Čech (Chelsea, 2004-05) | Nemanja Vidić (Manchester United, 2008-09) | Xavi Hernández (FC Barcelona, 2010-11) | Thierry Henry (Arsenal, 2003-04) |
+| 85-89 | Pepe Reina (Liverpool, 2005-06) | Philipp Lahm (Bayern de Múnich, 2009-10) | David Silva (Valencia, 2009-10) | Diego Forlán (Villarreal, 2004-05) |
+| 80-84 | Diego López (Villarreal, 2008-09) | Gabriel Milito (Real Zaragoza, 2005-06) | Javi Martínez (Athletic Club, 2011-12) | Álvaro Negredo (Sevilla, 2010-11) |
+| 75-79 | Gorka Iraizoz (Athletic Club, 2008-09) | Alberto Lopo (Deportivo de La Coruña, 2008-09) | Borja Valero (RCD Mallorca, 2008-09) | Nikola Žigić (Racing de Santander, 2006-07) |
+| 70-74 | Kiko Casilla (RCD Espanyol, 2013-14) | Iván Ramis (RCD Mallorca, 2010-11) | Gonzalo Colsa (Racing de Santander, 2007-08) | Nino (CD Tenerife, 2009-10) |
+| 60-69 | Dani Aranzubia (Deportivo de La Coruña, 2010-11) | Manuel Pablo (Deportivo de La Coruña, 2010-11) | Javi Fuego (Rayo Vallecano, 2012-13) | Kike Sola (CA Osasuna, 2011-12) |
 
-**Notas opcionales** (por ejemplo, "este lo tengo menos claro"):
+**Notas:**
 
--
+- Criterios usados: temporadas completas, variedad de clubes (como mucho 3 del mismo), ninguna ancla de las cinco temporadas jugables del lanzamiento.
+- Las bandas bajas (70-74 y 60-69) son las menos seguras; es donde más útil sería la opinión del autor.
+- Ancla dudosa para revisar primero: Forlán 2004-05 podría estar en 90-94 por sus premios de esa temporada; si la fórmula lo sitúa ahí, no cuenta como fallo grave.
 
 ## Qué pasa después
 
