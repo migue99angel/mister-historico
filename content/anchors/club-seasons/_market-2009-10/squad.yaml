@@ -19,8 +19,8 @@ players:
   alias_name: Nino
   position: FW
   age: 29
-  rating: 70
-  key: false
+  rating: 72
+  key: true
   season_stats:
     minutes_league: 3350
     starts_league: 37
@@ -59,8 +59,16 @@ players:
   alias_name: Philipp Lahm
   position: DF
   age: 26
-  rating: 89
-  key: false
+  rating: 85
+  key: true
+  rating_override:
+    value: 85
+    rationale: >-
+      Titular indiscutible de un club de nivel A: 4784 minutos de 53 partidos (100 % de los minutos del Bayern) y capitán de Alemania en el Mundial de 2010, que jugó hasta la semifinal.
+    sources:
+    - https://www.fussballdaten.de/person/philipp-lahm/leistungsdaten/
+    - https://en.wikipedia.org/wiki/2010_FIFA_World_Cup_squads
+    - https://en.wikipedia.org/wiki/Philipp_Lahm
   season_stats:
     minutes_league: 3060
     starts_league: 34
@@ -99,8 +107,15 @@ players:
   alias_name: David Silva
   position: MF
   age: 23
-  rating: 75
-  key: false
+  rating: 85
+  key: true
+  rating_override:
+    value: 85
+    rationale: >-
+      Convocado por España para el Mundial de 2010 (dorsal 21), que ganó, y jugó ante Suiza y, como suplente, ante Alemania. Una evidencia (convocatoria a un torneo final), así que el cambio es de 5 puntos.
+    sources:
+    - https://en.wikipedia.org/wiki/2010_FIFA_World_Cup_squads
+    - https://en.wikipedia.org/wiki/David_Silva
   season_stats:
     minutes_league: 2416
     starts_league: 28

@@ -15,8 +15,8 @@ players:
   alias_name: Thierry Henry
   position: FW
   age: 26
-  rating: 98
-  key: false
+  rating: 99
+  key: true
   season_stats:
     minutes_league: 3330
     starts_league: 37

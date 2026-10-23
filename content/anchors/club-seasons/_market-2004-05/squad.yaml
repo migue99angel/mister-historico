@@ -17,8 +17,8 @@ players:
   alias_name: Diego Forlán
   position: FW
   age: 25
-  rating: 81
-  key: false
+  rating: 85
+  key: true
   season_stats:
     minutes_league: 3009
     starts_league: 34
@@ -63,8 +63,15 @@ players:
   alias_name: Petr Čech
   position: GK
   age: 22
-  rating: 97
-  key: false
+  rating: 94
+  key: true
+  rating_override:
+    value: 94
+    rationale: >-
+      La base (99) cae en la banda 95-99 (el mejor o casi el mejor del mundo, rúbrica 6), pero Čech no quedó entre los 3 primeros del Balón de Oro 2005 (empatado en 15.º-17.º; Ronaldinho, Lampard y Gerrard) ni del FIFA World Player 2005 (Ronaldinho, Lampard y Eto'o). Se limita a 94 (rúbrica 7.1, evidencia para bajar la base).
+    sources:
+    - https://en.wikipedia.org/wiki/2005_Ballon_d%27Or
+    - https://en.wikipedia.org/wiki/FIFA_World_Player_of_the_Year
   season_stats:
     minutes_league: 3150
     starts_league: 35
@@ -75,6 +82,7 @@ players:
     goals_all: 0
     assists_all: null
     clean_sheets_all: 28
+    clean_sheets_league: 24
     caps: 10
     awards:
     - name: Premier League Golden Glove 2004-05 (mejor portero, 24 porterías a cero)
@@ -84,6 +92,8 @@ players:
       tier: W
       source: https://en.wikipedia.org/wiki/UEFA_Team_of_the_Year
     sources:
+    - https://en.wikipedia.org/wiki/Premier_League_Golden_Glove
+    - https://en.wikipedia.org/wiki/2004%E2%80%9305_Chelsea_F.C._season
     - https://premierleague.com/news/3251101
     - https://www.statmuse.com/fc/ask/petr-cech-stats-2004-05
     - https://en.wikipedia.org/wiki/2004%E2%80%9305_Chelsea_F.C._season

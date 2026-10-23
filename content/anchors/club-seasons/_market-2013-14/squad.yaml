@@ -15,8 +15,8 @@ players:
   alias_name: Kiko Casilla
   position: GK
   age: 27
-  rating: 72
-  key: false
+  rating: 74
+  key: true
   season_stats:
     minutes_league: 3323
     starts_league: 37
@@ -27,9 +27,13 @@ players:
     goals_all: 0
     assists_all: null
     clean_sheets_all: 10
+    clean_sheets_league: 9
     caps: 0
     awards: []
     sources:
+    - https://www.bdfutbol.com/es/t/t2013-1414.html
+    - https://www.bdfutbol.com/es/j/j4123.html
+    - https://www.bdfutbol.com/es/p/p.php?id=27702
     - https://www.bdfutbol.com/es/t/t2013-1414.html
     - https://www.bdfutbol.com/es/j/j4123.html
     - https://www.bdfutbol.com/es/t/t2013-14.html

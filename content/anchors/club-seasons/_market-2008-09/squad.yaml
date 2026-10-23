@@ -24,8 +24,8 @@ players:
   alias_name: Gorka Iraizoz
   position: GK
   age: 27
-  rating: 72
-  key: false
+  rating: 73
+  key: true
   season_stats:
     minutes_league: 3240
     starts_league: 36
@@ -36,9 +36,13 @@ players:
     goals_all: 0
     assists_all: null
     clean_sheets_all: 10
+    clean_sheets_league: 6
     caps: 0
     awards: []
     sources:
+    - https://www.bdfutbol.com/es/t/t2008-096.html
+    - https://www.bdfutbol.com/es/j/j992.html
+    - https://www.bdfutbol.com/es/p/p.php?id=25202
     - https://www.bdfutbol.com/es/j/j992.html
     - https://www.bdfutbol.com/es/t/t2008-096.html
     - https://www.bdfutbol.com/es/p/p.php?id=25202
@@ -65,7 +69,7 @@ players:
   alias_name: Alberto Lopo
   position: DF
   age: 28
-  rating: 68
+  rating: 75
   key: false
   season_stats:
     minutes_league: 2834
@@ -104,8 +108,8 @@ players:
   alias_name: Juan Arango
   position: MF
   age: 28
-  rating: 75
-  key: false
+  rating: 81
+  key: true
   season_stats:
     minutes_league: 3064
     starts_league: 35
@@ -143,8 +147,8 @@ players:
   alias_name: Aritz Aduriz
   position: FW
   age: 27
-  rating: 66
-  key: false
+  rating: 69
+  key: true
   season_stats:
     minutes_league: 2748
     starts_league: 33
@@ -181,8 +185,15 @@ players:
   alias_name: Diego López
   position: GK
   age: 27
-  rating: 75
-  key: false
+  rating: 80
+  key: true
+  rating_override:
+    value: 80
+    rationale: >-
+      Titular indiscutible de un club de nivel B: 4230 minutos de los 4500 posibles del Villarreal (94 %), con 38 de 38 partidos de liga. Finalista al Mejor Portero de los Premios LFP 2008-09, junto a Valdés y Casillas.
+    sources:
+    - https://www.bdfutbol.com/es/j/j576.html
+    - https://es.wikipedia.org/wiki/Primera_Divisi%C3%B3n_de_Espa%C3%B1a_2008-09
   season_stats:
     minutes_league: 3420
     starts_league: 38
@@ -193,9 +204,13 @@ players:
     goals_all: 0
     assists_all: null
     clean_sheets_all: 11
+    clean_sheets_league: 8
     caps: 0
     awards: []
     sources:
+    - https://www.bdfutbol.com/es/t/t2008-0938.html
+    - https://www.bdfutbol.com/es/j/j576.html
+    - https://www.bdfutbol.com/es/p/p.php?id=25208
     - https://www.bdfutbol.com/es/j/j576.html
     - https://www.bdfutbol.com/es/t/t2008-0938.html
     - https://www.bdfutbol.com/es/t/t2008-0938.html?t=seg
@@ -225,8 +240,15 @@ players:
   alias_name: Nemanja Vidić
   position: DF
   age: 27
-  rating: 91
-  key: false
+  rating: 94
+  key: true
+  rating_override:
+    value: 94
+    rationale: >-
+      La base (99) cae en la banda 95-99, pero Vidić no quedó entre los 3 primeros del Balón de Oro 2009 (empatado en 16.º; Messi, Cristiano Ronaldo y Xavi) ni del FIFA World Player 2009 (Messi, Cristiano Ronaldo y Xavi). Se limita a 94 (rúbrica 7.1, evidencia para bajar la base).
+    sources:
+    - https://en.wikipedia.org/wiki/2009_Ballon_d%27Or
+    - https://en.wikipedia.org/wiki/FIFA_World_Player_of_the_Year
   season_stats:
     minutes_league: 2984
     starts_league: 33

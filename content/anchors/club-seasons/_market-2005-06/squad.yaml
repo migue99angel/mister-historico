@@ -17,8 +17,15 @@ players:
   alias_name: Gabriel Milito
   position: DF
   age: 25
-  rating: 70
-  key: false
+  rating: 80
+  key: true
+  rating_override:
+    value: 80
+    rationale: >-
+      Titular del Zaragoza (finalista de la Copa del Rey) y convocado por Argentina para el Mundial de 2006 (dorsal 15), donde jugó ante Países Bajos. Una evidencia (convocatoria a un torneo final), así que el cambio es de 6 puntos.
+    sources:
+    - https://en.wikipedia.org/wiki/2006_FIFA_World_Cup_squads
+    - https://en.wikipedia.org/wiki/Gabriel_Milito
   season_stats:
     minutes_league: 2982
     starts_league: 33
@@ -58,8 +65,8 @@ players:
   alias_name: Pepe Reina
   position: GK
   age: 23
-  rating: 73
-  key: false
+  rating: 89
+  key: true
   season_stats:
     minutes_league: 2962
     starts_league: 33
@@ -70,12 +77,16 @@ players:
     goals_all: 0
     assists_all: null
     clean_sheets_all: null
+    clean_sheets_league: 20
     caps: 3
     awards:
     - name: Premier League Golden Glove 2005-06 (mejor portero, 20 porterías a cero)
       tier: L
       source: https://en.wikipedia.org/wiki/Premier_League_Golden_Glove
     sources:
+    - https://www.lfchistory.net/players/1126
+    - https://www.lfchistory.net/players/1126/games-per-season/115
+    - https://en.wikipedia.org/wiki/Premier_League_Golden_Glove
     - https://www.bdfutbol.com/en/j/j1504.html
     - https://www.bdfutbol.com/en/p/j1504.html?temp=2005-06
     - https://en.wikipedia.org/wiki/2005%E2%80%9306_Liverpool_F.C._season
