@@ -24,8 +24,8 @@ players:
   alias_name: Dani Aranzubia
   position: GK
   age: 31
-  rating: 65
-  key: false
+  rating: 69
+  key: true
   season_stats:
     minutes_league: 2880
     starts_league: 32
@@ -36,9 +36,13 @@ players:
     goals_all: 1
     assists_all: null
     clean_sheets_all: 11
+    clean_sheets_league: 11
     caps: 0
     awards: []
     sources:
+    - https://www.bdfutbol.com/es/t/t2010-1113.html
+    - https://www.bdfutbol.com/es/j/j479.html
+    - https://www.bdfutbol.com/es/p/p.php?id=26057
     - https://www.bdfutbol.com/es/t/t2010-1113.html
     - https://www.bdfutbol.com/es/j/j479.html
     - https://www.bdfutbol.com/es/t/t2010-1113.html?tab=partits
@@ -66,7 +70,7 @@ players:
   alias_name: Manuel Pablo
   position: DF
   age: 34
-  rating: 59
+  rating: 62
   key: false
   season_stats:
     minutes_league: 2641
@@ -104,7 +108,7 @@ players:
   alias_name: David Barral
   position: FW
   age: 27
-  rating: 63
+  rating: 66
   key: false
   season_stats:
     minutes_league: 2321
@@ -143,7 +147,7 @@ players:
   alias_name: Iván Ramis
   position: DF
   age: 26
-  rating: 65
+  rating: 73
   key: false
   season_stats:
     minutes_league: 2919
@@ -182,8 +186,8 @@ players:
   alias_name: Álvaro Negredo
   position: FW
   age: 25
-  rating: 72
-  key: false
+  rating: 76
+  key: true
   season_stats:
     minutes_league: 2612
     starts_league: 29
@@ -224,8 +228,15 @@ players:
   alias_name: Xavi Hernández
   position: MF
   age: 30
-  rating: 84
-  key: false
+  rating: 90
+  key: true
+  rating_override:
+    value: 90
+    rationale: >-
+      Mejor Mediocentro de la Liga en los Premios LFP 2010-11 y miembro del once ideal de la temporada del ESM (Team of the Year 2010-11).
+    sources:
+    - https://es.wikipedia.org/wiki/Premios_LaLiga
+    - https://en.wikipedia.org/wiki/ESM_Team_of_the_Year
   season_stats:
     minutes_league: 2462
     starts_league: 29

@@ -1,4 +1,5 @@
-# Expected band of each anchor (from docs/content/anclas-t1.7.md) and substitutions.
+# Expected band of each anchor (from docs/content/anclas-t1.7.md), whether it is a key player
+# (rubric 8.2 criteria that can be checked here) and substitutions.
 anchors:
 - club_season: _market-2003-04
   player_id: thierry-henry
@@ -22,6 +23,8 @@ anchors:
     (W) son de año natural y solapan con la temporada (2003 también: FIFA World Player 2º y UEFA TOY 2003);
     el responsable decide. PFA Players'' Player of the Year / PFA Team of the Year / FWA no se registran
     (no son de la liga).'
+  key: true
+  key_reason: premio individual (L, L, W, W); 12 internacionalidades
 - club_season: _market-2004-05
   player_id: diego-forlan
   band: 85-89
@@ -43,6 +46,8 @@ anchors:
     del FIFA World Player ni de ningún once mundial. caps=11 (Copa América 2004: 7, 10, 13, 18, 21 y 24-jul;
     9-oct-2004 Argentina; 26 y 30-mar, 4 y 7-jun-2005), coincide con Wikipedia (2004: 11 en total, 2005:
     9 en total).'
+  key: true
+  key_reason: premio individual (L); 11 internacionalidades
 - club_season: _market-2004-05
   player_id: petr-cech
   band: 90-94
@@ -65,6 +70,8 @@ anchors:
     2005 (W) es un premio de año natural 2005 que se solapa con 2004-05 y 2005-06: el responsable decide
     si lo cuenta. El PFA Team of the Year 2004-05 no se ha registrado como L por ser de un sindicato y
     no de la liga. Asistencias: no hay fuente única con asistencias en todas las competiciones, null.'
+  key: true
+  key_reason: portero titular; premio individual (L, W); 10 internacionalidades
 - club_season: _market-2005-06
   player_id: gabriel-milito
   band: 80-84
@@ -82,6 +89,8 @@ anchors:
     0-0 con Paises Bajos, coherente. Birth date 7/09/1980 -> 25 anos el 1/1/2006. Premios: ninguno oficial
     de la Liga (los premios LFP no existian y Don Balon no es oficial); [] segun Wikipedia 2005-06 La
     Liga y su seccion de honores. Asistencias null.'
+  key: true
+  key_reason: 4 internacionalidades
 - club_season: _market-2005-06
   player_id: pepe-reina
   band: 85-89
@@ -104,6 +113,8 @@ anchors:
     Wikipedia y BDFutbol (14 partidos de CHA); Community Shield no se jugó ese año. caps: 17-ago-2005
     Uruguay, 3-sep-2005 Canadá y 7-jun-2006 Croacia (las de ago/oct 2006 son de la temporada siguiente);
     coincide con Wikipedia (2005: 2, 2006: 3).'
+  key: true
+  key_reason: portero titular; premio individual (L); 3 internacionalidades
 - club_season: _market-2007-08
   player_id: gonzalo-colsa
   band: 70-74
@@ -118,6 +129,8 @@ anchors:
     B). Posicion MF segun Wikipedia (mediocentro). Caps 0: Wikipedia solo lista sub-20 y sub-21, ninguna
     absoluta; sin lista por partidos que lo confirme explicitamente. Premios: ninguno en Wikipedia. Asistencias:
     null.'
+  key: false
+  key_reason: no cumple ningún criterio de la sección 8.2
 - club_season: _market-2008-09
   player_id: gorka-iraizoz
   band: 75-79
@@ -133,6 +146,8 @@ anchors:
     Recreativo 2-0, Osasuna 2-0, Sporting 0-0, Sevilla 3-0). Caps 0: Wikipedia confirma que nunca fue
     internacional con Espana (la seleccion vasca no es oficial). Sin asistencias en ninguna fuente unica.
     Premios: el apartado Honours de Wikipedia no recoge ninguno individual.'
+  key: true
+  key_reason: portero titular
 - club_season: _market-2008-09
   player_id: alberto-lopo
   band: 75-79
@@ -147,6 +162,8 @@ anchors:
     52 partidos). No jugo 6 jornadas de liga (varias por sancion: 13 amarillas). Caps 0: Wikipedia indica
     que fue convocado en nov-2006 y no jugo, sin volver a ser convocado. Sin asistencias en una fuente
     unica. Premios: Honours de Wikipedia no recoge ninguno.'
+  key: false
+  key_reason: no cumple ningún criterio de la sección 8.2
 - club_season: _market-2008-09
   player_id: juan-arango
   band: 75-79
@@ -166,6 +183,8 @@ anchors:
     Ecuador, 28-03-09 Argentina, 31-03-09 Colombia, 10-06-09 Uruguay; el partido del 19-06-08 contra Chile
     queda fuera de la temporada). Sin asistencias en una fuente unica. Premios: Honours de Wikipedia no
     recoge ninguno en 2008-09.'
+  key: true
+  key_reason: 7 internacionalidades
 - club_season: _market-2008-09
   player_id: aritz-aduriz
   band: 75-79
@@ -185,6 +204,8 @@ anchors:
     la liga posible; no hace falta available_matches_all. Caps 0: su debut con Espana fue el 8-oct-2010
     (Wikipedia); la seleccion vasca no es oficial. Sin asistencias en una fuente unica. Premios: Honours
     de Wikipedia no recoge ninguno en 2008-09.'
+  key: true
+  key_reason: máximo goleador del club (11 goles)
 - club_season: _market-2008-09
   player_id: diego-lopez
   band: 80-84
@@ -203,6 +224,8 @@ anchors:
     en total). Premios: no figura entre los premios de la Liga 2008-09 listados en Wikipedia (Zamora Valdes,
     mejor portero Casillas) ni en su seccion de honores; se deja []. Asistencias no publicadas por la
     fuente: null.'
+  key: true
+  key_reason: portero titular
 - club_season: _market-2008-09
   player_id: nemanja-vidic
   band: 90-94
@@ -225,6 +248,8 @@ anchors:
     Premier League Player of the Season 2008-09 (L). FIFA FIFPro World XI 2009 (W) es de año natural 2009
     y solapa con la temporada; el responsable decide si lo cuenta. PFA Team of the Year 2008-09 no se
     registra como L (sindicato de jugadores, no de la liga).'
+  key: true
+  key_reason: premio individual (L, W); 9 internacionalidades
 - club_season: _market-2009-10
   player_id: nino
   band: 70-74
@@ -240,6 +265,8 @@ anchors:
     36 puntos (tier D). Caps 0: Wikipedia no lista internacionalidades absolutas; sin lista por partidos.
     Premios 2009-10: ninguno (los Pichichi/Zarra de Segunda que cita Wikipedia son de 2008-09). Asistencias:
     null.'
+  key: true
+  key_reason: máximo goleador del club (14 goles)
 - club_season: _market-2009-10
   player_id: philipp-lahm
   band: 85-89
@@ -260,6 +287,8 @@ anchors:
     Team of the Year 2006/08/12-14, FIFPro 2013+ y kicker Team 2008-09/2012-13/2013-14/2015-16, ninguno
     de 2009-10 -> []. club_matches_all=53 (34+6+13) coincide con sus apariciones; la Supercopa alemana
     no se disputó en 2009.'
+  key: true
+  key_reason: 12 internacionalidades
 - club_season: _market-2009-10
   player_id: david-silva
   band: 85-89
@@ -279,6 +308,8 @@ anchors:
     3-mar, 29-may, 3-jun, 8-jun, 16-jun de 2010; los del 7-jul-2010 ya son de la temporada siguiente);
     coincide con los conteos anuales de Wikipedia (2009: 12, 2010: 12). club_matches_all=56 = 38 liga
     + 14 Europa League + 4 Copa del Rey (BDFutbol, plantilla del Valencia 2009-10).'
+  key: true
+  key_reason: 11 internacionalidades
 - club_season: _market-2010-11
   player_id: dani-aranzubia
   band: 60-69
@@ -296,6 +327,8 @@ anchors:
     jornadas 7-38 = 36 = GE de BDFutbol). assists_all null (BDFutbol no publica asistencias). Premios:
     ninguno en la sección de honores de Wikipedia; no hay otra fuente de premios individuales consultada
     (el Zamora 2010-11 no fue para él).'
+  key: true
+  key_reason: portero titular
 - club_season: _market-2010-11
   player_id: manuel-pablo
   band: 60-69
@@ -309,6 +342,8 @@ anchors:
     se asigna DF. Ausente de 8 partidos de Liga, sin lesión larga documentada en las fuentes consultadas
     (no verificado el motivo). Último partido con la selección absoluta en 2004 según Wikipedia (13 caps:
     2000, 2001, 2004), por tanto 0 caps en 2010-11. assists_all null.'
+  key: false
+  key_reason: no cumple ningún criterio de la sección 8.2
 - club_season: _market-2010-11
   player_id: david-barral
   band: 60-69
@@ -331,6 +366,8 @@ anchors:
     jugó con la selección autonómica de Andalucía en 2013). Premios: ninguno; la sección de honores de
     Wikipedia solo recoge el título de APOEL 2016-17. assists_all null (BDFutbol no publica asistencias).
     Nacimiento 10-05-1983 (BDFutbol y Wikipedia) -> 27 años el 1-1-2011.'
+  key: false
+  key_reason: no cumple ningún criterio de la sección 8.2
 - club_season: _market-2010-11
   player_id: ivan-ramis
   band: 70-74
@@ -347,6 +384,8 @@ anchors:
     (tier D). Caps 0: Wikipedia solo recoge internacionalidades base (sub-19, sub-21, sub-23), ninguna
     absoluta; no hay una lista por partidos que lo confirme explicitamente. Premios: ninguno en Wikipedia.
     Asistencias: null (BDFutbol no las publica).'
+  key: false
+  key_reason: no cumple ningún criterio de la sección 8.2
 - club_season: _market-2010-11
   player_id: alvaro-negredo
   band: 80-84
@@ -364,6 +403,8 @@ anchors:
     la Liga), no se registra; no esta en los premios LFP ni en el once de la temporada (Wikipedia 2010-11
     La Liga), por eso []. Sevilla 5.º (58 pts, empatado con Athletic y Atletico, desempate segun Wikipedia).
     Edad: nacido el 20/08/1985 -> 25. Asistencias null.'
+  key: true
+  key_reason: máximo goleador del club (26 goles)
 - club_season: _market-2010-11
   player_id: xavi-hernandez
   band: 90-94
@@ -385,6 +426,8 @@ anchors:
     Balón de Oro FIFA 2010 (3º) y 2011 (3º), FIFA FIFPro World XI 2010 y 2011, UEFA Team of the Year 2010
     y 2011. Tier L: Mejor Centrocampista de los Premios LFP 2010-11 (premio de posición, no de mejor jugador
     general: el responsable decide si cuenta como L); el ESM Team of the Year 2010-11 no se registra.'
+  key: true
+  key_reason: premio individual (L, W, W, W, W, W, W); 10 internacionalidades
 - club_season: _market-2011-12
   player_id: javi-martinez
   band: 80-84
@@ -401,6 +444,8 @@ anchors:
     Chequia 07/10/2011, Irlanda 14/06/2012 (national-football-teams.com) = 4 partidos/225 min de BDFutbol;
     los 2 partidos con la selección olimpica no cuentan. Premios: no figura en los premios de la Liga
     2011-12 ni en el equipo del año (Wikipedia); [] . Asistencias null. Edad: nacido el 2/09/1988 -> 23.'
+  key: true
+  key_reason: 4 internacionalidades
 - club_season: _market-2012-13
   player_id: javi-fuego
   band: 60-69
@@ -414,6 +459,8 @@ anchors:
     04-01-1984 (BDFutbol y Wikipedia): 28 años el 1-1-2013. Sin caps absolutos (solo categorías inferiores,
     Wikipedia y BDFutbol). En enero 2013 acordó fichar por el Valencia para la 2013-14, sin afectar a
     la temporada. assists_all null.'
+  key: false
+  key_reason: no cumple ningún criterio de la sección 8.2
 - club_season: _market-2013-14
   player_id: kiko-casilla
   band: 70-74
@@ -430,3 +477,5 @@ anchors:
     = 10. Espanyol quedo 14o con 42 puntos (tier C). Caps: 0 porque su unica internacionalidad absoluta
     fue el 18-11-2014 (amistoso Espana-Alemania), segun Wikipedia. Asistencias no publicadas por BDFutbol:
     null. Premios: la seccion de honores de Wikipedia no recoge ninguno individual.'
+  key: true
+  key_reason: portero titular

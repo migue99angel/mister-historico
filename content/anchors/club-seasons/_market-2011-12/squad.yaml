@@ -15,8 +15,15 @@ players:
   alias_name: Javi Martínez
   position: MF
   age: 23
-  rating: 69
-  key: false
+  rating: 80
+  key: true
+  rating_override:
+    value: 80
+    rationale: >-
+      Finalista al Mejor Defensa de los Premios LFP 2011-12 (con Mascherano y Sergio Ramos) y convocado por España para la Eurocopa de 2012 (dorsal 4, campeona). Dos evidencias con dos fuentes, a 7 puntos de la base: pendiente de la confirmación del revisor independiente.
+    sources:
+    - https://www.malagacf.com/noticias/isco-y-cazorla-finalistas-de-los-premios-lfp-2012
+    - https://en.wikipedia.org/wiki/UEFA_Euro_2012_squads
   season_stats:
     minutes_league: 2556
     starts_league: 30
@@ -53,4 +60,4 @@ players:
   sources:
   - https://www.bdfutbol.com/es/t/t2011-126.html
   - https://www.bdfutbol.com/es/j/j1208.html
-  verify: ok
+  verify: pending
