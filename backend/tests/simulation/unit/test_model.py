@@ -288,3 +288,18 @@ def test_aggregate_indices_must_be_rating_points(attack: float, defense: float) 
 def test_competition_params_must_be_positive_and_finite(base: float, advantage: float) -> None:
     with pytest.raises(InvalidValueError):
         CompetitionParams(base, advantage)
+
+
+def test_sim_player_age_defaults_to_unknown() -> None:
+    assert _player(1).age is None
+
+
+@pytest.mark.parametrize("age", [0, 18, 99, 150])
+def test_sim_player_accepts_non_negative_integer_age(age: int) -> None:
+    assert _player(1, age=age).age == age
+
+
+@pytest.mark.parametrize("age", [-1, True, 18.5, "18"])
+def test_sim_player_rejects_invalid_age(age: Any) -> None:
+    with pytest.raises(InvalidValueError):
+        _player(1, age=age)
