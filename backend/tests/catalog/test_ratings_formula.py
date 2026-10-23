@@ -147,11 +147,11 @@ def test_rubric_example_injured_defender_rates_63_before_any_override() -> None:
 
 
 # ------------------------------------------------------------------------- formula details
-def test_a_missing_start_count_makes_importance_equal_to_the_minutes_share() -> None:
+def test_a_missing_start_count_counts_as_zero_starts() -> None:
     result = compute_rating(stats(starts_all=None, minutes_all=2475), ATLANTIC)
 
     assert result.components is not None
-    assert result.components.importance == Fraction(2475, 90 * 55)
+    assert result.components.importance == Fraction(7, 10) * Fraction(2475, 90 * 55)
 
 
 def test_available_matches_replace_the_club_matches_for_a_mid_season_arrival() -> None:
@@ -348,7 +348,7 @@ def test_league_start_count_is_used_on_the_league_basis_and_may_be_missing() -> 
 
     assert with_starts.components is not None
     assert without_starts.components is not None
-    assert without_starts.components.importance == Fraction(2000, 90 * 38)
+    assert without_starts.components.importance == Fraction(7, 10) * Fraction(2000, 90 * 38)
     assert with_starts.components.importance > without_starts.components.importance
 
 
@@ -584,6 +584,22 @@ def test_finding_the_clean_sheets_never_lowers_a_goalkeeper_rating(
     unknown = replace(player, position=Position.GK, clean_sheets_all=None)
 
     assert _rating(replace(unknown, clean_sheets_all=found), club) >= _rating(unknown, club)
+
+
+@given(players(), st.integers(min_value=0, max_value=70), st.booleans())
+def test_finding_the_starts_never_lowers_the_rating(
+    case: tuple[PlayerStats, ClubContext], found: int, league_basis: bool
+) -> None:
+    player, club = case
+    if league_basis:
+        player = replace(player, minutes_all=None, appearances_all=None)
+        unknown = replace(player, starts_league=None)
+        known = replace(player, starts_league=found)
+    else:
+        unknown = replace(player, starts_all=None)
+        known = replace(player, starts_all=found)
+
+    assert _rating(known, club) >= _rating(unknown, club)
 
 
 @given(players())
