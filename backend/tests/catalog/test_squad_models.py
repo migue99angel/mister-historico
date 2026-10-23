@@ -28,6 +28,7 @@ def season_stats(**overrides: Any) -> dict[str, Any]:
         "goals_all": 5,
         "assists_all": 4,
         "clean_sheets_all": None,
+        "clean_sheets_league": None,
         "caps": 0,
         "awards": [],
         "sources": [_SOURCE],
@@ -440,6 +441,25 @@ def test_a_goalkeeper_may_leave_clean_sheets_null() -> None:
     assert SquadFile.model_validate(
         with_player(0, season_stats=season_stats(clean_sheets_all=None))
     )
+
+
+def test_league_clean_sheets_of_an_outfield_player_are_rejected() -> None:
+    with pytest.raises(ValidationError, match="clean_sheets_league is only for goalkeepers"):
+        SquadFile.model_validate(with_player(1, season_stats=season_stats(clean_sheets_league=3)))
+
+
+def test_league_clean_sheets_cannot_exceed_the_league_appearances() -> None:
+    with pytest.raises(
+        ValidationError, match="clean_sheets_league cannot exceed appearances_league"
+    ):
+        SquadFile.model_validate(with_player(0, season_stats=season_stats(clean_sheets_league=26)))
+
+
+def test_league_clean_sheets_cannot_exceed_those_of_all_competitions() -> None:
+    with pytest.raises(ValidationError, match="clean_sheets_league cannot exceed clean_sheets_all"):
+        SquadFile.model_validate(
+            with_player(0, season_stats=season_stats(clean_sheets_all=5, clean_sheets_league=6))
+        )
 
 
 def test_clean_sheets_of_an_outfield_player_are_rejected() -> None:

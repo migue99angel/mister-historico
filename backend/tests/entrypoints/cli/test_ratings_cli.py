@@ -163,7 +163,6 @@ def test_alerts_are_printed_as_warnings_and_do_not_fail_the_run(root: Path) -> N
                 minutes_league=900, starts_league=10, appearances_league=10
             )
             player["season_stats"]["goals_all"] = 12
-            player["season_stats"]["assists_all"] = 12
             player["season_stats"]["caps"] = 8
             player.pop("rating_override", None)
             player["season_stats"].pop("available_matches_all", None)
@@ -196,7 +195,7 @@ def test_the_help_lists_the_content_command() -> None:
 
 def test_notes_of_the_fallbacks_are_printed_per_player(root: Path) -> None:
     def mutate(data: dict[str, Any]) -> None:
-        data["players"][4]["season_stats"].pop("assists_all", None)
+        data["players"][0]["season_stats"].pop("clean_sheets_all", None)
         data["players"][5]["season_stats"].update(minutes_all=None, appearances_all=None)
 
     edit(root, mutate)
@@ -204,7 +203,7 @@ def test_notes_of_the_fallbacks_are_printed_per_player(root: Path) -> None:
     result = run(root)
 
     assert result.exit_code == 0, result.output
-    assert "note: tfc-05: assists: null" in result.output
+    assert "note: tfc-01: clean_sheets: null" in result.output
     assert "note: tfc-06: basis: league" in result.output
 
 
