@@ -60,21 +60,34 @@ def main() -> None:
             f"| {'si' if anchor['key'] else 'no'} | {base} | {base_gap:+d} | {override} "
             f"| {final} | {final_gap:+d} |"
         )
-    non_key = stats["non_key"]
-    key = stats["key"]
     emit("")
-    emit(
-        f"no clave (formula sola): {sum(g != 0 for g, _ in non_key)} de {len(non_key)} fuera; "
-        f"mayor desviacion {max((abs(g) for g, _ in non_key), default=0)}"
+    emit("| Grupo | N | BASE fuera | FINAL fuera | Máx. desv. BASE | Máx. desv. FINAL |")
+    emit("|---|---|---|---|---|---|")
+    groups = {
+        "No clave": stats["non_key"],
+        "Clave": stats["key"],
+        "Total": stats["non_key"] + stats["key"],
+    }
+    for label, gaps in groups.items():
+        size = len(gaps)
+        base_out = sum(g != 0 for g, _ in gaps)
+        final_out = sum(f != 0 for _, f in gaps)
+        base_max = max((abs(g) for g, _ in gaps), default=0)
+        final_max = max((abs(f) for _, f in gaps), default=0)
+        emit(
+            f"| {label} | {size} | {base_out}/{size} | {final_out}/{size} "
+            f"| {base_max} | {final_max} |"
+        )
+    overridden = [line for line in lines.values() if line.override_value is not None]
+    lowered = sum(
+        line.expected is not None
+        and line.result.rating is not None
+        and line.expected < line.result.rating
+        for line in overridden
     )
-    emit(
-        f"clave (base): {sum(g != 0 for g, _ in key)} de {len(key)} fuera; "
-        f"mayor desviacion {max((abs(g) for g, _ in key), default=0)}"
-    )
-    emit(
-        f"clave (tras la revision): {sum(f != 0 for _, f in key)} de {len(key)} fuera; "
-        f"mayor desviacion {max((abs(f) for _, f in key), default=0)}"
-    )
+    emit("")
+    raised = len(overridden) - lowered
+    emit(f"Overrides: {len(overridden)} ({raised} al alza, {lowered} a la baja).")
 
 
 if __name__ == "__main__":

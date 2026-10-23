@@ -37,9 +37,6 @@ players:
     - name: FIFA World Player of the Year 2004 (2º; año natural)
       tier: W
       source: https://en.wikipedia.org/wiki/Thierry_Henry
-    - name: UEFA Team of the Year 2004 (año natural)
-      tier: W
-      source: https://en.wikipedia.org/wiki/Thierry_Henry
     sources:
     - https://www.statmuse.com/fc/ask/thierry-henry-stats-2003-04-all-competitions
     - https://footballapi.pulselive.com/football/stats/player/1659?comps=1&compSeasons=12

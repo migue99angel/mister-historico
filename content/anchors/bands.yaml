@@ -19,12 +19,11 @@ anchors:
     5 en la tabla de plantilla). minutes_all = null (sin fuente accesible). assists_all = null (solo hay
     asistencias de liga: 6). caps = 12 contando por fecha en RSSSF: 20-ago-2003, 6-sep, 10-sep, 11-oct,
     15-nov, 31-mar-2004, 20-may, 6-jun, 13-jun, 17-jun, 21-jun, 25-jun. Premios: Premier League Player
-    of the Season y Golden Boot 2003-04 (L). FIFA World Player 2004 (2º) y UEFA Team of the Year 2004
-    (W) son de año natural y solapan con la temporada (2003 también: FIFA World Player 2º y UEFA TOY 2003);
-    el responsable decide. PFA Players'' Player of the Year / PFA Team of the Year / FWA no se registran
+    of the Season y Golden Boot 2003-04 (L). FIFA World Player 2004 (2º, W), asignado al año que cierra la temporada. UEFA Team of the Year
+    2004 no se registra: es un once europeo y no cumple el tier W ni L de la rúbrica. PFA Players'' Player of the Year / PFA Team of the Year / FWA no se registran
     (no son de la liga).'
   key: true
-  key_reason: premio individual (L, L, W, W); 12 internacionalidades
+  key_reason: premio individual (L, L, W); 12 internacionalidades
 - club_season: _market-2004-05
   player_id: diego-forlan
   band: 85-89
@@ -32,22 +31,31 @@ anchors:
   original: Diego Forlán (Villarreal, 2004-05)
   status: original
   reason: ''
-  reason_sources: []
-  notes: 'Fichó por el Villarreal el 21-ago-2004 (Wikipedia; antes jugó 17 min con el Manchester United
-    en la Premier el 15-ago) y debutó el 30-ago; jugó los 38 partidos de liga (34 titular, 3009 min, 25
-    goles incl. 1 de penalti). Todo sale de BDFutbol (misma fuente para liga y Copa). No aparece en ninguno
-    de los 12 partidos de UEFA Cup del Villarreal (BDFutbol, alineaciones de los 12 partidos; probablemente
-    inelegible por haber jugado la previa de Champions con el United, no confirmado en fuente) ni en los
-    8 de la Intertoto de jul-ago 2004 (anteriores a su llegada). Copa del Rey: 1 partido (Girona, 90 min,
-    titular, 0 goles). club_matches_all=59 = 38 liga + 1 Copa + 12 UEFA Cup + 8 Intertoto (BDFutbol y
-    Wikipedia); si el proyecto no cuenta la Intertoto (jul-ago, antes de su llegada) serían 51. No relleno
-    available_matches_all para no inventar un criterio. assists_all=null (BDFutbol no publica asistencias).
-    Premios: Pichichi 2004-05 (L); la Bota de Oro europea no cuenta. No fue top-3 del Balón de Oro ni
-    del FIFA World Player ni de ningún once mundial. caps=11 (Copa América 2004: 7, 10, 13, 18, 21 y 24-jul;
-    9-oct-2004 Argentina; 26 y 30-mar, 4 y 7-jun-2005), coincide con Wikipedia (2004: 11 en total, 2005:
-    9 en total).'
+  notes: >-
+    Fichó el 21-ago-2004; la final de Intertoto del 24-ago fue posterior a su llegada,
+    por lo que contar solo por fecha daría 52, no 51. available_matches_all=39:
+    59 partidos del club menos 8 de Intertoto y 12 de Copa UEFA = 38 de Liga + 1 de Copa.
+    UEFA confirma expresamente que no estaba inscrito en la Copa UEFA (Villarreal stand by
+    stand-ins, 1-dic-2004) y vuelve a identificarlo como cup-tied en marzo de 2005.
+    El reglamento Intertoto 2004, art. 15.06(b), fija el 26-jul-2004 a las 12:00 CET como
+    plazo de inscripción para semifinales y finales, anterior a su fichaje: la exclusión de
+    la vuelta del 24-ago se calcula con esa regla y esa fecha, no a partir de su ausencia.
+    El texto de la norma se ha consultado en el índice web; el PDF directo dio timeout.
+    Queda pendiente comprobar la copia íntegra y la aplicación de la norma en la siguiente
+    revisión; no se afirma haber consultado una lista nominal de inscritos de Intertoto.
+    Liga: 3009 min, 34 titularidades, 38 apariciones y 25 goles; Copa: 90 min, 1 titularidad,
+    1 aparición y 0 goles (BDFutbol). caps=11 según NFT, incluida la Copa América de julio
+    de 2004. Pichichi 2004-05 no se registra: es un trofeo de MARCA, no un premio oficial de
+    la liga. La Bota de Oro europea tampoco es tier W ni L; awards=[].
+    No se añade override para compensar su base de 90, que queda 1 punto sobre 85-89.
+  reason_sources:
+  - https://www.uefa.com/uefaeuropaleague/news/025a-0eaa822bdd58-c4d081f04dae-1000--villarreal-stand-by-stand-ins/
+  - https://www.uefa.com/uefaeuropaleague/news/01a7-0e6cb043fa48-87af82d090de-1000--progress-for-villarreal-and-alkmaar/
+  - https://www.uefa.com/news-media/news/01a0-0e6ae40bf5ef-56623532997d-1000--forlan-fit-for-villarreal-role/
+  - https://www.eurocups.ru/docs/Intertoto2004.pdf
+  - https://www.realbetisbalompie.es/noticias/primer-equipo/historia-el-pichichi-de-quino-22095
   key: true
-  key_reason: premio individual (L); 11 internacionalidades
+  key_reason: 11 internacionalidades
 - club_season: _market-2004-05
   player_id: petr-cech
   band: 90-94
@@ -67,11 +75,10 @@ anchors:
     de fuentes sin resolver (no afecta a otros campos). caps = 10 contando por fecha en RSSSF (1-jul-2004
     Grecia, semifinal de la Eurocopa, 18-ago-2004, 8-sep, 9-oct, 13-oct, 17-nov, 26-mar-2005, 30-mar,
     4-jun, 8-jun = 10). Premios: Golden Glove de la Premier League 2004-05 (L). UEFA Team of the Year
-    2005 (W) es un premio de año natural 2005 que se solapa con 2004-05 y 2005-06: el responsable decide
-    si lo cuenta. El PFA Team of the Year 2004-05 no se ha registrado como L por ser de un sindicato y
+    2005 no se registra como premio: es europeo, sin tier W o L permitido. El PFA Team of the Year 2004-05 no se ha registrado como L por ser de un sindicato y
     no de la liga. Asistencias: no hay fuente única con asistencias en todas las competiciones, null.'
   key: true
-  key_reason: portero titular; premio individual (L, W); 10 internacionalidades
+  key_reason: portero titular; premio individual (L); 10 internacionalidades
 - club_season: _market-2005-06
   player_id: gabriel-milito
   band: 80-84
@@ -103,11 +110,11 @@ anchors:
     BDFutbol); Dudek jugó 5+1 según Wikipedia. Es la fuente más completa que encontré: se mantiene como
     original (87% de los minutos de liga) pero es el límite de ''casi toda la temporada''. BDFutbol solo
     cubre liga, Champions, Supercopa de Europa y 1 partido del Mundial de Clubes (no FA Cup ni League
-    Cup), por eso minutes_all y starts_all son null (no se pueden sumar ni deducir las 5 apariciones de
-    FA Cup ni el segundo partido del Mundial de Clubes). appearances_all=53 coincide en Wikipedia (33
-    liga + 5 FA Cup + 15 europeas/otras) y lfchistory.net (33+5+0+13 europa+2 otras). clean_sheets_all=null:
-    no hay registro de partidos completo para FA Cup y Mundial de Clubes (en liga, 20 porterías a cero
-    oficiales según Golden Glove de la Premier League). assists_all=null (ninguna fuente única publica
+    Cup), por eso minutes_all sigue null. lfchistory publica las 53 titularidades y el registro
+    completo de partidos, que permite contar las porterías a cero sin inventar minutos. appearances_all=53 coincide en Wikipedia (33
+    liga + 5 FA Cup + 15 europeas/otras) y lfchistory.net (33+5+0+13 europa+2 otras). clean_sheets_all=30:
+    20 de Premier + 7 de Champions + 2 de FA Cup + 1 de Mundial de Clubes, según el registro
+    de lfchistory (players/1126/games-per-season/115). starts_all=53 en esa misma fuente. assists_all=null (ninguna fuente única publica
     asistencias de toda la temporada). club_matches_all=62 = 38 liga + 6 FA Cup + 1 League Cup + 14 Champions
     (6 en fases previas, 6 de grupos, 2 de octavos) + 1 Supercopa de Europa + 2 Mundial de Clubes, de
     Wikipedia y BDFutbol (14 partidos de CHA); Community Shield no se jugó ese año. caps: 17-ago-2005
@@ -422,21 +429,24 @@ anchors:
     = 62 (BDFutbol). assists_all = null (sin fuente única de asistencias de todas las competiciones).
     caps = 10 contando por fecha en RSSSF: 3-jul-2010 (cuartos del Mundial), 7-jul (semifinal), 11-jul
     (final), 11-ago, 3-sep, 7-sep, 17-nov, 9-feb-2011, 25-mar, 29-mar (los partidos del Mundial hasta
-    el 29-jun pertenecen a 2009-10). Premios de año natural que solapan con 2010-11 (el responsable decide):
-    Balón de Oro FIFA 2010 (3º) y 2011 (3º), FIFA FIFPro World XI 2010 y 2011, UEFA Team of the Year 2010
-    y 2011. Tier L: Mejor Centrocampista de los Premios LFP 2010-11 (premio de posición, no de mejor jugador
-    general: el responsable decide si cuenta como L); el ESM Team of the Year 2010-11 no se registra.'
+    el 29-jun pertenecen a 2009-10). Premios de año natural asignados al año
+    que cierra la temporada: Balón de Oro FIFA 2011 (3º) y FIFA FIFPro World XI 2011 (W); se quitan
+    los de 2010 para no contar dos años. UEFA Team of the Year no cumple W ni L y queda fuera.
+    Tier L: Mejor mediocentro de los Premios LFP 2010-11 (el mejor centrocampista fue Iniesta).
+    El ESM Team of the Year 2010-11 respalda el override; el premio LFP ya cuenta en V y no se reutiliza.'
   key: true
-  key_reason: premio individual (L, W, W, W, W, W, W); 10 internacionalidades
+  key_reason: premio individual (L, W, W); 10 internacionalidades
 - club_season: _market-2011-12
   player_id: javi-martinez
   band: 80-84
-  position_label: Centrocampista
+  position_label: Defensa
   original: Javi Martínez (Athletic Club, 2011-12)
   status: original
   reason: ''
   reason_sources: []
-  notes: 'Se mantiene como original: no hubo lesion larga ni cesion; jugo 31 de 38 partidos de Liga (2556
+  notes: 'Posición DF: jugó mayoritariamente de central (50 titularidades con Bielsa; BDFutbol cen).
+    El override a 80 se separa 1 punto de la base 79 y sus dos evidencias están confirmadas en
+    la verificación independiente; no necesita el tramo de 7 a 12. Se mantiene como original: no hubo lesion larga ni cesion; jugo 31 de 38 partidos de Liga (2556
     min, 75 % de los minutos posibles) con 3 rojas en la temporada (sanciones) y compromisos con la Seleccion
     y el equipo olimpico. Liga 31 PJ/30 titular/4 goles; Europa League 14 PJ (1260 min, 0 goles) de 16
     partidos del Athletic (la vuelta del play-off con el Trabzonspor fue cancelada); Copa 9 PJ/9 titular

@@ -224,9 +224,9 @@
 
 ### T1.7 · Jugadores de referencia de la rúbrica [HUMANO]
 - **Oleada:** antes de empezar la F2 · **Tamaño:** S · **Depende de:** T1.3 integrada
-- **Propiedad:** la tabla `[PENDIENTE autor]` de `docs/content/rating-rubric.md`
-- **Qué hacer:** el autor elige jugadores reales de referencia por banda y posición, cada uno con su temporada concreta. Sirven para comprobar que la fórmula de T1.8 da medias razonables (anclas de cordura) y para ajustar sus pesos si no.
-- **Aceptación:** la tabla está completa. **Bloquea T2.11, T2.16 y T6.x.**
+- **Propiedad:** la tabla de anclas de `docs/content/rating-rubric.md` §9.
+- **Qué hacer:** elegir jugadores reales de referencia por banda y posición, cada uno con su temporada concreta. El autor delegó esta elección en el orquestador y eligió el cierre provisional de la opción 1 del traspaso (2026-10-23). Las 24 anclas se conservan con sus posiciones verificadas, aunque la cobertura por posición tenga huecos; no se inventan sustitutos ni se cambian bandas para que la fórmula cuadre.
+- **Aceptación:** la elección está completada y la tabla recoge la posición real y las limitaciones de cobertura. **El cierre conjunto con T1.7b bloquea F2, T2.11, T2.16 y T6.x.**
 - **Plantilla:** [`docs/content/anclas-t1.7.md`](./content/anclas-t1.7.md).
 
 ### T1.7b · Calibración de la fórmula con las anclas
@@ -237,7 +237,7 @@
   - Calcular sus medias con la CLI y generar una tabla de ancla, banda del autor, media y desviación.
   - Si se incumple el criterio de la rúbrica (sección 9), proponer un ajuste de pesos con el antes y el después.
   - Una verificación independiente de las estadísticas recogidas (como T2.14).
-- **Aceptación:** el autor aprueba la tabla final y, si lo hay, el ajuste de pesos. **Con esto se cierra la F1.**
+- **Aceptación:** el autor ha autorizado la opción 1: corregir las discrepancias verificadas y el ejemplo 10.4, publicar base y media final de las 24 anclas y conservar los fallos de banda visibles. El 85 % de participación y el tope manual de 94 son provisionales; la revisión de los jugadores clave es el mecanismo real para completar la fórmula. No se presenta la calibración como superada ni como validación independiente. Los datos sin fuente quedan pendientes. **F1 se cierra únicamente tras la revisión independiente de las correcciones, las comprobaciones requeridas en verde y la integración por rebase-merge de la PR #17.** Hasta entonces no empieza F2.
 
 ---
 

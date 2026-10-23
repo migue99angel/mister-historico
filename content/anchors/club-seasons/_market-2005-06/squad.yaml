@@ -72,11 +72,11 @@ players:
     starts_league: 33
     appearances_league: 33
     minutes_all: null
-    starts_all: null
+    starts_all: 53
     appearances_all: 53
     goals_all: 0
     assists_all: null
-    clean_sheets_all: null
+    clean_sheets_all: 30
     clean_sheets_league: 20
     caps: 3
     awards:

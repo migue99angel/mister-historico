@@ -233,9 +233,8 @@ players:
   rating_override:
     value: 90
     rationale: >-
-      Mejor Mediocentro de la Liga en los Premios LFP 2010-11 y miembro del once ideal de la temporada del ESM (Team of the Year 2010-11).
+      Miembro del once ideal de la temporada del ESM (Team of the Year 2010-11), evidencia de reconocimiento que no cuenta en V. El premio LFP ya está incluido en V y no se reutiliza para este override.
     sources:
-    - https://es.wikipedia.org/wiki/Premios_LaLiga
     - https://en.wikipedia.org/wiki/ESM_Team_of_the_Year
   season_stats:
     minutes_league: 2462
@@ -248,27 +247,15 @@ players:
     assists_all: null
     caps: 10
     awards:
-    - name: Mejor Centrocampista, Premios LFP 2010-11 (La Liga)
+    - name: Mejor mediocentro, Premios LFP 2010-11 (La Liga)
       tier: L
       source: https://en.wikipedia.org/wiki/La_Liga_Awards
-    - name: FIFA Ballon d'Or 2010 (3º)
-      tier: W
-      source: https://en.wikipedia.org/wiki/Xavi_(footballer,_born_1980)
     - name: FIFA Ballon d'Or 2011 (3º)
       tier: W
       source: https://en.wikipedia.org/wiki/Xavi_(footballer,_born_1980)
-    - name: FIFA FIFPro World XI 2010
-      tier: W
-      source: https://en.wikipedia.org/wiki/FIFPro_World_XI
     - name: FIFA FIFPro World XI 2011
       tier: W
       source: https://en.wikipedia.org/wiki/FIFPro_World_XI
-    - name: UEFA Team of the Year 2010
-      tier: W
-      source: https://en.wikipedia.org/wiki/UEFA_Team_of_the_Year
-    - name: UEFA Team of the Year 2011
-      tier: W
-      source: https://en.wikipedia.org/wiki/UEFA_Team_of_the_Year
     sources:
     - https://www.bdfutbol.com/es/t/t2010-111.html
     - https://www.bdfutbol.com/es/j/j2650.html
