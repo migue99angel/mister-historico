@@ -256,3 +256,10 @@ def test_rating_fit_components_stay_within_three_percentage_points(
     base = tactical_multipliers(tactic, select_lineup(squad(), tactic))
     assert abs(fitted[0] - base[0]) <= 0.03 + 1e-12
     assert abs(fitted[1] - base[1]) <= 0.03 + 1e-12
+
+
+def test_pressing_saturates_unbounded_integer_ages_before_float_conversion() -> None:
+    tactic = Tactic(Style.PRESSING, "4-4-2")
+    players = tuple(replace(player, age=10**400) for player in squad())
+    multipliers = tactical_multipliers(tactic, select_lineup(players, tactic))
+    assert multipliers == pytest.approx((1.01, 1.07))
