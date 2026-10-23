@@ -1,6 +1,6 @@
 # ADR-006 · Las medias (1-99) se calculan con una fórmula propia a partir de estadísticas
 
-- **Estado:** Aceptada (2026-10-22). Revisada el 2026-10-23: el autor decide aceptar T1.7b como calibración provisional; las correcciones siguen en revisión y pendientes de checks e integración de PR #17; persisten 6/18 clave fuera de banda y falta validación con otra muestra y P6.
+- **Estado:** Aceptada (2026-10-22). Revisada el 2026-10-23: el autor decide aceptar T1.7b como calibración provisional; las correcciones se revisaron, superaron los checks y se integraron por rebase-merge en PR #17, cerrando F1; persisten 6/18 clave fuera de banda y falta validación con otra muestra y P6.
 - **Fecha:** 2026-10-22
 - **Relacionado con:** [PLAN](../PLAN.md) §1 (decisión 4), §2 (P6) y §3.3 · [brief](../PRODUCT_BRIEF.md) §13 y §19.4 · [ADR-004](./004-modelo-de-goles.md) · [rúbrica y fórmula](../content/rating-rubric.md) · tareas T1.7 y T1.8
 
@@ -45,6 +45,6 @@ Lo hace cumplir la CLI `mister content ratings compute` y la validación de cont
 - **Seguimiento:**
   - T1.8 implementa la fórmula, el bloque `season_stats` y el calculador. Desaparece `rating_rationale`: con la fórmula, un `key` no necesita justificación, y un `rating_override` lleva la suya (`rationale`).
   - Decisiones del autor al aprobar la rúbrica: la producción se mide siempre sobre los partidos del club en todas las competiciones; una estadística opcional que falta (`starts_*`, `clean_sheets_all`, `clean_sheets_league`) cuenta como 0, de modo que encontrarla nunca baja la media **manteniendo el mismo conjunto de importancia**; completar `minutes_all` o `appearances_all` puede pasar de `league` a `all` y bajar la media; y los jugadores de mercado se calculan con la misma fórmula, con los datos de su club real.
-  - T1.7/T1.7b aportan 24 referencias con BASE y FINAL en [el informe corregido](../calibration/anchors.md), contrastadas en [la verificación independiente](../calibration/anchors-verification.md). Al corregir a Javi Martínez a DF queda sin representante MF la banda 80-84; no se inventa un sustituto. La aceptación provisional no da por cumplido el criterio de las clave ni habilita F2 hasta completar checks, revisión e integración por rebase-merge de PR #17.
+  - T1.7/T1.7b aportan 24 referencias con BASE y FINAL en [el informe corregido](../calibration/anchors.md), contrastadas en [la verificación independiente](../calibration/anchors-verification.md). Al corregir a Javi Martínez a DF queda sin representante MF la banda 80-84; no se inventa un sustituto. La aceptación provisional no da por cumplido el criterio de las clave. Los checks, la revisión y la integración por rebase-merge de PR #17 ya están completados: [F1 cerrada](../HANDOFF.md#3-estado-comprobado-f1-cerrada), F2 no iniciada.
   - Tras el RM 2012-13 (piloto), revisar los pesos, las cuotas y las alertas con lo que se observe.
   - Si la fórmula resulta insuficiente (muchos overrides), abrir un ADR nuevo que la sustituya.

@@ -1,6 +1,6 @@
 # Rúbrica de medias (escala 1-99): fórmula a partir de estadísticas
 
-> Estado: **aprobada (2026-10-22), con decisión de aceptación provisional del autor para T1.7b (2026-10-23); correcciones en revisión, pendientes de checks e integración de PR #17**: la fórmula da la **base** de la media y los jugadores `key` se **revisan siempre** a mano (secciones 7 y 8); los pesos siguen siendo valores calibrables (sección 9) · Decisión: [ADR-006](../adr/006-medias.md) · Modelo que consume las medias: [ADR-004](../adr/004-modelo-de-goles.md)
+> Estado: **aprobada (2026-10-22), con aceptación provisional del autor para T1.7b (2026-10-23); correcciones revisadas, checks aprobados y PR #17 integrada por rebase-merge; F1 cerrada con las limitaciones de §9**: la fórmula da la **base** de la media y los jugadores `key` se **revisan siempre** a mano (secciones 7 y 8); los pesos siguen siendo valores calibrables (sección 9) · Decisión: [ADR-006](../adr/006-medias.md) · Modelo que consume las medias: [ADR-004](../adr/004-modelo-de-goles.md)
 > Público: los agentes investigadores que recogen estadísticas (T2.11, T2.16, etc.), quien implementa el calculador (T1.8) y quien revise el contenido. Este documento es autosuficiente: no hace falta consultar ninguna otra fuente de medias.
 
 ## En una frase

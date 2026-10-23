@@ -1,87 +1,58 @@
 # Traspaso de la orquestación (2026-10-23)
 
-> Estado del proyecto y forma de trabajo para el agente que continúe la orquestación. Léelo junto con `CLAUDE.md`, `docs/PLAN.md` y `docs/TASKS.md`. Si algo de aquí contradice a esos documentos, mandan ellos y avisa al autor.
+> Estado tras integrar la PR #17. Léelo junto con `CLAUDE.md`, `docs/PLAN.md` y `docs/TASKS.md`. Las instrucciones del autor prevalecen sobre estos documentos.
 
 ## 1. Rol y forma de trabajo
 
-- Actúas como **orquestador**: planificas, lanzas agentes implementadores y revisores, verificas e integras. El autor decide lo que es criterio de producto o de datos.
-- **Modelos:** los agentes implementadores con **Sonnet** y los revisores independientes con **Opus**.
-- **Cada PR pasa por un revisor independiente antes de integrarse.** Al revisor se le da el código y la especificación, no tus conclusiones. Las correcciones las aplica el mismo agente que hizo la tarea, si sigue disponible. Antes de integrar, el orquestador comprueba en local las ramas combinadas.
-- **Integración:** rebase-merge (no squash), para que se vea el ciclo TDD `test` → `feat` → `refactor`. El autor ha autorizado al orquestador a integrar después de la revisión. **Un force-push necesita la aprobación explícita del autor.**
-- **Ritmo:** oleadas de **2 o 3 agentes**. Con 4 se agotó varias veces el límite de uso de la sesión. Si un agente se corta por el límite, se reanuda con un mensaje en lugar de lanzar otro.
-- **Cada agente trabaja en su propio worktree, con una rama `task/<ID>-<slug>` y una sola PR, y solo toca los ficheros de su propiedad** (TASKS.md). Un cambio de contrato (puertos, `api.py` publicadas, esquema de contenido, OpenAPI) solo se hace mediante una CR.
-- **Comunicación con el autor:** en español, sencilla. No es experto en estadística: explica las decisiones con ejemplos y una recomendación.
+- Actúas como **orquestador**: planificas, encargas la implementación y la revisión independiente, verificas e integras. El autor decide el criterio de producto y de datos.
+- **Modelos elegidos por el autor:** **Astra** para planificación y revisión independiente, **Sol** para implementar. Se puede usar **Luna** para tareas acotadas que lo justifiquen. Sustituye la preferencia anterior de modelos.
+- **Cada PR pasa por un revisor independiente antes de integrarse.** El revisor recibe el código y la especificación, sin las conclusiones del implementador. Las correcciones vuelven al mismo agente si sigue disponible. Antes de integrar, el orquestador comprueba la combinación con `main`.
+- **Integración: rebase-merge, nunca squash.** El historial conserva los commits de tests y de implementación separados. El autor ha autorizado integrar tras revisión y checks. **Un force-push sigue necesitando autorización explícita.**
+- **Ritmo:** oleadas de 2 o 3 agentes. Si uno se corta por el límite, reanúdalo en lugar de sustituirlo.
+- Cada tarea tiene un worktree y una rama `task/<ID>-<slug>`, una PR y los archivos de su propiedad. Los cambios de contrato requieren CR.
+- Comunícate en español sencillo. Explica las decisiones de medias con ejemplos, sin suponer conocimientos de estadística.
 
-## 2. Reglas que no se pueden romper
+## 2. Reglas que se conservan
 
-- **Nunca inventar datos históricos.** Todo dato lleva `sources`, y lo que no se encuentre va como `null` con `verify: pending`.
-- **Nada de la empresa del autor.** La identidad de git del repo es la personal (`43543275+migue99angel@users.noreply.github.com`); no la cambies. Ya hubo que reescribir el historial porque `package-lock.json` apuntaba a un registro npm corporativo. Ahora `frontend/.npmrc` fija npmjs y la CI falla si el lock resuelve paquetes desde otro registro.
-- **Documentación del código en inglés** (comentarios, docstrings, commits, ramas). `docs/` y los textos de usuario, en español.
-- **Disco casi lleno** (~2 GB libres en `/`). Borra los worktrees, `.venv` y `node_modules` de los agentes que terminen. No dupliques entornos.
+- **Nunca inventar datos históricos.** Todo dato tiene fuentes; lo que no se encuentre queda en `null` con `verify: pending`.
+- **Solo medios, recursos y cuentas personales.** La identidad Git es `43543275+migue99angel@users.noreply.github.com`; no la cambies. `frontend/.npmrc` fija npmjs y la CI comprueba que el lock use únicamente el registro público.
+- Código, comentarios, docstrings y commits en inglés; `docs/` y textos de usuario en español.
+- Evita duplicar entornos y limpia worktrees temporales al terminar. La última comprobación dejó unos 39 GB libres en `/`; el aviso anterior de solo 2 GB ya no describe el estado observado.
 
-## 3. Estado
+## 3. Estado comprobado: F1 cerrada
 
-- **F0: cerrada.** Monorepo, tooling, CI (7 workflows: backend, frontend, docker, content, calibration, contracts y nightly; el de deploy llega en T7.6), Docker, ADR base y `CLAUDE.md`.
-- **F1: cerrada salvo la calibración de las medias.** Integradas:
-  - T1.1 shared kernel;
-  - T1.2 esquema de contenido y Test FC;
-  - T1.3 rúbrica aprobada;
-  - T1.4 OpenAPI;
-  - T1.5 puertos, fakes y suites de contrato;
-  - T1.6 API publicada del motor;
-  - T1.8 calculador de medias.
+- **F0 cerrada.** Monorepo, tooling, CI, Docker y reglas base integrados.
+- **F1 cerrada el 2026-10-23**, con el procedimiento provisional de medias elegido por el autor. T1.1-T1.8, incluidas T1.7 y T1.7b, están integradas.
+- La [PR #17](https://github.com/migue99angel/mister-historico/pull/17) se integró por **rebase-merge** a las **19:08:20 UTC**, con punta de integración **`0341849eac181ac5c9d6ea730255fb8b9f8ab477`**. Los commits de tests y correcciones permanecen separados en `main` (`c8b2f47` y `50c967f`). No hubo force-push.
+- Revisión independiente favorable de Astra en [`calibration/anchors-corrections-review.md`](calibration/anchors-corrections-review.md). Se conservan también el informe original y sus hallazgos históricos en [`calibration/anchors-verification.md`](calibration/anchors-verification.md).
+- Combinación local con `main`: **`make test` en verde, 1140 tests de backend y 74 de frontend**, incluidos API y migraciones Postgres/Docker; **`make lint` en verde**. Cobertura: **98,41 % global de backend**, **100 % de líneas y ramas de dominio/aplicación**.
+- Las cuatro comprobaciones de la PR fueron satisfactorias sobre la punta revisada `77c8b6862df1ad26adf7db09231ad6d64bb465ac`: [backend](https://github.com/migue99angel/mister-historico/actions/runs/40008678343), [calibración](https://github.com/migue99angel/mister-historico/actions/runs/40008678223), [contenido](https://github.com/migue99angel/mister-historico/actions/runs/40008678242) y [Docker](https://github.com/migue99angel/mister-historico/actions/runs/40008678290).
+- **F2 no iniciada.** El cierre de F1 elimina su bloqueo; esta sesión no ha implementado tareas de F2.
 
-  Además, la CI usa uv 0.13.5 por los avisos de seguridad de uv (#15).
-- **Pendiente: T1.7 y T1.7b, en la PR #17 (`task/T1.7b-anchor-calibration`), abierta.**
-  - El autor pidió que el orquestador eligiera las 24 anclas (`docs/content/anclas-t1.7.md`).
-  - La primera calibración falló: 15 de 24 anclas fuera de su banda.
-  - El autor decidió **"fórmula como base y revisión manual obligatoria de los jugadores clave"** (PLAN §1, fila 4).
-  - La PR #17 aplica esa decisión: quita las asistencias, añade `clean_sheets_league`, hace que la importancia llegue al máximo al 85 % de los minutos, añade una regla de tope en 94 sin premio mundial, y separa el criterio de clave y no clave.
-  - Hay un **informe de verificación independiente** en la rama, en `docs/calibration/anchors-verification.md`:
-    - **12 errores de datos**, de los que **2 cambian la media**: Javi Martínez es DF y no MF, y el `available_matches_all` de Forlán es 52 o 39, no 51.
-    - El **85 % y el tope de 94 son, en parte, ajustes hechos a medida de las anclas**.
-    - Hay **18 de 24 anclas marcadas como clave**, cuando P6 pide entre el 30 y el 45 %.
-    - **La fórmula sola deja 13 de 24 fuera** con el criterio original.
-    - El ejemplo 10.4 de la rúbrica con `clean_sheets_league` está mal: pone 89 y la fórmula da 92.
-    - Encontrar `minutes_all` puede bajar la media cuando se pasa de la base de liga a la de todas las competiciones.
+## 4. Decisión de calibración ya tomada: opción 1
 
-## 4. Decisión pendiente del autor (pregúntasela primero)
+**No volver a preguntarla.** El autor eligió cerrar con honestidad: corregir los datos y el ejemplo, conservar la fórmula como base y la revisión manual obligatoria de los jugadores clave, y declarar las limitaciones.
 
-Se le planteó esto y aún no ha contestado:
+- Los parámetros del **85 % de participación** y el **tope manual de 94** son **provisionales** y se eligieron observando las anclas. No tienen validación independiente.
+- Las 24 anclas dejan **14/24 fuera con BASE y 6/24 con FINAL**, después de ocho overrides. Las seis desviaciones finales siguen visibles: Henry +5, Forlán +1, Negredo −4, Iraizoz −2, Arango +2 y Aduriz −6. **El criterio histórico de las clave sigue incumplido**; cerrar F1 no lo convierte en una calibración superada.
+- La ejecución explícita de calibración da **12 tests aprobados y 6 `xfail(strict=True)`** individualizados. Un test normal comprueba el mapa exacto de desviaciones para detectar cambios o fallos nuevos.
+- Forlán queda en **90**, con 39 partidos disponibles justificados por inscripción, calendario y reglamento. Su Pichichi de prensa no cuenta en V. El reglamento Intertoto solo se pudo consultar como texto indexado: esa limitación está declarada y queda pendiente contrastar el PDF íntegro.
+- Javi Martínez es **DF**, BASE 79 y FINAL 80. La tabla de la rúbrica conserva las 24 anclas y declara el hueco de centrocampista en la banda 80-84. No se inventaron sustitutos ni se cambiaron bandas o flags `key` para pasar.
+- El ejemplo 10.4 da **92**. Encontrar `minutes_all` puede bajar la media cuando cambia de la base de liga a todas las competiciones.
+- Las 18/24 anclas clave son una selección sesgada, no una estimación de la proporción en plantillas completas. Se comprobará el procedimiento con datos de F2 y P6 cuando esas tareas comiencen.
 
-1. **Cerrar con honestidad (recomendado).** Corregir los 12 errores de datos y el ejemplo 10.4. Dejar el 85 % y el tope de 94 como parámetros **provisionales**, documentados como tales. El informe tiene que decir claramente que la fórmula sola falla con las estrellas y que la revisión de los jugadores clave es el mecanismo real. Se revisa con datos reales en la F2. Así se cierra la F1.
-2. **Otra ronda de fórmula.** Quitar los parches y cambiar la estructura, por ejemplo que el nivel del club no se sume encima de todo lo demás. Corre el riesgo de seguir sobreajustando a 24 anclas.
-3. **El autor revisa antes las bandas de las 24 anclas** (las eligió el orquestador) y después se cierra como en la opción 1.
+La tabla completa, fuentes, correcciones y cálculos reproducibles están en [`calibration/anchors.md`](calibration/anchors.md) y en [`content/rating-rubric.md` §9](content/rating-rubric.md#9-calibración-de-la-fórmula).
 
-En cualquier caso, el agente de la PR #17 tiene que hacer estas correcciones antes de integrarla:
-- Javi Martínez pasa a `DF` y se recalcula su override.
-- El `available_matches_all` de Forlán se fija con fuente: 52 o 39, según si estaba inscrito en la Copa de la UEFA.
-- Los UEFA Team of the Year no son premios de tier W.
-- Se quitan los premios de 2010 de Xavi, porque son de la temporada 2009-10.
-- Se rellenan `starts_all: 53` y `clean_sheets_all: 30` de Reina.
-- Se corrigen los textos de Silva (cuartos de final), Lahm (99,7 %) y Čech (14.º-17.º).
-- El override de Xavi se hace sin el premio LFP, que ya cuenta en V.
-- Se corrige el ejemplo 10.4 y se añade su test.
-- Se actualiza PLAN §1, fila 4: sin asistencias y sin "jugadores de referencia pendientes".
+## 5. Siguiente fase prevista, todavía no iniciada
 
-Después vuelve a pasar el revisor. Al integrar, se rellena la tabla de anclas de `rating-rubric.md` §9 y se marca la F1 como cerrada.
+La primera oleada prevista usa Test FC: motor T2.1-T2.5, catálogo T2.20 y frontend T4.1-T4.3 contra MSW. TASKS.md determina dependencias y propiedad; respeta oleadas de 2 o 3 agentes. El contenido real del piloto se abordará después, con fuentes y verificación independiente.
 
-## 5. Después: F2 (no empezar hasta cerrar la F1, por decisión del autor)
+## 6. Entorno y asuntos personales pendientes
 
-Primera oleada sin contenido real, todo con Test FC:
-- motor, T2.1-T2.5;
-- catálogo, T2.20;
-- frontend, T4.1-T4.3 contra MSW.
+El autor reparó el perfil AppArmor de bubblewrap y después habilitó los permisos necesarios. Las limitaciones de sockets, Git y red documentadas en los informes corresponden al estado anterior; las pruebas completas y la integración posteriores sí pudieron ejecutarse. Los agentes ya creados pueden conservar su perfil anterior aunque el orquestador reciba permisos nuevos: no confundas esa diferencia con un fallo del proyecto ni intentes eludirla.
 
-El contenido del Real Madrid 2012-13 (T2.10-T2.16) va después de la F1. TASKS.md trae dependencias, propiedad de ficheros y "tests primero" por tarea.
+La instalación local de uv observada seguía siendo 0.9.7; su actualización personal no consta realizada. La CI usa 0.13.5. No se ha inspeccionado ni utilizado la configuración npm global; se usaron las dependencias públicas y la configuración del proyecto.
 
-## 6. Cosas pendientes del autor (recuérdaselas si no constan como hechas)
+## 7. Limpieza y conservación
 
-- `uv self update` en su máquina, que tiene uv 0.9.7, una versión afectada por avisos de seguridad.
-- Revisar su `~/.npmrc` global: apunta al registro de la empresa y, según un revisor, tiene credenciales en texto plano.
-- Opcional: pedir al soporte de GitHub que borre las referencias de las PRs cerradas #1-#6, que conservan el lock antiguo.
-- Liberar disco: Docker tiene unos 42 GB recuperables.
-
-## 7. Limpieza local pendiente
-
-Hay worktrees de agentes en `.claude/worktrees/`: el de T1.7b y el del verificador. Bórralos con `git worktree remove --force` cuando ya no se necesiten. El del verificador tiene la rama local `review/T1.7b`, cuyo informe ya se ha copiado a la PR #17.
+Los informes de datos y revisión están versionados. Los worktrees y entornos temporales de esta oleada se eliminan tras integrar el cierre documental. Antes de borrar, comprueba que sus cambios útiles ya estén conservados. La documentación de este cierre no modifica datos, parámetros ni contratos.

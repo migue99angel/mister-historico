@@ -99,14 +99,14 @@ Punto de entrada único: el `Makefile` raíz (no hay `just`).
 ## Commits y PR
 
 - Mensajes de commit en inglés con prefijo convencional (`test`, `feat`, `refactor`, `fix`, `docs`, `chore`) y el contexto entre paréntesis.
-- Todo mensaje de commit termina con:
+- La atribución refleja la herramienta o el modelo que participó realmente. Nunca atribuyas un cambio a una herramienta o modelo que no se haya usado. Para los commits hechos con Codex, termina con:
 
   ```
-  Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+  Co-Authored-By: Codex <noreply@openai.com>
   ```
 
-- Toda descripción de PR, en español, termina con:
+- Toda descripción de PR se escribe en español y termina con la herramienta realmente usada. Para Codex:
 
   ```
-  🤖 Generated with [Claude Code](https://claude.com/claude-code)
+  🤖 Generated with Codex
   ```
