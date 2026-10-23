@@ -2,6 +2,8 @@
 
 Fecha: 2026-10-23. Revisor independiente de la implementación. Solo se ha escrito este informe; no se han modificado datos, código, tests ni metadatos Git.
 
+> Actualización posterior: las referencias a permisos bloqueados y a correcciones sin commit describen el estado de la revisión inicial. El añadido final registra la revisión de los commits y los resultados comunicados después de que el autor habilitara permisos al orquestador.
+
 **Dictamen: favorable a las correcciones revisadas, con las limitaciones de la opción 1 expresamente conservadas. No equivale a autorizar la integración ni a cerrar F1.** No quedan hallazgos materiales de esta revisión sin corregir. Las comprobaciones completas y la integración por rebase-merge siguen siendo requisitos pendientes: no se afirma que `make test` haya pasado ni que F2 esté habilitada.
 
 La fórmula sigue sin satisfacer el criterio de las anclas clave: BASE deja 14/24 fuera y FINAL deja 6/24 fuera. La mayor desviación es 6. Se acepta provisionalmente un procedimiento de fórmula base y revisión manual, no una calibración histórica superada.
@@ -86,3 +88,15 @@ El orquestador comunica estos resultados posteriores; **no son ejecuciones propi
 **Mejora opcional P3 resuelta:** se volvió a leer exclusivamente `docs/content/rating-rubric.md:55` tras la última corrección. La definición de `clean_sheets_league` ahora declara que se usa la mayor tasa cuando existen ambas y la de liga cuando falta `clean_sheets_all`; mantiene las cotas respecto a `appearances_league` y `clean_sheets_all`. Coincide con §4, el código y el ejemplo. No queda ese pendiente documental ni se necesitan nuevas pruebas por este cambio de redacción.
 
 La revisión manual, la representatividad de la muestra, las porterías a cero de liga y la falta de `minutes_all` de cuatro anclas siguen requiriendo validación en plantillas completas y P6. Nada en este informe transforma esas limitaciones aceptadas en una calibración superada.
+
+## Añadido: revisión incremental de los commits
+
+Revisión posterior del 2026-10-23, limitada a los commits `4f90cb1` y `7c4bb84` y al bloque «Cobertura y comprobaciones» actualizado de `docs/calibration/anchors.md`. No se ha repetido la auditoría de fuentes ni se han ejecutado nuevas suites o cobertura en paralelo.
+
+**Dictamen incremental favorable, sin nuevos hallazgos materiales.** La lectura del historial confirma la cadena `ba47ccb` → `4f90cb1` → `7c4bb84`. El primer commit contiene únicamente los dos ficheros de tests; el segundo registra las correcciones de datos, el generador del informe y la documentación ya revisados. No hay modificaciones de `backend/src`, esquemas o contratos en estos dos commits, ni cambios de la verificación histórica original. Se mantiene la corrección de `clean_sheets_league` y el seguimiento explícito de las seis desviaciones históricas.
+
+El bloque TDD distingue las ejecuciones iniciales bajo restricciones de la creación posterior de commits separados. El orquestador comunica que reprodujo sobre una copia temporal de `4f90cb1`, obtenida con `git archive`, **2 failed, 1 passed**: el ejemplo documental 89 frente a 92 y el Pichichi de Forlán con V=0,35 frente a 0. Comunica asimismo que eliminó esa copia. El contenido del commit de tests y el estado corregido son coherentes con esa reproducción; este revisor ha comprobado su separación en el historial, **no ha ejecutado ni presenciado esa reproducción temporal**. No se atribuye a los commits una fecha anterior a la que muestran.
+
+El cambio de permisos fue concedido al orquestador; este revisor conserva su perfil anterior. El orquestador comunica que API `/health` y migraciones sobre Postgres con Docker, antes bloqueadas, ahora pasan: **2 passed en 4,30 s**. Por tanto, los bloqueos de sockets, Docker y escritura de metadatos descritos arriba quedan como antecedentes del entorno inicial y no se presentan como obstáculos actuales del orquestador. Los commits locales citados existen y han sido leídos en esta revisión.
+
+En el momento de este añadido, el orquestador comunica que `make test` y `make lint` completos están en ejecución sobre el árbol combinado de `main` `9f4bdb7` y PR `7c4bb84`, en `/tmp/mister-pr17-combined`. No se anticipa su resultado. Los verdes parciales documentados en `anchors.md` siguen correctamente diferenciados de una ejecución completa. Este añadido **no afirma CI remota aprobada, push, merge o cierre de F1**; esas acciones y resultados deben registrarse cuando se completen.
