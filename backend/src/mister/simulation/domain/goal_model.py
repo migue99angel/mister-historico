@@ -31,8 +31,12 @@ class PoissonGoalModel:
             venue_factor = 0.0
         # Logarithms keep valid finite inputs safe from intermediate overflow/underflow.
         log_rate = math.fsum(
-            (math.log(params.base_goals), math.log(team.attack), math.log(opponent.defense),
-             venue_factor)
+            (
+                math.log(params.base_goals),
+                math.log(team.attack),
+                math.log(opponent.defense),
+                venue_factor,
+            )
         )
         if log_rate <= _MIN_LOG_GOALS:
             rate = _MIN_GOALS
