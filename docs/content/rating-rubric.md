@@ -100,7 +100,7 @@ Para un jugador con `position`, estadísticas y club-season con `level_tier`:
 ```
 share_min   = min(1, minutes_all / (90 × avail))
 share_start = min(1, starts_all / avail)
-I = 0,70 × share_min + 0,30 × share_start        # si starts_all es null: I = share_min
+I = 0,70 × share_min + 0,30 × share_start        # si starts_all es null: se cuentan 0 titularidades
 ```
 
 **Paso 2: producción `P` (0 a 1), según la posición.**
@@ -162,7 +162,7 @@ Para que dos implementaciones den **el mismo resultado**: calcula con decimales 
 
 ### 4.4 Propiedades que cumple (y que T1.8 comprueba con tests)
 
-- **Monotonía:** para el mismo jugador y club, la media **nunca baja** al subir `minutes_all`, `starts_all`, `goals_all`, `assists_all`, `clean_sheets_all`, `caps` o el número de premios. Tampoco baja si el nivel del club sube (`D` a `A`). Baja (o no sube) al **aumentar `avail`** con las mismas estadísticas, porque hubo más partidos que jugar. **Encontrar un dato que faltaba** (`assists_all` o `clean_sheets_all`, que son opcionales) **nunca baja la media**: sin dato se cuenta 0, así que cualquier valor encontrado es mayor o igual.
+- **Monotonía:** para el mismo jugador y club, la media **nunca baja** al subir `minutes_all`, `starts_all`, `goals_all`, `assists_all`, `clean_sheets_all`, `caps` o el número de premios. Tampoco baja si el nivel del club sube (`D` a `A`). Baja (o no sube) al **aumentar `avail`** con las mismas estadísticas, porque hubo más partidos que jugar. **Encontrar un dato que faltaba** (`starts_all`, `starts_league`, `assists_all` o `clean_sheets_all`, que son opcionales) **nunca baja la media**: sin dato se cuenta 0, así que cualquier valor encontrado es mayor o igual.
 - **Acotada:** el resultado siempre está en `[1, 99]`. Sin evidencia de ningún tipo, el máximo teórico es `46 + 22 + 14 + 6 + 7 + 6 = 101`, que se acota a 99.
 - **Determinista y pura:** no usa azar, ni fecha, ni orden de los jugadores.
 - **No depende de la `age`.**
@@ -175,7 +175,7 @@ La regla es siempre la misma: **no se inventa**. Esto es lo que ocurre con cada 
 |---|---|
 | `assists_all` (`null`) | **Permitido.** Se cuentan 0 asistencias con el tope normal (paso 2): así encontrar el dato nunca baja la media. La CLI anota `assists: null`. |
 | `clean_sheets_all` de un portero (`null`) | **Permitido.** Se cuentan 0 porterías a cero, por el mismo motivo. La CLI anota `clean_sheets: null`. (Antes se usaba un valor neutro `P = 0,35`, pero entonces un `clean_sheets_all` real bajo habría bajado la media.) |
-| `starts_all` (`null`) | **Permitido.** `I = share_min`. |
+| `starts_all` o `starts_league` (`null`) | **Permitido.** Se cuentan 0 titularidades con la ponderación normal (`I = 0,70 × share_min`), por el mismo motivo que las asistencias: encontrar el dato nunca baja la media. (Antes se usaba `I = share_min`, pero entonces un `starts` real bajo habría bajado la media.) La CLI lo recoge en las notas. |
 | `minutes_all` o `appearances_all` (`null`) pero hay `minutes_league` y `appearances_league` | **Permitido, con aviso.** Se usa la liga: en el paso 1, `minutes_league / (90 × club_matches_league)`, y `starts_league` en lugar de `starts_all`. La base de la liga **solo sustituye la importancia**: la producción sigue dividiéndose entre `avail` de todas las competiciones (paso 0), porque `goals_all`, `assists_all` y `clean_sheets_all` son cifras de todas las competiciones. Si el jugador tiene `available_matches_all`, los partidos de liga que puede haber jugado son `min(club_matches_league, available_matches_all)`. La CLI anota `basis: league` en la salida normal. |
 | `minutes_league` y `minutes_all` (`null`) | **No se calcula.** `rating: null` y `verify: pending`. |
 | `goals_all`, `caps`, `awards`, `position`, `age` (`null`) | **No se calcula.** `rating: null` y `verify: pending`. Si la fuente confirma que no hubo goles, no hubo partidos con la selección o no hubo premios, se escribe `0` o `[]`. |

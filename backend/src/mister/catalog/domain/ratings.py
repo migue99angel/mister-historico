@@ -10,7 +10,7 @@ on exact values.
 
 Missing data (rubric section 5) never produces an invented value: when a required statistic is
 `None`, the result has `rating=None` and lists what is missing. An optional count that is not
-found (assists, clean sheets) counts as 0, so finding it later can never lower the rating.
+found (starts, assists, clean sheets) counts as 0, so finding it later can never lower the rating.
 """
 
 from collections.abc import Iterable
@@ -300,9 +300,7 @@ def _select_basis(stats: PlayerStats, club: ClubContext) -> tuple[_Basis | None,
 
 def _importance(basis: _Basis) -> Fraction:
     share_minutes = min(_ONE, Fraction(basis.minutes, _FULL_MATCH_MINUTES * basis.available))
-    if basis.starts is None:
-        return share_minutes
-    share_starts = min(_ONE, Fraction(basis.starts, basis.available))
+    share_starts = min(_ONE, Fraction(basis.starts or 0, basis.available))
     return _MINUTES_WEIGHT * share_minutes + _STARTS_WEIGHT * share_starts
 
 

@@ -151,7 +151,7 @@ players:
   alias_name: Jugador TFC-06
   position: DF
   age: 33
-  rating: 58
+  rating: 55
   key: false
   season_stats:
     minutes_league: 362
@@ -415,7 +415,7 @@ players:
   alias_name: Jugador TFC-17
   position: FW
   age: 26
-  rating: 73
+  rating: 68
   key: true
   season_stats:
     minutes_league: 627
