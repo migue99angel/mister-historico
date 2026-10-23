@@ -129,7 +129,7 @@
 - **Qué hacer:**
   - Modelos Pydantic para cada fichero de contenido (ADR-007 y ADR-015):
     - `content/clubs/<club>.yaml`: nombre, nombre corto y colores.
-    - `content/club-seasons/<club>-<temporada>/squad.yaml`: jugadores con `player_id` estable entre temporadas, `display_name`, `alias_name`, posición, edad, `rating` de 1 a 99, `key: bool`, `rating_rationale` (obligatorio si `key: true`), `sources` y `joined_on`/`left_on` (para las altas y bajas a mitad de temporada). Además, `real_league {competition_label, played, goals_for, goals_against}`, que se usa para calibrar la fuerza (P6).
+    - `content/club-seasons/<club>-<temporada>/squad.yaml`: jugadores con `player_id` estable entre temporadas, `display_name`, `alias_name`, posición, edad, `rating` de 1 a 99, `key: bool`, `season_stats`, `rating_override` opcional, `sources` y `joined_on`/`left_on` (para las altas y bajas a mitad de temporada). Además, `real_league {competition_label, played, goals_for, goals_against}`, que se usa para calibrar la fuerza (P6).
     - `content/club-seasons/<club>-<temporada>/aggregate.yaml`: la alternativa sin plantilla para los rivales de fuera de Primera (solo fuerza agregada).
     - `content/seasons/<slug>/season.yaml`: el `ClubSeason` propio, el entrenador real, las competiciones con la lista de participantes (referencias a club-seasons), los objetivos de la directiva y el `historical_outcome` con sus fuentes.
     - `fixtures.yaml`: fecha, competición, rival (una referencia a un club-season), condición de local o visitante, resultado real y fuente.
@@ -148,7 +148,7 @@
   - Un `sign_player` que apunta a un jugador inexistente falla (integridad referencial).
   - Un `sign_player` con `from_club_season` falla si ese jugador no está en esa plantilla.
   - Un fixture que referencia un club-season inexistente falla.
-  - Un jugador `key: true` sin `rating_rationale` falla.
+  - (Histórico: el `rating_rationale` de los `key` se eliminó con la fórmula de medias, ADR-006.)
   - En modo release, `verify: pending` falla.
   - El JSON Schema exportado coincide con el versionado (test de drift).
 - **Aceptación:** `docs/content/content-format.md` explica cada campo con un ejemplo.
@@ -157,7 +157,7 @@
 - **Capa:** documentación · **Oleada:** F1-A · **Tamaño:** M · **Depende de:** F0 · **[HUMANO]**: la rúbrica la aprueba el autor.
 - **Propiedad:** `docs/content/rating-rubric.md`, `docs/adr/004-modelo-de-goles.md`, `docs/adr/006-medias.md`
 - **Qué hacer:**
-  - **Rúbrica 1-99:** bandas (90+ élite mundial ese año, 80-89 titular de un grande, etc.), criterios (rendimiento en esa temporada, minutos, rol, premios y selección), cómo documentar `rating_rationale` y un ejemplo con un jugador inventado.
+  - **Rúbrica 1-99:** bandas (90+ élite mundial ese año, 80-89 titular de un grande, etc.), criterios (rendimiento en esa temporada, minutos, rol, premios y selección), cómo documentar un `rating_override` y un ejemplo con un jugador inventado.
   - **Procedimiento ligero para los rivales (P6):** qué jugadores entran (los que tienen minutos relevantes), cuándo un jugador es `key`, cómo se asigna una media sin justificación detallada y la banda de tolerancia entre la fuerza que resulta de la plantilla y los goles a favor y en contra reales del rival.
   - **ADR-004:** la fórmula de λ, de dónde salen la base de goles de la liga y el factor de local, y los rangos de los ajustes de táctica, moral y estado físico.
   - **Bandas de calibración propuestas para T2.7:** jugando con la política histórica, la posición real en liga cae dentro del intervalo central del 80 % de la distribución simulada, los puntos medios quedan a ±5 de los reales, y la probabilidad de reproducir los títulos reales está entre el 5 % y el 40 %.

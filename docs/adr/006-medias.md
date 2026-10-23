@@ -1,6 +1,6 @@
 # ADR-006 · Las medias (1-99) se calculan con una fórmula propia a partir de estadísticas
 
-- **Estado:** Propuesta
+- **Estado:** Aceptada (2026-10-22). Las anclas de T1.7 siguen pendientes y los pesos siguen siendo valores iniciales a calibrar.
 - **Fecha:** 2026-10-22
 - **Relacionado con:** [PLAN](../PLAN.md) §1 (decisión 4), §2 (P6) y §3.3 · [brief](../PRODUCT_BRIEF.md) §13 y §19.4 · [ADR-004](./004-modelo-de-goles.md) · [rúbrica y fórmula](../content/rating-rubric.md) · tareas T1.7 y T1.8
 
@@ -43,7 +43,8 @@ Lo hace cumplir la CLI `mister content ratings compute` y la validación de cont
   - **Circularidad leve:** el nivel del club (A-D) usa la posición final, un resultado. El efecto es pequeño y la comprobación P6 detecta descuadres.
   - **La comprobación P6 puede inducir a retocar datos** para que cuadre. La rúbrica lo prohíbe y T2.7 solo informa.
 - **Seguimiento:**
-  - T1.8 implementa la fórmula, el bloque `season_stats` y el calculador. Debe relajar la regla del esquema "`key: true` sin `rating_rationale` falla": con la fórmula, un `key` no necesita justificación salvo que lleve `rating_override`.
+  - T1.8 implementa la fórmula, el bloque `season_stats` y el calculador. Desaparece `rating_rationale`: con la fórmula, un `key` no necesita justificación, y un `rating_override` lleva la suya (`rationale`).
+  - Decisiones del autor al aprobar la rúbrica: la producción se mide siempre sobre los partidos del club en todas las competiciones; una estadística opcional que falta (`assists_all`, `clean_sheets_all`) cuenta como 0, de modo que encontrarla nunca baja la media; y los jugadores de mercado se calculan con la misma fórmula, con los datos de su club real.
   - El autor completa los jugadores de referencia (T1.7); sin ellos la fórmula no está calibrada.
   - Tras el RM 2012-13 (piloto), revisar los pesos, las cuotas y las alertas con lo que se observe.
   - Si la fórmula resulta insuficiente (muchos overrides), abrir un ADR nuevo que la sustituya.

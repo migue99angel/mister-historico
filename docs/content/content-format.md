@@ -51,7 +51,7 @@ Todos los ficheros empiezan con `schema_version: 1`.
 
 - **Los campos desconocidos son un error** (`extra="forbid"`): una errata falla en alto.
 - **Tipos estrictos:** no hay conversiones implícitas. `rating: "80"` (texto) o `delta: true` (booleano) fallan; escribe `rating: 80`. Las fechas van sin comillas.
-- **Los textos no pueden estar en blanco:** un `rating_rationale`, un `reviewed_by`, un nombre o un texto de interfaz con solo espacios falla.
+- **Los textos no pueden estar en blanco:** un `rationale`, un `reviewed_by`, un nombre o un texto de interfaz con solo espacios falla.
 
 ### Campos comunes de un dato histórico
 
@@ -138,9 +138,10 @@ players:
 Reglas:
 
 - **`rating`** de 1 a 99. Un 0 o un 100 falla. Es `null` solo si el jugador va en `verify: pending` (y entonces la validación en modo release falla). **La media se calcula** a partir de `season_stats` y `club_data` con la fórmula de la [rúbrica](./rating-rubric.md) (ADR-006), y **la validación comprueba que la media guardada coincide exactamente con la fórmula**, o con `rating_override.value` si lo hay. Una discrepancia es un error con el fichero, el jugador y el valor esperado. No se escribe a mano: `mister content ratings compute <club-season>` la calcula (ver abajo).
-- **`season_stats`** es obligatorio en toda plantilla de club (no en la de mercado, que no tiene club). Campos y definiciones: rúbrica, sección 2.1. Pueden ser `null` **solo con `verify: pending`**: `minutes_league`, `appearances_league`, `goals_all`, `caps` y `awards`. Pueden ser `null` con `verify: ok`, con un tratamiento definido en la rúbrica (sección 5): `starts_league`, `minutes_all`, `starts_all`, `appearances_all`, `assists_all`, `clean_sheets_all` (solo porteros) y `available_matches_all` (se omite si el jugador estuvo toda la temporada). Un jugador sin minutos, goles, internacionalidades, premios, posición o edad no tiene media calculable: `rating: null` y `verify: pending`.
+- **`season_stats`** es obligatorio para todo jugador, también el de mercado. Campos y definiciones: rúbrica, sección 2.1. Pueden ser `null` **solo con `verify: pending`**: `minutes_league`, `appearances_league`, `goals_all`, `caps` y `awards`. Pueden ser `null` con `verify: ok`, con un tratamiento definido en la rúbrica (sección 5): `starts_league`, `minutes_all`, `starts_all`, `appearances_all`, `assists_all`, `clean_sheets_all` (solo porteros) y `available_matches_all` (se omite si el jugador estuvo toda la temporada). Un jugador sin minutos, goles, internacionalidades, premios, posición o edad no tiene media calculable: `rating: null` y `verify: pending`.
+- **Coherencia de las estadísticas** (la validación falla si no se cumple): `starts_* ≤ appearances_*`; liga ≤ todas las competiciones en minutos, titularidades y partidos; `minutes_* ≤ 120 × appearances_*` (margen para la prórroga); `appearances_all ≤` los partidos que el jugador pudo jugar (`available_matches_all`, o `club_matches_all`) y `appearances_league ≤ club_matches_league`; `available_matches_all ≤ club_matches_all`; `clean_sheets_all ≤ appearances_all`; y `goals_all` y `assists_all` no pasan de 4 por partido jugado (un tope de cordura: por encima es casi seguro un error de copia). Un jugador con `joined_on` o `left_on` sin `available_matches_all` no es un error, pero la CLI avisa.
 - **`rating_override`** (opcional) lleva `value` (1-99), `rationale` y al menos una fuente. La validación comprueba la distancia con la fórmula: hasta **6 puntos**, basta el `rationale`; de **7 a 12**, hacen falta **dos fuentes distintas** (y la confirmación del revisor, mientras tanto `verify: pending`); **más de 12 está prohibido**. Un override no puede sustituir una estadística que falta.
-- **`rating_rationale`** ya no es obligatorio para nadie (la fórmula explica la media). Solo puede aparecer junto a un `rating_override`; sin override, falla.
+- **`rating_rationale`** ya no existe en las plantillas (la fórmula explica la media y el override lleva su `rationale`); un campo desconocido falla. Los `aggregate.yaml` mantienen el suyo.
 - **`position`** (`GK`, `DF`, `MF`, `FW`) decide en qué línea juega el jugador en el motor; el `subrole` es solo informativo y **nunca** la cambia. Es `null` solo con `verify: pending`.
 - **`subrole`** es opcional y coherente con la posición: `DF` → `CB`, `LB`, `RB`; `MF` → `DM`, `CM`, `AM`, `WG`; `FW` → `WG`, `ST`; `GK` no tiene. `WG` (extremo) es válido con `MF` y con `FW`.
 - **`sources` y `verify` de cada jugador** respaldan su **pertenencia** a la plantilla (y su media). Ver la regla de oro.
@@ -149,12 +150,12 @@ Reglas:
 - No se repite un `player_id` en la plantilla.
 - **Un jugador no está en dos plantillas de la misma temporada en la misma fecha**, salvo traspaso con fechas sin solape (por ejemplo, `left_on: 2000-12-31` en un club y `joined_on: 2001-01-01` en otro). Ese jugador conserva el mismo `player_id`, `display_name` y `alias_name` en todas las plantillas.
 - **`real_league`** es la liga que el club jugó esa temporada, con sus partidos y goles reales (`played`, `goals_for` y `goals_against`); `competition_label` es texto libre con el nombre de esa liga. Un rival de otro país o categoría tiene su propia liga. Se compara con la última clasificación de `standings.yaml` **solo si `competition_label` es el `name` de una liga de la temporada jugable**; en ese caso tiene que coincidir. La calibración comprueba además que la fuerza de la plantilla encaja con esos goles.
-- **`club_data`** (`club_matches_all`, `club_matches_league`, `level_tier` con su `level_tier_basis`, `sources` y `verify`) es obligatorio en toda plantilla de club. `club_matches_league` no puede superar a `club_matches_all`; `level_tier` y los partidos pueden ser `null` solo con `verify: pending`, y un `level_tier` verificado necesita su `level_tier_basis`.
+- **`club_data`** (`club_matches_all`, `club_matches_league`, `level_tier` con su `level_tier_basis`, `sources` y `verify`) es obligatorio en toda plantilla de club (y `null` en la de mercado, donde lo lleva cada jugador). `club_matches_league` no puede superar a `club_matches_all`; `level_tier` y los partidos pueden ser `null` solo con `verify: pending`, y un `level_tier` verificado necesita su `level_tier_basis`.
 - **`default_tactic`** es la táctica que usa el rival (estilo y sistema; ver el DSL de efectos para los valores válidos). Si no se indica, es `balanced` y `4-4-2`.
 
 ### Plantilla de mercado: `_market-<yyyy>-<yy>/squad.yaml`
 
-Mismo formato, con `club: null`, `real_league: null` y de cualquier tamaño. Contiene a los jugadores que un dilema puede hacer fichar y que no están en ninguna plantilla del juego. **No tiene `club_data` ni `season_stats`**: sin club no hay fórmula, y la validación no comprueba sus medias (solo el rango 1-99).
+Mismo formato, con `club: null`, `real_league: null` y de cualquier tamaño. Contiene a los jugadores que un dilema puede hacer fichar y que no están en ninguna plantilla del juego. **No tiene `club_data` a nivel de plantilla (`club_data: null`)**: cada jugador de mercado lleva `season_stats` y su propio `club_data` (con `club_name`) con los datos de su club real de esa temporada, y su media se valida con la misma fórmula.
 
 ## 4. `club-seasons/<club>-<temporada>/aggregate.yaml`
 
@@ -529,9 +530,12 @@ uv run mister content ratings compute test-fc-2000-01 --root ../content --check 
 uv run mister content ratings compute test-fc-2000-01 --root ../content --explain tfc-03   # desglose de un jugador
 ```
 
-- Sin `--check`, calcula la media de cada jugador y reescribe **solo** las líneas `rating` que cambian (con `ruamel.yaml` en modo round-trip: conserva comentarios, orden y formato). Un jugador sin media calculable queda en `rating: null` y `verify: pending`. Si el fichero no cambia, no se toca.
+- Sin `--check`, calcula la media de cada jugador y reescribe **solo** las líneas `rating` que cambian (sustitución dirigida del valor: ni un solo byte más cambia, ni comentarios, ni sangrías, ni líneas largas). Un jugador sin media calculable queda en `rating: null` y `verify: pending`. Si el fichero no cambia, no se toca.
 - Con `--check`, no escribe nada y sale con código 1 si alguna media guardada difiere de la fórmula (o del override) o si un override incumple sus límites.
 - `--explain <player_id>` imprime los componentes (I, P, N, V, T), la media sin redondear y las notas (`assists: null`, `basis: league`...); no escribe.
+- `--root` por defecto es `./content` si existe; si no, el `content/` del repositorio (así funciona desde `backend/`).
+- Imprime una línea `note:` por jugador cuando se usó un tratamiento de datos que faltan (`assists: null`, `clean_sheets: null`, `basis: league`) o falta una estadística.
+- Funciona también con la plantilla de mercado (`_market-<temporada>`).
 - Código de salida 2: la club-season no existe, no tiene plantilla o su fichero no es válido.
 - Avisa (sin fallar) de las alertas anti-inflación de la rúbrica 6.1 que se pueden comprobar por plantilla.
 
