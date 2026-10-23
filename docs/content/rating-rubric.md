@@ -1,6 +1,6 @@
 # Rúbrica de medias (escala 1-99): fórmula a partir de estadísticas
 
-> Estado: **aprobada (2026-10-22), revisada tras la calibración con las anclas (T1.7b, 2026-10-23)**: la fórmula da la **base** de la media y los jugadores `key` se **revisan siempre** a mano (secciones 7 y 8); los pesos siguen siendo valores calibrables (sección 9) · Decisión: [ADR-006](../adr/006-medias.md) · Modelo que consume las medias: [ADR-004](../adr/004-modelo-de-goles.md)
+> Estado: **aprobada (2026-10-22), con decisión de aceptación provisional del autor para T1.7b (2026-10-23); correcciones en revisión, pendientes de checks e integración de PR #17**: la fórmula da la **base** de la media y los jugadores `key` se **revisan siempre** a mano (secciones 7 y 8); los pesos siguen siendo valores calibrables (sección 9) · Decisión: [ADR-006](../adr/006-medias.md) · Modelo que consume las medias: [ADR-004](../adr/004-modelo-de-goles.md)
 > Público: los agentes investigadores que recogen estadísticas (T2.11, T2.16, etc.), quien implementa el calculador (T1.8) y quien revise el contenido. Este documento es autosuficiente: no hace falta consultar ninguna otra fuente de medias.
 
 ## En una frase
@@ -52,7 +52,7 @@ Todas son **hechos verificables** de una temporada concreta de un club (el club-
 | `goals_all` | Goles en `all`, sin contar los de penaltis en tandas ni los de la fase de clasificación no oficial. | Sí | `null` + `pending` |
 | `assists_all` | Asistencias de gol en `all`, **con el criterio de la fuente**. **Dato informativo: no entra en la fórmula** (sección 4.3), porque ninguna fuente permitida publica asistencias fiables de toda la temporada para 2003-2014. Se rellena solo si una **misma fuente** las publica de **toda** la temporada. | **No** | `null` (permitido) |
 | `clean_sheets_all` | **Solo porteros.** Partidos de `all` en los que jugó **al menos 60 minutos** y su equipo no encajó en el tiempo que estuvo. Si la fuente usa otra definición (por ejemplo, el partido completo), se anota en la PR. | No | `null` (permitido) |
-| `clean_sheets_league` | **Solo porteros.** Lo mismo que `clean_sheets_all`, pero solo en los partidos de la **liga**. Se usa si falta `clean_sheets_all` (por ejemplo, porque no hay fichas de partido de la copa); no puede superar a `appearances_league` ni a `clean_sheets_all`. | No | `null` (permitido) |
+| `clean_sheets_league` | **Solo porteros.** Lo mismo que `clean_sheets_all`, pero solo en los partidos de la **liga**. Si existen ambas tasas, se compara con la de `all` y se usa la mayor; si falta `clean_sheets_all`, se usa la de liga (por ejemplo, porque no hay fichas de partido de la copa). El recuento no puede superar a `appearances_league` ni a `clean_sheets_all`. | No | `null` (permitido) |
 | `caps` | Partidos jugados con la **selección absoluta** (cualquier selección de ese país) entre el 1 de julio y el 30 de junio de la temporada, **incluidos los amistosos** (así los publican las fuentes), contando solo los partidos en los que jugó. `0` si la fuente confirma que no jugó ninguno. | Sí | `null` + `pending` |
 | `awards` | Lista de premios individuales **de esa temporada**, cada uno con `name`, `tier` y su fuente. `[]` si la fuente confirma que no hay. `tier` solo puede ser: **`W`** (mundial): quedar entre los 3 primeros de un premio individual al mejor jugador del mundo, o figurar en el once ideal mundial de la temporada; **`L`** (liga): premio oficial de la liga del club (mejor jugador, mejor portero, máximo goleador, máximo asistente) o figurar en su once ideal oficial. Los demás premios (jugador del mes, mejor joven, etc.) **no se registran**. | Sí | `null` + `pending` |
 | `available_matches_all` | **Partidos de `all` que el club jugó mientras el jugador estaba inscrito** (llegadas y salidas a mitad de temporada). Si estuvo toda la temporada, se omite y se usa `club_matches_all`. Se justifica con la fecha de alta o de baja y el calendario. | No | se usa `club_matches_all` |
@@ -96,7 +96,7 @@ Para un jugador con `position`, estadísticas y club-season con `level_tier`:
 
 **Paso 0: partidos disponibles.** `avail = available_matches_all` si existe y, si no, `club_matches_all`. **Es la base de la producción en todos los casos** (también si la importancia usa la liga, sección 5).
 
-**Paso 1: importancia en el equipo `I` (0 a 1).** Un titular habitual no juega el 100 % de los partidos del club (rotaciones en la copa, sanciones, selección, descansos), así que la cuota llega al **máximo con el 85 %** de los partidos disponibles (`TITULAR = 0,85`).
+**Paso 1: importancia en el equipo `I` (0 a 1).** Para representar a un titular habitual pese a rotaciones y ausencias, se eligió que la cuota llegue al **máximo con el 85 %** de los partidos disponibles (`TITULAR = 0,85`). Es un parámetro provisional elegido al observar estas anclas; no es una frecuencia histórica de ausencias ni tiene validación independiente.
 
 ```
 share_min   = min(1, minutes_all / (0,85 × 90 × avail))
@@ -156,7 +156,7 @@ Para que dos implementaciones den **el mismo resultado**: calcula con decimales 
 | Pieza | Peso máximo | Por qué |
 |---|---|---|
 | **Suelo `46`** | 46 | Un jugador inscrito sin ninguna evidencia queda en torno a 40-49 (la banda de cantera sin minutos). Evita medias de 1 a 20, que el motor no necesita. |
-| **Importancia `I`** | 22 | Es la evidencia más objetiva y la que mejor se encuentra para 2003-2014: quien juega casi todo es quien el entrenador considera mejor. Pesa más que ninguna otra pieza. Los minutos pesan más que las titularidades (0,70 frente a 0,30) porque miden la participación real. **Llega al máximo con el 85 % de los partidos** porque lo que mide es ser el titular habitual, y un titular habitual se pierde por rotación, sanción o selección en torno al 15 % de los partidos del club (todas las competiciones); sin este umbral, un titular indiscutible quedaría por debajo de un jugador que no se pierde un partido por casualidad. Un suplente (poco minutaje) sigue saliendo bajo. |
+| **Importancia `I`** | 22 | Es la evidencia más objetiva y la que mejor se encuentra para 2003-2014: quien juega casi todo es quien el entrenador considera mejor. Pesa más que ninguna otra pieza. Los minutos pesan más que las titularidades (0,70 frente a 0,30) porque miden la participación real. **Llega al máximo con el 85 % de los partidos**, una elección provisional motivada por las rotaciones y las ausencias y ajustada observando las anclas. No se ha medido que el titular habitual se pierda un 15 % de los partidos, ni se ha validado el umbral con otra muestra. Un suplente (poco minutaje) sigue saliendo bajo. |
 | **Producción `P`** | 14 | Goles (o porterías a cero, en un portero) miden lo que el jugador aporta en el área. **Se mide por partido disponible del club** y no por minuto: así un jugador no pierde media por jugar más (monotonía). **Las asistencias no entran:** ninguna fuente permitida las publica de forma fiable y homogénea para 2003-2014, y una pieza que casi siempre falta penaliza a quien más asiste. |
 | **Selección `N`** | 6 | Convocatoria y minutos con la absoluta indican nivel frente a los mejores de un país. Se satura en 8 partidos para no premiar solo los amistosos. |
 | **Premios `V`** | 7 | Recogen reconocimiento externo y, sobre todo, a quienes destacan sin que lo vean los números (porteros y defensas). Un premio mundial pesa más que uno de liga. |
@@ -166,7 +166,8 @@ Para que dos implementaciones den **el mismo resultado**: calcula con decimales 
 
 ### 4.4 Propiedades que cumple (y que T1.8 comprueba con tests)
 
-- **Monotonía:** para el mismo jugador y club, la media **nunca baja** al subir `minutes_all`, `starts_all`, `goals_all`, `clean_sheets_all`, `clean_sheets_league`, `caps` o el número de premios. Tampoco baja si el nivel del club sube (`D` a `A`). Baja (o no sube) al **aumentar `avail`** con las mismas estadísticas, porque hubo más partidos que jugar. **Encontrar un dato que faltaba** (`starts_all`, `starts_league`, `clean_sheets_all` o `clean_sheets_league`, que son opcionales) **nunca baja la media**: sin dato se cuenta 0 y, si existen las dos tasas de un portero, se usa la mayor, así que cualquier valor encontrado da una media mayor o igual.
+- **Monotonía:** para el mismo jugador y club, la media **nunca baja** al subir `minutes_all`, `starts_all`, `goals_all`, `clean_sheets_all`, `clean_sheets_league`, `caps` o el número de premios. Tampoco baja si el nivel del club sube (`D` a `A`). Baja (o no sube) al **aumentar `avail`** con las mismas estadísticas, porque hubo más partidos que jugar. **Manteniendo el conjunto usado para la importancia**, encontrar un dato que faltaba (`starts_all`, `starts_league`, `clean_sheets_all` o `clean_sheets_league`, que son opcionales) **nunca baja la media**: sin dato se cuenta 0 y, si existen las dos tasas de un portero, se usa la mayor, así que cualquier valor encontrado da una media mayor o igual.
+- **Cambio de conjunto:** encontrar `minutes_all` o `appearances_all` puede cambiar `basis: league` a `basis: all` y **bajar la media**, porque cambian el denominador y la participación relativa. La monotonía anterior no compara conjuntos distintos. Se comprueba con un caso sintético; no se garantiza que conseguir más cobertura suba la media.
 - **Acotada:** el resultado siempre está en `[1, 99]`. Sin evidencia de ningún tipo, el máximo teórico es `46 + 22 + 14 + 6 + 7 + 6 = 101`, que se acota a 99.
 - **Determinista y pura:** no usa azar, ni fecha, ni orden de los jugadores.
 - **No depende de la `age`.**
@@ -184,6 +185,8 @@ La regla es siempre la misma: **no se inventa**. Esto es lo que ocurre con cada 
 | `minutes_league` y `minutes_all` (`null`) | **No se calcula.** `rating: null` y `verify: pending`. |
 | `goals_all`, `caps`, `awards`, `position`, `age` (`null`) | **No se calcula.** `rating: null` y `verify: pending`. Si la fuente confirma que no hubo goles, no hubo partidos con la selección o no hubo premios, se escribe `0` o `[]`. |
 | Nivel del club (`level_tier`) sin fuente | **No se calcula**, igual que arriba. |
+
+Al completar `minutes_all` o `appearances_all`, hay que recalcular y revisar los `key`: pasar de la liga a todas las competiciones puede bajar su importancia y su media.
 
 La validación en modo release falla con cualquier `verify: pending`, y es lo correcto: obliga a resolverlo antes de publicar.
 
@@ -229,12 +232,12 @@ La fórmula da la **base**: mide con estadísticas públicas lo que se puede med
 
 **Evidencia de calidad que vale para un override de un `key`.** Tiene que ser **de esa temporada**, **verificable con una fuente** y estar citada en el `rationale`:
 
-- **Premios o nominaciones individuales** que no cuentan en `V` (por ejemplo, entre los 10 primeros de un premio al mejor jugador del mundo, o la nominación al mejor jugador de la liga) y los premios por posición de la liga.
+- **Premios o nominaciones individuales** que no cuentan en `V` (por ejemplo, entre los 10 primeros de un premio al mejor jugador del mundo, o la nominación al mejor jugador de la liga) y los premios por posición de la liga que tampoco se hayan contado en `V`. No se reutiliza el mismo premio en la base y en el override.
 - **Once ideal** de la liga o de un sindicato de jugadores (si no es el oficial de la liga, que ya cuenta en `V`) o del año de una competición europea.
 - **Titular indiscutible en un club de nivel A o B**: al menos el 85 % de los minutos del club en `all` o en la liga, en un club de nivel A o B, con las alineaciones o los minutos como fuente.
 - **Convocatoria con la selección absoluta a un torneo final** (Mundial, Eurocopa, Copa América...) del verano que cierra esa temporada (lista oficial de la selección). `N` cuenta partidos, amistosos incluidos; estar entre los 23 de un torneo final dice algo más sobre el nivel frente a los mejores.
 
-**Evidencia para bajar la base.** La banda 95-99 (sección 6) es "el mejor o casi el mejor del mundo". Una base de **95 o más sin un premio mundial individual de esa temporada** (entre los 3 primeros del Balón de Oro o del FIFA World Player, con la lista como fuente) se corrige a **94** con un override. Si el jugador sí tiene ese premio, la base se queda.
+**Evidencia para bajar la base (regla provisional).** La banda 95-99 (sección 6) es "el mejor o casi el mejor del mundo". Una base de **95 o más sin un premio mundial individual de esa temporada** (entre los 3 primeros del Balón de Oro o del FIFA World Player, con la lista como fuente) se corrige a **94** con un override. Si el jugador sí tiene ese premio, la base se queda. El tope de 94 es una decisión de diseño adoptada al observar estas anclas; la interpretación de la banda lo motiva, pero no determina ese número ni demuestra su validez. No tiene validación independiente.
 
 Cuántos puntos se puede mover está en la sección 7.4: hasta 6 con una evidencia de la lista y su fuente; de 7 a 12 con al menos dos fuentes distintas (sección 7.4).
 
@@ -324,27 +327,31 @@ Si no hay datos fiables de minutos y jugadores (típicamente clubes de fuera de 
 
 Los valores de la sección 4 se ajustan con dos comprobaciones:
 
-1. **Contra los jugadores de referencia o anclas (T1.7 y T1.7b).** El autor eligió jugadores reales por banda y posición, cada uno con su temporada. Sirven como **anclas de cordura**: se recogen sus estadísticas con fuente (`content/anchors/`), igual que las de cualquier jugador, y se calcula su media. El informe con los resultados está en [`docs/calibration/anchors.md`](../calibration/anchors.md).
+1. **Contra los jugadores de referencia o anclas (T1.7 y T1.7b).** El orquestador eligió jugadores reales por banda y posición por delegación del autor, cada uno con su temporada. Sirven como **anclas de cordura**: se recogen sus estadísticas con fuente (`content/anchors/`), igual que las de cualquier jugador, y se calcula su media. El informe con los resultados está en [`docs/calibration/anchors.md`](../calibration/anchors.md).
    - **Cada ancla es clave o no clave**, con los criterios **verificables** de la sección 8.2 (portero titular, premio `W` o `L`, 3 o más internacionalidades esa temporada, máximo goleador del club en `all`). La clasificación va en `content/anchors/bands.yaml`.
    - **No clave: se evalúa la fórmula sola.** Como mucho **1 de cada 5** puede quedar fuera de su banda y **ninguna** puede desviarse **más de 5 puntos**.
    - **Clave: se aplica el proceso real** (sección 7). Un `rating_override` con evidencia y fuentes, dentro de los límites de la sección 7.4 (6 puntos con un `rationale`; de 7 a 12 con dos fuentes distintas), tiene que poder llevar a la ancla a su banda. Si no hay evidencia de la lista de 7.1 que la lleve a su banda, o harían falta **más de 12 puntos**, es un **fallo** y se informa.
    - **Cómo se ajusta:** si se incumple, se cambian los valores de la sección 4 con una PR de esta rúbrica, que aprueba el autor, con una tabla de los resultados de las anclas antes y después. **No se retoca ningún jugador concreto** y no se cambian las bandas del autor para que cuadren.
 2. **Contra la comprobación P6 de goles reales (sección 8.5).** Detecta desvíos sistemáticos de conjunto. Se mantiene igual: es assert solo para los rivales de la liga jugable.
 
-**Para no hacer trampas:** los pesos se ajustan con las **anclas** (y con las temporadas que no sean las de la comprobación P6); las comprobaciones con los goles reales de la temporada jugable sirven de **validación**, no de ajuste. Los cambios de la primera calibración (T1.7b: asistencias fuera, topes de solo goles, titular al 85 %, porterías a cero de liga y revisión de los `key`) se justifican por la **disponibilidad de datos** y por **lo que mide cada pieza** (sección 4.3), no por cómo cuadran las anclas.
+**Para no hacer trampas:** los pesos se ajustan con las **anclas** (y con las temporadas que no sean las de la comprobación P6); las comprobaciones con los goles reales de la temporada jugable sirven de **validación**, no de ajuste. La disponibilidad de datos motiva retirar las asistencias y admitir porterías a cero de liga. Los topes de solo goles, el umbral del 85 %, la revisión de los `key` y el tope manual de 94 incluyen **decisiones de diseño elegidas observando estas anclas**. La misma muestra no las valida de forma independiente. Quedan provisionales hasta contrastarlas con otras temporadas y con P6; no se afirma calibración universal.
 
-**Resultado de la primera calibración (T1.7b):** de las 6 anclas no clave, 0 quedan fuera de su banda con la fórmula sola; de las 18 clave, 13 quedan fuera con la base y, tras la revisión con evidencia (8 overrides, 2 de ellos a la baja), 5 siguen fuera sin evidencia que las mueva. Detalle y evidencia de cada override en el informe de calibración.
+**Resultado corregido de T1.7b:** de las 6 anclas no clave, 0 quedan fuera con la fórmula sola. De las 18 clave, 14 quedan fuera con la base y 6 con la final (8 overrides, 2 a la baja). En el total, BASE: 14/24 fuera; FINAL: 6/24 fuera. La mayor desviación final es de 6 puntos. **El criterio de las clave sigue incumplido**; el autor acepta provisionalmente esta limitación con la opción 1. No se han cambiado bandas ni clasificaciones para conseguir un aprobado. [Tabla reproducible y pendientes](../calibration/anchors.md); [verificación independiente](../calibration/anchors-verification.md).
 
-**Anclas por banda y posición (las eligió el autor, T1.7; las marcadas con * son sustituciones por datos, ver el informe):**
+Las 18/24 clave (75 %) forman una muestra deliberadamente sesgada de referencias, sin plantillas completas ni aplicación del corte de 6-10 por plantilla de 8.2. Esa proporción **no estima** cuántos jugadores se revisarán o corregirán en plantillas reales. El mecanismo real sí exige revisar cada `key`, documentar la evidencia, conservar BASE y FINAL y registrar también las revisiones sin cambio. Faltan validación en otra muestra y P6 del piloto.
+
+**Anclas por banda y posición (seleccionadas por el orquestador por delegación del autor, T1.7; las marcadas con * son sustituciones por datos, ver el informe):**
 
 | Banda | Portero | Defensa | Centrocampista | Delantero |
 |---|---|---|---|---|
 | 90-94 | Petr Čech (Chelsea, 2004-05) | Nemanja Vidić (Manchester United, 2008-09) | Xavi Hernández (FC Barcelona, 2010-11) | Thierry Henry (Arsenal, 2003-04) |
 | 85-89 | Pepe Reina (Liverpool, 2005-06) | Philipp Lahm (Bayern de Múnich, 2009-10) | David Silva (Valencia, 2009-10) | Diego Forlán (Villarreal, 2004-05) |
-| 80-84 | Diego López (Villarreal, 2008-09) | Gabriel Milito (Real Zaragoza, 2005-06) | Javi Martínez (Athletic Club, 2011-12) | Álvaro Negredo (Sevilla, 2010-11) |
+| 80-84 | Diego López (Villarreal, 2008-09) | Gabriel Milito (Real Zaragoza, 2005-06); Javi Martínez (Athletic Club, 2011-12, central) | **Pendiente de representante** | Álvaro Negredo (Sevilla, 2010-11) |
 | 75-79 | Gorka Iraizoz (Athletic Club, 2008-09) | Alberto Lopo (Deportivo de La Coruña, 2008-09) | Juan Arango* (RCD Mallorca, 2008-09) | Aritz Aduriz* (RCD Mallorca, 2008-09) |
 | 70-74 | Kiko Casilla (RCD Espanyol, 2013-14) | Iván Ramis (RCD Mallorca, 2010-11) | Gonzalo Colsa (Racing de Santander, 2007-08) | Nino (CD Tenerife, 2009-10) |
 | 60-69 | Dani Aranzubia (Deportivo de La Coruña, 2010-11) | Manuel Pablo (Deportivo de La Coruña, 2010-11) | Javi Fuego (Rayo Vallecano, 2012-13) | David Barral* (Sporting de Gijón, 2010-11) |
+
+Javi Martínez se corrige a DF por su posición mayoritaria en 2011-12; se conserva la banda del autor. Esto deja sin representante MF a 80-84: no se inventa una sustitución. Sus estadísticas, fuentes y override de 79 a 80 están en [el informe corregido](../calibration/anchors.md).
 
 ## 10. Ejemplos completos (todo inventado)
 
@@ -442,7 +449,7 @@ Estadísticas: `minutes_all: 4900`, `starts_all: 54`, `clean_sheets_all: 24`, `c
 | `bruta` | 46 + 22 + 11,11 + 2,25 + 2,45 + 6 | 89,81 |
 | **media** | redondeo | **90** |
 
-Si `clean_sheets_all` fuese `null` y no hubiera `clean_sheets_league`, se contarían 0 porterías a cero (`P = 0`) y la bruta bajaría a 46 + 22 + 0 + 2,25 + 2,45 + 6 = 78,70, es decir, **79**. Si, en cambio, se encontraran las porterías a cero de la liga (por ejemplo, `clean_sheets_league: 20` en 38 partidos de liga: tasa 0,526), se usaría esa tasa (`P` = 0,957) y la media sería **89**. El dato que falta no se rellena, y encontrarlo nunca baja la media.
+Si `clean_sheets_all` fuese `null` y no hubiera `clean_sheets_league`, se contarían 0 porterías a cero (`P = 0`) y la bruta bajaría a 46 + 22 + 0 + 2,25 + 2,45 + 6 = 78,70, es decir, **79**. Si, en cambio, se encontraran las porterías a cero de la liga (por ejemplo, `clean_sheets_league: 20` en 38 partidos de liga: tasa 0,526), se usaría esa tasa (`P` = 0,957) y la media sería **92**: bruta = 46 + 22 + 14 × (200 / 209) + 2,25 + 2,45 + 6 = 92,0971… La tasa de liga también gana si se conserva `clean_sheets_all: 24`. El dato que falta no se rellena; completar las porterías a cero nunca baja la media manteniendo el conjunto de importancia.
 
 > Nota sobre los decimales: las tablas de este apartado redondean cada sumando a 2 o 3 decimales para que se puedan seguir a mano, y por eso la suma puede diferir unas centésimas de la bruta exacta. La media entera es la que calcula la CLI con fracciones exactas y no cambia.
 

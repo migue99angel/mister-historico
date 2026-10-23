@@ -1,96 +1,175 @@
-# Calibración de la fórmula con las anclas (T1.7b)
+# Calibración provisional de la fórmula con las anclas (T1.7b)
 
-> Estado: **informe para el autor, tras su decisión "fórmula como base y revisión manual de los jugadores clave".** Aplicada en la misma PR: la fórmula y la rúbrica cambian como se explica abajo; las bandas del autor no se han tocado.
-> Datos: `content/anchors/` (24 anclas con fuente). Medias: `compute_rating`, la misma función que la CLI `mister content ratings compute`.
-> Reproducir: `cd backend && uv run python tests/content/anchors/report.py` (o, por temporada, `uv run mister content ratings compute _market-2004-05 --root ../content/anchors --check`).
+> Estado: **decisión de aceptación provisional del autor, opción 1 (2026-10-23); correcciones de PR #17 en revisión**. No habilita F2 hasta completar checks, revisión independiente e integración por rebase-merge; no certifica calibración universal ni cumplimiento del criterio histórico de las clave.
+> Datos: `content/anchors/`, 24 anclas con fuentes. Cálculo: `compute_rating`, la misma función que usa la CLI.
+> [Verificación independiente original](./anchors-verification.md): se conserva sin modificar; este informe aplica sus correcciones y documenta la evidencia adicional de Forlán.
+> Reproducir: `cd backend && uv run python tests/content/anchors/report.py`. Para escribir las medias calculadas en los YAML: añadir `--write`.
 
-## En pocas palabras
+Las 6 anclas no clave cumplen el criterio de la fórmula sola: 0/6 fuera de banda y ninguna a más
+de 5 puntos. Las 18 clave dejan **14/18 fuera con BASE y 6/18 con FINAL**, tras 8 overrides
+(6 al alza y 2 a la baja). En las 24 anclas son **14/24 fuera con BASE y 6/24 con FINAL**.
+El criterio histórico de las clave **sigue incumplido** y Aduriz sigue a 6 puntos de su banda.
+No se modifican bandas ni `key` para resolverlo. La aceptación del autor es provisional y deja
+estos fallos visibles para el piloto y para una validación posterior independiente de las anclas.
+La continuación de F2 queda condicionada a los checks, la revisión y la integración de PR #17.
 
-- **Anclas no clave (6): la fórmula sola las deja a todas dentro de su banda.** El criterio (como mucho 1 de cada 5 fuera y ninguna a más de 5 puntos) **se cumple**.
-- **Anclas clave (18): la fórmula sola deja 13 fuera de banda.** Aplicando el proceso real (revisión manual con evidencia de la rúbrica), **8 entran en su banda**: 6 suben y 2 bajan. **5 siguen fuera** porque no hay evidencia verificable que las mueva: Thierry Henry (+5), Aritz Aduriz (-6), Álvaro Negredo (-4), Gorka Iraizoz (-2) y Juan Arango (+2).
-- **Veredicto: el criterio nuevo se cumple para las no clave y no del todo para las clave** (13 de 18 en banda; 5 sin evidencia que las lleve a ella; ninguna requería más de 12 puntos, así que no es un fallo por límite). La decisión de qué hacer con esas 5 es tuya (ver al final).
-- La fórmula anterior dejaba 15 de 24 fuera y la peor desviación era de 12 puntos.
+## Decisiones y alcance de esta muestra
 
-## Qué se ha cambiado en la fórmula y por qué
+La fórmula mide volumen, goles, internacionalidades, premios y nivel del club. La revisión manual
+de cada `key` es el mecanismo real: se conserva la BASE, se contrasta la evidencia de §7.1 de la
+rúbrica y se registra la FINAL, también cuando queda sin cambio. Un override debe respetar los
+límites de §7.4; el criterio no se cumple por la mera posibilidad matemática de mover 12 puntos.
+Hace falta evidencia que justifique el cambio. En las seis discrepancias pendientes no se añade
+un override para alcanzar la banda.
 
-Todos los cambios se justifican por la disponibilidad de datos o por lo que mide cada pieza, no por cómo cuadran las anclas:
+Las 18/24 clave (75 %) son una muestra sesgada de referencias escogidas por banda y posición.
+No son plantillas completas ni aplican el corte de 6-10 `key` por plantilla. Esta proporción no
+estima la carga de revisión ni el porcentaje de overrides de las plantillas reales. Los 8 overrides
+representan 8/24 de la muestra y 8/18 de sus clave; tampoco extrapolamos esas fracciones.
 
-1. **Fuera las asistencias.** Ninguna fuente permitida publica asistencias fiables de toda la temporada para 2003-2014: solo 1 de las 24 anclas (Lahm) las tiene. Una pieza que casi siempre falta penaliza a quien más asiste. El campo `assists_all` se queda en el esquema como dato informativo. Con eso, los topes de producción pasan a medir solo goles: delantero 0,70, centrocampista 0,30 y defensa 0,10 goles por partido del club (antes 0,80/0,45/0,20 sobre goles y media asistencia).
-2. **Porterías a cero de la liga.** Nuevo campo `clean_sheets_league`. Si faltan las de todas las competiciones, el portero usa las de la liga; si existen las dos, se usa la mayor de las dos tasas (así encontrar un dato nunca baja la media, comprobado con un test de Hypothesis). Solo si faltan las dos cuenta 0. Se ha recogido con fuente para los 6 porteros.
-3. **Perderse unos partidos penaliza menos.** La importancia llega al máximo con el **85 %** de los minutos y titularidades del club (antes, el 100 %), porque un titular habitual se pierde en torno al 15 % de los partidos del club por rotación, sanciones o selección. Un suplente sigue saliendo bajo (por ejemplo, 50 con 520 minutos).
-4. **La fórmula da la base y los `key` se revisan siempre.** La rúbrica (sección 7.1) lista la evidencia que vale para un override (premios y nominaciones, once ideal, titular indiscutible en un club A o B, convocatoria a un torneo final) y prohíbe la fama. Se añade una regla para **bajar** una base de 95 o más cuando el jugador no tiene un premio mundial individual esa temporada, porque la banda 95-99 es "el mejor o casi el mejor del mundo".
+Retirar las asistencias y admitir porterías a cero de liga responde a cobertura de datos. Los topes
+de solo goles, el umbral de titularidad del **85 %** y el tope manual de **94** sin premio mundial
+individual son elecciones de diseño observando estas anclas. La rotación motiva el umbral, pero no
+se ha medido un 15 % de ausencias. La definición de la banda motiva el tope, pero no demuestra que
+94 sea el valor correcto. **Siguen siendo provisionales y carecen de validación independiente**.
+No se cambia ningún parámetro de la fórmula en esta corrección de la revisión.
 
-## Resultado por ancla
+## Correcciones aplicadas tras la verificación
 
-**Cómo leerla.** *Banda*: la que puso el autor. *Clave*: si cumple algún criterio verificable de la sección 8.2 (portero titular, premio mundial o de liga, 3 o más internacionalidades esa temporada, máximo goleador del club). *Antes*: la media con la fórmula anterior. *Base*: la media con la fórmula nueva, sin tocar. *Override*: la corrección manual, si hay evidencia. *Final*: lo que se guardaría. *Desv.*: puntos que se queda fuera de la banda (0 si está dentro; negativo = por debajo).
+- **Javi Martínez, Athletic 2011-12:** DF, su posición mayoritaria de central, con [BDFutbol](https://www.bdfutbol.com/es/t/t2011-126.html) y su candidatura a [Mejor Defensa LFP](https://www.malagacf.com/noticias/isco-y-cazorla-finalistas-de-los-premios-lfp-2012). BASE **79**, override **80**, distancia **1**. Las dos evidencias del override están confirmadas por el informe independiente; ya no necesita el tramo de 7 a 12 ni su `pending`. Al reclasificar su posición queda **sin representante MF la banda 80-84**; no se inventa una sustitución.
+- **Forlán, Villarreal 2004-05:** `available_matches_all: 39` y BASE/FINAL **90**, tras excluir el Pichichi de `V` por ser de MARCA. La justificación por inscripción figura debajo. Queda a **+1** de 85-89; sin override nuevo.
+- **Premios UEFA Team of the Year:** se retiran de `awards` de Henry, Čech y Xavi. Son un once europeo, sin tier W o L permitido. Čech pasa de BASE 99 a **96**, mantiene FINAL **94**; Henry y Xavi conservan 99 y 88 porque `V` sigue saturado.
+- **Xavi:** se quitan los premios de año natural 2010 y se conservan los de 2011, el año que cierra 2010-11, conforme al criterio de atribución adoptado para estas anclas. El premio LFP es **Mejor mediocentro** (el de Mejor centrocampista fue de Iniesta). Su override se apoya solo en **ESM Team of the Year 2010-11**; el LFP ya está en `V` y no se vuelve a contar como evidencia adicional.
+- **Reina:** `starts_all: 53` y `clean_sheets_all: 30`, publicados o contables partido a partido en [lfchistory](https://www.lfchistory.net/players/1126/games-per-season/115). Son 20 de liga + 7 de Champions + 2 de FA Cup + 1 del Mundial de Clubes. `minutes_all` permanece `null`; la tasa de liga sigue siendo mayor y la media sigue en 89.
+- **Textos:** Valencia llegó a **cuartos** de Europa League; Lahm jugó el **99,7 %** de al menos 4800 minutos del Bayern (4784, incluida la prórroga de Copa); Čech empató en **14.º-17.º** en el Balón de Oro 2005. No cambian las medias.
+- **Rúbrica §10.4:** el ejemplo sintético con 20 porterías a cero de liga da **92**, no 89. La bruta exacta es `192483/2090` (92,0971…). Un test contrasta el texto con la fórmula y otro comprueba el cálculo y la selección de la mayor tasa.
 
-| Banda | Jugador | Temporada | Clave | Antes | Base | Desv. base | Override | Final | Desv. final |
-|---|---|---|---|---|---|---|---|---|---|
-| 90-94 | thierry-henry | 2003-04 | si | 98 | 99 | +5 |  | 99 | +5 |
-| 90-94 | petr-cech | 2004-05 | si | 97 | 99 | +5 | 94 | 94 | +0 |
-| 90-94 | nemanja-vidic | 2008-09 | si | 91 | 99 | +5 | 94 | 94 | +0 |
-| 90-94 | xavi-hernandez | 2010-11 | si | 84 | 88 | -2 | 90 | 90 | +0 |
-| 85-89 | diego-forlan | 2004-05 | si | 81 | 85 | +0 |  | 85 | +0 |
-| 85-89 | pepe-reina | 2005-06 | si | 73 | 89 | +0 |  | 89 | +0 |
-| 85-89 | philipp-lahm | 2009-10 | si | 89 | 83 | -2 | 85 | 85 | +0 |
-| 85-89 | david-silva | 2009-10 | si | 75 | 80 | -5 | 85 | 85 | +0 |
-| 80-84 | gabriel-milito | 2005-06 | si | 70 | 74 | -6 | 80 | 80 | +0 |
-| 80-84 | diego-lopez | 2008-09 | si | 75 | 77 | -3 | 80 | 80 | +0 |
-| 80-84 | alvaro-negredo | 2010-11 | si | 72 | 76 | -4 |  | 76 | -4 |
-| 80-84 | javi-martinez | 2011-12 | si | 69 | 73 | -7 | 80 | 80 | +0 |
-| 75-79 | gorka-iraizoz | 2008-09 | si | 72 | 73 | -2 |  | 73 | -2 |
-| 75-79 | alberto-lopo | 2008-09 | no | 68 | 75 | +0 |  | 75 | +0 |
-| 75-79 | juan-arango | 2008-09 | si | 75 | 81 | +2 |  | 81 | +2 |
-| 75-79 | aritz-aduriz | 2008-09 | si | 66 | 69 | -6 |  | 69 | -6 |
-| 70-74 | gonzalo-colsa | 2007-08 | no | 70 | 73 | +0 |  | 73 | +0 |
-| 70-74 | nino | 2009-10 | si | 70 | 72 | +0 |  | 72 | +0 |
-| 70-74 | ivan-ramis | 2010-11 | no | 65 | 73 | +0 |  | 73 | +0 |
-| 70-74 | kiko-casilla | 2013-14 | si | 72 | 74 | +0 |  | 74 | +0 |
-| 60-69 | dani-aranzubia | 2010-11 | si | 65 | 69 | +0 |  | 69 | +0 |
-| 60-69 | manuel-pablo | 2010-11 | no | 59 | 62 | +0 |  | 62 | +0 |
-| 60-69 | david-barral | 2010-11 | no | 63 | 66 | +0 |  | 66 | +0 |
-| 60-69 | javi-fuego | 2012-13 | no | 66 | 68 | +0 |  | 68 | +0 |
+### Forlán: partidos por inscripción, no por apariciones
 
-- no clave (formula sola): 0 de 6 fuera; mayor desviacion 0
-- clave (base): 13 de 18 fuera; mayor desviacion 7
-- clave (tras la revision): 5 de 18 fuera; mayor desviacion 6
+El Villarreal jugó 59 partidos oficiales: 38 de liga, 1 de Copa, 12 de Copa UEFA y 8 de Intertoto.
+Contar por la fecha del fichaje daría 52, porque la vuelta de la final Intertoto del 24-ago fue
+posterior a su alta del 21-ago. El valor anterior de 51 excluía erróneamente toda la Intertoto por fecha.
 
-## Evidencia de cada override
+La disponibilidad usada aquí se calcula como **59 − 8 Intertoto − 12 Copa UEFA = 39**, igual a
+**38 Liga + 1 Copa**. No se deduce la inelegibilidad de que no aparezca en las alineaciones:
 
-Todos los overrides están en `content/anchors/club-seasons/*/squad.yaml`, con su `rationale` y sus fuentes. Ninguno está justificado por la fama ni por cuadrar la banda: cada uno se apoya en lo que la rúbrica 7.1 admite.
+1. [UEFA, 1-dic-2004](https://www.uefa.com/uefaeuropaleague/news/025a-0eaa822bdd58-c4d081f04dae-1000--villarreal-stand-by-stand-ins/) afirma expresamente que Forlán no estaba inscrito para la Copa UEFA. [UEFA, 21-mar-2005](https://www.uefa.com/uefaeuropaleague/news/01a7-0e6cb043fa48-87af82d090de-1000--progress-for-villarreal-and-alkmaar/) confirma que seguía `cup-tied` en la fase eliminatoria.
+2. El [reglamento UEFA Intertoto 2004, art. 15.06(b), página impresa 16](https://www.eurocups.ru/docs/Intertoto2004.pdf) establece el **26-jul-2004, 12:00 CET**, como plazo para semifinales y finales: «26 July 2004 (12.00 hours CET): for the semi-finals and final matches». El permiso de modificaciones hasta 24 horas antes de cada partido de 15.06(a) se limita a las tres primeras rondas. El texto de 15.06-15.10 no recoge una excepción de alta tardía para finales.
+3. [UEFA, 20-ago-2004](https://www.uefa.com/news-media/news/01a0-0e6ae40bf5ef-56623532997d-1000--forlan-fit-for-villarreal-role/) anuncia su firma prevista para el sábado 21, posterior a ese plazo. **Aplicar la norma a esa fecha** excluye la final del 24; es un cálculo derivado con evidencia, no una inscripción nominal consultada.
 
-| Ancla | Base | Override | Evidencia (de esa temporada) |
-|---|---|---|---|
-| Petr Čech (Chelsea 04-05) | 99 | **94** (baja 5) | La base cae en 95-99 y no hubo premio mundial individual: Balón de Oro 2005 empatado en 15.º-17.º, FIFA World Player 2005 con Ronaldinho, Lampard y Eto'o. [Balón de Oro 2005](https://en.wikipedia.org/wiki/2005_Ballon_d%27Or), [FIFA World Player](https://en.wikipedia.org/wiki/FIFA_World_Player_of_the_Year). |
-| Nemanja Vidić (Man. United 08-09) | 99 | **94** (baja 5) | Igual: Balón de Oro 2009 empatado en 16.º; FIFA World Player 2009 con Messi, Cristiano Ronaldo y Xavi. [Balón de Oro 2009](https://en.wikipedia.org/wiki/2009_Ballon_d%27Or), [FIFA World Player](https://en.wikipedia.org/wiki/FIFA_World_Player_of_the_Year). |
-| Xavi (Barcelona 10-11) | 88 | **90** (sube 2) | Mejor Mediocentro de los Premios LFP 2010-11 y once ideal de la temporada del ESM. [Premios LFP](https://es.wikipedia.org/wiki/Premios_LaLiga), [ESM Team of the Year](https://en.wikipedia.org/wiki/ESM_Team_of_the_Year). |
-| Philipp Lahm (Bayern 09-10) | 83 | **85** (sube 2) | Titular indiscutible de un club A (4784 minutos en 53 partidos, el 100 % de los minutos del Bayern) y capitán de Alemania en el Mundial 2010. [fussballdaten](https://www.fussballdaten.de/person/philipp-lahm/leistungsdaten/), [Mundial 2010](https://en.wikipedia.org/wiki/2010_FIFA_World_Cup_squads). |
-| David Silva (Valencia 09-10) | 80 | **85** (sube 5) | Convocado por España al Mundial 2010 (dorsal 21), que ganó; jugó ante Suiza y Alemania. [Mundial 2010](https://en.wikipedia.org/wiki/2010_FIFA_World_Cup_squads), [Silva](https://en.wikipedia.org/wiki/David_Silva). Una sola evidencia. |
-| Gabriel Milito (Zaragoza 05-06) | 74 | **80** (sube 6) | Convocado por Argentina al Mundial 2006 (dorsal 15); jugó ante Países Bajos. [Mundial 2006](https://en.wikipedia.org/wiki/2006_FIFA_World_Cup_squads), [Milito](https://en.wikipedia.org/wiki/Gabriel_Milito). Una sola evidencia, en el límite de 6 puntos. |
-| Diego López (Villarreal 08-09) | 77 | **80** (sube 3) | Titular indiscutible de un club B (4230 minutos, el 94 % de los del club) y finalista al Mejor Portero de los Premios LFP 2008-09. [BDFutbol](https://www.bdfutbol.com/es/j/j576.html), [Primera 2008-09](https://es.wikipedia.org/wiki/Primera_Divisi%C3%B3n_de_Espa%C3%B1a_2008-09). |
-| Javi Martínez (Athletic 11-12) | 73 | **80** (sube 7, `verify: pending`) | Finalista al Mejor Defensa de los Premios LFP 2011-12 y convocado por España a la Eurocopa 2012. Dos evidencias y dos fuentes, a 7 puntos de la base: **pendiente del revisor independiente**. [Málaga CF](https://www.malagacf.com/noticias/isco-y-cazorla-finalistas-de-los-premios-lfp-2012), [Eurocopa 2012](https://en.wikipedia.org/wiki/UEFA_Euro_2012_squads). |
+**Límite de acceso:** el reglamento se leyó en el texto completo indexado de esas cláusulas; la
+apertura directa del PDF dio timeout. No se afirma una revisión íntegra del PDF ni haber visto una
+lista nominativa de inscritos de Intertoto. La siguiente revisión debe contrastar esa copia y su
+aplicación. Si esa evidencia resultase insuficiente, se marcaría `available_matches_all: null` y
+`verify: pending`, con recálculo y señalando que el fallback de la fórmula no resuelve la ausencia
+de fuente. El 52 por fechas no demuestra elegibilidad UEFA; el 39 usado tiene la justificación anterior.
 
-**Las cinco que no se pueden mover (sin evidencia):**
+El Pichichi es un trofeo de prensa, como documenta la [historia publicada por el Real Betis](https://www.realbetisbalompie.es/noticias/primer-equipo/historia-el-pichichi-de-quino-22095), y no cumple el tier L de la rúbrica. Se excluye con el mismo criterio aplicado al Zarra de Negredo. Esta corrección adicional del revisor reduce `V` de 0,35 a 0 y la BASE de 92 a 90; no cambia la banda ni su clasificación como clave por 11 internacionalidades.
 
-- **Thierry Henry (99 frente a 90-94):** la base cae en 95-99 y sí tiene premio mundial individual esa temporada (2.º del FIFA World Player 2003 y 2004), por lo que la regla de bajar no aplica. La fórmula lo deja en "excepcional", como la rúbrica define esa banda; la banda del autor es más baja. Sin evidencia para bajarlo, se informa como desviación de +5.
-- **Aritz Aduriz (69 frente a 75-79):** máximo goleador del club (11 goles), pero sin premios, selección ni nivel A o B del club. No hay evidencia de calidad de la lista. Desviación de -6 (la única por encima de 5).
-- **Álvaro Negredo (76 frente a 80-84):** el Trofeo Zarra es de Marca (no de la liga) y no fue finalista de los premios de la LFP. Sin evidencia: -4.
-- **Gorka Iraizoz (73 frente a 75-79):** sin premios, selección ni club A o B. -2.
-- **Juan Arango (81 frente a 75-79):** la base se pasa un poco y no hay regla para bajarla. +2.
+## Resultado reproducible: BASE y FINAL de las 24 anclas
 
-## Patrones observados
+La banda es la referencia acordada; el orquestador seleccionó las anclas por delegación del autor. BASE es la fórmula sin override; FINAL es el override si existe o la
+BASE. Desviación es cero en banda, negativa por debajo y positiva por encima. Se omite la antigua
+columna «Antes»: mezclaba fórmula anterior y datos con errores y no mide aisladamente un cambio de pesos.
 
-1. **Quitar las asistencias y subir la importancia del titular ayudó a los defensas y a los porteros**: Casilla, Colsa, Lopo, Ramis, Aranzubia y Fuego quedan dentro de banda con la fórmula sola, y Reina (con sus porterías a cero de liga) también.
-2. **Arriba, la fórmula se pasa.** Con selección, premios y nivel A al máximo (+19 puntos), Henry, Čech y Vidić llegan a 99. Por eso hace falta la regla de bajar.
-3. **Los buenos de equipos medianos salen bajos sin evidencia externa** (Milito, Martínez, Silva, Negredo, Aduriz): la fórmula no ve calidad cuando no hay premios ni selección fuerte ni un club A o B. Lo que los sube, cuando lo hay, es un dato verificable de la lista de 7.1.
-4. **Datos que faltan.** `minutes_all` es `null` en Čech, Vidić, Henry y Reina (la importancia usa la liga), porque ninguna fuente accesible publica los minutos de la FA Cup y la Copa de la Liga. Las 6 anclas no clave tienen todos los datos que usa la fórmula.
+<!-- BEGIN GENERATED ANCHOR REPORT -->
+| Banda | Jugador | Temporada | Clave | Base | Desv. base | Override | Final | Desv. final |
+|---|---|---|---|---|---|---|---|---|
+| 90-94 | thierry-henry | 2003-04 | si | 99 | +5 |  | 99 | +5 |
+| 90-94 | petr-cech | 2004-05 | si | 96 | +2 | 94 | 94 | +0 |
+| 90-94 | nemanja-vidic | 2008-09 | si | 99 | +5 | 94 | 94 | +0 |
+| 90-94 | xavi-hernandez | 2010-11 | si | 88 | -2 | 90 | 90 | +0 |
+| 85-89 | diego-forlan | 2004-05 | si | 90 | +1 |  | 90 | +1 |
+| 85-89 | pepe-reina | 2005-06 | si | 89 | +0 |  | 89 | +0 |
+| 85-89 | philipp-lahm | 2009-10 | si | 83 | -2 | 85 | 85 | +0 |
+| 85-89 | david-silva | 2009-10 | si | 80 | -5 | 85 | 85 | +0 |
+| 80-84 | gabriel-milito | 2005-06 | si | 74 | -6 | 80 | 80 | +0 |
+| 80-84 | diego-lopez | 2008-09 | si | 77 | -3 | 80 | 80 | +0 |
+| 80-84 | alvaro-negredo | 2010-11 | si | 76 | -4 |  | 76 | -4 |
+| 80-84 | javi-martinez | 2011-12 | si | 79 | -1 | 80 | 80 | +0 |
+| 75-79 | gorka-iraizoz | 2008-09 | si | 73 | -2 |  | 73 | -2 |
+| 75-79 | alberto-lopo | 2008-09 | no | 75 | +0 |  | 75 | +0 |
+| 75-79 | juan-arango | 2008-09 | si | 81 | +2 |  | 81 | +2 |
+| 75-79 | aritz-aduriz | 2008-09 | si | 69 | -6 |  | 69 | -6 |
+| 70-74 | gonzalo-colsa | 2007-08 | no | 73 | +0 |  | 73 | +0 |
+| 70-74 | nino | 2009-10 | si | 72 | +0 |  | 72 | +0 |
+| 70-74 | ivan-ramis | 2010-11 | no | 73 | +0 |  | 73 | +0 |
+| 70-74 | kiko-casilla | 2013-14 | si | 74 | +0 |  | 74 | +0 |
+| 60-69 | dani-aranzubia | 2010-11 | si | 69 | +0 |  | 69 | +0 |
+| 60-69 | manuel-pablo | 2010-11 | no | 62 | +0 |  | 62 | +0 |
+| 60-69 | david-barral | 2010-11 | no | 66 | +0 |  | 66 | +0 |
+| 60-69 | javi-fuego | 2012-13 | no | 68 | +0 |  | 68 | +0 |
 
-## Cosas que conviene que decidas
+| Grupo | N | BASE fuera | FINAL fuera | Máx. desv. BASE | Máx. desv. FINAL |
+|---|---|---|---|---|---|
+| No clave | 6 | 0/6 | 0/6 | 0 | 0 |
+| Clave | 18 | 14/18 | 6/18 | 6 | 6 |
+| Total | 24 | 14/24 | 6/24 | 6 | 6 |
 
-1. **¿Qué hacer con las 5 que no se mueven?** Opciones: aceptarlas (el criterio solo exige que **pueda** llevarlas a su banda un override con evidencia, y aquí no la hay), revisar su banda o buscar más evidencia en la rúbrica 7.1.
-2. **La regla de bajar a 94** cuando falta un premio mundial individual. Es nueva, y la he añadido porque la banda 95-99 se define como "el mejor o casi el mejor del mundo" (sección 6). Si prefieres no tenerla, Čech y Vidić pasan a +5 y fallan.
-3. **Premios de año natural** (Balón de Oro, once de la FIFPro o de la UEFA): se registraron como `W` los del año que cierra la temporada; ya estaban saturando `V` antes de este cambio.
-4. **Verificación independiente (como T2.14): pendiente.** Los datos los han recogido agentes y los has de revisar. `verify: ok` significa que cada dato tiene fuente, no que un segundo revisor lo haya confirmado. El override de Javi Martínez va en `verify: pending` por la regla de 7 a 12 puntos.
+Overrides: 8 (6 al alza, 2 a la baja).
+<!-- END GENERATED ANCHOR REPORT -->
+
+Las fracciones de la tabla son exactas. Fuera de banda: BASE total 14/24 = 58,33… % y FINAL
+6/24 = 25 %; en clave, BASE 14/18 = 77,77… % y FINAL 6/18 = 33,33… %. No clave: 0/6 en ambos.
+Los 8 overrides respetan los límites; ninguno queda en el tramo de 7 a 12 tras corregir a Javi a DF.
+La revisión independiente confirma hechos; no valida empíricamente los puntos elegidos en los overrides.
+
+## Evidencia de los ocho overrides
+
+| Ancla | BASE → FINAL | Evidencia de la temporada y mecanismo |
+|---|---|---|
+| Čech | 96 → 94 (−2) | Tope provisional de §7.1: sin top 3 del Balón de Oro ni del FIFA World Player 2005. Empatado 14.º-17.º del Balón de Oro; fuentes en el YAML. |
+| Vidić | 99 → 94 (−5) | Mismo tope provisional; 16.º del Balón de Oro 2009, sin top 3 del FIFA World Player. |
+| Xavi | 88 → 90 (+2) | [ESM Team of the Year 2010-11](https://en.wikipedia.org/wiki/ESM_Team_of_the_Year). El premio LFP ya cuenta en V y no se reutiliza. |
+| Lahm | 83 → 85 (+2) | Titular indiscutible en club A (4784 minutos, alrededor del 99,7 %) y capitán de Alemania en el Mundial 2010. |
+| Silva | 80 → 85 (+5) | Convocatoria de España al Mundial 2010, dorsal 21. Una evidencia; caps ya cuentan en N, la convocatoria al torneo final es el criterio adicional de §7.1. |
+| Milito | 74 → 80 (+6) | Convocatoria de Argentina al Mundial 2006, dorsal 15. Una evidencia, en el límite de seis puntos. |
+| Diego López | 77 → 80 (+3) | Titular indiscutible de club B (4230 minutos, 94 %) y finalista a Mejor Portero LFP 2008-09; fuentes en YAML y verificación independiente. |
+| Javi Martínez | 79 → 80 (+1) | Finalista a Mejor Defensa LFP 2011-12 y convocado a Eurocopa 2012; evidencias confirmadas por el informe independiente. |
+
+Todos conservan `rationale` y fuentes en los YAML. El número de puntos es criterio provisional
+de revisión del proyecto, no un hecho histórico demostrado por la convocatoria o el premio.
+
+## Pendientes históricos
+
+Se han revisado también las diez clave sin override; se conserva la BASE. Reina, Nino, Casilla y
+Aranzubia quedan en banda sin cambio. Estas otras seis **siguen fuera**:
+
+| Ancla | FINAL | Banda | Desviación | Resultado de la revisión |
+|---|---|---|---|---|
+| Henry | 99 | 90-94 | +5 | Tiene top 3 del FIFA World Player 2004; el tope provisional no se aplica. Sin evidencia admisible para bajarlo. |
+| Forlán | 90 | 85-89 | +1 | Inscripción corregida a 39. Pichichi excluido de V por ser de MARCA; no se inventa un motivo para bajarlo. |
+| Negredo | 76 | 80-84 | −4 | El Trofeo Zarra no tiene tier L; sin evidencia de §7.1 que justifique llevarlo a la banda. |
+| Iraizoz | 73 | 75-79 | −2 | Sin premio, selección ni club A/B que justifiquen override según la lista vigente. |
+| Arango | 81 | 75-79 | +2 | Sin regla o evidencia admisible para bajarlo. |
+| Aduriz | 69 | 75-79 | −6 | Máximo goleador del club, ya reflejado en producción; sin evidencia adicional admisible. |
+
+No hay fallo por exceder el límite absoluto de 12, pero eso **no satisface** el criterio de las
+clave: faltan overrides justificables que las lleven a banda. Se acepta esta limitación sin alterar
+las bandas ni trasladar jugadores a «no clave». En otras temporadas y en P6 se deberá comprobar
+si el mecanismo escala, si quedan desvíos sistemáticos y si precisa otra propuesta de fórmula.
+
+## Cobertura y comprobaciones
+
+`minutes_all` sigue en `null` para Henry, Čech, Vidić y Reina: no se deducen minutos de sus
+apariciones. Usan `basis: league` para la importancia. Conseguir `minutes_all` puede cambiar a
+`basis: all` y **bajar** la media: la participación relativa y el denominador cambian. La monotonía
+de los recuentos opcionales solo se garantiza manteniendo el conjunto usado para la importancia.
+No se promete que completar cualquier dato suba la media.
+
+Orden TDD de esta corrección:
+
+1. Se escribieron los tests sintéticos y el contraste con §10.4 antes de corregir ese texto. Se guardó un parche de tests separado.
+2. Se observó el rojo del test documental: `assert 89 == 92` (primero ejecución de la función con Python y después pytest: **1 failed, 3 passed**).
+3. Se corrigió el texto a 92 y se recalcularon las anclas con `report.py --write`. Los tests normales de fórmula/anclas comprueban coherencia de datos y fórmula; no equivalen a una validación histórica universal.
+4. La revisión detectó además el Pichichi de prensa contado como L en Forlán. Se añadió primero un test de contenido de Forlán/Negredo y se observó **1 failed, 1 passed**, con `awards=0,35` frente a 0. Después se retiró el premio, se recalculó Forlán a 90 y se actualizó su pendiente a +1.
+5. La prueba histórica parametrizada de las 18 clave conserva **seis `xfail(strict=True)`** con identificadores, motivo y enlace a estos pendientes. Otra prueba normal exige el mapa exacto de desviaciones: un fallo nuevo o un cambio de desviación falla, y resolver un pendiente provoca XPASS estricto hasta actualizar explícitamente su seguimiento. Los seis xfail son **criterios históricos no cumplidos**, no seis pruebas verdes.
+
+Durante esas primeras ejecuciones los metadatos Git estaban en solo lectura. Después de que el autor habilitara los permisos, se registró el commit **`4f90cb1`**, `test(catalog): cover provisional calibration corrections`, con solo los dos ficheros de tests. Sobre una copia temporal de ese commit, sin las correcciones del árbol de trabajo, se reprodujeron ambas regresiones: **2 failed, 1 passed** (el 89 frente a 92 y el Pichichi de Forlán en V). La copia temporal se eliminó. Las correcciones se registran en un commit posterior separado, sin reescribir los anteriores.
+
+El verde específico de fórmula y anclas es **95 passed, 18 deselected**; el criterio histórico explícito da **12 passed, 6 xfailed, 13 deselected**. Con los permisos restaurados también pasan las dos pruebas antes bloqueadas: API `/health` y migraciones sobre Postgres con Docker (**2 passed**). El registro de cierre en `docs/HANDOFF.md` recogerá las comprobaciones completas y la integración cuando hayan ocurrido.
+
+Comandos de comprobación: `uv run pytest tests/catalog/test_ratings_formula.py tests/content/anchors/test_anchors.py --no-cov` y, explícitamente para el criterio histórico, `uv run pytest tests/content/anchors/test_anchors.py -m calibration --no-cov`. La salida concreta de los checks completos y la CI se registra en la entrega de la PR; las pruebas parciales no equivalen a `make test` completo ni cierran F1. F2 sigue condicionada a los checks exigidos, la revisión independiente y la integración por rebase-merge de PR #17.
 
 ## Sustituciones y dudas sobre las anclas
 
@@ -102,13 +181,17 @@ Todos los overrides están en `content/anchors/club-seasons/*/squad.yaml`, con s
 | Nikola Žigić (Racing de Santander, 2006-07), delantero, 75-79 | **Aritz Aduriz (RCD Mallorca, 2008-09)** | Žigić empezó la temporada en el Estrella Roja y no fichó por el Racing hasta el 29-ago-2006. Fuentes: [Wikipedia](https://en.wikipedia.org/wiki/Nikola_%C5%BDigi%C4%87), [BDFutbol](https://www.bdfutbol.com/es/j/j2085.html). Coincide con Arango en club y temporada. |
 | Kike Sola (CA Osasuna, 2011-12), delantero, 60-69 | **David Barral (Sporting de Gijón, 2010-11)** | Kike Sola jugó solo 7 partidos de liga (507 min). Fuentes: [BDFutbol](https://www.bdfutbol.com/es/j/j5643.html), [BDFutbol (plantilla)](https://www.bdfutbol.com/es/t/t2010-1134.html), [Wikipedia](https://en.wikipedia.org/wiki/David_Barral). |
 
-Mantenidas con dudas: Aranzubia (se perdió las 6 primeras jornadas por lesión), Silva (30 de 38 partidos), Reina (33 de 38), Javi Martínez (31 de 38), Ramis (33 de 38, motivo sin verificar), Forlán (fichó el 21-ago-2004, tras 8 partidos de Intertoto que cuentan como oficiales: `available_matches_all: 51`). `caps: 0` de varios jugadores se apoya en que Wikipedia no lista internacionalidades absolutas.
+Se mantienen las dudas de cobertura de Aranzubia, Silva, Reina y Ramis ya documentadas en
+`bands.yaml`. La posición de Javi Martínez es DF. Forlán se trata por inscripción, con 39 partidos
+según el cálculo y las fuentes de arriba; no se sostiene que toda la Intertoto fuese anterior a su alta.
+Los ceros de internacionalidades y los datos con una sola fuente siguen sujetos al alcance de la
+verificación independiente. No se completa ningún minuto ni ninguna estadística sin fuente.
 
 ## Qué hay en el repositorio
 
 - `content/anchors/club-seasons/_market-<temporada>/squad.yaml`: una plantilla por temporada, con las medias escritas por la CLI/fórmula (o el override, en los clave).
 - `content/anchors/bands.yaml`: banda esperada, si es clave y por qué, y las sustituciones.
-- `backend/tests/content/anchors/test_anchors.py` (valida las anclas con el esquema, comprueba que las medias son las de la fórmula o el override, y que las no clave cumplen el criterio) y `report.py` (esta tabla).
+- `backend/tests/content/anchors/test_anchors.py` (valida las anclas con el esquema, comprueba que las medias son las de la fórmula o el override, y que las no clave cumplen el criterio). La suite histórica de las clave conserva seis fallos esperados estrictos y comprueba que no aparecen otros. `report.py` reproduce la tabla y las métricas de este informe.
 - Cambios de la fórmula: `backend/src/mister/catalog/domain/ratings.py`, el esquema de `season_stats` (`clean_sheets_league`) y su JSON Schema, la rúbrica, el ADR-006, `content-format.md` y el contenido sintético recalculado con la CLI.
 
 ## Fuentes

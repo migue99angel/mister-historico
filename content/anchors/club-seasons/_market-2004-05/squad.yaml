@@ -17,7 +17,7 @@ players:
   alias_name: Diego Forlán
   position: FW
   age: 25
-  rating: 85
+  rating: 90
   key: true
   season_stats:
     minutes_league: 3009
@@ -29,14 +29,19 @@ players:
     goals_all: 25
     assists_all: null
     caps: 11
-    awards:
-    - name: Pichichi 2004-05 (máximo goleador de LaLiga, 25 goles)
-      tier: L
-      source: https://en.wikipedia.org/wiki/Diego_Forl%C3%A1n
-    available_matches_all: 51  # 59 club matches minus the 8 Intertoto matches played before he signed (21 Aug 2004)
+    awards: []
+    # 59 - 8 Intertoto - 12 UEFA Cup = 39 (38 league + 1 domestic cup).
+    # UEFA confirms no UEFA Cup registration. Intertoto 15.06(b) closed registrations
+    # on 26 July, before his 21 August transfer. Rule text was indexed; PDF fetch timed out.
+    available_matches_all: 39
     sources:
     - https://www.bdfutbol.com/en/j/j596.html
     - https://www.bdfutbol.com/en/p/j596.html?temp=2004-05
+    - https://www.uefa.com/uefaeuropaleague/news/025a-0eaa822bdd58-c4d081f04dae-1000--villarreal-stand-by-stand-ins/
+    - https://www.uefa.com/uefaeuropaleague/news/01a7-0e6cb043fa48-87af82d090de-1000--progress-for-villarreal-and-alkmaar/
+    - https://www.uefa.com/news-media/news/01a0-0e6ae40bf5ef-56623532997d-1000--forlan-fit-for-villarreal-role/
+    - https://www.eurocups.ru/docs/Intertoto2004.pdf
+    - https://www.realbetisbalompie.es/noticias/primer-equipo/historia-el-pichichi-de-quino-22095
     - https://www.bdfutbol.com/en/t/t2004-0538.html
     - https://www.national-football-teams.com/player/7025/Diego_Forlan.html
     - https://en.wikipedia.org/wiki/Diego_Forl%C3%A1n
@@ -68,7 +73,7 @@ players:
   rating_override:
     value: 94
     rationale: >-
-      La base (99) cae en la banda 95-99 (el mejor o casi el mejor del mundo, rúbrica 6), pero Čech no quedó entre los 3 primeros del Balón de Oro 2005 (empatado en 15.º-17.º; Ronaldinho, Lampard y Gerrard) ni del FIFA World Player 2005 (Ronaldinho, Lampard y Eto'o). Se limita a 94 (rúbrica 7.1, evidencia para bajar la base).
+      La base (96) cae en la banda 95-99 (el mejor o casi el mejor del mundo, rúbrica 6), pero Čech no quedó entre los 3 primeros del Balón de Oro 2005 (empatado en 14.º-17.º; Ronaldinho, Lampard y Gerrard) ni del FIFA World Player 2005 (Ronaldinho, Lampard y Eto'o). Se limita a 94 (rúbrica 7.1, evidencia para bajar la base).
     sources:
     - https://en.wikipedia.org/wiki/2005_Ballon_d%27Or
     - https://en.wikipedia.org/wiki/FIFA_World_Player_of_the_Year
@@ -88,9 +93,6 @@ players:
     - name: Premier League Golden Glove 2004-05 (mejor portero, 24 porterías a cero)
       tier: L
       source: https://en.wikipedia.org/wiki/Petr_%C4%8Cech
-    - name: UEFA Team of the Year 2005 (año natural; solapa con la temporada)
-      tier: W
-      source: https://en.wikipedia.org/wiki/UEFA_Team_of_the_Year
     sources:
     - https://en.wikipedia.org/wiki/Premier_League_Golden_Glove
     - https://en.wikipedia.org/wiki/2004%E2%80%9305_Chelsea_F.C._season

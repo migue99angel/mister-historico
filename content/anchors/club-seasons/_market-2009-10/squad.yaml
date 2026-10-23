@@ -64,7 +64,7 @@ players:
   rating_override:
     value: 85
     rationale: >-
-      Titular indiscutible de un club de nivel A: 4784 minutos de 53 partidos (100 % de los minutos del Bayern) y capitán de Alemania en el Mundial de 2010, que jugó hasta la semifinal.
+      Titular indiscutible de un club de nivel A: 4784 minutos en 53 partidos (99,7 % de al menos 4800 minutos del Bayern, incluida la prórroga de semifinales de Copa) y capitán de Alemania en el Mundial de 2010, que jugó hasta la semifinal.
     sources:
     - https://www.fussballdaten.de/person/philipp-lahm/leistungsdaten/
     - https://en.wikipedia.org/wiki/2010_FIFA_World_Cup_squads
@@ -138,7 +138,7 @@ players:
     club_matches_all: 56
     club_matches_league: 38
     level_tier: B
-    level_tier_basis: '3.º de LaLiga 2009-10 (71 puntos, tras Barcelona y Real Madrid) y octavos de final
+    level_tier_basis: '3.º de LaLiga 2009-10 (71 puntos, tras Barcelona y Real Madrid) y cuartos de final
       de la Europa League (tier B: 3.º-6.º de una liga big-5).'
     club_name: Valencia CF
     sources:
