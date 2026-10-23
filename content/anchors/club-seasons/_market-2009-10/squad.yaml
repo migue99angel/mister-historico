@@ -1,0 +1,137 @@
+# Calibration anchors of this season (T1.7b). See ../../bands.yaml.
+schema_version: 1
+club_season: _market-2009-10
+club: null
+season: 2009-10
+real_league: null
+club_data: null
+sources:
+- https://www.bdfutbol.com/es/t/t2009-1035.html
+- https://en.wikipedia.org/wiki/Nino_(footballer,_born_1980)
+- https://www.fussballdaten.de/person/philipp-lahm/leistungsdaten/
+- https://en.wikipedia.org/wiki/2009%E2%80%9310_FC_Bayern_Munich_season
+- https://www.bdfutbol.com/en/t/t2009-1036.html
+- https://www.bdfutbol.com/en/j/j537.html
+verify: ok
+players:
+- player_id: nino
+  display_name: Nino
+  alias_name: Nino
+  position: FW
+  age: 29
+  rating: 70
+  key: false
+  season_stats:
+    minutes_league: 3350
+    starts_league: 37
+    appearances_league: 38
+    minutes_all: 3399
+    starts_all: 37
+    appearances_all: 40
+    goals_all: 14
+    assists_all: null
+    caps: 0
+    awards: []
+    sources:
+    - https://www.bdfutbol.com/es/t/t2009-1035.html
+    - https://www.bdfutbol.com/es/j/j1637.html
+    - https://www.bdfutbol.com/es/t/t2009-10aCOP.html
+    - https://en.wikipedia.org/wiki/Nino_(footballer,_born_1980)
+    verify: ok
+  club_data:
+    club_matches_all: 40
+    club_matches_league: 38
+    level_tier: D
+    level_tier_basis: Tenerife termino 19o de Primera Division 2009-10 con 36 puntos y descendio (15o
+      o inferior).
+    club_name: CD Tenerife
+    sources:
+    - https://www.bdfutbol.com/es/t/t2009-10.html
+    - https://www.bdfutbol.com/es/t/t2009-10aCOP.html
+    - https://www.bdfutbol.com/es/t/t2009-1035.html
+    verify: ok
+  sources:
+  - https://www.bdfutbol.com/es/t/t2009-1035.html
+  - https://en.wikipedia.org/wiki/Nino_(footballer,_born_1980)
+  verify: ok
+- player_id: philipp-lahm
+  display_name: Philipp Lahm
+  alias_name: Philipp Lahm
+  position: DF
+  age: 26
+  rating: 89
+  key: false
+  season_stats:
+    minutes_league: 3060
+    starts_league: 34
+    appearances_league: 34
+    minutes_all: 4784
+    starts_all: 53
+    appearances_all: 53
+    goals_all: 1
+    assists_all: 12
+    caps: 12
+    awards: []
+    sources:
+    - https://www.fussballdaten.de/person/philipp-lahm/leistungsdaten/
+    - https://en.wikipedia.org/wiki/2009%E2%80%9310_FC_Bayern_Munich_season
+    - https://www.national-football-teams.com/player/2573/Philipp_Lahm.html
+    - https://en.wikipedia.org/wiki/Philipp_Lahm
+    verify: ok
+  club_data:
+    club_matches_all: 53
+    club_matches_league: 34
+    level_tier: A
+    level_tier_basis: Campeón de la Bundesliga 2009-10 (70 puntos, 5 sobre el Schalke 04), campeón de
+      la DFB-Pokal y finalista de la Champions League 2009-10.
+    club_name: FC Bayern München
+    sources:
+    - https://en.wikipedia.org/wiki/2009%E2%80%9310_Bundesliga
+    - https://en.wikipedia.org/wiki/2009%E2%80%9310_FC_Bayern_Munich_season
+    - https://www.fussballdaten.de/person/philipp-lahm/leistungsdaten/
+    verify: ok
+  sources:
+  - https://www.fussballdaten.de/person/philipp-lahm/leistungsdaten/
+  - https://en.wikipedia.org/wiki/2009%E2%80%9310_FC_Bayern_Munich_season
+  verify: ok
+- player_id: david-silva
+  display_name: David Silva
+  alias_name: David Silva
+  position: MF
+  age: 23
+  rating: 75
+  key: false
+  season_stats:
+    minutes_league: 2416
+    starts_league: 28
+    appearances_league: 30
+    minutes_all: 3176
+    starts_all: 37
+    appearances_all: 40
+    goals_all: 10
+    assists_all: null
+    caps: 11
+    awards: []
+    sources:
+    - https://www.bdfutbol.com/en/j/j537.html
+    - https://www.bdfutbol.com/en/p/j537.html?temp=2009-10
+    - https://www.bdfutbol.com/en/t/t2009-1036.html
+    - https://www.national-football-teams.com/player/17397/David_Silva.html
+    - https://en.wikipedia.org/wiki/David_Silva
+    verify: ok
+  club_data:
+    club_matches_all: 56
+    club_matches_league: 38
+    level_tier: B
+    level_tier_basis: '3.º de LaLiga 2009-10 (71 puntos, tras Barcelona y Real Madrid) y octavos de final
+      de la Europa League (tier B: 3.º-6.º de una liga big-5).'
+    club_name: Valencia CF
+    sources:
+    - https://en.wikipedia.org/wiki/2009%E2%80%9310_La_Liga
+    - https://www.bdfutbol.com/en/t/t2009-1036.html
+    - https://www.bdfutbol.com/en/p/j537.html?temp=2009-10
+    verify: ok
+  sources:
+  - https://www.bdfutbol.com/en/t/t2009-1036.html
+  - https://www.bdfutbol.com/en/j/j537.html
+  verify: ok

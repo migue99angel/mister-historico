@@ -1,0 +1,108 @@
+# Calibration anchors of this season (T1.7b). See ../../bands.yaml.
+schema_version: 1
+club_season: _market-2004-05
+club: null
+season: 2004-05
+real_league: null
+club_data: null
+sources:
+- https://www.bdfutbol.com/en/t/t2004-0538.html
+- https://www.bdfutbol.com/en/j/j596.html
+- https://en.wikipedia.org/wiki/2004%E2%80%9305_Chelsea_F.C._season
+- https://en.wikipedia.org/wiki/Petr_%C4%8Cech
+verify: ok
+players:
+- player_id: diego-forlan
+  display_name: Diego Forlán
+  alias_name: Diego Forlán
+  position: FW
+  age: 25
+  rating: 81
+  key: false
+  season_stats:
+    minutes_league: 3009
+    starts_league: 34
+    appearances_league: 38
+    minutes_all: 3099
+    starts_all: 35
+    appearances_all: 39
+    goals_all: 25
+    assists_all: null
+    caps: 11
+    awards:
+    - name: Pichichi 2004-05 (máximo goleador de LaLiga, 25 goles)
+      tier: L
+      source: https://en.wikipedia.org/wiki/Diego_Forl%C3%A1n
+    available_matches_all: 51  # 59 club matches minus the 8 Intertoto matches played before he signed (21 Aug 2004)
+    sources:
+    - https://www.bdfutbol.com/en/j/j596.html
+    - https://www.bdfutbol.com/en/p/j596.html?temp=2004-05
+    - https://www.bdfutbol.com/en/t/t2004-0538.html
+    - https://www.national-football-teams.com/player/7025/Diego_Forlan.html
+    - https://en.wikipedia.org/wiki/Diego_Forl%C3%A1n
+    verify: ok
+  club_data:
+    club_matches_all: 59
+    club_matches_league: 38
+    level_tier: B
+    level_tier_basis: '3.º de LaLiga 2004-05 (65 puntos, tras Barcelona y Real Madrid) y cuartos de final
+      de la UEFA Cup (tier B: 3.º-6.º de una liga big-5).'
+    club_name: Villarreal CF
+    sources:
+    - https://en.wikipedia.org/wiki/2004%E2%80%9305_La_Liga
+    - https://en.wikipedia.org/wiki/2004%E2%80%9305_Villarreal_CF_season
+    - https://www.bdfutbol.com/en/t/t2004-05aUEF.html
+    - https://www.bdfutbol.com/en/t/t2004-05aITT.html
+    verify: ok
+  sources:
+  - https://www.bdfutbol.com/en/t/t2004-0538.html
+  - https://www.bdfutbol.com/en/j/j596.html
+  verify: ok
+- player_id: petr-cech
+  display_name: Petr Čech
+  alias_name: Petr Čech
+  position: GK
+  age: 22
+  rating: 97
+  key: false
+  season_stats:
+    minutes_league: 3150
+    starts_league: 35
+    appearances_league: 35
+    minutes_all: null
+    starts_all: 48
+    appearances_all: 48
+    goals_all: 0
+    assists_all: null
+    clean_sheets_all: 28
+    caps: 10
+    awards:
+    - name: Premier League Golden Glove 2004-05 (mejor portero, 24 porterías a cero)
+      tier: L
+      source: https://en.wikipedia.org/wiki/Petr_%C4%8Cech
+    - name: UEFA Team of the Year 2005 (año natural; solapa con la temporada)
+      tier: W
+      source: https://en.wikipedia.org/wiki/UEFA_Team_of_the_Year
+    sources:
+    - https://premierleague.com/news/3251101
+    - https://www.statmuse.com/fc/ask/petr-cech-stats-2004-05
+    - https://en.wikipedia.org/wiki/2004%E2%80%9305_Chelsea_F.C._season
+    - https://en.wikipedia.org/wiki/Petr_%C4%8Cech
+    - https://www.chelseafc.com/en/news/2019/06/21/petr-cech-factfile
+    - https://rsssf.org/miscellaneous/cech-intl.html
+    - https://en.wikipedia.org/wiki/UEFA_Team_of_the_Year
+    verify: ok
+  club_data:
+    club_matches_all: 59
+    club_matches_league: 38
+    level_tier: A
+    level_tier_basis: Campeón de la Premier League 2004-05 (95 puntos, 1º) y semifinalista de la Champions
+      League (eliminado por el Liverpool).
+    club_name: Chelsea FC
+    sources:
+    - https://en.wikipedia.org/wiki/2004%E2%80%9305_Chelsea_F.C._season
+    verify: ok
+  sources:
+  - https://en.wikipedia.org/wiki/2004%E2%80%9305_Chelsea_F.C._season
+  - https://en.wikipedia.org/wiki/Petr_%C4%8Cech
+  verify: ok

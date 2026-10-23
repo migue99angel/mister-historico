@@ -1,0 +1,52 @@
+# Calibration anchors of this season (T1.7b). See ../../bands.yaml.
+schema_version: 1
+club_season: _market-2012-13
+club: null
+season: 2012-13
+real_league: null
+club_data: null
+sources:
+- https://www.bdfutbol.com/es/t/t2012-135.html
+- https://en.wikipedia.org/wiki/Javi_Fuego
+verify: ok
+players:
+- player_id: javi-fuego
+  display_name: Javi Fuego
+  alias_name: Javi Fuego
+  position: MF
+  age: 28
+  rating: 66
+  key: false
+  season_stats:
+    minutes_league: 3213
+    starts_league: 36
+    appearances_league: 36
+    minutes_all: 3213
+    starts_all: 36
+    appearances_all: 36
+    goals_all: 0
+    assists_all: null
+    caps: 0
+    awards: []
+    sources:
+    - https://www.bdfutbol.com/es/t/t2012-135.html
+    - https://www.bdfutbol.com/es/j/j4138.html
+    - https://en.wikipedia.org/wiki/Javi_Fuego
+    verify: ok
+  club_data:
+    club_matches_all: 40
+    club_matches_league: 38
+    level_tier: C
+    level_tier_basis: 8.º en La Liga 2012-13 (16-5-17, 53 puntos, Wikipedia en). 38 partidos de Liga +
+      2 de Copa del Rey (dieciseisavos ante Las Palmas, ida y vuelta) contados en la lista de partidos
+      de BDFutbol.
+    club_name: Rayo Vallecano
+    sources:
+    - https://www.bdfutbol.com/es/t/t2012-135.html?tab=partits
+    - https://en.wikipedia.org/wiki/2012%E2%80%9313_La_Liga
+    - https://en.wikipedia.org/wiki/2012%E2%80%9313_Rayo_Vallecano_season
+    verify: ok
+  sources:
+  - https://www.bdfutbol.com/es/t/t2012-135.html
+  - https://en.wikipedia.org/wiki/Javi_Fuego
+  verify: ok

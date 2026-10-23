@@ -1,0 +1,102 @@
+# Calibration anchors of this season (T1.7b). See ../../bands.yaml.
+schema_version: 1
+club_season: _market-2005-06
+club: null
+season: 2005-06
+real_league: null
+club_data: null
+sources:
+- https://www.bdfutbol.com/es/t/t2005-0639.html
+- https://www.bdfutbol.com/es/j/j919.html
+- https://www.bdfutbol.com/en/j/j1504.html
+- https://en.wikipedia.org/wiki/2005%E2%80%9306_Liverpool_F.C._season
+verify: ok
+players:
+- player_id: gabriel-milito
+  display_name: Gabriel Milito
+  alias_name: Gabriel Milito
+  position: DF
+  age: 25
+  rating: 70
+  key: false
+  season_stats:
+    minutes_league: 2982
+    starts_league: 33
+    appearances_league: 34
+    minutes_all: 3732
+    starts_all: 41
+    appearances_all: 42
+    goals_all: 1
+    assists_all: null
+    caps: 4
+    awards: []
+    sources:
+    - https://www.bdfutbol.com/es/j/j919.html
+    - https://www.bdfutbol.com/es/t/t2005-0639.html
+    - https://www.bdfutbol.com/es/t/t2005-0639.html?tab=partits
+    - https://www.national-football-teams.com/player/308/Gabriel_Milito.html
+    - https://en.wikipedia.org/wiki/Gabriel_Milito
+    - https://en.wikipedia.org/wiki/2005%E2%80%9306_La_Liga
+    verify: ok
+  club_data:
+    club_matches_all: 47
+    club_matches_league: 38
+    level_tier: C
+    level_tier_basis: 11.º de la Liga 2005-06 (46 pts), dentro del rango 7.º-14.º; 47 partidos oficiales
+      = 38 Liga + 9 Copa del Rey (finalista), contados en la lista de partidos de BDFutbol.
+    club_name: Real Zaragoza
+    sources:
+    - https://www.bdfutbol.com/es/t/t2005-0639.html?tab=partits
+    - https://en.wikipedia.org/wiki/2005%E2%80%9306_La_Liga
+    verify: ok
+  sources:
+  - https://www.bdfutbol.com/es/t/t2005-0639.html
+  - https://www.bdfutbol.com/es/j/j919.html
+  verify: ok
+- player_id: pepe-reina
+  display_name: Pepe Reina
+  alias_name: Pepe Reina
+  position: GK
+  age: 23
+  rating: 73
+  key: false
+  season_stats:
+    minutes_league: 2962
+    starts_league: 33
+    appearances_league: 33
+    minutes_all: null
+    starts_all: null
+    appearances_all: 53
+    goals_all: 0
+    assists_all: null
+    clean_sheets_all: null
+    caps: 3
+    awards:
+    - name: Premier League Golden Glove 2005-06 (mejor portero, 20 porterías a cero)
+      tier: L
+      source: https://en.wikipedia.org/wiki/Premier_League_Golden_Glove
+    sources:
+    - https://www.bdfutbol.com/en/j/j1504.html
+    - https://www.bdfutbol.com/en/p/j1504.html?temp=2005-06
+    - https://en.wikipedia.org/wiki/2005%E2%80%9306_Liverpool_F.C._season
+    - https://www.lfchistory.net/players/1126
+    - https://en.wikipedia.org/wiki/Pepe_Reina
+    - https://www.national-football-teams.com/player/11656/Pepe_Reina.html
+    verify: ok
+  club_data:
+    club_matches_all: 62
+    club_matches_league: 38
+    level_tier: B
+    level_tier_basis: '3.º de la Premier League 2005-06 (82 puntos, tras Chelsea y Manchester United);
+      además ganó la FA Cup y alcanzó los octavos de la Champions League (tier B: 3.º-6.º de una liga
+      big-5).'
+    club_name: Liverpool FC
+    sources:
+    - https://en.wikipedia.org/wiki/2005%E2%80%9306_FA_Premier_League
+    - https://en.wikipedia.org/wiki/2005%E2%80%9306_Liverpool_F.C._season
+    - https://www.bdfutbol.com/en/p/j1504.html?temp=2005-06
+    verify: ok
+  sources:
+  - https://www.bdfutbol.com/en/j/j1504.html
+  - https://en.wikipedia.org/wiki/2005%E2%80%9306_Liverpool_F.C._season
+  verify: ok

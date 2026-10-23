@@ -1,0 +1,56 @@
+# Calibration anchors of this season (T1.7b). See ../../bands.yaml.
+schema_version: 1
+club_season: _market-2011-12
+club: null
+season: 2011-12
+real_league: null
+club_data: null
+sources:
+- https://www.bdfutbol.com/es/t/t2011-126.html
+- https://www.bdfutbol.com/es/j/j1208.html
+verify: ok
+players:
+- player_id: javi-martinez
+  display_name: Javi Martínez
+  alias_name: Javi Martínez
+  position: MF
+  age: 23
+  rating: 69
+  key: false
+  season_stats:
+    minutes_league: 2556
+    starts_league: 30
+    appearances_league: 31
+    minutes_all: 4614
+    starts_all: 53
+    appearances_all: 54
+    goals_all: 4
+    assists_all: null
+    caps: 4
+    awards: []
+    sources:
+    - https://www.bdfutbol.com/es/j/j1208.html
+    - https://www.bdfutbol.com/es/t/t2011-126.html
+    - https://www.bdfutbol.com/es/t/t2011-126.html?tab=partits
+    - https://www.national-football-teams.com/player/38185/Javi_Martinez.html
+    - https://en.wikipedia.org/wiki/Javi_Mart%C3%ADnez
+    - https://en.wikipedia.org/wiki/2011%E2%80%9312_La_Liga
+    verify: ok
+  club_data:
+    club_matches_all: 63
+    club_matches_league: 38
+    level_tier: C
+    level_tier_basis: 10.º de la Liga 2011-12 (49 pts), dentro del rango 7.º-14.º (finalista de Europa
+      League y Copa, que no puntuan para la tabla de niveles); 63 partidos oficiales = 38 Liga + 16 Europa
+      League + 9 Copa del Rey segun BDFutbol (la vuelta del play-off con el Trabzonspor fue cancelada,
+      confirmado en Wikipedia).
+    club_name: Athletic Club
+    sources:
+    - https://www.bdfutbol.com/es/t/t2011-126.html?tab=partits
+    - https://en.wikipedia.org/wiki/2011%E2%80%9312_La_Liga
+    - https://en.wikipedia.org/wiki/2011%E2%80%9312_Athletic_Bilbao_season
+    verify: ok
+  sources:
+  - https://www.bdfutbol.com/es/t/t2011-126.html
+  - https://www.bdfutbol.com/es/j/j1208.html
+  verify: ok
