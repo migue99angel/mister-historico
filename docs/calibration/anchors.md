@@ -1,6 +1,6 @@
 # Calibración provisional de la fórmula con las anclas (T1.7b)
 
-> Estado: **decisión de aceptación provisional del autor, opción 1 (2026-10-23); correcciones revisadas e integradas por rebase-merge en PR #17, con checks en verde; F1 cerrada**. [Registro de cierre](../HANDOFF.md#3-estado-comprobado-f1-cerrada). F2 no iniciada; no certifica calibración universal ni cumplimiento del criterio histórico de las clave.
+> Estado: **decisión de aceptación provisional del autor, opción 1 (2026-10-23); correcciones revisadas e integradas por rebase-merge en PR #17, con checks en verde; F1 cerrada**. [Registro de cierre](../HANDOFF.md#3-estado-comprobado-f1-cerrada). F2 iniciada con la primera oleada de Test FC; no certifica calibración universal ni cumplimiento del criterio histórico de las clave.
 > Datos: `content/anchors/`, 24 anclas con fuentes. Cálculo: `compute_rating`, la misma función que usa la CLI.
 > [Verificación independiente original](./anchors-verification.md): se conserva sin modificar; este informe aplica sus correcciones y documenta la evidencia adicional de Forlán.
 > Reproducir: `cd backend && uv run python tests/content/anchors/report.py`. Para escribir las medias calculadas en los YAML: añadir `--write`.
@@ -11,7 +11,7 @@ de 5 puntos. Las 18 clave dejan **14/18 fuera con BASE y 6/18 con FINAL**, tras 
 El criterio histórico de las clave **sigue incumplido** y Aduriz sigue a 6 puntos de su banda.
 No se modifican bandas ni `key` para resolverlo. La aceptación del autor es provisional y deja
 estos fallos visibles para el piloto y para una validación posterior independiente de las anclas.
-Los checks, la revisión y la integración de PR #17 ya se completaron. F1 está cerrada y F2 todavía no se ha iniciado.
+Los checks, la revisión y la integración de PR #17 ya se completaron. F1 está cerrada y F2 ha comenzado con T2.1 y T2.2 sobre Test FC.
 
 ## Decisiones y alcance de esta muestra
 
@@ -169,7 +169,7 @@ Durante esas primeras ejecuciones los metadatos Git estaban en solo lectura. Des
 
 El verde específico de fórmula y anclas es **95 passed, 18 deselected**; el criterio histórico explícito da **12 passed, 6 xfailed, 13 deselected**. Con los permisos restaurados también pasan las dos pruebas antes bloqueadas: API `/health` y migraciones sobre Postgres con Docker (**2 passed**). El [registro de cierre](../HANDOFF.md#3-estado-comprobado-f1-cerrada) recoge las comprobaciones completas y la integración ya realizadas.
 
-Comandos de comprobación: `uv run pytest tests/catalog/test_ratings_formula.py tests/content/anchors/test_anchors.py --no-cov` y, explícitamente para el criterio histórico, `uv run pytest tests/content/anchors/test_anchors.py -m calibration --no-cov`. Además de esas pruebas parciales, `make test` completo aprobó 1140 tests de backend y 74 de frontend sobre la combinación con `main`; `make lint` y las cuatro comprobaciones de CI de la PR quedaron en verde antes de su integración. La cobertura global del backend fue del 98,41 % y la de líneas y ramas de dominio/aplicación del 100 %. F1 está cerrada con aceptación provisional; F2 no se ha iniciado.
+Comandos de comprobación: `uv run pytest tests/catalog/test_ratings_formula.py tests/content/anchors/test_anchors.py --no-cov` y, explícitamente para el criterio histórico, `uv run pytest tests/content/anchors/test_anchors.py -m calibration --no-cov`. Además de esas pruebas parciales, `make test` completo aprobó 1140 tests de backend y 74 de frontend sobre la combinación con `main`; `make lint` y las cuatro comprobaciones de CI de la PR quedaron en verde antes de su integración. La cobertura global del backend fue del 98,41 % y la de líneas y ramas de dominio/aplicación del 100 %. F1 está cerrada con aceptación provisional; F2 ha comenzado con T2.1 y T2.2 sobre Test FC.
 
 ## Sustituciones y dudas sobre las anclas
 

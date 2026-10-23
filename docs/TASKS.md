@@ -231,7 +231,7 @@
 - **Plantilla:** [`docs/content/anclas-t1.7.md`](./content/anclas-t1.7.md).
 
 ### T1.7b · Calibración de la fórmula con las anclas
-- **Estado:** completada con limitaciones explícitas. PR #17 integrada por rebase-merge el 2026-10-23, tras revisión independiente y checks en verde; F1 cerrada, F2 no iniciada.
+- **Estado:** completada con limitaciones explícitas. PR #17 integrada por rebase-merge el 2026-10-23, tras revisión independiente y checks en verde; F1 cerrada, F2 iniciada con la primera oleada de Test FC.
 - **Oleada:** F1-D, después de T1.7 · **Tamaño:** M · **Depende de:** T1.7, T1.8
 - **Propiedad:** `content/anchors/**` (estadísticas de las anclas con fuente), la tabla de anclas de `docs/content/rating-rubric.md` y, si hace falta, los pesos de la sección 4 de la rúbrica y `catalog/domain/ratings.py` (CR aprobada por el autor)
 - **Qué hacer:**
@@ -239,7 +239,7 @@
   - Calcular sus medias con la CLI y generar una tabla de ancla, banda del autor, media y desviación.
   - Si se incumple el criterio de la rúbrica (sección 9), proponer un ajuste de pesos con el antes y el después.
   - Una verificación independiente de las estadísticas recogidas (como T2.14).
-- **Aceptación:** el autor ha autorizado la opción 1: corregir las discrepancias verificadas y el ejemplo 10.4, publicar base y media final de las 24 anclas y conservar los fallos de banda visibles. El 85 % de participación y el tope manual de 94 son provisionales; la revisión de los jugadores clave es el mecanismo real para completar la fórmula. No se presenta la calibración como superada ni como validación independiente. Los datos sin fuente quedan pendientes. **Gate de F1 cumplido:** correcciones revisadas de forma independiente, comprobaciones en verde y PR #17 integrada por rebase-merge. [Evidencia de cierre](HANDOFF.md#3-estado-comprobado-f1-cerrada). La aceptación es provisional y F2 todavía no ha empezado.
+- **Aceptación:** el autor ha autorizado la opción 1: corregir las discrepancias verificadas y el ejemplo 10.4, publicar base y media final de las 24 anclas y conservar los fallos de banda visibles. El 85 % de participación y el tope manual de 94 son provisionales; la revisión de los jugadores clave es el mecanismo real para completar la fórmula. No se presenta la calibración como superada ni como validación independiente. Los datos sin fuente quedan pendientes. **Gate de F1 cumplido:** correcciones revisadas de forma independiente, comprobaciones en verde y PR #17 integrada por rebase-merge. [Evidencia de cierre](HANDOFF.md#3-estado-comprobado-f1-cerrada). La aceptación es provisional y F2 ha comenzado con T2.1 y T2.2 sobre Test FC.
 
 ---
 
@@ -248,11 +248,12 @@
 ### Track de simulación (`backend/src/mister/simulation/`)
 
 #### T2.1 · Modelo de goles Poisson
+- **Estado:** en curso, primera oleada autorizada de F2; implementador Sol.
 - **Oleada:** F2-A · **Tamaño:** M · **Depende de:** T1.6
 - **Propiedad:** `simulation/domain/goal_model.py`, `simulation/domain/match_simulator.py` y sus tests
 - **Qué hacer:** `PoissonGoalModel`, con λ calculada según el ADR-004, y `PoissonMatchSimulator`, que usa `rng.stream("match", fixture_id)`.
 - **Tests primero (Hypothesis):**
-  - λ crece con el ataque propio y decrece con la defensa rival.
+  - λ crece con el ataque propio y con la vulnerabilidad rival (`TeamStrength.defense`); una defensa más fuerte tiene un factor de vulnerabilidad menor.
   - Jugar en casa aumenta λ.
   - La misma semilla y el mismo partido dan el mismo resultado.
   - Con 100 000 muestras, la media de goles coincide con λ.
@@ -260,8 +261,9 @@
 - **Aceptación:** un benchmark de 1 000 partidos tarda menos de 50 ms.
 
 #### T2.2 · Fuerza del equipo y alineación
+- **Estado:** en curso, primera oleada autorizada de F2; implementador Sol.
 - **Oleada:** F2-A · **Tamaño:** M · **Depende de:** T1.6
-- **Propiedad:** `simulation/domain/strength.py`, `simulation/domain/lineup.py` y sus tests
+- **Propiedad:** `simulation/domain/strength.py`, `simulation/domain/lineup.py` y sus tests. Extensión interna autorizada para esta oleada: añadir al final de `SimPlayer` en `simulation/domain/model.py` el campo compatible `age: int | None = None` y su validación, con sus tests en `test_model.py`. No cambia el DTO publicado, que ya admite edad, ni los puertos.
 - **Qué hacer:**
   - Se aplica **por igual a tu equipo y a los rivales**: los dos son un `SimTeam` construido a partir de una plantilla. Un rival agregado (sin plantilla) entra como un `SimTeam` con fuerza fija.
   - Elegir automáticamente el mejor once según el sistema, sin lesionados y penalizando a los jugadores con poco estado físico. En la V1, los rivales usan su mejor once con una táctica por defecto y sin gestionar su estado físico.
