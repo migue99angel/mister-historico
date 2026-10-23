@@ -146,7 +146,7 @@ players:
   alias_name: Jugador DMA-06
   position: DF
   age: 27
-  rating: 58
+  rating: 56
   key: false
   season_stats:
     minutes_league: 256
@@ -404,7 +404,7 @@ players:
   alias_name: Jugador DMA-17
   position: FW
   age: 26
-  rating: 65
+  rating: 62
   key: false
   season_stats:
     minutes_league: 376

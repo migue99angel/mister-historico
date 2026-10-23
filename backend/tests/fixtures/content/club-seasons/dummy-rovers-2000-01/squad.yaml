@@ -146,7 +146,7 @@ players:
   alias_name: Jugador DRV-06
   position: DF
   age: 30
-  rating: 50
+  rating: 48
   key: false
   season_stats:
     minutes_league: 277
@@ -404,7 +404,7 @@ players:
   alias_name: Jugador DRV-17
   position: FW
   age: 28
-  rating: 46
+  rating: 45
   key: false
   season_stats:
     minutes_league: 125

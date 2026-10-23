@@ -146,7 +146,7 @@ players:
   alias_name: Jugador MCT-06
   position: DF
   age: 24
-  rating: 53
+  rating: 51
   key: false
   season_stats:
     minutes_league: 298
@@ -404,7 +404,7 @@ players:
   alias_name: Jugador MCT-17
   position: FW
   age: 23
-  rating: 53
+  rating: 51
   key: false
   season_stats:
     minutes_league: 209
