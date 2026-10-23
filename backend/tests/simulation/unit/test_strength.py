@@ -6,6 +6,7 @@ from dataclasses import replace
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
+from tests.simulation.unit.test_lineup import TACTIC, squad
 
 from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.ids import ClubSeasonId
@@ -27,7 +28,6 @@ from mister.simulation.domain.strength import (
     morale_multiplier,
     tactical_multipliers,
 )
-from tests.simulation.unit.test_lineup import TACTIC, squad
 
 
 def team() -> SimTeam:
@@ -219,3 +219,40 @@ def test_reference_rejects_invalid_denominators(value: float) -> None:
         StrengthReference(value, 1)
     with pytest.raises(InvalidValueError):
         StrengthReference(1, value)
+
+
+def test_reference_combines_aggregate_and_squad_participants() -> None:
+    aggregate = SimTeam(ClubSeasonId("test-rival"), aggregate=AggregateIndices(60, 60))
+    fixed = StrengthReference.from_teams((team(), aggregate))
+    expected = StrengthReference.from_indices((AggregateIndices(80, 80), AggregateIndices(60, 60)))
+    assert fixed.attack_mean == pytest.approx(expected.attack_mean)
+    assert fixed.defense_mean == pytest.approx(expected.defense_mean)
+
+
+def test_fitness_and_individual_morale_change_rating_only_once() -> None:
+    original = team()
+    assert original.squad is not None
+    altered = replace(
+        original,
+        squad=tuple(
+            replace(player, fitness=Fitness(0), morale=Morale(0)) for player in original.squad
+        ),
+    )
+    strength = calculate_strength(altered, reference())
+    assert strength.attack == pytest.approx(math.exp(0.4 * (80 - 6.3 - 2 - 70) / 10))
+    assert strength.defense == pytest.approx(math.exp(-0.4 * (80 - 6.3 - 2 - 70) / 10))
+
+
+@given(st.sampled_from(list(Style)), st.integers(min_value=1, max_value=99))
+def test_rating_fit_components_stay_within_three_percentage_points(
+    style: Style, rating: int
+) -> None:
+    players = tuple(
+        replace(player, rating=Rating(rating)) if player.position is Position.MF else player
+        for player in squad()
+    )
+    tactic = Tactic(style, "4-4-2")
+    fitted = tactical_multipliers(tactic, select_lineup(players, tactic))
+    base = tactical_multipliers(tactic, select_lineup(squad(), tactic))
+    assert abs(fitted[0] - base[0]) <= 0.03 + 1e-12
+    assert abs(fitted[1] - base[1]) <= 0.03 + 1e-12
