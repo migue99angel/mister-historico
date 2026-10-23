@@ -1,0 +1,50 @@
+# Calibration anchors of this season (T1.7b). See ../../bands.yaml.
+schema_version: 1
+club_season: _market-2007-08
+club: null
+season: 2007-08
+real_league: null
+club_data: null
+sources:
+- https://www.bdfutbol.com/es/t/t2007-0829.html
+- https://en.wikipedia.org/wiki/Gonzalo_Colsa
+verify: ok
+players:
+- player_id: gonzalo-colsa
+  display_name: Gonzalo Colsa
+  alias_name: Gonzalo Colsa
+  position: MF
+  age: 28
+  rating: 70
+  key: false
+  season_stats:
+    minutes_league: 3054
+    starts_league: 35
+    appearances_league: 38
+    minutes_all: 3648
+    starts_all: 41
+    appearances_all: 46
+    goals_all: 2
+    assists_all: null
+    caps: 0
+    awards: []
+    sources:
+    - https://www.bdfutbol.com/es/t/t2007-0829.html
+    - https://www.bdfutbol.com/es/j/j970.html
+    - https://en.wikipedia.org/wiki/Gonzalo_Colsa
+    verify: ok
+  club_data:
+    club_matches_all: 46
+    club_matches_league: 38
+    level_tier: B
+    level_tier_basis: Racing de Santander termino 6o de Primera Division 2007-08 con 60 puntos (3o-6o
+      de una liga big-5).
+    club_name: Racing de Santander
+    sources:
+    - https://www.bdfutbol.com/es/t/t2007-08.html
+    - https://www.bdfutbol.com/es/t/t2007-0829.html
+    verify: ok
+  sources:
+  - https://www.bdfutbol.com/es/t/t2007-0829.html
+  - https://en.wikipedia.org/wiki/Gonzalo_Colsa
+  verify: ok

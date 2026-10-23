@@ -1,0 +1,283 @@
+# Calibration anchors of this season (T1.7b). See ../../bands.yaml.
+schema_version: 1
+club_season: _market-2010-11
+club: null
+season: 2010-11
+real_league: null
+club_data: null
+sources:
+- https://www.bdfutbol.com/es/t/t2010-1113.html
+- https://en.wikipedia.org/wiki/2010%E2%80%9311_Deportivo_de_La_Coru%C3%B1a_season
+- https://en.wikipedia.org/wiki/Manuel_Pablo
+- https://www.bdfutbol.com/es/t/t2010-1134.html
+- https://en.wikipedia.org/wiki/2010%E2%80%9311_Sporting_de_Gij%C3%B3n_season
+- https://www.bdfutbol.com/es/t/t2010-1124.html
+- https://en.wikipedia.org/wiki/Iv%C3%A1n_Ramis
+- https://www.bdfutbol.com/es/t/t2010-1133.html
+- https://www.bdfutbol.com/es/j/j4027.html
+- https://www.bdfutbol.com/es/t/t2010-111.html
+- https://www.bdfutbol.com/es/j/j2650.html
+verify: ok
+players:
+- player_id: dani-aranzubia
+  display_name: Dani Aranzubia
+  alias_name: Dani Aranzubia
+  position: GK
+  age: 31
+  rating: 65
+  key: false
+  season_stats:
+    minutes_league: 2880
+    starts_league: 32
+    appearances_league: 32
+    minutes_all: 2880
+    starts_all: 32
+    appearances_all: 32
+    goals_all: 1
+    assists_all: null
+    clean_sheets_all: 11
+    caps: 0
+    awards: []
+    sources:
+    - https://www.bdfutbol.com/es/t/t2010-1113.html
+    - https://www.bdfutbol.com/es/j/j479.html
+    - https://www.bdfutbol.com/es/t/t2010-1113.html?tab=partits
+    - https://en.wikipedia.org/wiki/Dani_Aranzubia
+    verify: ok
+  club_data:
+    club_matches_all: 44
+    club_matches_league: 38
+    level_tier: D
+    level_tier_basis: '18.º en La Liga 2010-11 (10 victorias, 13 empates, 15 derrotas, 43 puntos según
+      Wikipedia en; descendió). Partidos: 38 de Liga + 6 de Copa del Rey (dieciseisavos a cuartos, ida
+      y vuelta) contados en la lista de partidos de BDFutbol.'
+    club_name: Deportivo de La Coruña
+    sources:
+    - https://www.bdfutbol.com/es/t/t2010-1113.html?tab=partits
+    - https://www.bdfutbol.com/es/t/t2010-1113.html
+    - https://en.wikipedia.org/wiki/2010%E2%80%9311_Deportivo_de_La_Coru%C3%B1a_season
+    verify: ok
+  sources:
+  - https://www.bdfutbol.com/es/t/t2010-1113.html
+  - https://en.wikipedia.org/wiki/2010%E2%80%9311_Deportivo_de_La_Coru%C3%B1a_season
+  verify: ok
+- player_id: manuel-pablo
+  display_name: Manuel Pablo
+  alias_name: Manuel Pablo
+  position: DF
+  age: 34
+  rating: 59
+  key: false
+  season_stats:
+    minutes_league: 2641
+    starts_league: 30
+    appearances_league: 30
+    minutes_all: 2911
+    starts_all: 33
+    appearances_all: 33
+    goals_all: 0
+    assists_all: null
+    caps: 0
+    awards: []
+    sources:
+    - https://www.bdfutbol.com/es/t/t2010-1113.html
+    - https://www.bdfutbol.com/es/j/j1865.html
+    - https://en.wikipedia.org/wiki/Manuel_Pablo
+    verify: ok
+  club_data:
+    club_matches_all: 44
+    club_matches_league: 38
+    level_tier: D
+    level_tier_basis: 18.º en La Liga 2010-11 (43 puntos, descenso). 38 partidos de Liga + 6 de Copa del
+      Rey contados en la lista de partidos de BDFutbol.
+    club_name: Deportivo de La Coruña
+    sources:
+    - https://www.bdfutbol.com/es/t/t2010-1113.html?tab=partits
+    - https://en.wikipedia.org/wiki/2010%E2%80%9311_Deportivo_de_La_Coru%C3%B1a_season
+    verify: ok
+  sources:
+  - https://www.bdfutbol.com/es/t/t2010-1113.html
+  - https://en.wikipedia.org/wiki/Manuel_Pablo
+  verify: ok
+- player_id: david-barral
+  display_name: David Barral
+  alias_name: David Barral
+  position: FW
+  age: 27
+  rating: 63
+  key: false
+  season_stats:
+    minutes_league: 2321
+    starts_league: 24
+    appearances_league: 34
+    minutes_all: 2354
+    starts_all: 24
+    appearances_all: 35
+    goals_all: 6
+    assists_all: null
+    caps: 0
+    awards: []
+    sources:
+    - https://www.bdfutbol.com/es/j/j5643.html
+    - https://www.bdfutbol.com/es/t/t2010-1134.html
+    - https://en.wikipedia.org/wiki/David_Barral
+    verify: ok
+  club_data:
+    club_matches_all: 40
+    club_matches_league: 38
+    level_tier: C
+    level_tier_basis: '10.º en La Liga 2010-11 (47 puntos según tabla de Wikipedia en; 7.º-14.º = tier
+      C). Partidos: 38 de Liga + 2 de Copa del Rey (dieciseisavos, ida y vuelta, eliminado) según BDFutbol
+      (E: 38 liga, 2 copa) y Wikipedia.'
+    club_name: Sporting de Gijón
+    sources:
+    - https://www.bdfutbol.com/es/t/t2010-1134.html
+    - https://en.wikipedia.org/wiki/2010%E2%80%9311_Sporting_de_Gij%C3%B3n_season
+    verify: ok
+  sources:
+  - https://www.bdfutbol.com/es/t/t2010-1134.html
+  - https://en.wikipedia.org/wiki/2010%E2%80%9311_Sporting_de_Gij%C3%B3n_season
+  verify: ok
+- player_id: ivan-ramis
+  display_name: Iván Ramis
+  alias_name: Iván Ramis
+  position: DF
+  age: 26
+  rating: 65
+  key: false
+  season_stats:
+    minutes_league: 2919
+    starts_league: 33
+    appearances_league: 33
+    minutes_all: 2921
+    starts_all: 33
+    appearances_all: 34
+    goals_all: 3
+    assists_all: null
+    caps: 0
+    awards: []
+    sources:
+    - https://www.bdfutbol.com/es/t/t2010-1124.html
+    - https://www.bdfutbol.com/es/j/j1149.html
+    - https://www.bdfutbol.com/es/t/t2010-11aCOP.html
+    - https://en.wikipedia.org/wiki/Iv%C3%A1n_Ramis
+    verify: ok
+  club_data:
+    club_matches_all: 42
+    club_matches_league: 38
+    level_tier: D
+    level_tier_basis: Mallorca termino 17o de Primera Division 2010-11 con 44 puntos (15o o inferior).
+    club_name: RCD Mallorca
+    sources:
+    - https://www.bdfutbol.com/es/t/t2010-11.html
+    - https://www.bdfutbol.com/es/t/t2010-11aCOP.html
+    - https://www.bdfutbol.com/es/t/t2010-1124.html
+    verify: ok
+  sources:
+  - https://www.bdfutbol.com/es/t/t2010-1124.html
+  - https://en.wikipedia.org/wiki/Iv%C3%A1n_Ramis
+  verify: ok
+- player_id: alvaro-negredo
+  display_name: Álvaro Negredo
+  alias_name: Álvaro Negredo
+  position: FW
+  age: 25
+  rating: 72
+  key: false
+  season_stats:
+    minutes_league: 2612
+    starts_league: 29
+    appearances_league: 38
+    minutes_all: 3540
+    starts_all: 38
+    appearances_all: 55
+    goals_all: 26
+    assists_all: null
+    caps: 1
+    awards: []
+    sources:
+    - https://www.bdfutbol.com/es/j/j4027.html
+    - https://www.bdfutbol.com/es/t/t2010-1133.html
+    - https://www.bdfutbol.com/es/t/t2010-1133.html?tab=partits
+    - https://www.national-football-teams.com/player/33799/Alvaro_Negredo.html
+    - https://en.wikipedia.org/wiki/%C3%81lvaro_Negredo
+    - https://en.wikipedia.org/wiki/2010%E2%80%9311_La_Liga
+    verify: ok
+  club_data:
+    club_matches_all: 58
+    club_matches_league: 38
+    level_tier: B
+    level_tier_basis: 5.º de la Liga 2010-11 (58 pts) = 3.º-6.º de una liga big-5; 58 partidos oficiales
+      = 38 Liga + 8 Copa + 8 Europa League + 2 Champions (play-off) + 2 Supercopa, contados en la lista
+      de partidos de BDFutbol.
+    club_name: Sevilla FC
+    sources:
+    - https://www.bdfutbol.com/es/t/t2010-1133.html?tab=partits
+    - https://en.wikipedia.org/wiki/2010%E2%80%9311_La_Liga
+    verify: ok
+  sources:
+  - https://www.bdfutbol.com/es/t/t2010-1133.html
+  - https://www.bdfutbol.com/es/j/j4027.html
+  verify: ok
+- player_id: xavi-hernandez
+  display_name: Xavi Hernández
+  alias_name: Xavi Hernández
+  position: MF
+  age: 30
+  rating: 84
+  key: false
+  season_stats:
+    minutes_league: 2462
+    starts_league: 29
+    appearances_league: 31
+    minutes_all: 4032
+    starts_all: 47
+    appearances_all: 50
+    goals_all: 5
+    assists_all: null
+    caps: 10
+    awards:
+    - name: Mejor Centrocampista, Premios LFP 2010-11 (La Liga)
+      tier: L
+      source: https://en.wikipedia.org/wiki/La_Liga_Awards
+    - name: FIFA Ballon d'Or 2010 (3º)
+      tier: W
+      source: https://en.wikipedia.org/wiki/Xavi_(footballer,_born_1980)
+    - name: FIFA Ballon d'Or 2011 (3º)
+      tier: W
+      source: https://en.wikipedia.org/wiki/Xavi_(footballer,_born_1980)
+    - name: FIFA FIFPro World XI 2010
+      tier: W
+      source: https://en.wikipedia.org/wiki/FIFPro_World_XI
+    - name: FIFA FIFPro World XI 2011
+      tier: W
+      source: https://en.wikipedia.org/wiki/FIFPro_World_XI
+    - name: UEFA Team of the Year 2010
+      tier: W
+      source: https://en.wikipedia.org/wiki/UEFA_Team_of_the_Year
+    - name: UEFA Team of the Year 2011
+      tier: W
+      source: https://en.wikipedia.org/wiki/UEFA_Team_of_the_Year
+    sources:
+    - https://www.bdfutbol.com/es/t/t2010-111.html
+    - https://www.bdfutbol.com/es/j/j2650.html
+    - https://en.wikipedia.org/wiki/Xavi_(footballer,_born_1980)
+    - https://rsssf.org/miscellaneous/xavi-intlg.html
+    - https://en.wikipedia.org/wiki/La_Liga_Awards
+    - https://en.wikipedia.org/wiki/FIFPro_World_XI
+    - https://en.wikipedia.org/wiki/UEFA_Team_of_the_Year
+    verify: ok
+  club_data:
+    club_matches_all: 62
+    club_matches_league: 38
+    level_tier: A
+    level_tier_basis: Campeón de La Liga 2010-11 (1º) y campeón de la Champions League 2010-11.
+    club_name: FC Barcelona
+    sources:
+    - https://www.bdfutbol.com/es/t/t2010-111.html
+    - https://en.wikipedia.org/wiki/2010%E2%80%9311_FC_Barcelona_season
+    verify: ok
+  sources:
+  - https://www.bdfutbol.com/es/t/t2010-111.html
+  - https://www.bdfutbol.com/es/j/j2650.html
+  verify: ok

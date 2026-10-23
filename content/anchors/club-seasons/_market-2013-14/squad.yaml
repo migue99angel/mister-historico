@@ -1,0 +1,55 @@
+# Calibration anchors of this season (T1.7b). See ../../bands.yaml.
+schema_version: 1
+club_season: _market-2013-14
+club: null
+season: 2013-14
+real_league: null
+club_data: null
+sources:
+- https://www.bdfutbol.com/es/t/t2013-1414.html
+- https://en.wikipedia.org/wiki/Kiko_Casilla
+verify: ok
+players:
+- player_id: kiko-casilla
+  display_name: Kiko Casilla
+  alias_name: Kiko Casilla
+  position: GK
+  age: 27
+  rating: 72
+  key: false
+  season_stats:
+    minutes_league: 3323
+    starts_league: 37
+    appearances_league: 37
+    minutes_all: 3683
+    starts_all: 41
+    appearances_all: 41
+    goals_all: 0
+    assists_all: null
+    clean_sheets_all: 10
+    caps: 0
+    awards: []
+    sources:
+    - https://www.bdfutbol.com/es/t/t2013-1414.html
+    - https://www.bdfutbol.com/es/j/j4123.html
+    - https://www.bdfutbol.com/es/t/t2013-14.html
+    - https://www.bdfutbol.com/es/t/t2013-14aCOP.html
+    - https://www.bdfutbol.com/es/p/p.php?id=502242
+    - https://en.wikipedia.org/wiki/Kiko_Casilla
+    verify: ok
+  club_data:
+    club_matches_all: 44
+    club_matches_league: 38
+    level_tier: C
+    level_tier_basis: Espanyol termino 14o de Primera Division 2013-14 con 42 puntos (7o-14o de una liga
+      big-5 de 20 equipos).
+    club_name: RCD Espanyol
+    sources:
+    - https://www.bdfutbol.com/es/t/t2013-14.html
+    - https://www.bdfutbol.com/es/t/t2013-14aCOP.html
+    - https://www.bdfutbol.com/es/t/t2013-1414.html
+    verify: ok
+  sources:
+  - https://www.bdfutbol.com/es/t/t2013-1414.html
+  - https://en.wikipedia.org/wiki/Kiko_Casilla
+  verify: ok

@@ -1,0 +1,432 @@
+# Expected band of each anchor (from docs/content/anclas-t1.7.md) and substitutions.
+anchors:
+- club_season: _market-2003-04
+  player_id: thierry-henry
+  band: 90-94
+  position_label: Delantero
+  original: Thierry Henry (Arsenal, 2003-04)
+  status: original
+  reason: ''
+  reason_sources: []
+  notes: 'Verificado: en el Arsenal desde 1999; se perdió solo 1 partido de liga (Leicester, dic-2003)
+    y la FA Cup ante el Chelsea. Liga: 37 partidos, 37 titular, 3330 min, 30 goles (StatMuse; 37 apariciones
+    y 30 goles coinciden con la API de premierleague.com y Wikipedia). Todas las competiciones (tabla
+    de plantilla de Wikipedia): liga 37, FA Cup 2(1) 3 goles, League Cup 0, Community Shield 1 (1 gol,
+    de falta directa; sin goles de tanda), Champions 10 (5 goles) = 50(1) = 51 apariciones, 50 titular,
+    39 goles (coincide con "39 goles en 51 partidos" de la prosa de Wikipedia). Partidos del club: 38
+    liga + 5 FA Cup + 5 League Cup + 1 Community Shield + 10 Champions = 59 (suma de Lehmann 54 + Stack
+    5 en la tabla de plantilla). minutes_all = null (sin fuente accesible). assists_all = null (solo hay
+    asistencias de liga: 6). caps = 12 contando por fecha en RSSSF: 20-ago-2003, 6-sep, 10-sep, 11-oct,
+    15-nov, 31-mar-2004, 20-may, 6-jun, 13-jun, 17-jun, 21-jun, 25-jun. Premios: Premier League Player
+    of the Season y Golden Boot 2003-04 (L). FIFA World Player 2004 (2º) y UEFA Team of the Year 2004
+    (W) son de año natural y solapan con la temporada (2003 también: FIFA World Player 2º y UEFA TOY 2003);
+    el responsable decide. PFA Players'' Player of the Year / PFA Team of the Year / FWA no se registran
+    (no son de la liga).'
+- club_season: _market-2004-05
+  player_id: diego-forlan
+  band: 85-89
+  position_label: Delantero
+  original: Diego Forlán (Villarreal, 2004-05)
+  status: original
+  reason: ''
+  reason_sources: []
+  notes: 'Fichó por el Villarreal el 21-ago-2004 (Wikipedia; antes jugó 17 min con el Manchester United
+    en la Premier el 15-ago) y debutó el 30-ago; jugó los 38 partidos de liga (34 titular, 3009 min, 25
+    goles incl. 1 de penalti). Todo sale de BDFutbol (misma fuente para liga y Copa). No aparece en ninguno
+    de los 12 partidos de UEFA Cup del Villarreal (BDFutbol, alineaciones de los 12 partidos; probablemente
+    inelegible por haber jugado la previa de Champions con el United, no confirmado en fuente) ni en los
+    8 de la Intertoto de jul-ago 2004 (anteriores a su llegada). Copa del Rey: 1 partido (Girona, 90 min,
+    titular, 0 goles). club_matches_all=59 = 38 liga + 1 Copa + 12 UEFA Cup + 8 Intertoto (BDFutbol y
+    Wikipedia); si el proyecto no cuenta la Intertoto (jul-ago, antes de su llegada) serían 51. No relleno
+    available_matches_all para no inventar un criterio. assists_all=null (BDFutbol no publica asistencias).
+    Premios: Pichichi 2004-05 (L); la Bota de Oro europea no cuenta. No fue top-3 del Balón de Oro ni
+    del FIFA World Player ni de ningún once mundial. caps=11 (Copa América 2004: 7, 10, 13, 18, 21 y 24-jul;
+    9-oct-2004 Argentina; 26 y 30-mar, 4 y 7-jun-2005), coincide con Wikipedia (2004: 11 en total, 2005:
+    9 en total).'
+- club_season: _market-2004-05
+  player_id: petr-cech
+  band: 90-94
+  position_label: Portero
+  original: Petr Čech (Chelsea, 2004-05)
+  status: original
+  reason: ''
+  reason_sources: []
+  notes: 'Verificado: fichó por el Chelsea el 1-jul-2004 (Wikipedia, temporada 2004-05) y jugó 35 de 38
+    partidos de liga (ausencias por decisión técnica, sin lesión larga). Minutos de liga 3150 (Premier
+    League y StatMuse coinciden). minutes_all = null: ninguna fuente accesible publica los minutos de
+    todas las competiciones (Transfermarkt, FBref, 11v11 y worldfootball no accesibles). starts_all =
+    48 porque la tabla de plantilla de Wikipedia da 48 apariciones sin ninguna entre paréntesis (sin suplencias);
+    cuadra con "28 en 48 partidos" de la ficha oficial del Chelsea. clean_sheets_all = 28 tomado literalmente
+    de la ficha oficial del Chelsea ("28 in 48 games in 2004/05"); la misma ficha dice que el Guante de
+    Oro 2005 fue con "21 clean sheets" mientras Premier League/Wikipedia/StatMuse dan 24 en liga: discrepancia
+    de fuentes sin resolver (no afecta a otros campos). caps = 10 contando por fecha en RSSSF (1-jul-2004
+    Grecia, semifinal de la Eurocopa, 18-ago-2004, 8-sep, 9-oct, 13-oct, 17-nov, 26-mar-2005, 30-mar,
+    4-jun, 8-jun = 10). Premios: Golden Glove de la Premier League 2004-05 (L). UEFA Team of the Year
+    2005 (W) es un premio de año natural 2005 que se solapa con 2004-05 y 2005-06: el responsable decide
+    si lo cuenta. El PFA Team of the Year 2004-05 no se ha registrado como L por ser de un sindicato y
+    no de la liga. Asistencias: no hay fuente única con asistencias en todas las competiciones, null.'
+- club_season: _market-2005-06
+  player_id: gabriel-milito
+  band: 80-84
+  position_label: Defensa
+  original: Gabriel Milito (Real Zaragoza, 2005-06)
+  status: original
+  reason: ''
+  reason_sources: []
+  notes: 'Liga: 34 partidos, 33 de titular, 2982 min, 1 gol; Copa del Rey: 8 partidos (todos de titular),
+    750 min, 0 goles (el Zaragoza jugo 9, hasta la final perdida con el Espanyol). Fuente unica BDFutbol.
+    La pagina de Wikipedia de Milito no recoge los partidos de Copa (solo Liga); se uso BDFutbol. Zaragoza
+    11.º (46 pts) en Wikipedia; sin competicion europea ese curso. Caps (4): Peru 09/10/2005, Qatar 16/11/2005,
+    Angola 30/05/2006, Paises Bajos 21/06/2006 segun national-football-teams.com (se excluye la Confederaciones
+    de junio 2005, temporada anterior). Wikipedia dice que su unico partido del Mundial fue el empate
+    0-0 con Paises Bajos, coherente. Birth date 7/09/1980 -> 25 anos el 1/1/2006. Premios: ninguno oficial
+    de la Liga (los premios LFP no existian y Don Balon no es oficial); [] segun Wikipedia 2005-06 La
+    Liga y su seccion de honores. Asistencias null.'
+- club_season: _market-2005-06
+  player_id: pepe-reina
+  band: 85-89
+  position_label: Portero
+  original: Pepe Reina (Liverpool, 2005-06)
+  status: original
+  reason: ''
+  reason_sources: []
+  notes: 'Reina jugó 33 de 38 partidos de Premier (2962 min, 33 titular; 1 roja en la temporada según
+    BDFutbol); Dudek jugó 5+1 según Wikipedia. Es la fuente más completa que encontré: se mantiene como
+    original (87% de los minutos de liga) pero es el límite de ''casi toda la temporada''. BDFutbol solo
+    cubre liga, Champions, Supercopa de Europa y 1 partido del Mundial de Clubes (no FA Cup ni League
+    Cup), por eso minutes_all y starts_all son null (no se pueden sumar ni deducir las 5 apariciones de
+    FA Cup ni el segundo partido del Mundial de Clubes). appearances_all=53 coincide en Wikipedia (33
+    liga + 5 FA Cup + 15 europeas/otras) y lfchistory.net (33+5+0+13 europa+2 otras). clean_sheets_all=null:
+    no hay registro de partidos completo para FA Cup y Mundial de Clubes (en liga, 20 porterías a cero
+    oficiales según Golden Glove de la Premier League). assists_all=null (ninguna fuente única publica
+    asistencias de toda la temporada). club_matches_all=62 = 38 liga + 6 FA Cup + 1 League Cup + 14 Champions
+    (6 en fases previas, 6 de grupos, 2 de octavos) + 1 Supercopa de Europa + 2 Mundial de Clubes, de
+    Wikipedia y BDFutbol (14 partidos de CHA); Community Shield no se jugó ese año. caps: 17-ago-2005
+    Uruguay, 3-sep-2005 Canadá y 7-jun-2006 Croacia (las de ago/oct 2006 son de la temporada siguiente);
+    coincide con Wikipedia (2005: 2, 2006: 3).'
+- club_season: _market-2007-08
+  player_id: gonzalo-colsa
+  band: 70-74
+  position_label: Centrocampista
+  original: Gonzalo Colsa (Racing de Santander, 2007-08)
+  status: original
+  reason: ''
+  reason_sources: []
+  notes: 'BDFutbol (plantilla Racing 2007-08). Liga 38 partidos (35 titular, 3054 min, 2 goles); Copa
+    del Rey 8 partidos (6 titular, 594 min, 0 goles); Racing jugo 38+8=46 partidos oficiales. Wikipedia
+    coincide (38 liga/2 goles, 8 copa) y dice que jugo todos los partidos. Racing 6o con 60 puntos (tier
+    B). Posicion MF segun Wikipedia (mediocentro). Caps 0: Wikipedia solo lista sub-20 y sub-21, ninguna
+    absoluta; sin lista por partidos que lo confirme explicitamente. Premios: ninguno en Wikipedia. Asistencias:
+    null.'
+- club_season: _market-2008-09
+  player_id: gorka-iraizoz
+  band: 75-79
+  position_label: Portero
+  original: Gorka Iraizoz (Athletic Club, 2008-09)
+  status: original
+  reason: ''
+  reason_sources: []
+  notes: 'BDFutbol y Wikipedia coinciden (45 partidos, 36 liga + 9 Copa). Titular indiscutible (36 de
+    38 en liga; Armando jugo los otros 2: 28/02/2009 vs Sevilla y 09/05/2009 vs Betis); todos sus partidos
+    completos (90 min, sin prorroga). clean_sheets_all=10 calculado con las fichas de partido de BDFutbol
+    (6 en liga: Malaga 0-0, Valladolid 2-0, Osasuna 2-0, Numancia 2-0, Sporting 3-0, Betis 0-1; 4 en Copa:
+    Recreativo 2-0, Osasuna 2-0, Sporting 0-0, Sevilla 3-0). Caps 0: Wikipedia confirma que nunca fue
+    internacional con Espana (la seleccion vasca no es oficial). Sin asistencias en ninguna fuente unica.
+    Premios: el apartado Honours de Wikipedia no recoge ninguno individual.'
+- club_season: _market-2008-09
+  player_id: alberto-lopo
+  band: 75-79
+  position_label: Defensa
+  original: Alberto Lopo (Deportivo de La Coruña, 2008-09)
+  status: original
+  reason: ''
+  reason_sources: []
+  notes: 'BDFutbol y Wikipedia coinciden: 46 partidos y 3 goles (32 liga + 3 Copa + 2 Intertoto + 9 Copa
+    UEFA). Se cuenta la Intertoto 2008 (julio, 2 partidos, competicion oficial UEFA que gano el Depor)
+    dentro de ''all''; si se decidiera excluirla serian 44 partidos, 42 titularidades y 3800 min (club:
+    52 partidos). No jugo 6 jornadas de liga (varias por sancion: 13 amarillas). Caps 0: Wikipedia indica
+    que fue convocado en nov-2006 y no jugo, sin volver a ser convocado. Sin asistencias en una fuente
+    unica. Premios: Honours de Wikipedia no recoge ninguno.'
+- club_season: _market-2008-09
+  player_id: juan-arango
+  band: 75-79
+  position_label: Centrocampista
+  original: Borja Valero (RCD Mallorca, 2008-09)
+  status: substituted
+  reason: 'Borja Valero no estaba en el Mallorca en 2008-09: jugo en el Mallorca 2007-08 y en 2008-09
+    pertenecia al West Bromwich Albion (volvio cedido al Mallorca en 2009-10). No figura en la plantilla
+    del Mallorca 2008-09 de BDFutbol. Sustituto: Juan Arango (mediocentro ofensivo, mismo club y temporada,
+    titular y 8 goles en liga, internacional con Venezuela), nivel similar y club de mitad de tabla.'
+  reason_sources:
+  - https://en.wikipedia.org/wiki/Borja_Valero
+  - https://www.bdfutbol.com/es/t/t2008-0924.html
+  notes: 'Arango: BDFutbol (liga: 37 PJ, 35 PT, 3064 min, 8 g; Copa: 4 PJ, 2 PT, 236 min, 1 g). Jugo todo
+    el ano en el Mallorca (fichado por el Gladbach el 26-jun-2009). Posicion MF segun Wikipedia (attacking
+    midfielder). Caps: 7 (RSSSF, lista completa: 06-09-08 Peru, 09-09-08 Paraguay, 12-10-08 Brasil, 15-10-08
+    Ecuador, 28-03-09 Argentina, 31-03-09 Colombia, 10-06-09 Uruguay; el partido del 19-06-08 contra Chile
+    queda fuera de la temporada). Sin asistencias en una fuente unica. Premios: Honours de Wikipedia no
+    recoge ninguno en 2008-09.'
+- club_season: _market-2008-09
+  player_id: aritz-aduriz
+  band: 75-79
+  position_label: Delantero
+  original: Nikola Žigić (Racing de Santander, 2006-07)
+  status: substituted
+  reason: 'Zigic empezo 2006-07 en el Estrella Roja (4 partidos de Liga de Campeones, 2 goles) y no ficho
+    por el Racing hasta el 29-ago-2006, por lo que la temporada se reparte entre dos clubes y no cumple
+    ''jugo casi todo el ano en el club''. Sustituto: Aritz Aduriz (delantero, Mallorca 2008-09, 11 goles
+    en liga y 35 partidos, mismo tipo de club de mitad de tabla); llego al Mallorca en agosto de 2008,
+    antes de empezar la liga.'
+  reason_sources:
+  - https://en.wikipedia.org/wiki/Nikola_%C5%BDigi%C4%87
+  - https://www.bdfutbol.com/es/j/j2085.html
+  notes: 'Aduriz: BDFutbol (liga: 35 PJ, 33 PT, 2748 min, 11 g; Copa: 5 PJ, 1 PT, 109 min, 0 g). Fichado
+    por el Mallorca el 23-ago-2008 (Wikipedia), antes de la primera jornada (31-ago), asi que jugo toda
+    la liga posible; no hace falta available_matches_all. Caps 0: su debut con Espana fue el 8-oct-2010
+    (Wikipedia); la seleccion vasca no es oficial. Sin asistencias en una fuente unica. Premios: Honours
+    de Wikipedia no recoge ninguno en 2008-09.'
+- club_season: _market-2008-09
+  player_id: diego-lopez
+  band: 80-84
+  position_label: Portero
+  original: Diego López (Villarreal, 2008-09)
+  status: original
+  reason: ''
+  reason_sources: []
+  notes: 'Titular indiscutible: 38/38 partidos de Liga completos y 9 de 10 de Liga de Campeones (no jugó
+    la vuelta en Celtic Park, 10/12/2008; 0 min). Estuvo en la convocatoria de la Copa (2 partidos, 0
+    minutos). Todas las cifras de BDFutbol (pagina de jugador, plantilla y seguimiento por partido). clean_sheets_all
+    = 11 (8 en Liga + 3 en Champions) calculado con los resultados de BDFutbol: jugo los 90 min en todos
+    los partidos que disputo, asi que equivale a las porterias a cero del equipo en esos partidos (el
+    partido de Celtic Park, que no jugo, no cuenta). Caps: su unica internacionalidad (12/08/2009 vs Macedonia)
+    cae en 2009-10, por eso 0 en 2008-09 (Wikipedia y national-football-teams.com coinciden en 1 partido
+    en total). Premios: no figura entre los premios de la Liga 2008-09 listados en Wikipedia (Zamora Valdes,
+    mejor portero Casillas) ni en su seccion de honores; se deja []. Asistencias no publicadas por la
+    fuente: null.'
+- club_season: _market-2008-09
+  player_id: nemanja-vidic
+  band: 90-94
+  position_label: Defensa
+  original: Nemanja Vidić (Manchester United, 2008-09)
+  status: original
+  reason: ''
+  reason_sources: []
+  notes: 'Verificado: en el Manchester United desde ene-2006, sin lesión larga; 34 de 38 partidos de liga
+    y 55 de 66 oficiales. Minutos de liga 2984 (API oficial de premierleague.com) frente a 2983 de StatMuse
+    (diferencia de 1 minuto; se usa la liga oficial). Starts liga 33 (apariciones 34, una como suplente).
+    Wikipedia dice en prosa que "empezó todos los partidos de liga", lo que contradice su propia tabla
+    (33(1)) y la API; se usa la tabla/API. Todas las apariciones y goles de competiciones salen de la
+    tabla de plantilla de Wikipedia: liga 33(1) 4 goles, FA Cup 4, League Cup 2(2), Europa 9 (1 gol),
+    otras 4 (Community Shield, Supercopa de Europa, 2 del Mundial de Clubes; 2 goles) = 52(3), 7 goles.
+    Los 66 partidos del club = 38 liga + 5 FA Cup + 6 League Cup + 13 Champions + 4 otras (suma de los
+    porteros Van der Sar 49, Foster 9, Kuszczak 7 y Amos 1 como titulares = 66). minutes_all = null (sin
+    fuente accesible). assists_all = null (solo hay asistencias de liga: 1). caps = 9 contando por fecha
+    en RSSSF: 6-sep-2008, 10-sep, 11-oct, 15-oct, 19-nov, 10-feb-2009, 28-mar, 1-abr, 6-jun. Premios:
+    Premier League Player of the Season 2008-09 (L). FIFA FIFPro World XI 2009 (W) es de año natural 2009
+    y solapa con la temporada; el responsable decide si lo cuenta. PFA Team of the Year 2008-09 no se
+    registra como L (sindicato de jugadores, no de la liga).'
+- club_season: _market-2009-10
+  player_id: nino
+  band: 70-74
+  position_label: Delantero
+  original: Nino (CD Tenerife, 2009-10)
+  status: original
+  reason: ''
+  reason_sources: []
+  notes: 'Tenerife SI estaba en Primera Division en 2009-10 (19o, descendio), asi que no hay sustitucion.
+    Nino = Juan Francisco Martinez Modesto (nacido 10-06-1980). BDFutbol: liga 38 partidos (37 titular,
+    3350 min, 14 goles); Copa 2 partidos como suplente (49 min, 0 goles, eliminatoria vs Celta); Tenerife
+    jugo 38+2=40 partidos oficiales. Wikipedia coincide (38 liga/14 goles + 2 copa). Tenerife 19o con
+    36 puntos (tier D). Caps 0: Wikipedia no lista internacionalidades absolutas; sin lista por partidos.
+    Premios 2009-10: ninguno (los Pichichi/Zarra de Segunda que cita Wikipedia son de 2008-09). Asistencias:
+    null.'
+- club_season: _market-2009-10
+  player_id: philipp-lahm
+  band: 85-89
+  position_label: Defensa
+  original: Philipp Lahm (Bayern de Múnich, 2009-10)
+  status: original
+  reason: ''
+  reason_sources: []
+  notes: 'Temporada completa: 34 de 34 partidos de Bundesliga, 3060 min (fussballdaten.de) y titular en
+    todos (Wikipedia: 34+0 liga, 13+0 Champions, 6+0 Copa). Minutos, goles y asistencias de una sola fuente
+    (fussballdaten.de: Bundesliga 3060'', 0 goles, 8 asistencias; DFB-Pokal 554'', 1 gol, 3 asist.; Champions
+    1170'', 0 goles, 1 asist.) -> assists_all=12 suma de las tres filas de la misma fuente; goles coinciden
+    con Wikipedia (1, en la Copa). Los 554'' de Copa vienen tal cual de fussballdaten (no verifiqué si
+    incluyen prórroga). caps=12 (12-ago-2009 Azerbaiyán, 5-sep Sudáfrica, 9-sep Azerbaiyán, 10-oct Rusia,
+    14-oct Finlandia, 18-nov Costa de Marfil, 3-mar-2010 Argentina, 3-jun Bosnia y los cuatro partidos
+    del Mundial 13, 18, 23 y 27-jun); los partidos del 3 y 7-jul del Mundial quedan fuera de la temporada.
+    Coincide con los conteos anuales de Wikipedia (2009: 11, 2010: 12). Premios: Wikipedia lista UEFA
+    Team of the Year 2006/08/12-14, FIFPro 2013+ y kicker Team 2008-09/2012-13/2013-14/2015-16, ninguno
+    de 2009-10 -> []. club_matches_all=53 (34+6+13) coincide con sus apariciones; la Supercopa alemana
+    no se disputó en 2009.'
+- club_season: _market-2009-10
+  player_id: david-silva
+  band: 85-89
+  position_label: Centrocampista
+  original: David Silva (Valencia, 2009-10)
+  status: original
+  reason: ''
+  reason_sources: []
+  notes: 'DUDA: Silva jugó 30 de 38 partidos de liga (2416 min, 71% de los minutos posibles; 28 titular)
+    y se perdió 7 con ausencias repartidas (dic-ene, 27-mar, mayo), sin una lesión larga documentada en
+    Wikipedia. Lo mantengo como original, pero es el caso más dudoso de ''casi toda la temporada''; el
+    decisor puede sustituirlo. Todos los números salen de la misma fuente (BDFutbol, lista de partidos
+    del jugador en la temporada): liga 30 apps/28 titular/2416 min/8 goles; Europa League 8 apps/8 titular/641
+    min/1 gol (Genoa); Copa 2 apps/1 titular/119 min/1 gol (Deportivo); suma 40 apps, 37 titular, 3176
+    min, 10 goles. Premios: Wikipedia (sección Individual) no lista ninguno de 2009-10 -> []. assists_all=null
+    (BDFutbol no publica asistencias). caps=11 (12-ago, 5-sep, 9-sep, 14-oct, 14-nov, 18-nov de 2009 y
+    3-mar, 29-may, 3-jun, 8-jun, 16-jun de 2010; los del 7-jul-2010 ya son de la temporada siguiente);
+    coincide con los conteos anuales de Wikipedia (2009: 12, 2010: 12). club_matches_all=56 = 38 liga
+    + 14 Europa League + 4 Copa del Rey (BDFutbol, plantilla del Valencia 2009-10).'
+- club_season: _market-2010-11
+  player_id: dani-aranzubia
+  band: 60-69
+  position_label: Portero
+  original: Dani Aranzubia (Deportivo de La Coruña, 2010-11)
+  status: original
+  reason: ''
+  reason_sources: []
+  notes: 'Se perdió las 6 primeras jornadas de Liga por lesión (Manu Fernández jugó esos 6 partidos: 540
+    min, 11 goles encajados; Aranzubia jugó las jornadas 7-38 completas, 2880 min = 32x90). Es un caso
+    límite de ''casi toda la temporada'' pero se mantiene. Marcó 1 gol de cabeza en Almería (20-02-2011),
+    confirmado por BDFutbol (G=1) y Wikipedia. No jugó ningún partido de Copa (3 convocatorias sin jugar
+    según BDFutbol: C=6 en la Copa). clean_sheets_all=11 calculado con los resultados de las jornadas
+    7-38 en BDFutbol (partidos con 0 goles encajados y él jugando 90 min; comprobado: suma de goles encajados
+    jornadas 7-38 = 36 = GE de BDFutbol). assists_all null (BDFutbol no publica asistencias). Premios:
+    ninguno en la sección de honores de Wikipedia; no hay otra fuente de premios individuales consultada
+    (el Zamora 2010-11 no fue para él).'
+- club_season: _market-2010-11
+  player_id: manuel-pablo
+  band: 60-69
+  position_label: Defensa
+  original: Manuel Pablo (Deportivo de La Coruña, 2010-11)
+  status: original
+  reason: ''
+  reason_sources: []
+  notes: 'Liga: 30 partidos todos de titular, 2641 min (BDFutbol). Copa: 3 partidos de titular, 270 min.
+    Wikipedia en coincide (33 partidos, 0 goles). Juega de lateral (BDFutbol lo clasifica como lateral);
+    se asigna DF. Ausente de 8 partidos de Liga, sin lesión larga documentada en las fuentes consultadas
+    (no verificado el motivo). Último partido con la selección absoluta en 2004 según Wikipedia (13 caps:
+    2000, 2001, 2004), por tanto 0 caps en 2010-11. assists_all null.'
+- club_season: _market-2010-11
+  player_id: david-barral
+  band: 60-69
+  position_label: Delantero
+  original: Kike Sola (CA Osasuna, 2011-12)
+  status: substituted
+  reason: 'Kike Sola jugó solo 7 partidos de Liga (507 min) en 2011-12 (BDFutbol). Sustituto: David Barral
+    (Sporting de Gijón, 2010-11), delantero centro de rotación/titular modesto de un club de mitad de
+    tabla (10.º), 34 partidos de Liga y 2321 min, sin cesión ni fichaje invernal (en el Sporting 2006-2012
+    según Wikipedia).'
+  reason_sources:
+  - https://www.bdfutbol.com/es/j/j5643.html
+  - https://www.bdfutbol.com/es/t/t2010-1134.html
+  - https://en.wikipedia.org/wiki/David_Barral
+  notes: 'Liga: 34 PJ, 24 titular, 2321 min, 5 goles (1 de penalti). Copa del Rey: 1 partido (33 min,
+    suplente), 1 gol (59'' en Mallorca 3-1 Sporting, ida de dieciseisavos); total 6 goles, 35 partidos,
+    2354 min, 24 titular (todo BDFutbol, página del jugador y de la plantilla). Sporting jugó 2 partidos
+    de Copa (eliminado en dieciseisavos) + 38 de Liga = 40; Wikipedia en confirma Liga 38 jornadas y 10.º
+    puesto (47 pts). Caps 0: Wikipedia dice que ''no fue internacional con España a ningún nivel'' (solo
+    jugó con la selección autonómica de Andalucía en 2013). Premios: ninguno; la sección de honores de
+    Wikipedia solo recoge el título de APOEL 2016-17. assists_all null (BDFutbol no publica asistencias).
+    Nacimiento 10-05-1983 (BDFutbol y Wikipedia) -> 27 años el 1-1-2011.'
+- club_season: _market-2010-11
+  player_id: ivan-ramis
+  band: 70-74
+  position_label: Defensa
+  original: Ivan Ramis (RCD Mallorca, 2010-11)
+  status: original
+  reason: ''
+  reason_sources: []
+  notes: 'BDFutbol (plantilla Mallorca 2010-11, liga y Copa). Liga: 33 partidos, 33 titular, 2919 min,
+    3 goles (1 de penalti). Copa: 1 partido como suplente, 2 min, 0 goles (Mallorca jugo 4 partidos de
+    Copa: dieciseisavos vs Sporting y octavos vs Almeria). Se perdio 5 ligueros (solo fue convocado 33
+    veces); no he verificado el motivo (lesion o sancion), duda menor sobre ''casi toda la temporada''
+    (85 por ciento de los minutos). Wikipedia no indica lesiones en 2010-11. Mallorca 17o con 44 puntos
+    (tier D). Caps 0: Wikipedia solo recoge internacionalidades base (sub-19, sub-21, sub-23), ninguna
+    absoluta; no hay una lista por partidos que lo confirme explicitamente. Premios: ninguno en Wikipedia.
+    Asistencias: null (BDFutbol no las publica).'
+- club_season: _market-2010-11
+  player_id: alvaro-negredo
+  band: 80-84
+  position_label: Delantero
+  original: Álvaro Negredo (Sevilla, 2010-11)
+  status: original
+  reason: ''
+  reason_sources: []
+  notes: 'Fuente unica BDFutbol; Wikipedia coincide (55 partidos, 26 goles). Liga 38 PJ/29 titular/2612
+    min/20 goles; Copa 7 PJ/5 tit/472 min/5 goles; Europa League 6 PJ/3 tit/324 min/1 gol; Supercopa de
+    Espana 2 PJ/1 tit/109 min/0; Champions (play-off previo contra el Braga, ronda oficial de la UEFA)
+    2 PJ/0 tit/23 min/0. Si no se quisiera contar esa ronda previa: minutes_all 3517, appearances_all
+    53, club_matches_all 56. Goles incluyen penaltis, no tandas. Caps (1): EEUU 04/06/2011 amistoso (national-football-teams.com),
+    46 min en BDFutbol. Premios: el Trofeo Zarra 2010-11 que lista Wikipedia es de Marca (no oficial de
+    la Liga), no se registra; no esta en los premios LFP ni en el once de la temporada (Wikipedia 2010-11
+    La Liga), por eso []. Sevilla 5.º (58 pts, empatado con Athletic y Atletico, desempate segun Wikipedia).
+    Edad: nacido el 20/08/1985 -> 25. Asistencias null.'
+- club_season: _market-2010-11
+  player_id: xavi-hernandez
+  band: 90-94
+  position_label: Centrocampista
+  original: Xavi Hernández (FC Barcelona, 2010-11)
+  status: original
+  reason: ''
+  reason_sources: []
+  notes: 'Verificado: en el Barça toda la temporada (BDFutbol, plantilla 2010-11). Jugó 31 de 38 partidos
+    de liga y 50 de 62 oficiales (rotaciones; sin lesión larga según las fuentes consultadas, no se ha
+    comprobado un parte de lesiones). Todo sale de una única fuente (BDFutbol, JSON de la plantilla 2010-11):
+    liga 31 PJ / 29 PT / 2462 min / 3 goles; Champions 12 PJ / 11 PT / 953 min / 2 goles; Supercopa 1
+    PJ / 89 min / 0 goles; Copa del Rey 6 PJ / 6 PT / 528 min / 0 goles. Totales: 4032 min, 47 titular,
+    50 apariciones, 5 goles. Partidos del club: 38 liga + 13 Champions + 2 Supercopa + 9 Copa del Rey
+    = 62 (BDFutbol). assists_all = null (sin fuente única de asistencias de todas las competiciones).
+    caps = 10 contando por fecha en RSSSF: 3-jul-2010 (cuartos del Mundial), 7-jul (semifinal), 11-jul
+    (final), 11-ago, 3-sep, 7-sep, 17-nov, 9-feb-2011, 25-mar, 29-mar (los partidos del Mundial hasta
+    el 29-jun pertenecen a 2009-10). Premios de año natural que solapan con 2010-11 (el responsable decide):
+    Balón de Oro FIFA 2010 (3º) y 2011 (3º), FIFA FIFPro World XI 2010 y 2011, UEFA Team of the Year 2010
+    y 2011. Tier L: Mejor Centrocampista de los Premios LFP 2010-11 (premio de posición, no de mejor jugador
+    general: el responsable decide si cuenta como L); el ESM Team of the Year 2010-11 no se registra.'
+- club_season: _market-2011-12
+  player_id: javi-martinez
+  band: 80-84
+  position_label: Centrocampista
+  original: Javi Martínez (Athletic Club, 2011-12)
+  status: original
+  reason: ''
+  reason_sources: []
+  notes: 'Se mantiene como original: no hubo lesion larga ni cesion; jugo 31 de 38 partidos de Liga (2556
+    min, 75 % de los minutos posibles) con 3 rojas en la temporada (sanciones) y compromisos con la Seleccion
+    y el equipo olimpico. Liga 31 PJ/30 titular/4 goles; Europa League 14 PJ (1260 min, 0 goles) de 16
+    partidos del Athletic (la vuelta del play-off con el Trabzonspor fue cancelada); Copa 9 PJ/9 titular
+    (798 min). Total 54 PJ y 4 goles, coincide con Wikipedia. Caps (4): Italia 10/08/2011, Chile 02/09/2011,
+    Chequia 07/10/2011, Irlanda 14/06/2012 (national-football-teams.com) = 4 partidos/225 min de BDFutbol;
+    los 2 partidos con la selección olimpica no cuentan. Premios: no figura en los premios de la Liga
+    2011-12 ni en el equipo del año (Wikipedia); [] . Asistencias null. Edad: nacido el 2/09/1988 -> 23.'
+- club_season: _market-2012-13
+  player_id: javi-fuego
+  band: 60-69
+  position_label: Centrocampista
+  original: Javi Fuego (Rayo Vallecano, 2012-13)
+  status: original
+  reason: ''
+  reason_sources: []
+  notes: 'Liga: 36 partidos, 36 de titular, 3213 min (BDFutbol); no jugó ni fue convocado en los 2 partidos
+    de Copa del Rey (dieciseisavos ante Las Palmas), por lo que ''all'' = ''league''. Fecha de nacimiento
+    04-01-1984 (BDFutbol y Wikipedia): 28 años el 1-1-2013. Sin caps absolutos (solo categorías inferiores,
+    Wikipedia y BDFutbol). En enero 2013 acordó fichar por el Valencia para la 2013-14, sin afectar a
+    la temporada. assists_all null.'
+- club_season: _market-2013-14
+  player_id: kiko-casilla
+  band: 70-74
+  position_label: Portero
+  original: Kiko Casilla (RCD Espanyol, 2013-14)
+  status: original
+  reason: ''
+  reason_sources: []
+  notes: 'Todas las cifras de BDFutbol (plantilla Espanyol 2013-14, vista Liga y Copa del Rey; Wikipedia
+    coincide: 37 liga + 4 copa, 0 goles). Casilla jugo 37 de 38 ligueros (el otro, Sevilla 4-1 Espanyol,
+    lo jugo German) y 4 de 6 partidos de Copa. Porterias a cero: 9 en liga (Betis, Granada, Atletico,
+    Malaga, Almeria, Celta, Granada, Getafe, Levante; conteo sobre el calendario de BDFutbol y alineaciones
+    de cada partido, Casilla jugo los 90 minutos en todos) + 1 en Copa (Espanyol 2-0 Jaen, vuelta de dieciseisavos)
+    = 10. Espanyol quedo 14o con 42 puntos (tier C). Caps: 0 porque su unica internacionalidad absoluta
+    fue el 18-11-2014 (amistoso Espana-Alemania), segun Wikipedia. Asistencias no publicadas por BDFutbol:
+    null. Premios: la seccion de honores de Wikipedia no recoge ninguno individual.'

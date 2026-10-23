@@ -1,0 +1,63 @@
+# Calibration anchors of this season (T1.7b). See ../../bands.yaml.
+schema_version: 1
+club_season: _market-2003-04
+club: null
+season: 2003-04
+real_league: null
+club_data: null
+sources:
+- https://en.wikipedia.org/wiki/2003%E2%80%9304_Arsenal_F.C._season
+- https://en.wikipedia.org/wiki/Thierry_Henry
+verify: ok
+players:
+- player_id: thierry-henry
+  display_name: Thierry Henry
+  alias_name: Thierry Henry
+  position: FW
+  age: 26
+  rating: 98
+  key: false
+  season_stats:
+    minutes_league: 3330
+    starts_league: 37
+    appearances_league: 37
+    minutes_all: null
+    starts_all: 50
+    appearances_all: 51
+    goals_all: 39
+    assists_all: null
+    caps: 12
+    awards:
+    - name: Premier League Player of the Season 2003-04
+      tier: L
+      source: https://en.wikipedia.org/wiki/Thierry_Henry
+    - name: Premier League Golden Boot 2003-04 (30 goles)
+      tier: L
+      source: https://en.wikipedia.org/wiki/Thierry_Henry
+    - name: FIFA World Player of the Year 2004 (2º; año natural)
+      tier: W
+      source: https://en.wikipedia.org/wiki/Thierry_Henry
+    - name: UEFA Team of the Year 2004 (año natural)
+      tier: W
+      source: https://en.wikipedia.org/wiki/Thierry_Henry
+    sources:
+    - https://www.statmuse.com/fc/ask/thierry-henry-stats-2003-04-all-competitions
+    - https://footballapi.pulselive.com/football/stats/player/1659?comps=1&compSeasons=12
+    - https://en.wikipedia.org/wiki/2003%E2%80%9304_Arsenal_F.C._season
+    - https://en.wikipedia.org/wiki/Thierry_Henry
+    - https://rsssf.org/miscellaneous/henry-intlg.html
+    verify: ok
+  club_data:
+    club_matches_all: 59
+    club_matches_league: 38
+    level_tier: A
+    level_tier_basis: Campeón de la Premier League 2003-04 (1º, invicto) y cuartofinalista de la Champions
+      League.
+    club_name: Arsenal FC
+    sources:
+    - https://en.wikipedia.org/wiki/2003%E2%80%9304_Arsenal_F.C._season
+    verify: ok
+  sources:
+  - https://en.wikipedia.org/wiki/2003%E2%80%9304_Arsenal_F.C._season
+  - https://en.wikipedia.org/wiki/Thierry_Henry
+  verify: ok

@@ -1,0 +1,267 @@
+# Calibration anchors of this season (T1.7b). See ../../bands.yaml.
+schema_version: 1
+club_season: _market-2008-09
+club: null
+season: 2008-09
+real_league: null
+club_data: null
+sources:
+- https://www.bdfutbol.com/es/t/t2008-096.html
+- https://www.bdfutbol.com/es/j/j992.html
+- https://www.bdfutbol.com/es/t/t2008-0913.html
+- https://www.bdfutbol.com/es/j/j52.html
+- https://www.bdfutbol.com/es/t/t2008-0924.html
+- https://www.bdfutbol.com/es/j/j1635.html
+- https://www.bdfutbol.com/es/j/j278.html
+- https://www.bdfutbol.com/es/t/t2008-0938.html
+- https://www.bdfutbol.com/es/j/j576.html
+- https://en.wikipedia.org/wiki/2008%E2%80%9309_Manchester_United_F.C._season
+- https://en.wikipedia.org/wiki/Nemanja_Vidi%C4%87
+verify: ok
+players:
+- player_id: gorka-iraizoz
+  display_name: Gorka Iraizoz
+  alias_name: Gorka Iraizoz
+  position: GK
+  age: 27
+  rating: 72
+  key: false
+  season_stats:
+    minutes_league: 3240
+    starts_league: 36
+    appearances_league: 36
+    minutes_all: 4050
+    starts_all: 45
+    appearances_all: 45
+    goals_all: 0
+    assists_all: null
+    clean_sheets_all: 10
+    caps: 0
+    awards: []
+    sources:
+    - https://www.bdfutbol.com/es/j/j992.html
+    - https://www.bdfutbol.com/es/t/t2008-096.html
+    - https://www.bdfutbol.com/es/p/p.php?id=25202
+    - https://en.wikipedia.org/wiki/2008%E2%80%9309_Athletic_Bilbao_season
+    - https://en.wikipedia.org/wiki/Gorka_Iraizoz
+    verify: ok
+  club_data:
+    club_matches_all: 47
+    club_matches_league: 38
+    level_tier: C
+    level_tier_basis: 13.o clasificado de La Liga 2008-09 (44 puntos); finalista de la Copa del Rey. 13.o
+      cae en el tramo 7.o-14.o de una gran liga.
+    club_name: Athletic Club
+    sources:
+    - https://www.bdfutbol.com/es/t/t2008-096.html
+    - https://en.wikipedia.org/wiki/2008%E2%80%9309_Athletic_Bilbao_season
+    verify: ok
+  sources:
+  - https://www.bdfutbol.com/es/t/t2008-096.html
+  - https://www.bdfutbol.com/es/j/j992.html
+  verify: ok
+- player_id: alberto-lopo
+  display_name: Alberto Lopo
+  alias_name: Alberto Lopo
+  position: DF
+  age: 28
+  rating: 68
+  key: false
+  season_stats:
+    minutes_league: 2834
+    starts_league: 32
+    appearances_league: 32
+    minutes_all: 3936
+    starts_all: 44
+    appearances_all: 46
+    goals_all: 3
+    assists_all: null
+    caps: 0
+    awards: []
+    sources:
+    - https://www.bdfutbol.com/es/j/j52.html
+    - https://www.bdfutbol.com/es/t/t2008-0913.html
+    - https://en.wikipedia.org/wiki/2008%E2%80%9309_Deportivo_de_La_Coru%C3%B1a_season
+    - https://en.wikipedia.org/wiki/Alberto_Lopo
+    verify: ok
+  club_data:
+    club_matches_all: 54
+    club_matches_league: 38
+    level_tier: C
+    level_tier_basis: 7.o clasificado de La Liga 2008-09 (tramo 7.o-14.o); 38 liga + 4 Copa + 2 Intertoto
+      + 10 Copa UEFA = 54 partidos oficiales.
+    club_name: Deportivo de La Coruña
+    sources:
+    - https://www.bdfutbol.com/es/t/t2008-0913.html
+    - https://en.wikipedia.org/wiki/2008%E2%80%9309_Deportivo_de_La_Coru%C3%B1a_season
+    verify: ok
+  sources:
+  - https://www.bdfutbol.com/es/t/t2008-0913.html
+  - https://www.bdfutbol.com/es/j/j52.html
+  verify: ok
+- player_id: juan-arango
+  display_name: Juan Arango
+  alias_name: Juan Arango
+  position: MF
+  age: 28
+  rating: 75
+  key: false
+  season_stats:
+    minutes_league: 3064
+    starts_league: 35
+    appearances_league: 37
+    minutes_all: 3300
+    starts_all: 37
+    appearances_all: 41
+    goals_all: 9
+    assists_all: null
+    caps: 7
+    awards: []
+    sources:
+    - https://www.bdfutbol.com/es/j/j1635.html
+    - https://www.bdfutbol.com/es/t/t2008-0924.html
+    - https://rsssf.org/miscellaneous/arango-intlg.html
+    - https://en.wikipedia.org/wiki/Juan_Arango
+    verify: ok
+  club_data:
+    club_matches_all: 46
+    club_matches_league: 38
+    level_tier: C
+    level_tier_basis: 9.o clasificado de La Liga 2008-09 (tramo 7.o-14.o); 38 liga + 8 Copa del Rey =
+      46 partidos.
+    club_name: RCD Mallorca
+    sources:
+    - https://www.bdfutbol.com/es/t/t2008-0924.html
+    - https://www.bdfutbol.com/es/t/t2008-09.html
+    verify: ok
+  sources:
+  - https://www.bdfutbol.com/es/t/t2008-0924.html
+  - https://www.bdfutbol.com/es/j/j1635.html
+  verify: ok
+- player_id: aritz-aduriz
+  display_name: Aritz Aduriz
+  alias_name: Aritz Aduriz
+  position: FW
+  age: 27
+  rating: 66
+  key: false
+  season_stats:
+    minutes_league: 2748
+    starts_league: 33
+    appearances_league: 35
+    minutes_all: 2857
+    starts_all: 34
+    appearances_all: 40
+    goals_all: 11
+    assists_all: null
+    caps: 0
+    awards: []
+    sources:
+    - https://www.bdfutbol.com/es/j/j278.html
+    - https://www.bdfutbol.com/es/t/t2008-0924.html
+    - https://en.wikipedia.org/wiki/Aritz_Aduriz
+    verify: ok
+  club_data:
+    club_matches_all: 46
+    club_matches_league: 38
+    level_tier: C
+    level_tier_basis: 9.o clasificado de La Liga 2008-09 (tramo 7.o-14.o); 38 liga + 8 Copa del Rey =
+      46 partidos.
+    club_name: RCD Mallorca
+    sources:
+    - https://www.bdfutbol.com/es/t/t2008-0924.html
+    - https://www.bdfutbol.com/es/t/t2008-09.html
+    verify: ok
+  sources:
+  - https://www.bdfutbol.com/es/t/t2008-0924.html
+  - https://www.bdfutbol.com/es/j/j278.html
+  verify: ok
+- player_id: diego-lopez
+  display_name: Diego López
+  alias_name: Diego López
+  position: GK
+  age: 27
+  rating: 75
+  key: false
+  season_stats:
+    minutes_league: 3420
+    starts_league: 38
+    appearances_league: 38
+    minutes_all: 4230
+    starts_all: 47
+    appearances_all: 47
+    goals_all: 0
+    assists_all: null
+    clean_sheets_all: 11
+    caps: 0
+    awards: []
+    sources:
+    - https://www.bdfutbol.com/es/j/j576.html
+    - https://www.bdfutbol.com/es/t/t2008-0938.html
+    - https://www.bdfutbol.com/es/t/t2008-0938.html?t=seg
+    - https://www.bdfutbol.com/es/t/t2008-0938.html?tab=partits
+    - https://en.wikipedia.org/wiki/Diego_L%C3%B3pez_(Spanish_footballer,_born_1981)
+    - https://www.national-football-teams.com/player/30581/Diego_Lopez.html
+    - https://en.wikipedia.org/wiki/2008%E2%80%9309_La_Liga
+    verify: ok
+  club_data:
+    club_matches_all: 50
+    club_matches_league: 38
+    level_tier: B
+    level_tier_basis: 5.º en la Liga 2008-09 (65 pts) y cuartofinalista de la Liga de Campeones 2008-09
+      (eliminado por el Arsenal); 50 partidos oficiales = 38 Liga + 10 Champions + 2 Copa del Rey, contados
+      en la lista de partidos de BDFutbol.
+    club_name: Villarreal CF
+    sources:
+    - https://www.bdfutbol.com/es/t/t2008-0938.html?tab=partits
+    - https://en.wikipedia.org/wiki/2008%E2%80%9309_La_Liga
+    verify: ok
+  sources:
+  - https://www.bdfutbol.com/es/t/t2008-0938.html
+  - https://www.bdfutbol.com/es/j/j576.html
+  verify: ok
+- player_id: nemanja-vidic
+  display_name: Nemanja Vidić
+  alias_name: Nemanja Vidić
+  position: DF
+  age: 27
+  rating: 91
+  key: false
+  season_stats:
+    minutes_league: 2984
+    starts_league: 33
+    appearances_league: 34
+    minutes_all: null
+    starts_all: 52
+    appearances_all: 55
+    goals_all: 7
+    assists_all: null
+    caps: 9
+    awards:
+    - name: Premier League Player of the Season 2008-09
+      tier: L
+      source: https://en.wikipedia.org/wiki/Nemanja_Vidi%C4%87
+    - name: FIFA FIFPro World XI 2009 (año natural; solapa con la temporada)
+      tier: W
+      source: https://en.wikipedia.org/wiki/FIFPro_World_XI
+    sources:
+    - https://footballapi.pulselive.com/football/stats/player/2935?comps=1&compSeasons=17
+    - https://www.statmuse.com/fc/ask/nemanja-vidic-stats-2008-09
+    - https://en.wikipedia.org/wiki/2008%E2%80%9309_Manchester_United_F.C._season
+    - https://en.wikipedia.org/wiki/Nemanja_Vidi%C4%87
+    - https://rsssf.org/miscellaneous/sb-vidic-intl.html
+    - https://en.wikipedia.org/wiki/FIFPro_World_XI
+    verify: ok
+  club_data:
+    club_matches_all: 66
+    club_matches_league: 38
+    level_tier: A
+    level_tier_basis: Campeón de la Premier League 2008-09 (1º) y finalista de la Champions League 2008-09.
+    club_name: Manchester United
+    sources:
+    - https://en.wikipedia.org/wiki/2008%E2%80%9309_Manchester_United_F.C._season
+    verify: ok
+  sources:
+  - https://en.wikipedia.org/wiki/2008%E2%80%9309_Manchester_United_F.C._season
+  - https://en.wikipedia.org/wiki/Nemanja_Vidi%C4%87
+  verify: ok
