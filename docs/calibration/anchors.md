@@ -1,184 +1,141 @@
 # Calibración de la fórmula con las anclas (T1.7b)
 
-> Estado: **informe para el autor.** La fórmula **no** cumple el criterio de la sección 9 de la [rúbrica](../content/rating-rubric.md). No se ha tocado ningún peso: abajo hay un ajuste propuesto, que lo apruebas o no.
-> Datos: `content/anchors/` (24 anclas, recogidas con fuente). Medias: calculadas con `compute_rating` (la misma función que la CLI `mister content ratings compute`).
-> Reproducir: `cd backend && uv run python tests/content/anchors/report.py` (o, club-season a club-season, `uv run mister content ratings compute _market-2004-05 --root ../content/anchors --check`).
+> Estado: **informe para el autor, tras su decisión "fórmula como base y revisión manual de los jugadores clave".** Aplicada en la misma PR: la fórmula y la rúbrica cambian como se explica abajo; las bandas del autor no se han tocado.
+> Datos: `content/anchors/` (24 anclas con fuente). Medias: `compute_rating`, la misma función que la CLI `mister content ratings compute`.
+> Reproducir: `cd backend && uv run python tests/content/anchors/report.py` (o, por temporada, `uv run mister content ratings compute _market-2004-05 --root ../content/anchors --check`).
 
-## En una frase
+## En pocas palabras
 
-De las 24 anclas, **9 caen dentro de su banda y 15 fuera** (el 62 %), y la peor se desvía **12 puntos**. El criterio pedía menos de 1 de cada 5 fuera (es decir, 4 como máximo) y ninguna a más de 5 puntos. Hay **8 anclas a más de 5 puntos**. No se cumple.
+- **Anclas no clave (6): la fórmula sola las deja a todas dentro de su banda.** El criterio (como mucho 1 de cada 5 fuera y ninguna a más de 5 puntos) **se cumple**.
+- **Anclas clave (18): la fórmula sola deja 13 fuera de banda.** Aplicando el proceso real (revisión manual con evidencia de la rúbrica), **8 entran en su banda**: 6 suben y 2 bajan. **5 siguen fuera** porque no hay evidencia verificable que las mueva: Thierry Henry (+5), Aritz Aduriz (-6), Álvaro Negredo (-4), Gorka Iraizoz (-2) y Juan Arango (+2).
+- **Veredicto: el criterio nuevo se cumple para las no clave y no del todo para las clave** (13 de 18 en banda; 5 sin evidencia que las lleve a ella; ninguna requería más de 12 puntos, así que no es un fallo por límite). La decisión de qué hacer con esas 5 es tuya (ver al final).
+- La fórmula anterior dejaba 15 de 24 fuera y la peor desviación era de 12 puntos.
+
+## Qué se ha cambiado en la fórmula y por qué
+
+Todos los cambios se justifican por la disponibilidad de datos o por lo que mide cada pieza, no por cómo cuadran las anclas:
+
+1. **Fuera las asistencias.** Ninguna fuente permitida publica asistencias fiables de toda la temporada para 2003-2014: solo 1 de las 24 anclas (Lahm) las tiene. Una pieza que casi siempre falta penaliza a quien más asiste. El campo `assists_all` se queda en el esquema como dato informativo. Con eso, los topes de producción pasan a medir solo goles: delantero 0,70, centrocampista 0,30 y defensa 0,10 goles por partido del club (antes 0,80/0,45/0,20 sobre goles y media asistencia).
+2. **Porterías a cero de la liga.** Nuevo campo `clean_sheets_league`. Si faltan las de todas las competiciones, el portero usa las de la liga; si existen las dos, se usa la mayor de las dos tasas (así encontrar un dato nunca baja la media, comprobado con un test de Hypothesis). Solo si faltan las dos cuenta 0. Se ha recogido con fuente para los 6 porteros.
+3. **Perderse unos partidos penaliza menos.** La importancia llega al máximo con el **85 %** de los minutos y titularidades del club (antes, el 100 %), porque un titular habitual se pierde en torno al 15 % de los partidos del club por rotación, sanciones o selección. Un suplente sigue saliendo bajo (por ejemplo, 50 con 520 minutos).
+4. **La fórmula da la base y los `key` se revisan siempre.** La rúbrica (sección 7.1) lista la evidencia que vale para un override (premios y nominaciones, once ideal, titular indiscutible en un club A o B, convocatoria a un torneo final) y prohíbe la fama. Se añade una regla para **bajar** una base de 95 o más cuando el jugador no tiene un premio mundial individual esa temporada, porque la banda 95-99 es "el mejor o casi el mejor del mundo".
 
 ## Resultado por ancla
 
-Cómo leerla: **Media** es lo que da la fórmula; **Desv.** son los puntos que se queda fuera de la banda del autor (0 si está dentro; negativo = la fórmula da menos de lo esperado). **I** es la importancia en el equipo (0 a 1), **P** la producción (goles, asistencias o porterías a cero, 0 a 1), **N** las internacionalidades (0 a 1), **V** los premios (0 a 1) y **T** el factor del nivel del club (en puntos). **Base** indica si la importancia se calculó con todas las competiciones (`all`) o solo con la liga (`league`, cuando no se encontraron los minutos de todas las competiciones).
+**Cómo leerla.** *Banda*: la que puso el autor. *Clave*: si cumple algún criterio verificable de la sección 8.2 (portero titular, premio mundial o de liga, 3 o más internacionalidades esa temporada, máximo goleador del club). *Antes*: la media con la fórmula anterior. *Base*: la media con la fórmula nueva, sin tocar. *Override*: la corrección manual, si hay evidencia. *Final*: lo que se guardaría. *Desv.*: puntos que se queda fuera de la banda (0 si está dentro; negativo = por debajo).
 
-| Banda | Jugador | Temporada | Media | Desv. | I | P | N | V | T | Base | Notas |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| 90-94 | thierry-henry | 2003-04 | 98 | +4 | 0.97 | 0.83 | 1.00 | 1.00 | +6 | league | assists: null |
-| 90-94 | petr-cech | 2004-05 | 97 | +3 | 0.92 | 0.86 | 1.00 | 0.95 | +6 | league |  |
-| 90-94 | nemanja-vidic | 2008-09 | 91 | +0 | 0.87 | 0.53 | 1.00 | 0.95 | +6 | league | assists: null |
-| 90-94 | xavi-hernandez | 2010-11 | 84 | -6 | 0.73 | 0.18 | 1.00 | 1.00 | +6 | all | assists: null |
-| 85-89 | diego-forlan | 2004-05 | 81 | -4 | 0.68 | 0.61 | 1.00 | 0.35 | +3 | all | assists: null |
-| 85-89 | pepe-reina | 2005-06 | 73 | -12 | 0.87 | 0.00 | 0.38 | 0.35 | +3 | league | clean_sheets: null |
-| 85-89 | philipp-lahm | 2009-10 | 89 | +0 | 1.00 | 0.66 | 1.00 | 0.00 | +6 | all |  |
-| 85-89 | david-silva | 2009-10 | 75 | -10 | 0.64 | 0.40 | 1.00 | 0.00 | +3 | all | assists: null |
-| 80-84 | gabriel-milito | 2005-06 | 70 | -10 | 0.88 | 0.11 | 0.50 | 0.00 | +0 | all | assists: null |
-| 80-84 | diego-lopez | 2008-09 | 75 | -5 | 0.94 | 0.40 | 0.00 | 0.00 | +3 | all |  |
-| 80-84 | alvaro-negredo | 2010-11 | 72 | -8 | 0.67 | 0.56 | 0.12 | 0.00 | +3 | all | assists: null |
-| 80-84 | javi-martinez | 2011-12 | 69 | -11 | 0.82 | 0.14 | 0.50 | 0.00 | +0 | all | assists: null |
-| 75-79 | gorka-iraizoz | 2008-09 | 72 | -3 | 0.96 | 0.39 | 0.00 | 0.00 | +0 | all |  |
-| 75-79 | alberto-lopo | 2008-09 | 68 | -7 | 0.81 | 0.28 | 0.00 | 0.00 | +0 | all | assists: null |
-| 75-79 | juan-arango | 2008-09 | 75 | +0 | 0.80 | 0.43 | 0.88 | 0.00 | +0 | all | assists: null |
-| 75-79 | aritz-aduriz | 2008-09 | 66 | -9 | 0.70 | 0.30 | 0.00 | 0.00 | +0 | all | assists: null |
-| 70-74 | gonzalo-colsa | 2007-08 | 70 | +0 | 0.88 | 0.10 | 0.00 | 0.00 | +3 | all | assists: null |
-| 70-74 | nino | 2009-10 | 70 | +0 | 0.94 | 0.44 | 0.00 | 0.00 | -3 | all | assists: null |
-| 70-74 | ivan-ramis | 2010-11 | 65 | -5 | 0.78 | 0.36 | 0.00 | 0.00 | -3 | all | assists: null |
-| 70-74 | kiko-casilla | 2013-14 | 72 | +0 | 0.93 | 0.41 | 0.00 | 0.00 | +0 | all |  |
-| 60-69 | dani-aranzubia | 2010-11 | 65 | +0 | 0.73 | 0.45 | 0.00 | 0.00 | -3 | all |  |
-| 60-69 | manuel-pablo | 2010-11 | 59 | -1 | 0.74 | 0.00 | 0.00 | 0.00 | -3 | all | assists: null |
-| 60-69 | david-barral | 2010-11 | 63 | +0 | 0.64 | 0.19 | 0.00 | 0.00 | +0 | all | assists: null |
-| 60-69 | javi-fuego | 2012-13 | 66 | +0 | 0.89 | 0.00 | 0.00 | 0.00 | +0 | all | assists: null |
+| Banda | Jugador | Temporada | Clave | Antes | Base | Desv. base | Override | Final | Desv. final |
+|---|---|---|---|---|---|---|---|---|---|
+| 90-94 | thierry-henry | 2003-04 | si | 98 | 99 | +5 |  | 99 | +5 |
+| 90-94 | petr-cech | 2004-05 | si | 97 | 99 | +5 | 94 | 94 | +0 |
+| 90-94 | nemanja-vidic | 2008-09 | si | 91 | 99 | +5 | 94 | 94 | +0 |
+| 90-94 | xavi-hernandez | 2010-11 | si | 84 | 88 | -2 | 90 | 90 | +0 |
+| 85-89 | diego-forlan | 2004-05 | si | 81 | 85 | +0 |  | 85 | +0 |
+| 85-89 | pepe-reina | 2005-06 | si | 73 | 89 | +0 |  | 89 | +0 |
+| 85-89 | philipp-lahm | 2009-10 | si | 89 | 83 | -2 | 85 | 85 | +0 |
+| 85-89 | david-silva | 2009-10 | si | 75 | 80 | -5 | 85 | 85 | +0 |
+| 80-84 | gabriel-milito | 2005-06 | si | 70 | 74 | -6 | 80 | 80 | +0 |
+| 80-84 | diego-lopez | 2008-09 | si | 75 | 77 | -3 | 80 | 80 | +0 |
+| 80-84 | alvaro-negredo | 2010-11 | si | 72 | 76 | -4 |  | 76 | -4 |
+| 80-84 | javi-martinez | 2011-12 | si | 69 | 73 | -7 | 80 | 80 | +0 |
+| 75-79 | gorka-iraizoz | 2008-09 | si | 72 | 73 | -2 |  | 73 | -2 |
+| 75-79 | alberto-lopo | 2008-09 | no | 68 | 75 | +0 |  | 75 | +0 |
+| 75-79 | juan-arango | 2008-09 | si | 75 | 81 | +2 |  | 81 | +2 |
+| 75-79 | aritz-aduriz | 2008-09 | si | 66 | 69 | -6 |  | 69 | -6 |
+| 70-74 | gonzalo-colsa | 2007-08 | no | 70 | 73 | +0 |  | 73 | +0 |
+| 70-74 | nino | 2009-10 | si | 70 | 72 | +0 |  | 72 | +0 |
+| 70-74 | ivan-ramis | 2010-11 | no | 65 | 73 | +0 |  | 73 | +0 |
+| 70-74 | kiko-casilla | 2013-14 | si | 72 | 74 | +0 |  | 74 | +0 |
+| 60-69 | dani-aranzubia | 2010-11 | si | 65 | 69 | +0 |  | 69 | +0 |
+| 60-69 | manuel-pablo | 2010-11 | no | 59 | 62 | +0 |  | 62 | +0 |
+| 60-69 | david-barral | 2010-11 | no | 63 | 66 | +0 |  | 66 | +0 |
+| 60-69 | javi-fuego | 2012-13 | no | 66 | 68 | +0 |  | 68 | +0 |
 
-Las sustituciones aparecen en el nombre (ver la sección de sustituciones): `juan-arango`, `aritz-aduriz` y `david-barral` no estaban en la plantilla original del autor.
+- no clave (formula sola): 0 de 6 fuera; mayor desviacion 0
+- clave (base): 13 de 18 fuera; mayor desviacion 7
+- clave (tras la revision): 5 de 18 fuera; mayor desviacion 6
 
-## ¿Se cumple el criterio de la sección 9?
+## Evidencia de cada override
 
-| Criterio | Resultado | ¿Cumple? |
-|---|---|---|
-| Menos de 1 de cada 5 fuera de banda (máximo 4 de 24) | 15 de 24 fuera | No |
-| Ninguna a más de 5 puntos de su banda | 8 anclas a más de 5 puntos (Reina -12, Martínez -11, Milito -10, Silva -10, Aduriz -9, Negredo -8, Lopo -7, Xavi -6) | No |
+Todos los overrides están en `content/anchors/club-seasons/*/squad.yaml`, con su `rationale` y sus fuentes. Ninguno está justificado por la fama ni por cuadrar la banda: cada uno se apoya en lo que la rúbrica 7.1 admite.
+
+| Ancla | Base | Override | Evidencia (de esa temporada) |
+|---|---|---|---|
+| Petr Čech (Chelsea 04-05) | 99 | **94** (baja 5) | La base cae en 95-99 y no hubo premio mundial individual: Balón de Oro 2005 empatado en 15.º-17.º, FIFA World Player 2005 con Ronaldinho, Lampard y Eto'o. [Balón de Oro 2005](https://en.wikipedia.org/wiki/2005_Ballon_d%27Or), [FIFA World Player](https://en.wikipedia.org/wiki/FIFA_World_Player_of_the_Year). |
+| Nemanja Vidić (Man. United 08-09) | 99 | **94** (baja 5) | Igual: Balón de Oro 2009 empatado en 16.º; FIFA World Player 2009 con Messi, Cristiano Ronaldo y Xavi. [Balón de Oro 2009](https://en.wikipedia.org/wiki/2009_Ballon_d%27Or), [FIFA World Player](https://en.wikipedia.org/wiki/FIFA_World_Player_of_the_Year). |
+| Xavi (Barcelona 10-11) | 88 | **90** (sube 2) | Mejor Mediocentro de los Premios LFP 2010-11 y once ideal de la temporada del ESM. [Premios LFP](https://es.wikipedia.org/wiki/Premios_LaLiga), [ESM Team of the Year](https://en.wikipedia.org/wiki/ESM_Team_of_the_Year). |
+| Philipp Lahm (Bayern 09-10) | 83 | **85** (sube 2) | Titular indiscutible de un club A (4784 minutos en 53 partidos, el 100 % de los minutos del Bayern) y capitán de Alemania en el Mundial 2010. [fussballdaten](https://www.fussballdaten.de/person/philipp-lahm/leistungsdaten/), [Mundial 2010](https://en.wikipedia.org/wiki/2010_FIFA_World_Cup_squads). |
+| David Silva (Valencia 09-10) | 80 | **85** (sube 5) | Convocado por España al Mundial 2010 (dorsal 21), que ganó; jugó ante Suiza y Alemania. [Mundial 2010](https://en.wikipedia.org/wiki/2010_FIFA_World_Cup_squads), [Silva](https://en.wikipedia.org/wiki/David_Silva). Una sola evidencia. |
+| Gabriel Milito (Zaragoza 05-06) | 74 | **80** (sube 6) | Convocado por Argentina al Mundial 2006 (dorsal 15); jugó ante Países Bajos. [Mundial 2006](https://en.wikipedia.org/wiki/2006_FIFA_World_Cup_squads), [Milito](https://en.wikipedia.org/wiki/Gabriel_Milito). Una sola evidencia, en el límite de 6 puntos. |
+| Diego López (Villarreal 08-09) | 77 | **80** (sube 3) | Titular indiscutible de un club B (4230 minutos, el 94 % de los del club) y finalista al Mejor Portero de los Premios LFP 2008-09. [BDFutbol](https://www.bdfutbol.com/es/j/j576.html), [Primera 2008-09](https://es.wikipedia.org/wiki/Primera_Divisi%C3%B3n_de_Espa%C3%B1a_2008-09). |
+| Javi Martínez (Athletic 11-12) | 73 | **80** (sube 7, `verify: pending`) | Finalista al Mejor Defensa de los Premios LFP 2011-12 y convocado por España a la Eurocopa 2012. Dos evidencias y dos fuentes, a 7 puntos de la base: **pendiente del revisor independiente**. [Málaga CF](https://www.malagacf.com/noticias/isco-y-cazorla-finalistas-de-los-premios-lfp-2012), [Eurocopa 2012](https://en.wikipedia.org/wiki/UEFA_Euro_2012_squads). |
+
+**Las cinco que no se pueden mover (sin evidencia):**
+
+- **Thierry Henry (99 frente a 90-94):** la base cae en 95-99 y sí tiene premio mundial individual esa temporada (2.º del FIFA World Player 2003 y 2004), por lo que la regla de bajar no aplica. La fórmula lo deja en "excepcional", como la rúbrica define esa banda; la banda del autor es más baja. Sin evidencia para bajarlo, se informa como desviación de +5.
+- **Aritz Aduriz (69 frente a 75-79):** máximo goleador del club (11 goles), pero sin premios, selección ni nivel A o B del club. No hay evidencia de calidad de la lista. Desviación de -6 (la única por encima de 5).
+- **Álvaro Negredo (76 frente a 80-84):** el Trofeo Zarra es de Marca (no de la liga) y no fue finalista de los premios de la LFP. Sin evidencia: -4.
+- **Gorka Iraizoz (73 frente a 75-79):** sin premios, selección ni club A o B. -2.
+- **Juan Arango (81 frente a 75-79):** la base se pasa un poco y no hay regla para bajarla. +2.
 
 ## Patrones observados
 
-1. **Los jugadores de nivel alto de equipos que no son los grandes salen bajos.** Milito, Reina, Silva, Javi Martínez, Negredo o Aduriz juegan casi todo, pero sin selección fuerte ni premios y con un club de nivel B o C, la fórmula solo les da entre 66 y 77. Con las piezas actuales, un jugador sin premios, con menos de 8 partidos con la selección y en un club de nivel C no puede pasar de unos 82 ni con una temporada perfecta en minutos y producción. La banda del autor (80-89) refleja reputación, no solo lo que se ve en esas estadísticas.
-2. **Los datos que faltan pesan, y se notan sobre todo en los centrocampistas y delanteros.** Solo 1 de las 24 anclas (Lahm) tiene asistencias, porque ninguna fuente las publica para toda la temporada en todas las competiciones; el resto cuenta 0 asistencias. A un mediapunta como Xavi (3 goles en 50 partidos) le quita mucho. La fórmula se comporta como se diseñó (no inventa), pero el hueco baja la media.
-3. **Los porteros dependen de un solo dato, las porterías a cero, y ese dato falta a veces.** Pepe Reina sale en 73 (-12) porque no hay registro de porterías a cero en todas las competiciones (la Copa de Inglaterra y el Mundial de Clubes no tienen fichas de partido accesibles): cuenta 0 y la producción queda en 0. Con 20 porterías a cero de liga (la cifra oficial, que no es del conjunto `all` y por eso no se ha usado) la producción subiría a 0,59 y la media a unos 81. En los demás porteros no hay un sesgo claro: Čech sale alto (97), Diego López 5 por debajo (75) e Iraizoz, 3 (72).
-4. **En lo más alto sale más alto de lo esperado.** Henry (98) y Čech (97) pasan de la banda 90-94, y Vidić (91) cae justo dentro. Con N y V al máximo y nivel A, la fórmula llega fácilmente a 95-99. No es un fallo grave, pero la fórmula pone a los dos en la banda 95-99 ("excepcional"), por encima de lo que el autor esperaba.
-5. **Los bajos salen bien.** Todas las anclas de 60-69 y 70-74 caen dentro de su banda salvo Manuel Pablo (59, 1 punto por debajo) e Iván Ramis (65, 5 por debajo, por jugar en un club de nivel D, con -3 de factor de nivel). Los defensas solo se distinguen por los minutos, porque su producción casi no cuenta.
-6. **Quien se pierde algunos partidos sale perjudicado.** Silva (30 de 38 partidos de liga), Martínez (31) y Xavi (31) están entre los más desviados: la importancia premia el volumen de minutos, y la banda del autor mira más la calidad cuando juegan.
-7. **Las bandas no son la única fuente de duda:** 5 de las 24 anclas (Aranzubia, Silva, Reina, Martínez, Ramis) cumplen "casi toda la temporada" justo en el límite (71-87 % de los minutos de liga). Se han mantenido porque no había lesión larga ni cesión ni fichaje de invierno documentados.
+1. **Quitar las asistencias y subir la importancia del titular ayudó a los defensas y a los porteros**: Casilla, Colsa, Lopo, Ramis, Aranzubia y Fuego quedan dentro de banda con la fórmula sola, y Reina (con sus porterías a cero de liga) también.
+2. **Arriba, la fórmula se pasa.** Con selección, premios y nivel A al máximo (+19 puntos), Henry, Čech y Vidić llegan a 99. Por eso hace falta la regla de bajar.
+3. **Los buenos de equipos medianos salen bajos sin evidencia externa** (Milito, Martínez, Silva, Negredo, Aduriz): la fórmula no ve calidad cuando no hay premios ni selección fuerte ni un club A o B. Lo que los sube, cuando lo hay, es un dato verificable de la lista de 7.1.
+4. **Datos que faltan.** `minutes_all` es `null` en Čech, Vidić, Henry y Reina (la importancia usa la liga), porque ninguna fuente accesible publica los minutos de la FA Cup y la Copa de la Liga. Las 6 anclas no clave tienen todos los datos que usa la fórmula.
 
-## Ajuste de pesos propuesto (no aplicado)
+## Cosas que conviene que decidas
 
-Se ha probado un barrido de ajustes pequeños (topes de producción, valores de nivel, pesos de las piezas). **Ningún ajuste razonable consigue cumplir el criterio**: el mejor del barrido deja 12 anclas fuera con una desviación máxima de 8, y exige cambiar 13 valores a la vez, lo que sería ajustar a las 24 anclas y no es explicable. Los errores grandes (patrón 1) vienen de que la fórmula no ve calidad cuando no hay selección ni premios, no de un peso mal puesto.
-
-Aun así, hay dos retoques pequeños, con una razón clara, que mejoran el resultado sin ajustar a un jugador:
-
-- **Tope de producción de los centrocampistas: 0,45 -> 0,35** y **de los porteros: 0,55 -> 0,45.** Con los topes actuales casi nadie llega al máximo de producción: ni Xavi, ni Čech (28 porterías a cero en 59 partidos del club, 0,47 por partido, frente a un tope de 0,55). Bajar los topes hace que un buen registro de goles y asistencias, o de porterías a cero, ya cuente como "muy bueno".
-- **Factor de nivel: A +6 (igual), B +3 -> +4, C 0 -> +1, D -3 -> -2.** Mantiene la jerarquía (A pesa más que B, B más que C, C más que D) y reduce la penalización de los clubes de la zona baja, que hoy deja a jugadores como Ramis (nivel D) 5 puntos por debajo de su banda.
-
-| Valor (sección 4) | Antes | Después |
-|---|---|---|
-| `TOPE` centrocampista | 0,45 | **0,35** |
-| `TOPE` portero (porterías a cero por partido) | 0,55 | **0,45** |
-| `T` nivel B | +3 | **+4** |
-| `T` nivel C | 0 | **+1** |
-| `T` nivel D | -3 | **-2** |
-| Resto (suelo 46, pesos 22/14/6/7, `TOPE` delantero 0,80 y defensa 0,20, 0,70/0,30, premios y selección) | igual | igual |
-
-Resultado con el ajuste (mismas estadísticas): **14 de 24 fuera de banda (antes 15), desviación máxima 11 (antes 12) y desviación total 83 puntos (antes 98).** Sigue sin cumplir el criterio, así que **el ajuste solo es una mejora pequeña, no un arreglo**. Propongo que el autor decida entre:
-
-1. **Aplicar el ajuste pequeño** y aceptar que el criterio de la sección 9 no se cumple con estas anclas por falta de señal (patrón 1).
-2. **Revisar las bandas** de las anclas más desviadas (Milito, Reina, Silva, Javi Martínez, Negredo, Aduriz, Lopo), por si la banda refleja reputación más que lo que se puede medir con fuentes públicas de 2003-2014. Este informe no las cambia.
-3. **Estudiar un cambio de estructura** (fuera del alcance de esta tarea): una pieza que premie a quien juega casi todo en un club de nivel alto, o completar las asistencias con una fuente única.
-
-### Antes y después por ancla
-
-| Banda | Jugador | Antes | Después | Desv. después |
-|---|---|---|---|---|
-| 90-94 | thierry-henry | 98 | 98 | +4 |
-| 90-94 | petr-cech | 97 | 99 | +5 |
-| 90-94 | nemanja-vidic | 91 | 91 | +0 |
-| 90-94 | xavi-hernandez | 84 | 84 | -6 |
-| 85-89 | diego-forlan | 81 | 82 | -3 |
-| 85-89 | pepe-reina | 73 | 74 | -11 |
-| 85-89 | philipp-lahm | 89 | 89 | +0 |
-| 85-89 | david-silva | 75 | 77 | -8 |
-| 80-84 | gabriel-milito | 70 | 71 | -9 |
-| 80-84 | diego-lopez | 75 | 78 | -2 |
-| 80-84 | alvaro-negredo | 72 | 73 | -7 |
-| 80-84 | javi-martinez | 69 | 71 | -9 |
-| 75-79 | gorka-iraizoz | 72 | 75 | +0 |
-| 75-79 | alberto-lopo | 68 | 69 | -6 |
-| 75-79 | juan-arango | 75 | 78 | +0 |
-| 75-79 | aritz-aduriz | 66 | 67 | -8 |
-| 70-74 | gonzalo-colsa | 70 | 71 | +0 |
-| 70-74 | nino | 70 | 71 | +0 |
-| 70-74 | ivan-ramis | 65 | 66 | -4 |
-| 70-74 | kiko-casilla | 72 | 75 | +1 |
-| 60-69 | dani-aranzubia | 65 | 68 | +0 |
-| 60-69 | manuel-pablo | 59 | 60 | +0 |
-| 60-69 | david-barral | 63 | 64 | +0 |
-| 60-69 | javi-fuego | 66 | 67 | +0 |
-
-### Efecto en los ejemplos de la sección 10 (todos inventados)
-
-El ajuste mantiene la monotonía (todas las medias siguen sin bajar al subir minutos, goles, asistencias, porterías a cero, selección, premios o nivel del club). Los ejemplos cambiarían así:
-
-| Ejemplo | Antes | Después | Motivo |
-|---|---|---|---|
-| 10.1 Delantero (nivel A) | 95 | 95 | No cambia (delantero y nivel A). |
-| 10.2 Centrocampista (nivel A) | 80 | **82** | Su tope pasa de 0,45 a 0,35 (`P` 0,485 -> 0,623). |
-| 10.3 Defensa (nivel C) | 67 | **68** | Nivel C pasa de 0 a +1. |
-| 10.4 Portero (nivel A) | 90 | **92** | Su tope pasa de 0,55 a 0,45 (`P` 0,793 -> 0,970). Sin porterías a cero sigue en 78. |
-| 10.5 Rotación, asistencias desconocidas (nivel C) | 49 | **51** | Nivel C +1 y tope de centrocampista 0,35. |
-| 10.6 Defensa con lesión larga (nivel A) | 63 | 63 | No cambia; el override a 70 sigue a 7 puntos. |
-
-Cambiarían 4 de los 6 ejemplos. Habría que actualizar sus tablas y el texto de 10.4 ("**78**" sin porterías a cero sigue valiendo), además de los ejemplos de [content-format.md](../content/content-format.md) y los tests de T1.8 que dependan de esas cifras, con la CR que apruebe el autor.
+1. **¿Qué hacer con las 5 que no se mueven?** Opciones: aceptarlas (el criterio solo exige que **pueda** llevarlas a su banda un override con evidencia, y aquí no la hay), revisar su banda o buscar más evidencia en la rúbrica 7.1.
+2. **La regla de bajar a 94** cuando falta un premio mundial individual. Es nueva, y la he añadido porque la banda 95-99 se define como "el mejor o casi el mejor del mundo" (sección 6). Si prefieres no tenerla, Čech y Vidić pasan a +5 y fallan.
+3. **Premios de año natural** (Balón de Oro, once de la FIFPro o de la UEFA): se registraron como `W` los del año que cierra la temporada; ya estaban saturando `V` antes de este cambio.
+4. **Verificación independiente (como T2.14): pendiente.** Los datos los han recogido agentes y los has de revisar. `verify: ok` significa que cada dato tiene fuente, no que un segundo revisor lo haya confirmado. El override de Javi Martínez va en `verify: pending` por la regla de 7 a 12 puntos.
 
 ## Sustituciones y dudas sobre las anclas
 
-Sustituidas (misma posición y banda parecida, y no son de las cinco temporadas jugables):
+(Las tres sustituciones y las dudas ya señaladas en la primera versión de este informe siguen igual.)
 
 | Original del autor | Sustituta | Motivo y fuentes |
 |---|---|---|
-| Borja Valero (RCD Mallorca, 2008-09), centrocampista, 75-79 | **Juan Arango (RCD Mallorca, 2008-09)** | En 2008-09 Borja Valero no estaba en el Mallorca: jugó allí en 2007-08, en 2008-09 pertenecía al West Bromwich Albion y volvió cedido al Mallorca en 2009-10. No figura en la plantilla del Mallorca 2008-09 de BDFutbol. Fuentes: [Wikipedia](https://en.wikipedia.org/wiki/Borja_Valero), [BDFutbol](https://www.bdfutbol.com/es/t/t2008-0924.html). Arango jugó el año entero en el Mallorca. |
-| Nikola Žigić (Racing de Santander, 2006-07), delantero, 75-79 | **Aritz Aduriz (RCD Mallorca, 2008-09)** | Žigić empezó la temporada en el Estrella Roja (4 partidos de Liga de Campeones) y no fichó por el Racing hasta el 29-ago-2006. Fuentes: [Wikipedia](https://en.wikipedia.org/wiki/Nikola_%C5%BDigi%C4%87), [BDFutbol](https://www.bdfutbol.com/es/j/j2085.html). Aduriz fichó por el Mallorca el 23-ago-2008, antes de la primera jornada (31-ago). Coincide con Arango en club y temporada, lo que baja un poco la variedad. |
-| Kike Sola (CA Osasuna, 2011-12), delantero, 60-69 | **David Barral (Sporting de Gijón, 2010-11)** | Kike Sola jugó solo 7 partidos de liga (507 min) en 2011-12 (BDFutbol). Barral, delantero de un equipo de mitad de tabla (10.º), jugó 34 de 38 partidos sin cesión ni fichaje de invierno. Fuentes: [BDFutbol](https://www.bdfutbol.com/es/j/j5643.html), [BDFutbol (plantilla)](https://www.bdfutbol.com/es/t/t2010-1134.html), [Wikipedia](https://en.wikipedia.org/wiki/David_Barral). |
+| Borja Valero (RCD Mallorca, 2008-09), centrocampista, 75-79 | **Juan Arango (RCD Mallorca, 2008-09)** | En 2008-09 Borja Valero no estaba en el Mallorca: jugó allí en 2007-08, en 2008-09 pertenecía al West Bromwich Albion y volvió cedido al Mallorca en 2009-10. Fuentes: [Wikipedia](https://en.wikipedia.org/wiki/Borja_Valero), [BDFutbol](https://www.bdfutbol.com/es/t/t2008-0924.html). |
+| Nikola Žigić (Racing de Santander, 2006-07), delantero, 75-79 | **Aritz Aduriz (RCD Mallorca, 2008-09)** | Žigić empezó la temporada en el Estrella Roja y no fichó por el Racing hasta el 29-ago-2006. Fuentes: [Wikipedia](https://en.wikipedia.org/wiki/Nikola_%C5%BDigi%C4%87), [BDFutbol](https://www.bdfutbol.com/es/j/j2085.html). Coincide con Arango en club y temporada. |
+| Kike Sola (CA Osasuna, 2011-12), delantero, 60-69 | **David Barral (Sporting de Gijón, 2010-11)** | Kike Sola jugó solo 7 partidos de liga (507 min). Fuentes: [BDFutbol](https://www.bdfutbol.com/es/j/j5643.html), [BDFutbol (plantilla)](https://www.bdfutbol.com/es/t/t2010-1134.html), [Wikipedia](https://en.wikipedia.org/wiki/David_Barral). |
 
-Mantenidas, pero con dudas que conviene que el autor conozca:
-
-- **Dani Aranzubia (Deportivo 2010-11):** se perdió las 6 primeras jornadas por lesión; jugó las otras 32. Se ha mantenido (límite de "casi toda la temporada").
-- **David Silva (Valencia 2009-10):** 30 de 38 partidos de liga (71 % de los minutos), sin lesión larga documentada. Es el caso más dudoso; el autor puede pedir otro.
-- **Pepe Reina (Liverpool 2005-06):** 33 de 38 partidos (87 %).
-- **Javi Martínez (Athletic 2011-12):** 31 de 38 (75 %), con 3 rojas y partidos con la selección y el equipo olímpico.
-- **Iván Ramis (Mallorca 2010-11):** 33 de 38; no se ha verificado el motivo de las ausencias.
-- **Diego Forlán (Villarreal 2004-05):** fichó el 21-ago-2004, después de los 8 partidos de la Intertoto del club (que cuentan como oficiales). Por eso lleva `available_matches_all: 51` (59 menos 8). BDFutbol no lo recoge en ningún partido de la Copa de la UEFA; no se ha podido confirmar la causa en una fuente.
-- **Intertoto:** se ha contado como competición oficial (la organiza la UEFA) en Forlán, Lopo y Negredo (los 2 partidos de la ronda previa de Champions). Si el autor prefiere no contarla, hay que rehacer esas estadísticas; las notas de cada ancla en `content/anchors/bands.yaml` dicen cuánto cambian.
-- **Premios del año natural:** los premios mundiales (Balón de Oro, FIFA World Player, once ideal de la FIFPro o de la UEFA) son de año natural y solapan dos temporadas. Se han registrado como `W` los del año que termina en la temporada (por ejemplo, el Balón de Oro 2010 y 2011 de Xavi), señalado en el nombre del premio. Xavi, Čech, Vidić y Henry ya tienen `V` cerca del máximo con o sin ellos; no cambia ningún resultado de forma apreciable. El premio al mejor centrocampista de la LFP de Xavi se ha contado como `L` (premio oficial de la liga). El Trofeo Zarra de Negredo no se registra (es de Marca).
-- **Datos que faltan (`null`):** `assists_all` es `null` en 23 de las 24 anclas (solo Lahm, con una fuente única). `minutes_all` es `null` en Čech, Vidić, Henry y Reina (la importancia se calcula con la liga; en Reina también `starts_all`), porque ninguna fuente accesible publica los minutos de todas las competiciones de la Premier League (FA Cup, Copa de la Liga). `clean_sheets_all` (solo de porteros) es `null` en Reina, por lo dicho arriba. `caps: 0` de varios jugadores (Ramis, Colsa, Nino, Iraizoz, Aranzubia, Manuel Pablo, Barral, Aduriz y otros) se apoya en que Wikipedia y las bases de datos no recogen ninguna internacionalidad absoluta; no hay una lista por partidos que lo confirme explícitamente.
-- **Clean sheets de Čech:** 28 en 48 partidos, tomado de la ficha oficial del Chelsea. La misma ficha dice "21" para el Guante de Oro, y la liga da 24, así que hay una discrepancia entre cifras de la misma temporada.
-- **Verificación independiente:** la tarea pide una verificación independiente de las estadísticas (como T2.14). **Todavía no se ha hecho**; los datos los han recogido agentes y los has de revisar. Los `verify: ok` indican que cada dato tiene fuente, no que lo haya confirmado un segundo revisor.
+Mantenidas con dudas: Aranzubia (se perdió las 6 primeras jornadas por lesión), Silva (30 de 38 partidos), Reina (33 de 38), Javi Martínez (31 de 38), Ramis (33 de 38, motivo sin verificar), Forlán (fichó el 21-ago-2004, tras 8 partidos de Intertoto que cuentan como oficiales: `available_matches_all: 51`). `caps: 0` de varios jugadores se apoya en que Wikipedia no lista internacionalidades absolutas.
 
 ## Qué hay en el repositorio
 
-- `content/anchors/club-seasons/_market-<temporada>/squad.yaml`: una plantilla de mercado por temporada (se reutiliza el formato del esquema, con `club_data` por jugador). Las medias las ha escrito la fórmula, no una persona.
-- `content/anchors/bands.yaml`: la banda esperada de cada ancla, el original del autor y el motivo de la sustitución.
-- `backend/tests/content/anchors/test_anchors.py`: carga y valida todas las anclas con los modelos del esquema y comprueba que las medias guardadas son las de la fórmula.
-- `backend/tests/content/anchors/report.py`: genera la tabla de este informe.
+- `content/anchors/club-seasons/_market-<temporada>/squad.yaml`: una plantilla por temporada, con las medias escritas por la CLI/fórmula (o el override, en los clave).
+- `content/anchors/bands.yaml`: banda esperada, si es clave y por qué, y las sustituciones.
+- `backend/tests/content/anchors/test_anchors.py` (valida las anclas con el esquema, comprueba que las medias son las de la fórmula o el override, y que las no clave cumplen el criterio) y `report.py` (esta tabla).
+- Cambios de la fórmula: `backend/src/mister/catalog/domain/ratings.py`, el esquema de `season_stats` (`clean_sheets_league`) y su JSON Schema, la rúbrica, el ADR-006, `content-format.md` y el contenido sintético recalculado con la CLI.
 
 ## Fuentes
 
-Toda estadística, fecha de nacimiento, internacionalidad y premio de cada ancla lleva sus URL en su `season_stats`, su `club_data` y su ficha de `squad.yaml`. Por tipo:
+Toda estadística, fecha de nacimiento, internacionalidad y premio de cada ancla lleva sus URL en su `season_stats`, su `club_data`, su override y su ficha de `squad.yaml`. Por tipo:
 
-- **BDFutbol** (minutos, partidos, titularidades, goles y partidos del club de la Liga y la Copa española, y de las competiciones europeas de los clubes españoles).
-- **Wikipedia** (fechas de nacimiento, fichajes, clasificaciones, partidos del club, internacionalidades, premios y palmarés).
-- **national-football-teams.com** y **RSSSF** (listas de partidos con la selección, para contar internacionalidades por fecha).
-- **premierleague.com** (API oficial), **StatMuse**, **chelseafc.com**, **lfchistory.net** (Premier League) y **fussballdaten.de** (Bundesliga).
+- **BDFutbol** (minutos, partidos, titularidades, goles y partidos del club de la Liga, la Copa y las competiciones europeas de los clubes españoles; porterías a cero calculadas con sus fichas de partido).
+- **Wikipedia** (nacimiento, fichajes, clasificaciones, partidos del club, internacionalidades, premios, listas de convocados y rankings del Balón de Oro y del FIFA World Player).
+- **national-football-teams.com** y **RSSSF** (partidos con la selección, para contar por fecha).
+- **premierleague.com**, **StatMuse**, **chelseafc.com**, **lfchistory.net** (Premier League), **fussballdaten.de** (Bundesliga) y **malagacf.com** (finalistas de los Premios LFP 2011-12).
 
-Lista completa de URL usadas (las mismas que figuran en los YAML):
+Lista completa de URL (las mismas que figuran en los YAML):
 
 - <https://en.wikipedia.org/wiki/2003%E2%80%9304_Arsenal_F.C._season>
 - <https://en.wikipedia.org/wiki/2004%E2%80%9305_Chelsea_F.C._season>
 - <https://en.wikipedia.org/wiki/2004%E2%80%9305_La_Liga>
 - <https://en.wikipedia.org/wiki/2004%E2%80%9305_Villarreal_CF_season>
+- <https://en.wikipedia.org/wiki/2005_Ballon_d%27Or>
 - <https://en.wikipedia.org/wiki/2005%E2%80%9306_FA_Premier_League>
 - <https://en.wikipedia.org/wiki/2005%E2%80%9306_La_Liga>
 - <https://en.wikipedia.org/wiki/2005%E2%80%9306_Liverpool_F.C._season>
+- <https://en.wikipedia.org/wiki/2006_FIFA_World_Cup_squads>
 - <https://en.wikipedia.org/wiki/2008%E2%80%9309_Athletic_Bilbao_season>
 - <https://en.wikipedia.org/wiki/2008%E2%80%9309_Deportivo_de_La_Coru%C3%B1a_season>
 - <https://en.wikipedia.org/wiki/2008%E2%80%9309_La_Liga>
 - <https://en.wikipedia.org/wiki/2008%E2%80%9309_Manchester_United_F.C._season>
+- <https://en.wikipedia.org/wiki/2009_Ballon_d%27Or>
 - <https://en.wikipedia.org/wiki/2009%E2%80%9310_Bundesliga>
 - <https://en.wikipedia.org/wiki/2009%E2%80%9310_FC_Bayern_Munich_season>
 - <https://en.wikipedia.org/wiki/2009%E2%80%9310_La_Liga>
@@ -186,6 +143,7 @@ Lista completa de URL usadas (las mismas que figuran en los YAML):
 - <https://en.wikipedia.org/wiki/2010%E2%80%9311_FC_Barcelona_season>
 - <https://en.wikipedia.org/wiki/2010%E2%80%9311_La_Liga>
 - <https://en.wikipedia.org/wiki/2010%E2%80%9311_Sporting_de_Gij%C3%B3n_season>
+- <https://en.wikipedia.org/wiki/2010_FIFA_World_Cup_squads>
 - <https://en.wikipedia.org/wiki/2011%E2%80%9312_Athletic_Bilbao_season>
 - <https://en.wikipedia.org/wiki/2011%E2%80%9312_La_Liga>
 - <https://en.wikipedia.org/wiki/2012%E2%80%9313_La_Liga>
@@ -199,6 +157,8 @@ Lista completa de URL usadas (las mismas que figuran en los YAML):
 - <https://en.wikipedia.org/wiki/David_Silva>
 - <https://en.wikipedia.org/wiki/Diego_Forl%C3%A1n>
 - <https://en.wikipedia.org/wiki/Diego_L%C3%B3pez_(Spanish_footballer,_born_1981>
+- <https://en.wikipedia.org/wiki/ESM_Team_of_the_Year>
+- <https://en.wikipedia.org/wiki/FIFA_World_Player_of_the_Year>
 - <https://en.wikipedia.org/wiki/FIFPro_World_XI>
 - <https://en.wikipedia.org/wiki/Gabriel_Milito>
 - <https://en.wikipedia.org/wiki/Gonzalo_Colsa>
@@ -218,8 +178,11 @@ Lista completa de URL usadas (las mismas que figuran en los YAML):
 - <https://en.wikipedia.org/wiki/Philipp_Lahm>
 - <https://en.wikipedia.org/wiki/Premier_League_Golden_Glove>
 - <https://en.wikipedia.org/wiki/Thierry_Henry>
+- <https://en.wikipedia.org/wiki/UEFA_Euro_2012_squads>
 - <https://en.wikipedia.org/wiki/UEFA_Team_of_the_Year>
 - <https://en.wikipedia.org/wiki/Xavi_(footballer,_born_1980>
+- <https://es.wikipedia.org/wiki/Premios_LaLiga>
+- <https://es.wikipedia.org/wiki/Primera_Divisi%C3%B3n_de_Espa%C3%B1a_2008-09>
 - <https://footballapi.pulselive.com/football/stats/player/1659?comps=1&compSeasons=12>
 - <https://footballapi.pulselive.com/football/stats/player/2935?comps=1&compSeasons=17>
 - <https://premierleague.com/news/3251101>
@@ -257,6 +220,9 @@ Lista completa de URL usadas (las mismas que figuran en los YAML):
 - <https://www.bdfutbol.com/es/j/j970.html>
 - <https://www.bdfutbol.com/es/j/j992.html>
 - <https://www.bdfutbol.com/es/p/p.php?id=25202>
+- <https://www.bdfutbol.com/es/p/p.php?id=25208>
+- <https://www.bdfutbol.com/es/p/p.php?id=26057>
+- <https://www.bdfutbol.com/es/p/p.php?id=27702>
 - <https://www.bdfutbol.com/es/p/p.php?id=502242>
 - <https://www.bdfutbol.com/es/t/t2005-0639.html>
 - <https://www.bdfutbol.com/es/t/t2005-0639.html?tab=partits>
@@ -291,6 +257,8 @@ Lista completa de URL usadas (las mismas que figuran en los YAML):
 - <https://www.chelseafc.com/en/news/2019/06/21/petr-cech-factfile>
 - <https://www.fussballdaten.de/person/philipp-lahm/leistungsdaten/>
 - <https://www.lfchistory.net/players/1126>
+- <https://www.lfchistory.net/players/1126/games-per-season/115>
+- <https://www.malagacf.com/noticias/isco-y-cazorla-finalistas-de-los-premios-lfp-2012>
 - <https://www.national-football-teams.com/player/11656/Pepe_Reina.html>
 - <https://www.national-football-teams.com/player/17397/David_Silva.html>
 - <https://www.national-football-teams.com/player/2573/Philipp_Lahm.html>
