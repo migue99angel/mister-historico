@@ -160,12 +160,13 @@ def test_alerts_are_printed_as_warnings_and_do_not_fail_the_run(root: Path) -> N
         for player in data["players"]:
             player["season_stats"].update(minutes_all=1260, starts_all=14, appearances_all=14)
             player["season_stats"].update(
-                minutes_league=900, starts_league=10, appearances_league=14
+                minutes_league=900, starts_league=10, appearances_league=10
             )
             player["season_stats"]["goals_all"] = 12
             player["season_stats"]["assists_all"] = 12
             player["season_stats"]["caps"] = 8
             player.pop("rating_override", None)
+            player["season_stats"].pop("available_matches_all", None)
         data["club_data"]["level_tier"] = "A"
 
     edit(root, inflate)

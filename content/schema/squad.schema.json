@@ -35,7 +35,7 @@
     },
     "ClubData": {
       "additionalProperties": false,
-      "description": "What the formula needs to know of the club in the season (rubric sections 2.1 and 3).\n\n`level_tier_basis` states the criterion (final position, best European round) so a reviewer\ncan check the tier.",
+      "description": "What the formula needs to know of the club in the season (rubric sections 2.1 and 3).\n\n`level_tier_basis` states the criterion (final position, best European round) so a reviewer\ncan check the tier. `club_name` names the real club of a market player, whose club is not\none of the game; it is not used in a club squad.",
       "properties": {
         "club_matches_all": {
           "anyOf": [
@@ -60,6 +60,19 @@
             }
           ],
           "title": "Club Matches League"
+        },
+        "club_name": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Club Name"
         },
         "level_tier": {
           "anyOf": [
@@ -123,7 +136,7 @@
     },
     "PlayerEntry": {
       "additionalProperties": false,
-      "description": "A player in a club-season squad. `sources` back his membership of the squad.\n\n`position`, `age` and `rating` may be `null` only while the player is `verify: pending`.\nThe rating is computed from `season_stats` and the club's `club_data` (ADR-006) and checked\nagainst the formula by the tree validation. `rating_override` replaces it, with a\n`rationale` and `sources`; `rating_rationale` only makes sense next to an override.\nStatistics are required in a club squad and absent in a market squad (it has no club).",
+      "description": "A player in a club-season squad. `sources` back his membership of the squad.\n\n`position`, `age` and `rating` may be `null` only while the player is `verify: pending`.\nThe rating is computed from `season_stats` and the club's `club_data` (ADR-006) and checked\nagainst the formula by the tree validation. `rating_override` replaces it, with a\n`rationale` and `sources`. A player of a market squad has no club in the game, so he carries\nthe `club_data` of his own real club; in a club squad the squad's `club_data` applies.",
       "properties": {
         "age": {
           "anyOf": [
@@ -142,6 +155,17 @@
           "minLength": 1,
           "title": "Alias Name",
           "type": "string"
+        },
+        "club_data": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ClubData"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "display_name": {
           "minLength": 1,
@@ -218,29 +242,8 @@
           ],
           "default": null
         },
-        "rating_rationale": {
-          "anyOf": [
-            {
-              "minLength": 1,
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Rating Rationale"
-        },
         "season_stats": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/SeasonStats"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "$ref": "#/$defs/SeasonStats"
         },
         "sources": {
           "description": "URLs backing the datum.",
@@ -282,7 +285,8 @@
         "position",
         "age",
         "rating",
-        "key"
+        "key",
+        "season_stats"
       ],
       "title": "PlayerEntry",
       "type": "object"
@@ -668,8 +672,7 @@
         {
           "type": "null"
         }
-      ],
-      "default": null
+      ]
     },
     "club_season": {
       "maxLength": 64,
@@ -740,6 +743,7 @@
     "club",
     "season",
     "real_league",
+    "club_data",
     "players"
   ],
   "title": "SquadFile",

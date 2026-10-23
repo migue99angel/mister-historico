@@ -5,73 +5,16 @@ through a `RatingSheetStore` port (ADR-006). The statistics are the input and th
 output: a rating is never written by hand (rubric section 0, rule 4).
 """
 
-from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Protocol
 
-from mister.catalog.domain.rating_alerts import RatedPlayer, rating_alerts
-from mister.catalog.domain.ratings import (
-    ClubContext,
-    PlayerStats,
-    RatingResult,
-    compute_rating,
-    override_problem,
+from mister.catalog.application.ports import (
+    ClubSeasonRatings,
+    PlayerNotInSquadError,
+    PlayerRatingSource,
+    RatingSheetStore,
 )
-from mister.shared_kernel.errors import DomainError
-
-
-class ClubSeasonRatingsUnavailableError(DomainError):
-    """The club-season cannot be rated: it does not exist, has no squad or is invalid."""
-
-    code = "club_season_ratings_unavailable"
-
-
-class PlayerNotInSquadError(DomainError):
-    """The player is not in the squad of the club-season."""
-
-    code = "player_not_in_squad"
-
-    def __init__(self, club_season: str, player_id: str) -> None:
-        super().__init__(f"{player_id} is not in the squad of {club_season}")
-        self.club_season = club_season
-        self.player_id = player_id
-
-
-@dataclass(frozen=True, slots=True)
-class PlayerRatingSource:
-    """A player as the formula sees him, with the rating currently stored."""
-
-    player_id: str
-    display_name: str
-    stats: PlayerStats
-    stored_rating: int | None
-    override_value: int | None
-    override_sources: int = 0
-    """How many distinct sources back the override."""
-
-
-@dataclass(frozen=True, slots=True)
-class ClubSeasonRatings:
-    """Everything needed to rate the players of one club-season."""
-
-    club_season: str
-    club: ClubContext
-    players: tuple[PlayerRatingSource, ...]
-
-
-class RatingSheetStore(Protocol):
-    """Reads the rating inputs of a club-season and saves the computed ratings."""
-
-    def load(self, club_season: str) -> ClubSeasonRatings:
-        """Raises `ClubSeasonRatingsUnavailableError` if the club-season cannot be rated."""
-        ...
-
-    def save(self, club_season: str, ratings: Mapping[str, int | None]) -> None:
-        """Store the rating of each listed player; `None` leaves him unrated and pending.
-
-        Raises `PlayerNotInSquadError` for a player that is not in the squad.
-        """
-        ...
+from mister.catalog.domain.rating_alerts import RatedPlayer, rating_alerts
+from mister.catalog.domain.ratings import RatingResult, compute_rating, override_issue
 
 
 @dataclass(frozen=True, slots=True)
@@ -99,6 +42,12 @@ class PlayerRatingLine:
     @property
     def discrepancy(self) -> bool:
         return self.stale or self.problem is not None
+
+    @property
+    def notes(self) -> tuple[str, ...]:
+        """Fallbacks used and statistics missing, as the rubric (section 5) asks to report."""
+        missing = (f"missing: {', '.join(self.result.missing)}",) if self.result.missing else ()
+        return (*self.result.notes, *missing)
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,30 +93,27 @@ class RatingsTool:
 
     @staticmethod
     def _report(sheet: ClubSeasonRatings) -> RatingsReport:
-        lines = tuple(_line(player, sheet.club) for player in sheet.players)
+        lines = tuple(_line(player) for player in sheet.players)
         rated = [
             RatedPlayer(line.player_id, line.expected, line.age)
             for line in lines
             if line.expected is not None
         ]
-        return RatingsReport(sheet.club_season, lines, rating_alerts(rated))
+        warnings = tuple(
+            f"{player.player_id}: joined or left in mid-season without available_matches_all"
+            for player in sheet.players
+            if player.partial_season and player.stats.available_matches_all is None
+        )
+        return RatingsReport(sheet.club_season, lines, (*rating_alerts(rated), *warnings))
 
 
-def _line(player: PlayerRatingSource, club: ClubContext) -> PlayerRatingLine:
-    result = compute_rating(player.stats, club)
+def _line(player: PlayerRatingSource) -> PlayerRatingLine:
+    result = compute_rating(player.stats, player.club)
     expected = result.rating
     problem: str | None = None
     if player.override_value is not None:
         expected = player.override_value
-        if result.rating is None:
-            problem = (
-                "an override cannot replace a missing statistic; "
-                f"statistics are missing: {', '.join(result.missing)}"
-            )
-        else:
-            problem = override_problem(
-                result.rating, player.override_value, player.override_sources
-            )
+        problem = override_issue(result, player.override_value, player.override_sources)
     return PlayerRatingLine(
         player_id=player.player_id,
         display_name=player.display_name,

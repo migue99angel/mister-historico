@@ -26,6 +26,12 @@ MatchCount = Annotated[int, Field(ge=1)]
 LevelTierValue = Literal["A", "B", "C", "D"]
 """Level of the club in the season (rubric section 3)."""
 
+MAX_MINUTES_PER_APPEARANCE = 120
+"""A full match with extra time."""
+
+MAX_SCORING_PER_APPEARANCE = 4
+"""Sanity ceiling for goals or assists per appearance; anything above is a copy error."""
+
 AwardTierValue = Literal["W", "L"]
 """`W`: world-level individual award. `L`: official award of the club's league."""
 
@@ -74,7 +80,32 @@ class SeasonStats(SourcedModel):
             in_all = getattr(self, f"{name}_all")
             if in_league is not None and in_all is not None and in_league > in_all:
                 raise ValueError(f"{name}_league cannot exceed {name}_all")
+        for scope in ("league", "all"):
+            minutes = getattr(self, f"minutes_{scope}")
+            appearances = getattr(self, f"appearances_{scope}")
+            if (
+                minutes is not None
+                and appearances is not None
+                and minutes > MAX_MINUTES_PER_APPEARANCE * appearances
+            ):
+                raise ValueError(
+                    f"minutes_{scope} cannot exceed {MAX_MINUTES_PER_APPEARANCE} per appearance"
+                )
+        self._check_counts_per_appearance()
         return self
+
+    def _check_counts_per_appearance(self) -> None:
+        appearances = self.appearances_all
+        if appearances is None:
+            return
+        for name in ("goals_all", "assists_all"):
+            value = getattr(self, name)
+            if value is not None and value > MAX_SCORING_PER_APPEARANCE * appearances:
+                raise ValueError(
+                    f"{name} cannot exceed {MAX_SCORING_PER_APPEARANCE} per appearance"
+                )
+        if self.clean_sheets_all is not None and self.clean_sheets_all > appearances:
+            raise ValueError("clean_sheets_all cannot exceed appearances_all")
 
 
 class RatingOverride(ContentModel):
@@ -93,7 +124,8 @@ class ClubData(SourcedModel):
     """What the formula needs to know of the club in the season (rubric sections 2.1 and 3).
 
     `level_tier_basis` states the criterion (final position, best European round) so a reviewer
-    can check the tier.
+    can check the tier. `club_name` names the real club of a market player, whose club is not
+    one of the game; it is not used in a club squad.
     """
 
     nullable_when_pending = ("club_matches_all", "club_matches_league", "level_tier")
@@ -102,6 +134,7 @@ class ClubData(SourcedModel):
     club_matches_league: MatchCount | None
     level_tier: LevelTierValue | None
     level_tier_basis: NonBlank | None = None
+    club_name: NonBlank | None = None
 
     @model_validator(mode="after")
     def _check_club_data(self) -> Self:

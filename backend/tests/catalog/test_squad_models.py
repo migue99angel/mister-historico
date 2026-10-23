@@ -589,17 +589,28 @@ def test_league_matches_cannot_exceed_all_matches() -> None:
         ({"available_matches_all": 43}, "available_matches_all cannot exceed club_matches_all"),
         ({"appearances_all": 43}, "appearances_all cannot exceed the matches"),
         (
-            {"available_matches_all": 10, "appearances_all": 11, "starts_all": 5},
+            {
+                "available_matches_all": 10,
+                "appearances_all": 11,
+                "starts_all": 5,
+                "appearances_league": 5,
+                "starts_league": 2,
+                "minutes_league": 400,
+                "minutes_all": 900,
+            },
             "appearances_all cannot exceed the matches",
         ),
-        ({"appearances_league": 39}, "appearances_league cannot exceed club_matches_league"),
+        (
+            {"appearances_league": 39, "appearances_all": 40},
+            "appearances_league cannot exceed club_matches_league",
+        ),
         ({"minutes_all": 5000}, "minutes_all cannot exceed 120 per appearance"),
         (
             {"minutes_league": 3100, "minutes_all": 4000, "appearances_all": 40},
             "minutes_league cannot exceed 120 per appearance",
         ),
-        ({"goals_all": 60}, "goals_all cannot exceed 4 per appearance"),
-        ({"assists_all": 60}, "assists_all cannot exceed 4 per appearance"),
+        ({"goals_all": 200}, "goals_all cannot exceed 4 per appearance"),
+        ({"assists_all": 200}, "assists_all cannot exceed 4 per appearance"),
     ],
 )
 def test_statistics_that_cannot_be_true_are_rejected(stats: dict[str, Any], message: str) -> None:

@@ -52,7 +52,7 @@ players:
   alias_name: Jugador TFC-02
   position: GK
   age: 35
-  rating: 69
+  rating: 64
   key: false
   season_stats:
     minutes_league: 550
@@ -267,7 +267,7 @@ players:
   alias_name: Jugador TFC-11
   position: MF
   age: 21
-  rating: 72
+  rating: 70
   key: true
   season_stats:
     minutes_league: 627
@@ -438,7 +438,7 @@ players:
   alias_name: Jugador TFC-18
   position: FW
   age: 34
-  rating: 67
+  rating: 66
   key: false
   season_stats:
     minutes_league: 491

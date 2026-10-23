@@ -52,7 +52,7 @@ players:
   alias_name: Jugador DMA-02
   position: GK
   age: 23
-  rating: 66
+  rating: 61
   key: false
   season_stats:
     minutes_league: 353

@@ -1,6 +1,11 @@
 """Ratings checks of the tree: the stored rating is the formula's, or the override's (ADR-006)."""
 
-from mister.catalog.domain.ratings import RatingResult, compute_rating, override_problem
+from mister.catalog.domain.ratings import (
+    RatingResult,
+    compute_rating,
+    distinct_source_count,
+    override_issue,
+)
 from mister.catalog.infrastructure.content_schema.integrity import squad_path
 from mister.catalog.infrastructure.content_schema.issues import IssueSink
 from mister.catalog.infrastructure.content_schema.ratings_bridge import (
@@ -15,13 +20,12 @@ from mister.catalog.infrastructure.content_schema.tree import ContentTree
 def check_ratings(tree: ContentTree, sink: IssueSink) -> None:
     """Every stored rating equals `compute_rating` of its statistics, unless it is overridden.
 
-    Market squads are exempt: they have no club, so there is nothing to compute from.
+    A market player is measured against his own club (`club_data` of the player); every other
+    player against the club-season of his squad.
     """
     for squad in tree.squads.values():
-        if squad.is_market:
-            continue
-        club = club_context(squad)
         for index, player in enumerate(squad.players):
+            club = club_context(player.club_data or squad.club_data)
             result = compute_rating(player_stats(player), club)
             _check_player(squad, index, player, result, sink)
 
@@ -50,10 +54,5 @@ def _check_player(
 
 
 def _override_problem(override: RatingOverride, result: RatingResult) -> str | None:
-    if result.rating is None:
-        return (
-            "an override cannot replace a missing statistic; "
-            f"statistics are missing: {', '.join(result.missing)}"
-        )
-    distinct_sources = len({str(url) for url in override.sources})
-    return override_problem(result.rating, override.value, distinct_sources)
+    sources = distinct_source_count(str(url) for url in override.sources)
+    return override_issue(result, override.value, sources)

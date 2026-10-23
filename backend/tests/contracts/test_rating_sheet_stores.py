@@ -16,7 +16,10 @@ FIXTURE_ROOT = Path(__file__).parent.parent / "fixtures" / "content"
 class TestInMemoryRatingSheetStore(RatingSheetStoreContract):
     @pytest.fixture
     def store(self) -> RatingSheetStore:
-        return InMemoryRatingSheetStore([YamlRatingSheetStore(FIXTURE_ROOT).load(CLUB_SEASON)])
+        yaml_store = YamlRatingSheetStore(FIXTURE_ROOT)
+        return InMemoryRatingSheetStore(
+            [yaml_store.load(CLUB_SEASON), yaml_store.load("_market-2000-01")]
+        )
 
 
 class TestYamlRatingSheetStore(RatingSheetStoreContract):

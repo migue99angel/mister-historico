@@ -67,8 +67,8 @@ class PlayerEntry(SourcedModel):
     `position`, `age` and `rating` may be `null` only while the player is `verify: pending`.
     The rating is computed from `season_stats` and the club's `club_data` (ADR-006) and checked
     against the formula by the tree validation. `rating_override` replaces it, with a
-    `rationale` and `sources`; `rating_rationale` only makes sense next to an override.
-    Statistics are required in a club squad and absent in a market squad (it has no club).
+    `rationale` and `sources`. A player of a market squad has no club in the game, so he carries
+    the `club_data` of his own real club; in a club squad the squad's `club_data` applies.
     """
 
     nullable_when_pending = ("position", "age", "rating")
@@ -81,28 +81,21 @@ class PlayerEntry(SourcedModel):
     age: Annotated[int, Field(ge=MIN_AGE, le=MAX_AGE)] | None
     rating: Rating | None
     key: bool
-    season_stats: SeasonStats | None = None
+    season_stats: SeasonStats
+    club_data: ClubData | None = None
     rating_override: RatingOverride | None = None
-    rating_rationale: NonBlank | None = None
     joined_on: date | None = None
     left_on: date | None = None
 
     @model_validator(mode="after")
     def _check_player(self) -> Self:
-        if self.rating_rationale and self.rating_override is None:
-            raise ValueError("rating_rationale is only for a rating_override")
         if self.position is not None:
             allowed = _SUBROLES_BY_POSITION[self.position]
             if self.subrole is not None and self.subrole not in allowed:
                 raise ValueError(
                     f"subrole {self.subrole} is not valid for position {self.position}"
                 )
-            stats = self.season_stats
-            if (
-                stats is not None
-                and stats.clean_sheets_all is not None
-                and self.position is not Position.GK
-            ):
+            if self.season_stats.clean_sheets_all is not None and self.position is not Position.GK:
                 raise ValueError("clean_sheets_all is only for goalkeepers")
         if self.joined_on and self.left_on and self.left_on < self.joined_on:
             raise ValueError("left_on must not be before joined_on")
@@ -157,7 +150,7 @@ class SquadFile(_ClubSeasonFile):
     """A full squad. Its `sources` and `verify` cover the squad as a whole."""
 
     real_league: RealLeague | None
-    club_data: ClubData | None = None
+    club_data: ClubData | None
     default_tactic: Tactic = DEFAULT_TACTIC
     players: Annotated[tuple[PlayerEntry, ...], Field(min_length=1)]
 
@@ -175,16 +168,55 @@ class SquadFile(_ClubSeasonFile):
             raise ValueError(f"duplicate player_id: {', '.join(duplicates)}")
         first, last = season_window(self.season)
         for index, entry in enumerate(self.players):
-            if self.is_market and entry.season_stats is not None:
-                raise ValueError(f"players.{index}.season_stats: a market squad has no club")
-            if not self.is_market and entry.season_stats is None:
-                raise ValueError(f"players.{index}.season_stats is required in a club squad")
+            self._check_club_data_of(index, entry)
             for value in (entry.joined_on, entry.left_on):
                 if value is not None and not first <= value <= last:
                     raise ValueError(
                         f"{entry.player_id}: {value} is outside the season window {first}..{last}"
                     )
         return self
+
+    def _check_club_data_of(self, index: int, entry: PlayerEntry) -> None:
+        """Where the player's club data lives, and the statistics against it (rubric 2.1)."""
+        where = f"players.{index}"
+        if not self.is_market:
+            if entry.club_data is not None:
+                raise ValueError(f"{where}.club_data is only for a market player")
+            club = self.club_data
+        else:
+            club = entry.club_data
+            if club is None:
+                raise ValueError(f"{where}.club_data is required for a market player")
+            if club.club_name is None:
+                raise ValueError(f"{where}.club_data.club_name is required for a market player")
+        if club is not None:
+            _check_stats_against_club(where, entry.season_stats, club)
+
+
+def _check_stats_against_club(where: str, stats: SeasonStats, club: ClubData) -> None:
+    """A player cannot have played more matches than his club did (or than he was registered)."""
+    all_matches = club.club_matches_all
+    available = stats.available_matches_all
+    if available is not None and all_matches is not None and available > all_matches:
+        raise ValueError(
+            f"{where}.season_stats: available_matches_all cannot exceed club_matches_all"
+        )
+    playable = available if available is not None else all_matches
+    appearances = stats.appearances_all
+    if appearances is not None and playable is not None and appearances > playable:
+        raise ValueError(
+            f"{where}.season_stats: appearances_all cannot exceed the matches the player could play"
+            f" ({playable})"
+        )
+    league = club.club_matches_league
+    if (
+        stats.appearances_league is not None
+        and league is not None
+        and stats.appearances_league > league
+    ):
+        raise ValueError(
+            f"{where}.season_stats: appearances_league cannot exceed club_matches_league"
+        )
 
 
 class AggregateFile(_ClubSeasonFile):

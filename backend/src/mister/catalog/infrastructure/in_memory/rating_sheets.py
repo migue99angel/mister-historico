@@ -3,7 +3,7 @@
 from collections.abc import Iterable, Mapping
 from dataclasses import replace
 
-from mister.catalog.application.ratings_tool import (
+from mister.catalog.application.ports import (
     ClubSeasonRatings,
     ClubSeasonRatingsUnavailableError,
     PlayerNotInSquadError,
