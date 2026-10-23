@@ -416,7 +416,7 @@
     },
     "SeasonStats": {
       "additionalProperties": false,
-      "description": "Public statistics of one player in one season (rubric section 2.1).\n\n`null` means \"not found in the sources\". The statistics the formula cannot do without may\nbe `null` only with `verify: pending`; the optional ones (starts, assists, clean sheets,\nall-competitions figures) may be `null` in a verified datum, and the formula has a\ndocumented fallback for each (rubric section 5). Position and age live in the player.",
+      "description": "Public statistics of one player in one season (rubric section 2.1).\n\n`null` means \"not found in the sources\". The statistics the formula cannot do without may\nbe `null` only with `verify: pending`; the optional ones (starts, clean sheets,\nall-competitions figures) may be `null` in a verified datum, and the formula has a\ndocumented fallback for each (rubric section 5). Position and age live in the player.\n\n`assists_all` is informational: the formula does not use it (rubric section 4.3), because\nno permitted source publishes reliable assists for 2003-2014.",
       "properties": {
         "appearances_all": {
           "anyOf": [
@@ -507,6 +507,19 @@
           ],
           "default": null,
           "title": "Clean Sheets All"
+        },
+        "clean_sheets_league": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Clean Sheets League"
         },
         "goals_all": {
           "anyOf": [

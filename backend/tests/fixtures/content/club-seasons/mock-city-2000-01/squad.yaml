@@ -27,7 +27,7 @@ players:
   alias_name: Jugador MCT-01
   position: GK
   age: 34
-  rating: 55
+  rating: 56
   key: false
   season_stats:
     minutes_league: 230
@@ -52,7 +52,7 @@ players:
   alias_name: Jugador MCT-02
   position: GK
   age: 23
-  rating: 59
+  rating: 61
   key: false
   season_stats:
     minutes_league: 510
@@ -76,7 +76,7 @@ players:
   alias_name: Jugador MCT-03
   position: DF
   age: 24
-  rating: 56
+  rating: 58
   key: true
   season_stats:
     minutes_league: 401
@@ -100,7 +100,7 @@ players:
   alias_name: Jugador MCT-04
   position: DF
   age: 28
-  rating: 52
+  rating: 53
   key: false
   season_stats:
     minutes_league: 245
@@ -123,7 +123,7 @@ players:
   alias_name: Jugador MCT-05
   position: DF
   age: 26
-  rating: 54
+  rating: 55
   key: false
   season_stats:
     minutes_league: 313
@@ -146,7 +146,7 @@ players:
   alias_name: Jugador MCT-06
   position: DF
   age: 24
-  rating: 51
+  rating: 52
   key: false
   season_stats:
     minutes_league: 298
@@ -169,7 +169,7 @@ players:
   alias_name: Jugador MCT-07
   position: DF
   age: 25
-  rating: 59
+  rating: 61
   key: true
   season_stats:
     minutes_league: 480
@@ -193,7 +193,7 @@ players:
   alias_name: Jugador MCT-08
   position: DF
   age: 34
-  rating: 55
+  rating: 57
   key: true
   season_stats:
     minutes_league: 392
@@ -214,7 +214,7 @@ players:
   alias_name: Jugador MCT-09
   position: MF
   age: 32
-  rating: 51
+  rating: 52
   key: false
   season_stats:
     minutes_league: 200
@@ -262,7 +262,7 @@ players:
   alias_name: Jugador MCT-11
   position: MF
   age: 20
-  rating: 52
+  rating: 53
   key: false
   season_stats:
     minutes_league: 230
@@ -285,7 +285,7 @@ players:
   alias_name: Jugador MCT-12
   position: MF
   age: 27
-  rating: 64
+  rating: 67
   key: true
   season_stats:
     minutes_league: 512
@@ -309,7 +309,7 @@ players:
   alias_name: Jugador MCT-13
   position: MF
   age: 31
-  rating: 53
+  rating: 55
   key: false
   season_stats:
     minutes_league: 287
@@ -333,7 +333,7 @@ players:
   alias_name: Jugador MCT-14
   position: MF
   age: 32
-  rating: 56
+  rating: 58
   key: false
   season_stats:
     minutes_league: 314
@@ -356,7 +356,7 @@ players:
   alias_name: Jugador MCT-15
   position: FW
   age: 28
-  rating: 66
+  rating: 67
   key: true
   season_stats:
     minutes_league: 461
@@ -380,7 +380,7 @@ players:
   alias_name: Jugador MCT-16
   position: FW
   age: 24
-  rating: 67
+  rating: 69
   key: true
   season_stats:
     minutes_league: 492
@@ -404,7 +404,7 @@ players:
   alias_name: Jugador MCT-17
   position: FW
   age: 23
-  rating: 51
+  rating: 52
   key: false
   season_stats:
     minutes_league: 209
@@ -427,7 +427,7 @@ players:
   alias_name: Jugador MCT-18
   position: FW
   age: 34
-  rating: 56
+  rating: 58
   key: false
   season_stats:
     minutes_league: 320
@@ -450,7 +450,7 @@ players:
   alias_name: Jugador MCT-19
   position: FW
   age: 21
-  rating: 66
+  rating: 68
   key: true
   season_stats:
     minutes_league: 480
@@ -474,7 +474,7 @@ players:
   alias_name: Jugador XFER-01
   position: MF
   age: 27
-  rating: 54
+  rating: 56
   key: false
   season_stats:
     minutes_league: 157
