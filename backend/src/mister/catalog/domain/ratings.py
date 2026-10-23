@@ -9,13 +9,16 @@ Arithmetic uses `fractions.Fraction`, so there is no floating-point noise. The r
 on exact values.
 
 Missing data (rubric section 5) never produces an invented value: when a required statistic is
-`None`, the result has `rating=None` and lists what is missing.
+`None`, the result has `rating=None` and lists what is missing. An optional count that is not
+found (assists, clean sheets) counts as 0, so finding it later can never lower the rating.
 """
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum
 from fractions import Fraction
 from math import floor
+from urllib.parse import urlsplit
 
 from mister.shared_kernel.errors import InvalidValueError
 
@@ -34,9 +37,7 @@ _W_AWARDS = Fraction(7)
 _MINUTES_WEIGHT = Fraction("0.70")
 _STARTS_WEIGHT = Fraction("0.30")
 _ASSIST_WEIGHT = Fraction("0.5")
-_NO_ASSISTS_DISCOUNT = Fraction("0.80")
 _GK_CLEAN_SHEET_CAP = Fraction("0.55")
-_GK_NEUTRAL_PRODUCTION = Fraction("0.35")
 _CAPS_SATURATION = 8
 _WORLD_AWARD = Fraction("0.60")
 _LEAGUE_AWARD = Fraction("0.35")
@@ -157,6 +158,7 @@ class _Basis:
     minutes: int
     starts: int | None
     available: int
+    """Matches the importance is measured against."""
 
 
 def round_raw(raw: Fraction) -> int:
@@ -186,6 +188,9 @@ def compute_rating(stats: PlayerStats, club: ClubContext) -> RatingResult:
     basis, missing_basis = _select_basis(stats, club)
     if missing_basis is not None:
         missing.append(missing_basis)
+    played_by_club = _matches_of_the_club(stats, club)
+    if played_by_club is None:
+        missing.append("club_matches_all")
     if club.level_tier is None:
         missing.append("level_tier")
     position, goals, caps, awards, tier = (
@@ -198,6 +203,7 @@ def compute_rating(stats: PlayerStats, club: ClubContext) -> RatingResult:
     if (
         missing
         or basis is None
+        or played_by_club is None
         or position is None
         or goals is None
         or caps is None
@@ -208,7 +214,7 @@ def compute_rating(stats: PlayerStats, club: ClubContext) -> RatingResult:
 
     notes = [f"basis: {basis.kind}"] if basis.kind is BasisKind.LEAGUE else []
     production, production_notes = _production(
-        position, goals, stats.assists_all, stats.clean_sheets_all, basis.available
+        position, goals, stats.assists_all, stats.clean_sheets_all, played_by_club
     )
     components = RatingComponents(
         importance=_importance(basis),
@@ -261,28 +267,32 @@ def _check_valid(stats: PlayerStats, club: ClubContext) -> None:
             raise InvalidValueError(f"invalid {name}: {value} is not positive")
 
 
-def _select_basis(stats: PlayerStats, club: ClubContext) -> tuple[_Basis | None, str | None]:
-    """Choose all-competitions data, or the league as a fallback (rubric section 5).
+def _matches_of_the_club(stats: PlayerStats, club: ClubContext) -> int | None:
+    """Matches of the club in all competitions that the player could play (the production base)."""
+    if stats.available_matches_all is not None:
+        return stats.available_matches_all
+    return club.club_matches_all
 
-    Returns the basis, or the name of what is missing.
+
+def _select_basis(stats: PlayerStats, club: ClubContext) -> tuple[_Basis | None, str | None]:
+    """Choose the data the importance uses: all competitions, or the league as a fallback.
+
+    Returns the basis, or the name of what is missing (rubric section 5).
     """
     if stats.minutes_all is not None and stats.appearances_all is not None:
-        available = stats.available_matches_all
+        available = _matches_of_the_club(stats, club)
         if available is None:
-            available = club.club_matches_all
-        if available is None:
-            return None, "club_matches_all"
+            return None, None  # reported as `club_matches_all` by the caller
         return _Basis(BasisKind.ALL, stats.minutes_all, stats.starts_all, available), None
     if stats.minutes_league is not None and stats.appearances_league is not None:
         if club.club_matches_league is None:
             return None, "club_matches_league"
+        league_matches = club.club_matches_league
+        if stats.available_matches_all is not None:
+            # a mid-season arrival cannot have played more league matches than he was registered for
+            league_matches = min(league_matches, stats.available_matches_all)
         return (
-            _Basis(
-                BasisKind.LEAGUE,
-                stats.minutes_league,
-                stats.starts_league,
-                club.club_matches_league,
-            ),
+            _Basis(BasisKind.LEAGUE, stats.minutes_league, stats.starts_league, league_matches),
             None,
         )
     return None, "minutes"
@@ -303,15 +313,13 @@ def _production(
     clean_sheets: int | None,
     available: int,
 ) -> tuple[Fraction, tuple[str, ...]]:
+    """Production per match of the club in all competitions; a missing count is a zero."""
     if position is Position.GK:
-        if clean_sheets is None:
-            return _GK_NEUTRAL_PRODUCTION, ("clean_sheets: null",)
-        return min(_ONE, Fraction(clean_sheets, available) / _GK_CLEAN_SHEET_CAP), ()
+        notes = ("clean_sheets: null",) if clean_sheets is None else ()
+        return min(_ONE, Fraction(clean_sheets or 0, available) / _GK_CLEAN_SHEET_CAP), notes
     cap = _GOALS_PER_MATCH_CAP[position]
-    if assists is None:
-        rate = Fraction(goals, available)
-        return min(_ONE, rate / (_NO_ASSISTS_DISCOUNT * cap)), ("assists: null",)
-    return min(_ONE, (goals + _ASSIST_WEIGHT * assists) / available / cap), ()
+    notes = ("assists: null",) if assists is None else ()
+    return min(_ONE, (goals + _ASSIST_WEIGHT * (assists or 0)) / available / cap), notes
 
 
 def _awards(awards: tuple[AwardTier, ...]) -> Fraction:
@@ -337,3 +345,31 @@ def override_problem(formula_rating: int, value: int, distinct_sources: int) -> 
             "from 7 to 12 points it needs at least two distinct sources"
         )
     return None
+
+
+def override_issue(result: RatingResult, value: int, distinct_sources: int) -> str | None:
+    """Why a `rating_override` of `value` is not acceptable for this formula result, or `None`.
+
+    An override cannot replace a statistic that is missing (rubric section 7.2); otherwise
+    the limits of section 7.4 apply (see `override_problem`).
+    """
+    if result.rating is None:
+        return (
+            "an override cannot replace a missing statistic; "
+            f"statistics are missing: {', '.join(result.missing)}"
+        )
+    return override_problem(result.rating, value, distinct_sources)
+
+
+def distinct_source_count(urls: Iterable[str]) -> int:
+    """How many different sources a list of URLs holds.
+
+    URLs are compared ignoring the case of scheme and host, the scheme itself (`http` and
+    `https`) and a trailing slash, so the same page written twice counts once.
+    """
+    return len({_source_key(url) for url in urls})
+
+
+def _source_key(url: str) -> tuple[str, str, str]:
+    parts = urlsplit(url.strip())
+    return (parts.netloc.lower(), parts.path.rstrip("/"), parts.query)
