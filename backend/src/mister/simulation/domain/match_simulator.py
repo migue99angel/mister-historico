@@ -59,8 +59,12 @@ class PoissonMatchSimulator:
         stream = rng.stream("match", str(setup.fixture.fixture_id), "penalties")
         # Provisional game-design parameters: no historical conversion rate or home bonus.
         balance = 0.5 * math.fsum(
-            (math.log(setup.home.attack), math.log(setup.away.defense),
-             -math.log(setup.away.attack), -math.log(setup.home.defense))
+            (
+                math.log(setup.home.attack),
+                math.log(setup.away.defense),
+                -math.log(setup.away.attack),
+                -math.log(setup.home.defense),
+            )
         )
         delta = _PENALTY_MAX_ADJUSTMENT * math.tanh(balance)
         home_probability = _PENALTY_BASE_PROBABILITY + delta

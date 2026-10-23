@@ -4,7 +4,8 @@ import math
 from typing import Any
 
 import pytest
-from hypothesis import given, strategies as st
+from hypothesis import given
+from hypothesis import strategies as st
 
 from mister.shared_kernel.errors import InvalidValueError
 from mister.simulation.domain.goal_model import PoissonGoalModel
