@@ -13,6 +13,7 @@ from mister.entrypoints.cli.app import app
 
 FIXTURE_ROOT = Path(__file__).parent.parent.parent / "fixtures" / "content"
 CLUB_SEASON = "test-fc-2000-01"
+REPO_CONTENT = Path(__file__).parents[4] / "content"
 SQUAD = Path("club-seasons") / CLUB_SEASON / "squad.yaml"
 runner = CliRunner()
 
@@ -165,7 +166,6 @@ def test_alerts_are_printed_as_warnings_and_do_not_fail_the_run(root: Path) -> N
             player["season_stats"]["assists_all"] = 12
             player["season_stats"]["caps"] = 8
             player.pop("rating_override", None)
-            player.pop("rating_rationale", None)
         data["club_data"]["level_tier"] = "A"
 
     edit(root, inflate)
@@ -191,3 +191,38 @@ def test_the_help_lists_the_content_command() -> None:
 
     assert result.exit_code == 0
     assert "content" in result.output
+
+
+def test_notes_of_the_fallbacks_are_printed_per_player(root: Path) -> None:
+    def mutate(data: dict[str, Any]) -> None:
+        data["players"][4]["season_stats"].pop("assists_all", None)
+        data["players"][5]["season_stats"].update(minutes_all=None, appearances_all=None)
+
+    edit(root, mutate)
+
+    result = run(root)
+
+    assert result.exit_code == 0, result.output
+    assert "note: tfc-05: assists: null" in result.output
+    assert "note: tfc-06: basis: league" in result.output
+
+
+def test_the_default_root_falls_back_to_the_content_of_the_repository(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ["content", "ratings", "compute", CLUB_SEASON, "--check"])
+
+    assert result.exit_code == 2
+    assert str(REPO_CONTENT) in result.output.replace("\n", "")
+
+
+def test_a_partial_season_without_available_matches_is_a_warning(root: Path) -> None:
+    edit(root, lambda d: d["players"][21]["season_stats"].pop("available_matches_all"))
+    edit(root, lambda d: d["players"][21].update(rating=1))
+
+    result = run(root)
+
+    assert "warning: tfc-22" in result.output
+    assert result.exit_code == 0

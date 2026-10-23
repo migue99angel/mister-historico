@@ -2,13 +2,13 @@
 
 import pytest
 
-from mister.catalog.application.ratings_tool import (
+from mister.catalog.application.ports import (
     ClubSeasonRatings,
     ClubSeasonRatingsUnavailableError,
     PlayerNotInSquadError,
     PlayerRatingSource,
-    RatingsTool,
 )
+from mister.catalog.application.ratings_tool import RatingsTool
 from mister.catalog.domain.ratings import AwardTier, ClubContext, LevelTier, PlayerStats, Position
 from mister.catalog.infrastructure.in_memory.rating_sheets import InMemoryRatingSheetStore
 
@@ -41,15 +41,25 @@ def source(
     player_stats: PlayerStats,
     stored: int | None,
     override: int | None = None,
+    *,
+    partial_season: bool = False,
 ) -> PlayerRatingSource:
-    return PlayerRatingSource(player_id, f"Name {player_id}", player_stats, stored, override)
+    return PlayerRatingSource(
+        player_id,
+        f"Name {player_id}",
+        player_stats,
+        CLUB_CONTEXT,
+        stored,
+        override,
+        partial_season=partial_season,
+    )
 
 
 CLUB_CONTEXT = ClubContext(club_matches_all=20, club_matches_league=16, level_tier=LevelTier.C)
 
 
 def tool(*players: PlayerRatingSource) -> tuple[RatingsTool, InMemoryRatingSheetStore]:
-    store = InMemoryRatingSheetStore([ClubSeasonRatings(CLUB, CLUB_CONTEXT, players)])
+    store = InMemoryRatingSheetStore([ClubSeasonRatings(CLUB, players)])
     return RatingsTool(store), store
 
 
@@ -189,3 +199,17 @@ def test_an_unknown_club_season_fails() -> None:
         ready.check("other-fc-2000-01")
 
     assert raised.value.code == "club_season_ratings_unavailable"
+
+
+def test_a_partial_season_without_available_matches_is_warned_about() -> None:
+    ready, _ = tool(source("late", stats(), 1, partial_season=True))
+
+    report = ready.check(CLUB)
+
+    assert any("late" in alert and "available_matches_all" in alert for alert in report.alerts)
+
+
+def test_a_partial_season_with_available_matches_raises_no_warning() -> None:
+    ready, _ = tool(source("late", stats(available_matches_all=10), 1, partial_season=True))
+
+    assert ready.check(CLUB).alerts == ()

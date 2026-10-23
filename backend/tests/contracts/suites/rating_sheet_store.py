@@ -5,7 +5,7 @@ The content under `backend/tests/fixtures/content/` is the shared data: Test FC 
 
 import pytest
 
-from mister.catalog.application.ratings_tool import (
+from mister.catalog.application.ports import (
     ClubSeasonRatingsUnavailableError,
     PlayerNotInSquadError,
     RatingSheetStore,
@@ -25,7 +25,7 @@ class RatingSheetStoreContract:
         sheet = store.load(CLUB_SEASON)
 
         assert sheet.club_season == CLUB_SEASON
-        assert sheet.club.level_tier is LevelTier.B
+        assert sheet.players[0].club.level_tier is LevelTier.B
         assert len(sheet.players) == 22
         assert sheet.players[0].player_id == "tfc-01"
         assert sheet.players[0].stats.minutes_all is not None
@@ -39,6 +39,23 @@ class RatingSheetStoreContract:
         assert override is not None
         assert players[OVERRIDDEN].stored_rating == override
         assert players["tfc-01"].override_value is None
+
+    def test_it_loads_a_market_squad_with_the_club_of_each_player(
+        self, store: RatingSheetStore
+    ) -> None:
+        sheet = store.load("_market-2000-01")
+
+        assert len(sheet.players) == 3
+        assert all(p.club.level_tier is not None for p in sheet.players)
+
+    def test_it_marks_the_players_that_joined_or_left_mid_season(
+        self, store: RatingSheetStore
+    ) -> None:
+        players = {p.player_id: p for p in store.load(CLUB_SEASON).players}
+
+        assert players["tfc-21"].partial_season
+        assert players["tfc-22"].partial_season
+        assert not players["tfc-01"].partial_season
 
     def test_it_fails_for_an_unknown_club_season(self, store: RatingSheetStore) -> None:
         with pytest.raises(ClubSeasonRatingsUnavailableError):
