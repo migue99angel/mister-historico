@@ -19,6 +19,7 @@
 | F1 | A | T1.1 · T1.2 · T1.3 [HUMANO al final] · T1.4 | 4 |
 | F1 | B | T1.5 · T1.6 | 2 |
 | F1 | C | T1.8 (después de integrar T1.3) | 1 |
+| F1 | D | T1.7 [HUMANO] → T1.7b | 1 |
 | F2 | A | T2.1 · T2.2 · T2.3 · T2.4 · T2.5 · T2.20 · T2.10 · T2.11 · T2.12 · T2.13 · T2.16 (entre 3 y 5 lotes de rivales) | 5 de backend + entre 6 y 9 de contenido |
 | F2 | B | T2.6 · T2.21 · T2.14 | 3 |
 | F2 | C | T2.7 · T2.8 · T2.15 [HUMANO] | 2 |
@@ -226,6 +227,17 @@
 - **Propiedad:** la tabla `[PENDIENTE autor]` de `docs/content/rating-rubric.md`
 - **Qué hacer:** el autor elige jugadores reales de referencia por banda y posición, cada uno con su temporada concreta. Sirven para comprobar que la fórmula de T1.8 da medias razonables (anclas de cordura) y para ajustar sus pesos si no.
 - **Aceptación:** la tabla está completa. **Bloquea T2.11, T2.16 y T6.x.**
+- **Plantilla:** [`docs/content/anclas-t1.7.md`](./content/anclas-t1.7.md).
+
+### T1.7b · Calibración de la fórmula con las anclas
+- **Oleada:** F1-D, después de T1.7 · **Tamaño:** M · **Depende de:** T1.7, T1.8
+- **Propiedad:** `content/anchors/**` (estadísticas de las anclas con fuente), la tabla de anclas de `docs/content/rating-rubric.md` y, si hace falta, los pesos de la sección 4 de la rúbrica y `catalog/domain/ratings.py` (CR aprobada por el autor)
+- **Qué hacer:**
+  - Recoger con fuente las `season_stats` y el `club_data` de cada ancla (regla de oro: nunca inventar; lo que no se encuentra va como `pending`).
+  - Calcular sus medias con la CLI y generar una tabla de ancla, banda del autor, media y desviación.
+  - Si se incumple el criterio de la rúbrica (sección 9), proponer un ajuste de pesos con el antes y el después.
+  - Una verificación independiente de las estadísticas recogidas (como T2.14).
+- **Aceptación:** el autor aprueba la tabla final y, si lo hay, el ajuste de pesos. **Con esto se cierra la F1.**
 
 ---
 
