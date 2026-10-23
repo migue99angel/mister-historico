@@ -264,10 +264,15 @@ class SimPlayer:
     morale: Morale = Morale(50)
     fitness: Fitness = Fitness(100)
     injured: bool = False
+    age: int | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.position, Position) or not isinstance(self.rating, Rating):
             raise InvalidValueError("position and rating must be a Position and a Rating")
+        if self.age is not None and (
+            isinstance(self.age, bool) or not isinstance(self.age, int) or self.age < 0
+        ):
+            raise InvalidValueError("age must be a non-negative integer or None")
 
 
 _STARTERS = 11
