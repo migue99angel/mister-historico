@@ -97,6 +97,11 @@ class PlayerEntry(SourcedModel):
                 )
             if self.season_stats.clean_sheets_all is not None and self.position is not Position.GK:
                 raise ValueError("clean_sheets_all is only for goalkeepers")
+            if (
+                self.season_stats.clean_sheets_league is not None
+                and self.position is not Position.GK
+            ):
+                raise ValueError("clean_sheets_league is only for goalkeepers")
         if self.joined_on and self.left_on and self.left_on < self.joined_on:
             raise ValueError("left_on must not be before joined_on")
         return self

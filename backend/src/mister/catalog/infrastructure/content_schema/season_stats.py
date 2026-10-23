@@ -48,9 +48,12 @@ class SeasonStats(SourcedModel):
     """Public statistics of one player in one season (rubric section 2.1).
 
     `null` means "not found in the sources". The statistics the formula cannot do without may
-    be `null` only with `verify: pending`; the optional ones (starts, assists, clean sheets,
+    be `null` only with `verify: pending`; the optional ones (starts, clean sheets,
     all-competitions figures) may be `null` in a verified datum, and the formula has a
     documented fallback for each (rubric section 5). Position and age live in the player.
+
+    `assists_all` is informational: the formula does not use it (rubric section 4.3), because
+    no permitted source publishes reliable assists for 2003-2014.
     """
 
     nullable_when_pending = ("minutes_league", "appearances_league", "goals_all", "caps", "awards")
@@ -64,6 +67,7 @@ class SeasonStats(SourcedModel):
     goals_all: Count | None
     assists_all: Count | None = None
     clean_sheets_all: Count | None = None
+    clean_sheets_league: Count | None = None
     caps: Count | None
     awards: tuple[Award, ...] | None
     available_matches_all: MatchCount | None = None
@@ -92,7 +96,17 @@ class SeasonStats(SourcedModel):
                     f"minutes_{scope} cannot exceed {MAX_MINUTES_PER_APPEARANCE} per appearance"
                 )
         self._check_counts_per_appearance()
+        self._check_league_clean_sheets()
         return self
+
+    def _check_league_clean_sheets(self) -> None:
+        league = self.clean_sheets_league
+        if league is None:
+            return
+        if self.appearances_league is not None and league > self.appearances_league:
+            raise ValueError("clean_sheets_league cannot exceed appearances_league")
+        if self.clean_sheets_all is not None and league > self.clean_sheets_all:
+            raise ValueError("clean_sheets_league cannot exceed clean_sheets_all")
 
     def _check_counts_per_appearance(self) -> None:
         appearances = self.appearances_all

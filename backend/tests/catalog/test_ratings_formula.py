@@ -12,11 +12,11 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from mister.catalog.domain.ratings import (
+    STARTER_SHARE,
     AwardTier,
     BasisKind,
     ClubContext,
     LevelTier,
-    STARTER_SHARE,
     PlayerStats,
     Position,
     compute_rating,

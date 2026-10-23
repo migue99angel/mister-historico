@@ -13,7 +13,7 @@ players:
   alias_name: Jugador MKT-01
   position: MF
   age: 25
-  rating: 66
+  rating: 67
   key: false
   season_stats:
     minutes_league: 1520
@@ -46,7 +46,7 @@ players:
   alias_name: Jugador MKT-02
   position: DF
   age: 26
-  rating: 67
+  rating: 71
   key: false
   season_stats:
     minutes_league: 2240
@@ -79,7 +79,7 @@ players:
   alias_name: Jugador MKT-03
   position: FW
   age: 27
-  rating: 67
+  rating: 68
   key: false
   season_stats:
     minutes_league: 1200

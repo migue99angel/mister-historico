@@ -27,7 +27,7 @@ players:
   alias_name: Jugador DMA-01
   position: GK
   age: 35
-  rating: 72
+  rating: 75
   key: false
   season_stats:
     minutes_league: 500
@@ -52,7 +52,7 @@ players:
   alias_name: Jugador DMA-02
   position: GK
   age: 23
-  rating: 61
+  rating: 62
   key: false
   season_stats:
     minutes_league: 353
@@ -76,7 +76,7 @@ players:
   alias_name: Jugador DMA-03
   position: DF
   age: 31
-  rating: 65
+  rating: 67
   key: true
   season_stats:
     minutes_league: 502
@@ -100,7 +100,7 @@ players:
   alias_name: Jugador DMA-04
   position: DF
   age: 31
-  rating: 60
+  rating: 61
   key: false
   season_stats:
     minutes_league: 307
@@ -123,7 +123,7 @@ players:
   alias_name: Jugador DMA-05
   position: DF
   age: 25
-  rating: 66
+  rating: 68
   key: true
   season_stats:
     minutes_league: 523
@@ -146,7 +146,7 @@ players:
   alias_name: Jugador DMA-06
   position: DF
   age: 27
-  rating: 56
+  rating: 57
   key: false
   season_stats:
     minutes_league: 256
@@ -169,7 +169,7 @@ players:
   alias_name: Jugador DMA-07
   position: DF
   age: 28
-  rating: 68
+  rating: 70
   key: true
   season_stats:
     minutes_league: 576
@@ -193,7 +193,7 @@ players:
   alias_name: Jugador DMA-08
   position: DF
   age: 25
-  rating: 58
+  rating: 59
   key: false
   season_stats:
     minutes_league: 235
@@ -214,7 +214,7 @@ players:
   alias_name: Jugador DMA-09
   position: MF
   age: 31
-  rating: 61
+  rating: 62
   key: false
   season_stats:
     minutes_league: 341
@@ -238,7 +238,7 @@ players:
   alias_name: Jugador DMA-10
   position: MF
   age: 22
-  rating: 74
+  rating: 78
   key: true
   season_stats:
     minutes_league: 615
@@ -262,7 +262,7 @@ players:
   alias_name: Jugador DMA-11
   position: MF
   age: 23
-  rating: 61
+  rating: 63
   key: false
   season_stats:
     minutes_league: 272
@@ -285,7 +285,7 @@ players:
   alias_name: Jugador DMA-12
   position: MF
   age: 33
-  rating: 64
+  rating: 66
   key: false
   season_stats:
     minutes_league: 384
@@ -309,7 +309,7 @@ players:
   alias_name: Jugador DMA-13
   position: MF
   age: 19
-  rating: 64
+  rating: 66
   key: false
   season_stats:
     minutes_league: 384
@@ -333,7 +333,7 @@ players:
   alias_name: Jugador DMA-14
   position: MF
   age: 28
-  rating: 65
+  rating: 68
   key: true
   season_stats:
     minutes_league: 432
@@ -356,7 +356,7 @@ players:
   alias_name: Jugador DMA-15
   position: FW
   age: 21
-  rating: 72
+  rating: 73
   key: true
   season_stats:
     minutes_league: 482
@@ -380,7 +380,7 @@ players:
   alias_name: Jugador DMA-16
   position: FW
   age: 21
-  rating: 64
+  rating: 65
   key: false
   season_stats:
     minutes_league: 287
@@ -427,7 +427,7 @@ players:
   alias_name: Jugador DMA-18
   position: FW
   age: 30
-  rating: 61
+  rating: 62
   key: false
   season_stats:
     minutes_league: 256
@@ -450,7 +450,7 @@ players:
   alias_name: Jugador XFER-01
   position: MF
   age: 27
-  rating: 60
+  rating: 62
   key: false
   season_stats:
     minutes_league: 153

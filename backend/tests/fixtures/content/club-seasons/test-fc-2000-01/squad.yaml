@@ -27,7 +27,7 @@ players:
   alias_name: Jugador TFC-01
   position: GK
   age: 33
-  rating: 71
+  rating: 74
   key: false
   season_stats:
     minutes_league: 538
@@ -52,7 +52,7 @@ players:
   alias_name: Jugador TFC-02
   position: GK
   age: 35
-  rating: 64
+  rating: 67
   key: false
   season_stats:
     minutes_league: 550
@@ -105,7 +105,7 @@ players:
   alias_name: Jugador TFC-04
   position: DF
   age: 35
-  rating: 58
+  rating: 60
   key: false
   season_stats:
     minutes_league: 389
@@ -128,7 +128,7 @@ players:
   alias_name: Jugador TFC-05
   position: DF
   age: 24
-  rating: 66
+  rating: 68
   key: true
   season_stats:
     minutes_league: 607
@@ -151,7 +151,7 @@ players:
   alias_name: Jugador TFC-06
   position: DF
   age: 33
-  rating: 55
+  rating: 56
   key: false
   season_stats:
     minutes_league: 362
@@ -174,7 +174,7 @@ players:
   alias_name: Jugador TFC-07
   position: DF
   age: 23
-  rating: 60
+  rating: 62
   key: false
   season_stats:
     minutes_league: 442
@@ -198,7 +198,7 @@ players:
   alias_name: Jugador TFC-08
   position: DF
   age: 20
-  rating: 57
+  rating: 58
   key: false
   season_stats:
     minutes_league: 314
@@ -219,7 +219,7 @@ players:
   alias_name: Jugador TFC-09
   position: MF
   age: 33
-  rating: 66
+  rating: 69
   key: false
   season_stats:
     minutes_league: 522
@@ -243,7 +243,7 @@ players:
   alias_name: Jugador TFC-10
   position: MF
   age: 19
-  rating: 61
+  rating: 63
   key: false
   season_stats:
     minutes_league: 389
@@ -267,7 +267,7 @@ players:
   alias_name: Jugador TFC-11
   position: MF
   age: 21
-  rating: 70
+  rating: 75
   key: true
   season_stats:
     minutes_league: 627
@@ -290,7 +290,7 @@ players:
   alias_name: Jugador TFC-12
   position: MF
   age: 20
-  rating: 59
+  rating: 62
   key: false
   season_stats:
     minutes_league: 320
@@ -314,7 +314,7 @@ players:
   alias_name: Jugador TFC-13
   position: MF
   age: 26
-  rating: 61
+  rating: 63
   key: false
   season_stats:
     minutes_league: 384
@@ -338,7 +338,7 @@ players:
   alias_name: Jugador TFC-14
   position: MF
   age: 33
-  rating: 56
+  rating: 57
   key: false
   season_stats:
     minutes_league: 275
@@ -361,7 +361,7 @@ players:
   alias_name: Jugador TFC-15
   position: FW
   age: 33
-  rating: 69
+  rating: 70
   key: false
   season_stats:
     minutes_league: 482
@@ -415,7 +415,7 @@ players:
   alias_name: Jugador TFC-17
   position: FW
   age: 26
-  rating: 68
+  rating: 69
   key: true
   season_stats:
     minutes_league: 627
@@ -438,7 +438,7 @@ players:
   alias_name: Jugador TFC-18
   position: FW
   age: 34
-  rating: 66
+  rating: 69
   key: false
   season_stats:
     minutes_league: 491
@@ -461,7 +461,7 @@ players:
   alias_name: Jugador TFC-19
   position: FW
   age: 21
-  rating: 60
+  rating: 61
   key: false
   season_stats:
     minutes_league: 269
@@ -485,7 +485,7 @@ players:
   alias_name: Jugador TFC-20
   position: FW
   age: 18
-  rating: 75
+  rating: 77
   key: true
   season_stats:
     minutes_league: 550
@@ -509,7 +509,7 @@ players:
   alias_name: Jugador TFC-21
   position: FW
   age: 21
-  rating: 67
+  rating: 68
   key: true
   season_stats:
     minutes_league: 270
@@ -535,7 +535,7 @@ players:
   alias_name: Jugador TFC-22
   position: FW
   age: 29
-  rating: 65
+  rating: 68
   key: false
   season_stats:
     minutes_league: 225

@@ -10,7 +10,7 @@ on exact values.
 
 Missing data (rubric section 5) never produces an invented value: when a required statistic is
 `None`, the result has `rating=None` and lists what is missing. An optional count that is not
-found (starts, assists, clean sheets) counts as 0, so finding it later can never lower the rating.
+found (starts, clean sheets) counts as 0, so finding it later can never lower the rating.
 """
 
 from collections.abc import Iterable
@@ -36,7 +36,9 @@ _W_AWARDS = Fraction(7)
 
 _MINUTES_WEIGHT = Fraction("0.70")
 _STARTS_WEIGHT = Fraction("0.30")
-_ASSIST_WEIGHT = Fraction("0.5")
+STARTER_SHARE = Fraction("0.85")
+"""Share of the club's matches (and minutes) that already counts as a full season of a starter."""
+
 _GK_CLEAN_SHEET_CAP = Fraction("0.55")
 _CAPS_SATURATION = 8
 _WORLD_AWARD = Fraction("0.60")
@@ -80,9 +82,9 @@ class BasisKind(StrEnum):
 
 
 _GOALS_PER_MATCH_CAP: dict[Position, Fraction] = {
-    Position.FW: Fraction("0.80"),
-    Position.MF: Fraction("0.45"),
-    Position.DF: Fraction("0.20"),
+    Position.FW: Fraction("0.70"),
+    Position.MF: Fraction("0.30"),
+    Position.DF: Fraction("0.10"),
 }
 _LEVEL_POINTS: dict[LevelTier, int] = {
     LevelTier.A: 6,
@@ -108,11 +110,11 @@ class PlayerStats:
     starts_all: int | None
     appearances_all: int | None
     goals_all: int | None
-    assists_all: int | None
     clean_sheets_all: int | None
     caps: int | None
     awards: tuple[AwardTier, ...] | None
     available_matches_all: int | None = None
+    clean_sheets_league: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -141,7 +143,7 @@ class RatingResult:
 
     `rating` is `None` when a required statistic is missing (`missing` names them, using the
     field names of the rubric). `raw` is the value before rounding. `notes` records the
-    documented fallbacks that were used (`assists: null`, `basis: league`...).
+    documented fallbacks that were used (`clean_sheets: null`, `basis: league`...).
     """
 
     rating: int | None
@@ -213,9 +215,7 @@ def compute_rating(stats: PlayerStats, club: ClubContext) -> RatingResult:
         return RatingResult(None, None, None, None, tuple(missing), ())
 
     notes = [f"basis: {basis.kind}"] if basis.kind is BasisKind.LEAGUE else []
-    production, production_notes = _production(
-        position, goals, stats.assists_all, stats.clean_sheets_all, played_by_club
-    )
+    production, production_notes = _production(position, stats, club, goals, played_by_club)
     components = RatingComponents(
         importance=_importance(basis),
         production=production,
@@ -250,8 +250,8 @@ def _check_valid(stats: PlayerStats, club: ClubContext) -> None:
         "starts_all": stats.starts_all,
         "appearances_all": stats.appearances_all,
         "goals_all": stats.goals_all,
-        "assists_all": stats.assists_all,
         "clean_sheets_all": stats.clean_sheets_all,
+        "clean_sheets_league": stats.clean_sheets_league,
         "caps": stats.caps,
     }
     for name, value in counts.items():
@@ -299,25 +299,45 @@ def _select_basis(stats: PlayerStats, club: ClubContext) -> tuple[_Basis | None,
 
 
 def _importance(basis: _Basis) -> Fraction:
-    share_minutes = min(_ONE, Fraction(basis.minutes, _FULL_MATCH_MINUTES * basis.available))
-    share_starts = min(_ONE, Fraction(basis.starts or 0, basis.available))
+    """Minutes and starts against the matches of the club, full at `STARTER_SHARE` of them."""
+    share_minutes = min(
+        _ONE, Fraction(basis.minutes, _FULL_MATCH_MINUTES * basis.available) / STARTER_SHARE
+    )
+    share_starts = min(_ONE, Fraction(basis.starts or 0, basis.available) / STARTER_SHARE)
     return _MINUTES_WEIGHT * share_minutes + _STARTS_WEIGHT * share_starts
 
 
+def _clean_sheet_rate(stats: PlayerStats, club: ClubContext, available: int) -> Fraction | None:
+    """Clean sheets per match, from all competitions and/or the league; `None` if neither exists.
+
+    Both rates measure the same thing, so the larger one is used: that way finding a count that
+    was missing can never lower the rating.
+    """
+    rates: list[Fraction] = []
+    if stats.clean_sheets_all is not None:
+        rates.append(Fraction(stats.clean_sheets_all, available))
+    if stats.clean_sheets_league is not None and club.club_matches_league is not None:
+        league_matches = club.club_matches_league
+        if stats.available_matches_all is not None:
+            league_matches = min(league_matches, stats.available_matches_all)
+        rates.append(Fraction(stats.clean_sheets_league, league_matches))
+    return max(rates) if rates else None
+
+
 def _production(
-    position: Position,
-    goals: int,
-    assists: int | None,
-    clean_sheets: int | None,
-    available: int,
+    position: Position, stats: PlayerStats, club: ClubContext, goals: int, available: int
 ) -> tuple[Fraction, tuple[str, ...]]:
-    """Production per match of the club in all competitions; a missing count is a zero."""
+    """Production per match of the club: goals, or clean sheets for a goalkeeper.
+
+    A missing clean-sheet count is a zero.
+    """
     if position is Position.GK:
-        notes = ("clean_sheets: null",) if clean_sheets is None else ()
-        return min(_ONE, Fraction(clean_sheets or 0, available) / _GK_CLEAN_SHEET_CAP), notes
-    cap = _GOALS_PER_MATCH_CAP[position]
-    notes = ("assists: null",) if assists is None else ()
-    return min(_ONE, (goals + _ASSIST_WEIGHT * (assists or 0)) / available / cap), notes
+        rate = _clean_sheet_rate(stats, club, available)
+        if rate is None:
+            return Fraction(0), ("clean_sheets: null",)
+        notes = ("clean_sheets: league",) if stats.clean_sheets_all is None else ()
+        return min(_ONE, rate / _GK_CLEAN_SHEET_CAP), notes
+    return min(_ONE, Fraction(goals, available) / _GOALS_PER_MATCH_CAP[position]), ()
 
 
 def _awards(awards: tuple[AwardTier, ...]) -> Fraction:
