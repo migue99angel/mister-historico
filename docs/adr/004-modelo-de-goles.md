@@ -31,7 +31,7 @@ goles_visitante ~ Poisson(λ_visitante)
 
 El enfoque es el de Maher (1982), que modela los goles de cada equipo como Poisson con una fuerza de ataque y una de defensa, con la ventaja de local de Dixon y Coles (1997) como factor.
 
-Todo vive detrás del puerto `GoalModel` (`simulation/domain/ports.py`): recibe dos `SimTeam`, el contexto del partido (competición, sede) y devuelve las dos λ. `PoissonGoalModel` es la implementación de la V1. El sorteo de los goles lo hace `PoissonMatchSimulator` con los flujos derivados del ADR-005 (sección 6).
+Todo vive detrás del puerto congelado `GoalModel` (`simulation/domain/ports.py`): `expected_goals` recibe dos `TeamStrength`, la sede desde el punto de vista del equipo y `CompetitionParams`, y devuelve una λ por llamada. Las fuerzas ya incorporan los ajustes de T2.2: no se aplican dos veces. `PoissonGoalModel` es la implementación de la V1. El sorteo de los goles lo hace `PoissonMatchSimulator` con los flujos derivados del ADR-005 (sección 6).
 
 ### 2. Fuerza del equipo: de las medias de su once a ataque y defensa
 
@@ -111,6 +111,8 @@ Con táctica ofensiva (`t_ataque` ×1,04) y moral 75 (μ = 1,03), la λ de Alfa 
 | **Estado físico** (0-100) | No multiplica λ: baja la media efectiva de cada titular (paso 1). Por encima de 90, sin efecto. | Hasta 6,3 puntos por jugador. |
 | **Prioridad de competición** (`low`, `normal`, `high`) | Actúa sobre la alineación, no sobre λ: `high` rota 0 titulares, `normal` 2 y `low` 4, y reduce el desgaste físico del partido. | 0-4 titulares rotados. |
 
+**Edad desconocida.** El modelo interno admite `age: int | None = None`, igual que el DTO publicado. Una edad conocida es un entero no booleano y no negativo. Si falta, su contribución al encaje etario es neutra: no se imputa una edad ni se extrapolan las de otros jugadores. Esto no elimina los ajustes de físico, moral o estilo. Los coeficientes internos de estilo y encaje son decisiones de diseño dentro de los rangos de esta sección, no datos históricos ni parámetros ya calibrados.
+
 Con estos rangos, el producto de táctica y moral de un equipo está en `[0,865; 1,145]`. La λ se acota en `[0,05; 6]` por seguridad numérica. Los rivales en la V1 llevan táctica neutra (×1), moral neutra (μ = 1) y estado físico 100.
 
 **Aplicación a λ:**
@@ -138,7 +140,32 @@ Ningún valor numérico de liga se afirma aquí como hecho histórico: los de lo
 
 ### 5. Partidos con prórroga y penaltis
 
-La prórroga usa `λ/3` por equipo (30 minutos sobre 90). Los penaltis no usan el modelo de goles: los resuelve T2.4.
+La prórroga usa la λ de 90 minutos ya acotada, dividida entre 3 (30 minutos sobre 90). T2.1 implementa los métodos `extra_time` y `penalty_shootout` ya exigidos por el puerto `MatchSimulator`, además del partido decisivo completo. T2.4 decide cuándo invocarlos según el empate de la eliminatoria; no vuelve a implementar el sorteo.
+
+**Penaltis: decisión de diseño provisional de la primera oleada de F2.** No usan Poisson ni una ventaja de local adicional. Sean `aH`, `dH`, `aA`, `dA` los factores de ataque y vulnerabilidad de los dos equipos:
+
+```
+z = 0,5 × (log(aH) + log(dA) − log(aA) − log(dH))
+δ = 0,05 × tanh(z)
+pH = 0,75 + δ
+pA = 0,75 − δ
+```
+
+El valor central 0,75 y el ajuste máximo 0,05 son parámetros de diseño pendientes de calibración, **no estadísticas históricas**. Equipos iguales tienen la misma probabilidad; intercambiar equipos intercambia las probabilidades. Todo usa el flujo ya normativo `("match", fixture_id, "penalties")`.
+
+Se alternan cinco lanzamientos por equipo, con final anticipado si el resultado es irreversible. Si persiste el empate, la muerte súbita se resuelve con la distribución exacta de su marcador, sin un bucle que pueda no terminar con una fuente de prueba constante:
+
+```
+r = pH × pA
+sH = pH × (1 − pA)
+sA = (1 − pH) × pA
+s = sH + sA
+q = r / (r + s)
+k = floor(log1p(−u) / log(q))        # u uniforme en [0, 1)
+ganaH = otra extracción uniforme < sH / s
+```
+
+Se añaden `k` goles a cada equipo y uno al ganador. Los turnos donde ambos fallan no cambian el marcador y quedan integrados en esta distribución: `k` cuenta los empates con gol anteriores al desenlace. No se fija un marcador ni se añade un tope arbitrario de rondas. El algoritmo termina también con una fuente de prueba constante válida. Las pruebas comprueban simetría, sesgo de fuerza, terminación, final anticipado y determinismo; T2.7 deberá evaluar estos parámetros junto con el resto del motor.
 
 ### 6. Determinismo (coherencia con ADR-005)
 

@@ -27,7 +27,7 @@
 - Revisión independiente favorable de Astra en [`calibration/anchors-corrections-review.md`](calibration/anchors-corrections-review.md). Se conservan también el informe original y sus hallazgos históricos en [`calibration/anchors-verification.md`](calibration/anchors-verification.md).
 - Combinación local con `main`: **`make test` en verde, 1140 tests de backend y 74 de frontend**, incluidos API y migraciones Postgres/Docker; **`make lint` en verde**. Cobertura: **98,41 % global de backend**, **100 % de líneas y ramas de dominio/aplicación**.
 - Las cuatro comprobaciones de la PR fueron satisfactorias sobre la punta revisada `77c8b6862df1ad26adf7db09231ad6d64bb465ac`: [backend](https://github.com/migue99angel/mister-historico/actions/runs/40008678343), [calibración](https://github.com/migue99angel/mister-historico/actions/runs/40008678223), [contenido](https://github.com/migue99angel/mister-historico/actions/runs/40008678242) y [Docker](https://github.com/migue99angel/mister-historico/actions/runs/40008678290).
-- **F2 no iniciada.** El cierre de F1 elimina su bloqueo; esta sesión no ha implementado tareas de F2.
+- **F2 iniciada por instrucción del autor.** Primera oleada en curso: T2.1 (goles y partidos) y T2.2 (alineación y fuerza), con implementadores Sol en worktrees separados y Test FC. No se afirma que esas tareas estén completadas. Luna ha explicado el gameplay previsto tras contrastarlo con el código actual.
 
 ## 4. Decisión de calibración ya tomada: opción 1
 
@@ -43,9 +43,11 @@
 
 La tabla completa, fuentes, correcciones y cálculos reproducibles están en [`calibration/anchors.md`](calibration/anchors.md) y en [`content/rating-rubric.md` §9](content/rating-rubric.md#9-calibración-de-la-fórmula).
 
-## 5. Siguiente fase prevista, todavía no iniciada
+## 5. F2 en curso: primera oleada
 
-La primera oleada prevista usa Test FC: motor T2.1-T2.5, catálogo T2.20 y frontend T4.1-T4.3 contra MSW. TASKS.md determina dependencias y propiedad; respeta oleadas de 2 o 3 agentes. El contenido real del piloto se abordará después, con fuentes y verificación independiente.
+Se han encargado **T2.1 y T2.2** a Sol. Astra planifica y revisará las PR de forma independiente. Los worktrees son `.claude/worktrees/t2-1-goals` y `.claude/worktrees/t2-2-strength`; las ramas, `task/T2.1-goals` y `task/T2.2-strength`. Comparten un único entorno de dependencias mediante enlaces, sin duplicarlo. Antes de integrar: TDD con commits separados, tests, lint, CI y revisión independiente.
+
+Las siguientes tareas previstas son T2.3-T2.5, catálogo T2.20 y frontend T4.1-T4.3 contra MSW. TASKS.md determina dependencias y propiedad; se lanzarán en oleadas de 2 o 3 agentes. El contenido real del piloto se abordará después, con fuentes y verificación independiente. No hay todavía una partida jugable completa desde la web.
 
 ## 6. Entorno y asuntos personales pendientes
 
@@ -55,4 +57,4 @@ La instalación local de uv observada seguía siendo 0.9.7; su actualización pe
 
 ## 7. Limpieza y conservación
 
-Los informes de datos y revisión están versionados. Los worktrees y entornos temporales de esta oleada se eliminan tras integrar el cierre documental. Antes de borrar, comprueba que sus cambios útiles ya estén conservados. La documentación de este cierre no modifica datos, parámetros ni contratos.
+Los informes de F1 están versionados y sus worktrees temporales ya se eliminaron. Conserva los worktrees activos de F2 hasta integrar sus cambios. Usa un único entorno backend y otro frontend compartidos; limpia los worktrees terminados sin perder cambios. Los cambios de inicio de F2 aclaran implementación y propiedad, sin alterar los puertos ni los DTO publicados.
