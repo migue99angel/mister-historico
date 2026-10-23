@@ -61,6 +61,7 @@ def tactical_multipliers(tactic: Tactic, lineup: Lineup) -> tuple[float, float]:
     """Return attack and vulnerability multipliers; all fit coefficients are design choices.
 
     Pressing adds each starter's bounded (27-age)/10 contribution, averaged over all eleven.
+    The integer numerator saturates before division, so arbitrarily large ages stay safe.
     Unknown ages contribute zero individually: known ages are never extrapolated to others.
     Counter rewards a forward line stronger than the eleven's mean; possession rewards a
     stronger midfield. These relative-rating fits use a 30-point scale and never alter the
@@ -72,7 +73,7 @@ def tactical_multipliers(tactic: Tactic, lineup: Lineup) -> tuple[float, float]:
         fit = (
             _FIT_LIMIT
             * sum(
-                0.0 if entry.player.age is None else _clamp((27 - entry.player.age) / 10, -1, 1)
+                0.0 if entry.player.age is None else max(-10, min(10, 27 - entry.player.age)) / 10
                 for entry in lineup.starters
             )
             / len(lineup.starters)
