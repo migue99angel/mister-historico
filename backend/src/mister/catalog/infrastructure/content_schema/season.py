@@ -18,6 +18,7 @@ from mister.catalog.infrastructure.content_schema.base import (
     enum_from_text,
     season_is_consecutive,
 )
+from mister.catalog.infrastructure.content_schema.competitions import HistoricalBooleanRule
 from mister.catalog.infrastructure.content_schema.effects import MAX_INJURY_DAYS, Tactic
 
 TWO_LEGS = 2
@@ -134,6 +135,7 @@ class Stage(ContentModel):
     tiebreakers: Tiebreakers | None = None
     advance_per_group: Annotated[int, Field(ge=1)] | None = None
     away_goals_in_extra_time: AwayGoalsExtraTime | None = None
+    reapply_head_to_head: HistoricalBooleanRule | None = None
 
     @property
     def is_group_stage(self) -> bool:
@@ -158,6 +160,8 @@ class Stage(ContentModel):
                 "away_goals_in_extra_time true requires a two-legged knockout "
                 "with away goals and extra time"
             )
+        if self.reapply_head_to_head is not None and not self.is_group_stage:
+            raise ValueError("reapply_head_to_head only applies to group stages")
         group_fields = {
             "groups": self.groups,
             "points_per_win": self.points_per_win,

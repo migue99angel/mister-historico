@@ -90,6 +90,9 @@ def _check_managed(ctx: SeasonContext, field: str, entry: HeadToHeadEvidence) ->
         )
         if (actual.date, actual.home, actual.away) != (fixture.date, home, away):
             ctx.add("standings", field, f"calendar contradicts managed fixture {fixture.id}")
+        expected_venue = "neutral" if fixture.venue == "neutral" else "home"
+        if actual.venue is not None and actual.venue != expected_venue:
+            ctx.add("standings", field, f"venue contradicts managed fixture {fixture.id}")
         if fixture.result is not None and scores[fixture.id] is not None:
             own = fixture.result
             expected = (
@@ -192,7 +195,9 @@ def _check_shared_ids(
     right_scores = {r.fixture_id: r.score for r in right.results}
     for fixture_id in first.keys() & second.keys():
         a, b = first[fixture_id], second[fixture_id]
-        if (_key(left), a.date, a.home, a.away) != (_key(right), b.date, b.home, b.away):
+        if (_key(left), a.date, a.home, a.away) != (_key(right), b.date, b.home, b.away) or (
+            a.venue is not None and b.venue is not None and a.venue != b.venue
+        ):
             ctx.add(
                 "standings",
                 "head_to_head",

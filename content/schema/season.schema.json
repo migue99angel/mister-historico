@@ -467,6 +467,49 @@
       "title": "Group",
       "type": "object"
     },
+    "HistoricalBooleanRule": {
+      "additionalProperties": false,
+      "description": "An explicitly verified historical switch; None remains unknown.",
+      "properties": {
+        "sources": {
+          "description": "URLs backing the datum.",
+          "items": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        },
+        "verify": {
+          "enum": [
+            "ok",
+            "pending"
+          ],
+          "title": "Verify",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sources",
+        "verify",
+        "value"
+      ],
+      "title": "HistoricalBooleanRule",
+      "type": "object"
+    },
     "InjuryEvent": {
       "additionalProperties": false,
       "description": "A real injury that really happened and is replayed in every run.",
@@ -751,6 +794,17 @@
           ],
           "default": null,
           "title": "Points Per Win"
+        },
+        "reapply_head_to_head": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HistoricalBooleanRule"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "round": {
           "enum": [

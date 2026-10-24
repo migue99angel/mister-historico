@@ -2,6 +2,7 @@
 
 from pydantic import BaseModel
 
+from mister.catalog.infrastructure.content_schema.competition_checks import check_release_completion
 from mister.catalog.infrastructure.content_schema.context import SeasonContext
 from mister.catalog.infrastructure.content_schema.evidence_checks import check_release_evidence
 from mister.catalog.infrastructure.content_schema.issues import IssueSink
@@ -29,7 +30,9 @@ def check_release(tree: ContentTree, sink: IssueSink) -> None:
     for slug, aggregate in tree.aggregates.items():
         _walk_pending(aggregate, f"club-seasons/{slug}/aggregate.yaml", [], sink)
     for slug, content in tree.seasons.items():
-        check_release_evidence(SeasonContext(tree, frozenset(), slug, sink))
+        ctx = SeasonContext(tree, frozenset(), slug, sink)
+        check_release_evidence(ctx)
+        check_release_completion(ctx)
         for ci, competition in enumerate(content.season.competitions):
             if isinstance(competition, LeagueCompetition):
                 continue

@@ -11,6 +11,10 @@ from mister.catalog.infrastructure.content_schema.base import (
     Slug,
     SourcedModel,
 )
+from mister.catalog.infrastructure.content_schema.competitions import (
+    GroupEntryAssignments,
+    KnockoutCalendar,
+)
 from mister.catalog.infrastructure.content_schema.evidence import HeadToHeadEvidence
 
 Count = Annotated[int, Field(ge=0)]
@@ -88,6 +92,8 @@ class StandingsFile(ContentModel):
     cutoffs: tuple[StandingsCutoff, ...]
     ties: tuple[RealTie, ...] = ()
     head_to_head: tuple[HeadToHeadEvidence, ...] | None = None
+    knockout_calendar: tuple[KnockoutCalendar, ...] | None = None
+    group_entry_assignments: tuple[GroupEntryAssignments, ...] | None = None
 
     @model_validator(mode="after")
     def _check_unique_cutoffs(self) -> Self:
