@@ -18,7 +18,7 @@ from mister.simulation.domain.league_types import (
     ResultReplacement,
 )
 from mister.simulation.domain.model import Score
-from mister.simulation.domain.ports import ExternalResultsPolicy  # noqa: TC001
+from mister.simulation.domain.ports import ExternalResultsPolicy
 
 pytestmark = pytest.mark.contract
 
@@ -59,6 +59,25 @@ def expected_rows() -> tuple[LeagueRow, ...]:
     )
 
 
+def make_draw_request() -> ExternalResultsRequest:
+    """A draw awards two points under a five-for-a-win Liga Test rule."""
+    request = make_request()
+    return replace(
+        request,
+        points_per_win=5,
+        points_per_draw=2,
+        historical_rows=(replace(request.historical_rows[0], points=5), request.historical_rows[1]),
+        replacements=(replace(request.replacements[0], simulated_score=Score(1, 1)),),
+    )
+
+
+def expected_draw_rows() -> tuple[LeagueRow, ...]:
+    return (
+        LeagueRow(_RIVAL, 1, 0, 1, 0, 1, 1, 2),
+        LeagueRow(_ME, 1, 0, 1, 0, 1, 1, 2),
+    )
+
+
 PolicyFactory = Callable[[], ExternalResultsPolicy]
 
 
@@ -80,6 +99,9 @@ class ExternalResultsContract:
         self, make_policy: PolicyFactory
     ) -> None:
         assert make_policy().standings(make_request()) == expected_rows()
+
+    def test_draws_use_the_configured_award(self, make_policy: PolicyFactory) -> None:
+        assert make_policy().standings(make_draw_request()) == expected_draw_rows()
 
     def test_rows_are_complete_and_stay_in_baseline_order(self, make_policy: PolicyFactory) -> None:
         request = make_request()
@@ -119,6 +141,7 @@ class ScriptedExternalResults:
         self._scripts = {
             historical: historical.historical_rows,
             make_request(): expected_rows(),
+            make_draw_request(): expected_draw_rows(),
         }
 
     def standings(self, request: ExternalResultsRequest) -> tuple[LeagueRow, ...]:

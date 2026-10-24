@@ -4,6 +4,7 @@ by parameter, like the `RandomSource` of the shared kernel."""
 from typing import Protocol
 
 from mister.shared_kernel.randomness import RandomSource
+from mister.simulation.domain.league_types import ExternalResultsRequest, LeagueRow
 from mister.simulation.domain.model import (
     CompetitionParams,
     MatchResult,
@@ -49,4 +50,22 @@ class MatchSimulator(Protocol):
     def penalty_shootout(self, setup: MatchSetup, rng: RandomSource) -> Score:
         """A shootout that cannot end level, from `("match", fixture_id, "penalties")`.
         Called when the tie is still level after extra time (or when there is none)."""
+        ...
+
+
+class ExternalResultsPolicy(Protocol):
+    """Pure accumulated-results strategy, without IO, randomness or table ranking."""
+
+    def standings(self, request: ExternalResultsRequest) -> tuple[LeagueRow, ...]:
+        """Return all participants once, in the original historical baseline row order.
+
+        P2 implementations subtract each historical managed result and add its simulated
+        replacement to both sides, using the configured point rules and adjusting W/D/L,
+        goals and points. They reject a baseline unable to contain the replaced results.
+        Every call uses the original baseline and all replacements through the cutoff;
+        applying replacements again to adjusted rows is outside this contract.
+
+        This method never resolves ties. LeagueTable owns ranking and requires complete
+        head-to-head evidence when its configured criteria need a managed-team mini-table.
+        """
         ...
