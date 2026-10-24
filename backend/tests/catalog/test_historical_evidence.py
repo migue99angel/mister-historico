@@ -122,7 +122,7 @@ def test_complete_synthetic_evidence_includes_matches_between_rivals(root: Path)
 @pytest.mark.parametrize("mutation,part", [
     (lambda h: h.update(competition="unknown"), "competition"),
     (lambda h: h.update(stage="groups", group="a"), "stage"),
-    (lambda h: h.update(covered_clubs=[OWN, "ghost-2000-01"]), "covered_clubs"),
+    (lambda h: h.update(covered_clubs=[*h["covered_clubs"], "ghost-2000-01"]), "covered_clubs"),
     (lambda h: h.update(complete_through=date(2002, 1, 1)), "complete_through"),
 ])
 def test_evidence_scope_and_season_are_validated(root: Path, mutation: Any, part: str) -> None:

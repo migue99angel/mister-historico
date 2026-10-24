@@ -107,6 +107,13 @@ class Group(ContentModel):
     participants: Annotated[tuple[ClubSeasonSlug, ...], Field(min_length=2)]
 
 
+class AwayGoalsExtraTime(SourcedModel):
+    """Historical extra-time variant; unknown never means disabled."""
+
+    nullable_when_pending = ("value",)
+    value: bool | None
+
+
 class Stage(ContentModel):
     """A round of a knockout competition, or its group stage (`round: group_stage`).
 
@@ -126,6 +133,7 @@ class Stage(ContentModel):
     points_per_draw: Annotated[int, Field(ge=0, le=1)] | None = None
     tiebreakers: Tiebreakers | None = None
     advance_per_group: Annotated[int, Field(ge=1)] | None = None
+    away_goals_in_extra_time: AwayGoalsExtraTime | None = None
 
     @property
     def is_group_stage(self) -> bool:
@@ -135,6 +143,12 @@ class Stage(ContentModel):
     def _check_stage(self) -> Self:
         if self.away_goals_rule and self.legs != TWO_LEGS:
             raise ValueError("away_goals_rule only applies to two-legged stages")
+        variant = self.away_goals_in_extra_time
+        if variant is not None and variant.value is True and not (
+            self.legs == TWO_LEGS and self.away_goals_rule and self.extra_time
+            and not self.is_group_stage
+        ):
+            raise ValueError("away_goals_in_extra_time true requires a two-legged knockout with away goals and extra time")
         group_fields = {
             "groups": self.groups,
             "points_per_win": self.points_per_win,

@@ -138,6 +138,7 @@ class StageInput:
     points_per_draw: int | None = None
     tiebreakers: tuple[TiebreakerName, ...] = ()
     advance_per_group: int | None = None
+    away_goals_in_extra_time: bool | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -218,6 +219,47 @@ class ForcedInjuryDTO:
 
 
 @dataclass(frozen=True, slots=True)
+class HeadToHeadFixtureInput:
+    """Sourced calendar entry; the home/away orientation is independent of the managed club."""
+
+    fixture_id: FixtureId
+    date: date
+    home: ClubSeasonId
+    away: ClubSeasonId
+    sources: tuple[str, ...]
+    verify: Literal["ok", "pending"]
+
+
+@dataclass(frozen=True, slots=True)
+class HeadToHeadResultInput:
+    """Sourced regulation score (home, away); None remains explicitly pending."""
+
+    fixture_id: FixtureId
+    score: tuple[int, int] | None
+    sources: tuple[str, ...]
+    verify: Literal["ok", "pending"]
+
+
+@dataclass(frozen=True, slots=True)
+class HeadToHeadEvidenceInput:
+    """Declared complete calendar between covered clubs through an inclusive date.
+
+    Sources are a narrow exception to editorial metadata staying outside published APIs:
+    private table strategies require evidence of historical calendar completeness.
+    """
+
+    competition_id: CompetitionId
+    complete_through: date
+    covered_clubs: tuple[ClubSeasonId, ...]
+    schedule: tuple[HeadToHeadFixtureInput, ...]
+    results: tuple[HeadToHeadResultInput, ...]
+    sources: tuple[str, ...]
+    verify: Literal["ok", "pending"]
+    stage_id: str | None = None
+    group_id: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class StandingRowDTO:
     """One row of a table."""
 
@@ -261,6 +303,7 @@ class SeasonSimInput:
     fixtures: tuple[FixtureInput, ...]
     forced_injuries: tuple[ForcedInjuryDTO, ...] = ()
     historical_standings: tuple[StandingsDTO, ...] = ()
+    head_to_head: tuple[HeadToHeadEvidenceInput, ...] | None = None
 
 
 @dataclass(frozen=True, slots=True)

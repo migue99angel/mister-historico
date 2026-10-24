@@ -491,3 +491,620 @@ ties:
   sources:
   - https://example.org/test-content/bracket/copa-continental-test
   verify: ok
+head_to_head:
+- competition: liga-test
+  complete_through: 2001-05-31
+  covered_clubs:
+  - demo-athletic-2000-01
+  - dummy-rovers-2000-01
+  - fixture-wanderers-2000-01
+  - mock-city-2000-01
+  - sample-united-2000-01
+  - test-fc-2000-01
+  schedule:
+  - fixture_id: tfc-liga-01
+    date: 2000-09-02
+    home: test-fc-2000-01
+    away: fixture-wanderers-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-1-1
+    date: 2000-09-02
+    home: demo-athletic-2000-01
+    away: mock-city-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-1-2
+    date: 2000-09-02
+    home: sample-united-2000-01
+    away: dummy-rovers-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: tfc-liga-02
+    date: 2000-09-16
+    home: dummy-rovers-2000-01
+    away: test-fc-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-2-1
+    date: 2000-09-16
+    home: demo-athletic-2000-01
+    away: sample-united-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-2-2
+    date: 2000-09-16
+    home: mock-city-2000-01
+    away: fixture-wanderers-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: tfc-liga-03
+    date: 2000-10-14
+    home: test-fc-2000-01
+    away: mock-city-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-3-1
+    date: 2000-10-14
+    home: demo-athletic-2000-01
+    away: dummy-rovers-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-3-2
+    date: 2000-10-14
+    home: sample-united-2000-01
+    away: fixture-wanderers-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: tfc-liga-04
+    date: 2000-11-04
+    home: demo-athletic-2000-01
+    away: test-fc-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-4-1
+    date: 2000-11-04
+    home: dummy-rovers-2000-01
+    away: fixture-wanderers-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-4-2
+    date: 2000-11-04
+    home: sample-united-2000-01
+    away: mock-city-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: tfc-liga-05
+    date: 2000-12-09
+    home: test-fc-2000-01
+    away: sample-united-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-5-1
+    date: 2000-12-09
+    home: demo-athletic-2000-01
+    away: fixture-wanderers-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-5-2
+    date: 2000-12-09
+    home: mock-city-2000-01
+    away: dummy-rovers-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: tfc-liga-06
+    date: 2001-01-13
+    home: fixture-wanderers-2000-01
+    away: test-fc-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-6-1
+    date: 2001-01-13
+    home: mock-city-2000-01
+    away: demo-athletic-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-6-2
+    date: 2001-01-13
+    home: dummy-rovers-2000-01
+    away: sample-united-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: tfc-liga-07
+    date: 2001-02-17
+    home: test-fc-2000-01
+    away: dummy-rovers-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-7-1
+    date: 2001-02-17
+    home: sample-united-2000-01
+    away: demo-athletic-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-7-2
+    date: 2001-02-17
+    home: fixture-wanderers-2000-01
+    away: mock-city-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: tfc-liga-08
+    date: 2001-03-17
+    home: mock-city-2000-01
+    away: test-fc-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-8-1
+    date: 2001-03-17
+    home: dummy-rovers-2000-01
+    away: demo-athletic-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-8-2
+    date: 2001-03-17
+    home: fixture-wanderers-2000-01
+    away: sample-united-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: tfc-liga-09
+    date: 2001-04-14
+    home: test-fc-2000-01
+    away: demo-athletic-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-9-1
+    date: 2001-04-14
+    home: fixture-wanderers-2000-01
+    away: dummy-rovers-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-9-2
+    date: 2001-04-14
+    home: mock-city-2000-01
+    away: sample-united-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: tfc-liga-10
+    date: 2001-05-12
+    home: sample-united-2000-01
+    away: test-fc-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-10-1
+    date: 2001-05-12
+    home: fixture-wanderers-2000-01
+    away: demo-athletic-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-10-2
+    date: 2001-05-12
+    home: dummy-rovers-2000-01
+    away: mock-city-2000-01
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  results:
+  - fixture_id: tfc-liga-01
+    score:
+    - 0
+    - 1
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-1-1
+    score:
+    - 2
+    - 1
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-1-2
+    score:
+    - 0
+    - 1
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: tfc-liga-02
+    score:
+    - 2
+    - 2
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-2-1
+    score:
+    - 1
+    - 1
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-2-2
+    score:
+    - 0
+    - 1
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: tfc-liga-03
+    score:
+    - 0
+    - 0
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-3-1
+    score:
+    - 3
+    - 1
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-3-2
+    score:
+    - 2
+    - 1
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: tfc-liga-04
+    score:
+    - 1
+    - 1
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-4-1
+    score:
+    - 2
+    - 2
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-4-2
+    score:
+    - 1
+    - 0
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: tfc-liga-05
+    score:
+    - 3
+    - 1
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-5-1
+    score:
+    - 0
+    - 1
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-5-2
+    score:
+    - 0
+    - 1
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: tfc-liga-06
+    score:
+    - 2
+    - 2
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-6-1
+    score:
+    - 1
+    - 0
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-6-2
+    score:
+    - 3
+    - 2
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: tfc-liga-07
+    score:
+    - 1
+    - 0
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-7-1
+    score:
+    - 2
+    - 1
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-7-2
+    score:
+    - 1
+    - 0
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: tfc-liga-08
+    score:
+    - 1
+    - 2
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-8-1
+    score:
+    - 4
+    - 1
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-8-2
+    score:
+    - 0
+    - 0
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: tfc-liga-09
+    score:
+    - 3
+    - 0
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-9-1
+    score:
+    - 2
+    - 1
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-9-2
+    score:
+    - 1
+    - 2
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: tfc-liga-10
+    score:
+    - 0
+    - 0
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-10-1
+    score:
+    - 0
+    - 1
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  - fixture_id: liga-test-other-10-2
+    score:
+    - 2
+    - 0
+    sources:
+    - https://example.org/test-content/evidence/liga-test
+    verify: ok
+  sources:
+  - https://example.org/test-content/evidence/liga-test
+  verify: ok
+- competition: copa-continental-test
+  complete_through: 2001-05-31
+  covered_clubs:
+  - abroad-athletic-2000-01
+  - faraway-city-2000-01
+  - overseas-fc-2000-01
+  - test-fc-2000-01
+  schedule:
+  - fixture_id: tfc-cont-g1
+    date: 2000-09-12
+    home: test-fc-2000-01
+    away: faraway-city-2000-01
+    sources:
+    - https://example.org/test-content/evidence/copa-continental-test
+    verify: ok
+  - fixture_id: copa-continental-test-other-1-1
+    date: 2000-09-12
+    home: abroad-athletic-2000-01
+    away: overseas-fc-2000-01
+    sources:
+    - https://example.org/test-content/evidence/copa-continental-test
+    verify: ok
+  - fixture_id: tfc-cont-g2
+    date: 2000-09-26
+    home: abroad-athletic-2000-01
+    away: test-fc-2000-01
+    sources:
+    - https://example.org/test-content/evidence/copa-continental-test
+    verify: ok
+  - fixture_id: copa-continental-test-other-2-1
+    date: 2000-09-26
+    home: overseas-fc-2000-01
+    away: faraway-city-2000-01
+    sources:
+    - https://example.org/test-content/evidence/copa-continental-test
+    verify: ok
+  - fixture_id: tfc-cont-g3
+    date: 2000-10-24
+    home: test-fc-2000-01
+    away: overseas-fc-2000-01
+    sources:
+    - https://example.org/test-content/evidence/copa-continental-test
+    verify: ok
+  - fixture_id: copa-continental-test-other-3-1
+    date: 2000-10-24
+    home: faraway-city-2000-01
+    away: abroad-athletic-2000-01
+    sources:
+    - https://example.org/test-content/evidence/copa-continental-test
+    verify: ok
+  - fixture_id: tfc-cont-g4
+    date: 2000-11-14
+    home: faraway-city-2000-01
+    away: test-fc-2000-01
+    sources:
+    - https://example.org/test-content/evidence/copa-continental-test
+    verify: ok
+  - fixture_id: copa-continental-test-other-4-1
+    date: 2000-11-14
+    home: overseas-fc-2000-01
+    away: abroad-athletic-2000-01
+    sources:
+    - https://example.org/test-content/evidence/copa-continental-test
+    verify: ok
+  - fixture_id: tfc-cont-g5
+    date: 2000-12-05
+    home: test-fc-2000-01
+    away: abroad-athletic-2000-01
+    sources:
+    - https://example.org/test-content/evidence/copa-continental-test
+    verify: ok
+  - fixture_id: copa-continental-test-other-5-1
+    date: 2000-12-05
+    home: faraway-city-2000-01
+    away: overseas-fc-2000-01
+    sources:
+    - https://example.org/test-content/evidence/copa-continental-test
+    verify: ok
+  - fixture_id: tfc-cont-g6
+    date: 2000-12-12
+    home: overseas-fc-2000-01
+    away: test-fc-2000-01
+    sources:
+    - https://example.org/test-content/evidence/copa-continental-test
+    verify: ok
+  - fixture_id: copa-continental-test-other-6-1
+    date: 2000-12-12
+    home: abroad-athletic-2000-01
+    away: faraway-city-2000-01
+    sources:
+    - https://example.org/test-content/evidence/copa-continental-test
+    verify: ok
+  results:
+  - fixture_id: tfc-cont-g1
+    score:
+    - 0
+    - 0
+    sources:
+    - https://example.org/test-content/evidence/copa-continental-test
+    verify: ok
+  - fixture_id: copa-continental-test-other-1-1
+    score:
+    - 2
+    - 1
+    sources:
+    - https://example.org/test-content/evidence/copa-continental-test
+    verify: ok
+  - fixture_id: tfc-cont-g2
+    score:
+    - 2
+    - 1
+    sources:
+    - https://example.org/test-content/evidence/copa-continental-test
+    verify: ok
+  - fixture_id: copa-continental-test-other-2-1
+    score:
+    - 3
+    - 2
+    sources:
+    - https://example.org/test-content/evidence/copa-continental-test
+    verify: ok
+  - fixture_id: tfc-cont-g3
+    score:
+    - 2
+    - 0
+    sources:
+    - https://example.org/test-content/evidence/copa-continental-test
+    verify: ok
+  - fixture_id: copa-continental-test-other-3-1
+    score:
+    - 1
+    - 0
+    sources:
+    - https://example.org/test-content/evidence/copa-continental-test
+    verify: ok
+  - fixture_id: tfc-cont-g4
+    score:
+    - 0
+    - 1
+    sources:
+    - https://example.org/test-content/evidence/copa-continental-test
+    verify: ok
+  - fixture_id: copa-continental-test-other-4-1
+    score:
+    - 2
+    - 0
+    sources:
+    - https://example.org/test-content/evidence/copa-continental-test
+    verify: ok
+  - fixture_id: tfc-cont-g5
+    score:
+    - 1
+    - 0
+    sources:
+    - https://example.org/test-content/evidence/copa-continental-test
+    verify: ok
+  - fixture_id: copa-continental-test-other-5-1
+    score:
+    - 1
+    - 2
+    sources:
+    - https://example.org/test-content/evidence/copa-continental-test
+    verify: ok
+  - fixture_id: tfc-cont-g6
+    score:
+    - 2
+    - 2
+    sources:
+    - https://example.org/test-content/evidence/copa-continental-test
+    verify: ok
+  - fixture_id: copa-continental-test-other-6-1
+    score:
+    - 1
+    - 2
+    sources:
+    - https://example.org/test-content/evidence/copa-continental-test
+    verify: ok
+  sources:
+  - https://example.org/test-content/evidence/copa-continental-test
+  verify: ok
+  stage: groups
+  group: a

@@ -20,14 +20,15 @@ Decisions:
 - `PlayableSeasonDTO.club_seasons` holds every participant of any competition of the season
   (the own club-season included), sorted by id; `texts` holds only reviewed texts. The exact
   mapping is pinned by the Test FC oracle of the contract suite.
-- Sources and `verify` flags stay in the content: they are editorial, not game data.
+- Sources and `verify` flags stay in the content except for explicit head-to-head
+  evidence: consumers need the provenance of its declared calendar coverage.
 """
 
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
-from typing import Protocol
+from typing import Literal, Protocol
 
 from mister.shared_kernel.errors import DomainError, InvalidValueError
 from mister.shared_kernel.ids import (
@@ -212,6 +213,7 @@ class StageDTO:
     extra_time: bool
     penalties: bool
     group_stage: GroupStageDTO | None = None
+    away_goals_in_extra_time: bool | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -362,6 +364,47 @@ class FixtureDTO:
     group: str | None = None
     key: bool = False
     result: RealResultDTO | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class HeadToHeadFixtureDTO:
+    """Sourced calendar entry; the home/away orientation is independent of the managed club."""
+
+    fixture_id: FixtureId
+    date: date
+    home: ClubSeasonId
+    away: ClubSeasonId
+    sources: tuple[str, ...]
+    verify: Literal["ok", "pending"]
+
+
+@dataclass(frozen=True, slots=True)
+class HeadToHeadResultDTO:
+    """Sourced regulation score (home, away); None remains explicitly pending."""
+
+    fixture_id: FixtureId
+    score: tuple[int, int] | None
+    sources: tuple[str, ...]
+    verify: Literal["ok", "pending"]
+
+
+@dataclass(frozen=True, slots=True)
+class HeadToHeadEvidenceDTO:
+    """Declared complete calendar between covered clubs through an inclusive date.
+
+    Sources are a narrow exception to editorial metadata staying outside published APIs:
+    private table strategies require evidence of historical calendar completeness.
+    """
+
+    competition_id: CompetitionId
+    complete_through: date
+    covered_clubs: tuple[ClubSeasonId, ...]
+    schedule: tuple[HeadToHeadFixtureDTO, ...]
+    results: tuple[HeadToHeadResultDTO, ...]
+    sources: tuple[str, ...]
+    verify: Literal["ok", "pending"]
+    stage_id: str | None = None
+    group_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -566,6 +609,7 @@ class PlayableSeasonDTO:
     real_ties: tuple[RealTieDTO, ...]
     dilemmas: tuple[DilemmaDTO, ...]
     texts: tuple[TextDTO, ...]
+    head_to_head: tuple[HeadToHeadEvidenceDTO, ...] | None = None
 
     def __post_init__(self) -> None:
         if all(club.id != self.club_season_id for club in self.club_seasons):

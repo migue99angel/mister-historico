@@ -12,6 +12,8 @@ from mister.catalog.infrastructure.content_schema.base import (
     SourcedModel,
 )
 
+from mister.catalog.infrastructure.content_schema.evidence import HeadToHeadEvidence
+
 Count = Annotated[int, Field(ge=0)]
 
 
@@ -73,6 +75,8 @@ class RealTie(SourcedModel):
 
     @model_validator(mode="after")
     def _check_winner(self) -> Self:
+        if self.clubs[0] == self.clubs[1]:
+            raise ValueError("a real tie needs distinct clubs")
         if self.winner is not None and self.winner not in self.clubs:
             raise ValueError("winner must be one of the clubs of the tie")
         return self
@@ -84,6 +88,7 @@ class StandingsFile(ContentModel):
     schema_version: Literal[1]
     cutoffs: tuple[StandingsCutoff, ...]
     ties: tuple[RealTie, ...] = ()
+    head_to_head: tuple[HeadToHeadEvidence, ...] | None = None
 
     @model_validator(mode="after")
     def _check_unique_cutoffs(self) -> Self:

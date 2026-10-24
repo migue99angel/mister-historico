@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from typing import NamedTuple
 
 from mister.catalog.infrastructure.content_schema.context import SeasonContext, stage_of
+from mister.catalog.infrastructure.content_schema.evidence_checks import check_evidence
 from mister.catalog.infrastructure.content_schema.fixtures import Fixture
 from mister.catalog.infrastructure.content_schema.integrity import squad_path
 from mister.catalog.infrastructure.content_schema.season import LeagueCompetition
@@ -28,6 +29,7 @@ def check_standings(ctx: SeasonContext) -> None:
     _check_final_group_tables(ctx)
     _check_ties(ctx)
     _check_real_league_goals(ctx)
+    check_evidence(ctx)
 
 
 def _check_missing_league_cutoffs(ctx: SeasonContext) -> None:
@@ -163,7 +165,13 @@ def _check_final_group_tables(ctx: SeasonContext) -> None:
 
 
 def _check_ties(ctx: SeasonContext) -> None:
+    seen: set[tuple[str, str, str]] = set()
     for index, tie in enumerate(ctx.content.standings.ties):
+        for club in tie.clubs:
+            key = (tie.competition, tie.stage, club)
+            if key in seen:
+                ctx.add("standings", f"ties.{index}", "a club cannot participate twice in a stage")
+            seen.add(key)
         field = f"ties.{index}"
         competition = ctx.competitions.get(tie.competition)
         if competition is None or isinstance(competition, LeagueCompetition):
@@ -183,6 +191,27 @@ def _check_ties(ctx: SeasonContext) -> None:
                     f"{field}.clubs",
                     f"{club!r} is not a participant of {competition.id!r}",
                 )
+
+    _check_lineage(ctx)
+
+
+def _check_lineage(ctx: SeasonContext) -> None:
+    """Reject a known loser reused in the next connected round; leave unknown paths unknown."""
+    for competition in ctx.competitions.values():
+        if isinstance(competition, LeagueCompetition):
+            continue
+        for previous, current in zip(competition.stages, competition.stages[1:]):
+            if previous.is_group_stage or current.is_group_stage:
+                continue
+            ancestors = [t for t in ctx.content.standings.ties
+                         if (t.competition, t.stage) == (competition.id, previous.id)]
+            known_losers = {club for t in ancestors if t.winner is not None and t.verify == "ok"
+                            for club in t.clubs if club != t.winner}
+            for index, tie in enumerate(ctx.content.standings.ties):
+                if (tie.competition, tie.stage) == (competition.id, current.id):
+                    if known_losers.intersection(tie.clubs):
+                        ctx.add("standings", f"ties.{index}.clubs",
+                                "a connected stage must use the previous winner, not an eliminated club")
 
 
 def _check_real_league_goals(ctx: SeasonContext) -> None:

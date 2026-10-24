@@ -1,5 +1,48 @@
 {
   "$defs": {
+    "AwayGoalsExtraTime": {
+      "additionalProperties": false,
+      "description": "Historical extra-time variant; unknown never means disabled.",
+      "properties": {
+        "sources": {
+          "description": "URLs backing the datum.",
+          "items": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        },
+        "verify": {
+          "enum": [
+            "ok",
+            "pending"
+          ],
+          "title": "Verify",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sources",
+        "verify",
+        "value"
+      ],
+      "title": "AwayGoalsExtraTime",
+      "type": "object"
+    },
     "Block": {
       "additionalProperties": false,
       "description": "A stretch of the season. Blocks must not overlap; each ends on a standings cutoff.",
@@ -622,6 +665,17 @@
           ],
           "default": null,
           "title": "Advance Per Group"
+        },
+        "away_goals_in_extra_time": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AwayGoalsExtraTime"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "away_goals_rule": {
           "title": "Away Goals Rule",
