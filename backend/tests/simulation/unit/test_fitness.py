@@ -17,7 +17,9 @@ def test_recovery_adds_four_points_per_day_and_caps_at_full_fitness() -> None:
     assert recover_fitness(Fitness(99), 1) == Fitness(100)
 
 
-@pytest.mark.parametrize("priority,expected", [(Priority.LOW, 90), (Priority.NORMAL, 89), (Priority.HIGH, 88)])
+@pytest.mark.parametrize(
+    ("priority", "expected"), [(Priority.LOW, 90), (Priority.NORMAL, 89), (Priority.HIGH, 88)]
+)
 def test_priority_scales_match_effort(priority: Priority, expected: int) -> None:
     assert match_fitness(Fitness(100), 90, priority) == Fitness(expected)
 
@@ -53,9 +55,9 @@ def test_recovery_composes_without_counting_a_block_boundary_twice(
 def test_calendar_recovery_uses_elapsed_days_and_allows_same_day() -> None:
     start, middle, end = date(2000, 1, 1), date(2000, 1, 3), date(2000, 1, 5)
     assert recover_between(Fitness(30), start, start) == Fitness(30)
-    assert recover_between(recover_between(Fitness(30), start, middle), middle, end) == recover_between(
-        Fitness(30), start, end
-    )
+    assert recover_between(
+        recover_between(Fitness(30), start, middle), middle, end
+    ) == recover_between(Fitness(30), start, end)
 
 
 def test_huge_recovery_saturates_without_float_or_timedelta_overflow() -> None:

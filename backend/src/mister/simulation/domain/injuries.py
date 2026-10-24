@@ -1,7 +1,7 @@
 """Pure provisional injury sampling and calendar availability, independent of IO."""
 
+import datetime as dt
 from dataclasses import dataclass, replace
-from datetime import date, timedelta
 
 from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.ids import FixtureId, PlayerId
@@ -29,7 +29,7 @@ class Injury:
     """Unavailability on `[date, available_on)`; `available_on` is the first healthy day."""
 
     player_id: PlayerId
-    date: date
+    date: dt.date
     days: int
     forced: bool = False
 
@@ -38,15 +38,15 @@ class Injury:
         _require_date(self.date)
         if isinstance(self.days, bool) or not isinstance(self.days, int) or self.days <= 0:
             raise InvalidValueError("injury days must be a positive integer")
-        if self.days > (date.max - self.date).days:
+        if self.days > (dt.date.max - self.date).days:
             raise InvalidValueError("injury return date is outside the calendar range")
         if not isinstance(self.forced, bool):
             raise InvalidValueError("forced must be a boolean")
 
     @property
-    def available_on(self) -> date:
+    def available_on(self) -> dt.date:
         """First day the player can be selected again, validated at construction."""
-        return self.date + timedelta(days=self.days)
+        return self.date + dt.timedelta(days=self.days)
 
 
 def injury_risk(fitness: Fitness, minutes: int) -> float:
@@ -55,15 +55,20 @@ def injury_risk(fitness: Fitness, minutes: int) -> float:
     _require_minutes(minutes)
     return min(
         1.0,
-        _BASE_RISK * minutes / _REGULATION_MINUTES * (1 + (Fitness.HIGH - fitness.value) / _FATIGUE_SCALE),
+        _BASE_RISK
+        * minutes
+        / _REGULATION_MINUTES
+        * (1 + (Fitness.HIGH - fitness.value) / _FATIGUE_SCALE),
     )
 
 
-def simulate_injury(
+# Stream identity, calendar date and pre-match exposure are independent inputs.
+def simulate_injury(  # noqa: PLR0913
     rng: RandomSource,
     fixture_id: FixtureId,
     player_id: PlayerId,
-    on_date: date,
+    on_date: dt.date,
+    *,
     fitness: Fitness,
     minutes: int,
 ) -> Injury | None:
@@ -92,7 +97,9 @@ def simulate_injury(
     return Injury(player_id, on_date, days)
 
 
-def injured_until(player_id: PlayerId, injuries: tuple[Injury, ...], on_date: date) -> date | None:
+def injured_until(
+    player_id: PlayerId, injuries: tuple[Injury, ...], on_date: dt.date
+) -> dt.date | None:
     """Latest end of currently active absences; future and disjoint events never bridge gaps."""
     _require_player_id(player_id)
     _require_date(on_date)
@@ -107,7 +114,7 @@ def injured_until(player_id: PlayerId, injuries: tuple[Injury, ...], on_date: da
 
 
 def apply_injuries(
-    squad: tuple[SimPlayer, ...], injuries: tuple[Injury, ...], on_date: date
+    squad: tuple[SimPlayer, ...], injuries: tuple[Injury, ...], on_date: dt.date
 ) -> tuple[SimPlayer, ...]:
     """Project a complete applicable injury timeline to lineup flags without mutating input.
 

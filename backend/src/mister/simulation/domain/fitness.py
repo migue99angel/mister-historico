@@ -19,7 +19,11 @@ def _require_fitness(fitness: Fitness) -> None:
 
 
 def _require_minutes(minutes: int) -> None:
-    if isinstance(minutes, bool) or not isinstance(minutes, int) or not 0 <= minutes <= _MAX_MINUTES:
+    if (
+        isinstance(minutes, bool)
+        or not isinstance(minutes, int)
+        or not 0 <= minutes <= _MAX_MINUTES
+    ):
         raise InvalidValueError("match minutes must be an integer in 0-120")
 
 
