@@ -10,7 +10,7 @@ from mister.catalog.infrastructure.content_schema.competitions import (
     KnockoutSlot,
 )
 from mister.catalog.infrastructure.content_schema.context import SeasonContext, stage_of
-from mister.catalog.infrastructure.content_schema.season import TWO_LEGS, LeagueCompetition
+from mister.catalog.infrastructure.content_schema.season import TWO_LEGS, LeagueCompetition, Stage
 
 
 def check_competition_completion(ctx: SeasonContext) -> None:
@@ -186,29 +186,13 @@ def _check_entries(ctx: SeasonContext, field: str, declaration: GroupEntryAssign
 
 def check_release_completion(ctx: SeasonContext) -> None:
     """Require explicit calendars and all qualifying positions for reachable knockout paths."""
+    _check_reapplication(ctx)
     calendars = {d.competition: d for d in ctx.content.standings.knockout_calendar or ()}
-    entries = {d.competition: d for d in ctx.content.standings.group_entry_assignments or ()}
-    for ci, competition in enumerate(ctx.content.season.competitions):
+    for competition in ctx.content.season.competitions:
         if isinstance(competition, LeagueCompetition):
             continue
         stages = competition.stages
         knockouts = [s for s in stages if not s.is_group_stage]
-        for si, stage in enumerate(stages):
-            direct = any(t.value.startswith("head_to_head_") for t in stage.tiebreakers or ())
-            if (
-                stage.is_group_stage
-                and direct
-                and (
-                    stage.reapply_head_to_head is None
-                    or stage.reapply_head_to_head.value is None
-                    or stage.reapply_head_to_head.verify != "ok"
-                )
-            ):
-                ctx.add(
-                    "season",
-                    f"competitions.{ci}.stages.{si}.reapply_head_to_head",
-                    "an explicit verified reapplication policy is required",
-                )
         if not knockouts:
             continue
         calendar = calendars.get(competition.id)
@@ -243,29 +227,59 @@ def check_release_completion(ctx: SeasonContext) -> None:
                     "knockout_calendar",
                     "reachable progression requires all predecessor winners",
                 )
-        for stage in stages:
-            later = stages[stages.index(stage) + 1 :]
-            if not stage.is_group_stage or not any(not s.is_group_stage for s in later):
-                continue
-            declaration = entries.get(competition.id)
-            if declaration is None or declaration.entries is None or declaration.verify != "ok":
-                ctx.add(
-                    "standings",
-                    "group_entry_assignments",
-                    f"group entry assignments required for {competition.id}",
+        _check_group_coverage(ctx, competition.id, stages)
+
+
+def _check_reapplication(ctx: SeasonContext) -> None:
+    for ci, competition in enumerate(ctx.content.season.competitions):
+        if isinstance(competition, LeagueCompetition):
+            continue
+        stages = competition.stages
+        for si, stage in enumerate(stages):
+            direct = any(t.value.startswith("head_to_head_") for t in stage.tiebreakers or ())
+            if (
+                stage.is_group_stage
+                and direct
+                and (
+                    stage.reapply_head_to_head is None
+                    or stage.reapply_head_to_head.value is None
+                    or stage.reapply_head_to_head.verify != "ok"
                 )
-                continue
-            provided = {
-                (e.source_stage_id, e.group_id, e.qualifying_position) for e in declaration.entries
-            }
-            required = {
-                (stage.id, group.id, position)
-                for group in stage.groups or ()
-                for position in range(1, (stage.advance_per_group or 0) + 1)
-            }
-            if not required <= provided:
+            ):
                 ctx.add(
-                    "standings",
-                    "group_entry_assignments",
-                    "every qualifying position requires an assignment",
+                    "season",
+                    f"competitions.{ci}.stages.{si}.reapply_head_to_head",
+                    "an explicit verified reapplication policy is required",
                 )
+
+
+def _check_group_coverage(
+    ctx: SeasonContext, competition_id: str, stages: tuple[Stage, ...]
+) -> None:
+    entries = {d.competition: d for d in ctx.content.standings.group_entry_assignments or ()}
+    for stage in stages:
+        later = stages[stages.index(stage) + 1 :]
+        if not stage.is_group_stage or not any(not s.is_group_stage for s in later):
+            continue
+        declaration = entries.get(competition_id)
+        if declaration is None or declaration.entries is None or declaration.verify != "ok":
+            ctx.add(
+                "standings",
+                "group_entry_assignments",
+                f"group entry assignments required for {competition_id}",
+            )
+            continue
+        provided = {
+            (e.source_stage_id, e.group_id, e.qualifying_position) for e in declaration.entries
+        }
+        required = {
+            (stage.id, group.id, position)
+            for group in stage.groups or ()
+            for position in range(1, (stage.advance_per_group or 0) + 1)
+        }
+        if not required <= provided:
+            ctx.add(
+                "standings",
+                "group_entry_assignments",
+                "every qualifying position requires an assignment",
+            )
