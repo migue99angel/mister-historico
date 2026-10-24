@@ -11,7 +11,10 @@ from mister.simulation.domain.groups import GroupEvidence, GroupMatch, GroupRule
 from mister.simulation.domain.league_types import LeagueRow
 from mister.simulation.domain.model import FixtureSpec, Score
 
-CLUBS = tuple(ClubSeasonId(f"{club}-2000-01") for club in ("test-fc", "demo-athletic", "sample-united", "dummy-rovers"))
+CLUBS = tuple(
+    ClubSeasonId(f"{club}-2000-01")
+    for club in ("test-fc", "demo-athletic", "sample-united", "dummy-rovers")
+)
 CUTOFF = date(2001, 2, 1)
 
 
@@ -24,32 +27,71 @@ def _rules(*criteria: str, reapply: bool = False) -> GroupRules:
 
 
 def _match(home: int, away: int, score: tuple[int, int]) -> GroupMatch:
-    return GroupMatch(FixtureSpec(FixtureId(f"group-{home}-{away}"), date(2001, 1, 1), CompetitionId("test-champions"), CLUBS[home], CLUBS[away], stage="groups", group="a"), Score(*score))
+    return GroupMatch(
+        FixtureSpec(
+            FixtureId(f"group-{home}-{away}"),
+            date(2001, 1, 1),
+            CompetitionId("test-champions"),
+            CLUBS[home],
+            CLUBS[away],
+            stage="groups",
+            group="a",
+        ),
+        Score(*score),
+    )
 
 
 def _evidence(*matches: GroupMatch) -> GroupEvidence:
     return GroupEvidence(CUTOFF, tuple(m.fixture for m in matches), matches)
 
 
-def _table(rules: GroupRules, *, evidence: GroupEvidence | None = None, rows: tuple[LeagueRow, ...] | None = None) -> GroupTable:
-    return GroupTable(CompetitionId("test-champions"), "groups", "a", CLUBS, rows or tuple(_row(club) for club in CLUBS), rules, evidence)
+def _table(
+    rules: GroupRules,
+    *,
+    evidence: GroupEvidence | None = None,
+    rows: tuple[LeagueRow, ...] | None = None,
+) -> GroupTable:
+    return GroupTable(
+        CompetitionId("test-champions"),
+        "groups",
+        "a",
+        CLUBS,
+        rows or tuple(_row(club) for club in CLUBS),
+        rules,
+        evidence,
+    )
 
 
-@pytest.mark.parametrize(("criterion", "rows"), [
-    ("goal_difference", tuple(_row(c, gf=i) for i, c in enumerate(CLUBS))),
-    ("goals_for", tuple(_row(c, gf=i, ga=i) for i, c in enumerate(CLUBS))),
-    ("wins", tuple(_row(c, wins=i) for i, c in enumerate(CLUBS))),
-])
-def test_group_orders_by_configured_overall_criteria(criterion: str, rows: tuple[LeagueRow, ...]) -> None:
+@pytest.mark.parametrize(
+    ("criterion", "rows"),
+    [
+        ("goal_difference", tuple(_row(c, gf=i) for i, c in enumerate(CLUBS))),
+        ("goals_for", tuple(_row(c, gf=i, ga=i) for i, c in enumerate(CLUBS))),
+        ("wins", tuple(_row(c, wins=i) for i, c in enumerate(CLUBS))),
+    ],
+)
+def test_group_orders_by_configured_overall_criteria(
+    criterion: str, rows: tuple[LeagueRow, ...]
+) -> None:
     ranking = _table(_rules(criterion), rows=rows).rank()
     assert tuple(row.club_season_id for row in ranking.rows) == CLUBS[::-1]
     assert ranking.qualifiers == CLUBS[::-1][:2]
 
 
-@pytest.mark.parametrize("criterion", ["head_to_head_points", "head_to_head_goal_difference", "head_to_head_goals_for", "head_to_head_away_goals"])
+@pytest.mark.parametrize(
+    "criterion",
+    [
+        "head_to_head_points",
+        "head_to_head_goal_difference",
+        "head_to_head_goals_for",
+        "head_to_head_away_goals",
+    ],
+)
 def test_head_to_head_criteria_use_only_explicit_mini_table_matches(criterion: str) -> None:
     rows = tuple(_row(c, gf=20 if c == CLUBS[0] else 0) for c in CLUBS)
-    ranking = _table(_rules(criterion, "goals_for"), rows=rows, evidence=_evidence(_match(0, 1, (0, 2)))).rank()
+    ranking = _table(
+        _rules(criterion, "goals_for"), rows=rows, evidence=_evidence(_match(0, 1, (0, 2)))
+    ).rank()
     assert ranking.rows[0].club_season_id == CLUBS[1]
 
 
@@ -87,10 +129,14 @@ def test_no_head_to_head_evidence_is_required_after_points_resolve_order() -> No
 def test_mini_table_reapplication_is_an_explicit_synthetic_rule() -> None:
     # A/B/C have 3 H2H points. A scores 4, B/C score 2; reapplying ranks B above C.
     matches = (_match(0, 1, (4, 0)), _match(1, 2, (2, 0)), _match(2, 0, (2, 0)))
-    rows = tuple(_row(c, gf=9 if i == 2 else 0, wins=1 if i < 3 else 0) for i, c in enumerate(CLUBS))
+    rows = tuple(
+        _row(c, gf=9 if i == 2 else 0, wins=1 if i < 3 else 0) for i, c in enumerate(CLUBS)
+    )
     criteria = ("head_to_head_points", "head_to_head_goals_for", "goals_for")
     without = _table(_rules(*criteria), rows=rows, evidence=_evidence(*matches)).rank()
-    with_reapply = _table(_rules(*criteria, reapply=True), rows=rows, evidence=_evidence(*matches)).rank()
+    with_reapply = _table(
+        _rules(*criteria, reapply=True), rows=rows, evidence=_evidence(*matches)
+    ).rank()
     assert tuple(r.club_season_id for r in without.rows)[:3] == (CLUBS[0], CLUBS[2], CLUBS[1])
     assert tuple(r.club_season_id for r in with_reapply.rows)[:3] == CLUBS[:3]
 
