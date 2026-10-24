@@ -31,7 +31,10 @@ mediante `InvalidValueError`:
 La petición exige participantes únicos, incluido el dirigido, y una fila por participante,
 sin equipos adicionales. Los contadores son enteros no negativos, `played = won + drawn
 + lost` y los puntos del baseline coinciden con la puntuación configurada. No se fija
-una victoria en tres puntos. Las sustituciones tienen identificadores de fixture únicos,
+una victoria en tres puntos. Este modelo, como el esquema actual, no representa sanciones
+ni deducciones de puntos: si una fuente documenta una, se rechaza la entrada y se necesita
+una CR antes de soportarla; no se altera el dato histórico para hacer cuadrar la fórmula.
+Las sustituciones tienen identificadores de fixture únicos,
 incluyen al equipo dirigido, enfrentan a participantes distintos y no son posteriores al
 corte, que es inclusivo. Las fechas son fechas de calendario, sin hora.
 
