@@ -26,7 +26,7 @@ from mister.simulation.domain.league_types import (
     LeagueRow,
     ResultReplacement,
 )
-from mister.simulation.domain.model import Score
+from mister.simulation.domain.model import Score, Venue
 
 _ME = ClubSeasonId("test-fc-2000-01")
 _A = ClubSeasonId("sample-united-2000-01")
@@ -576,3 +576,30 @@ def test_the_declared_schedule_can_contain_a_single_leg_on_the_inclusive_cutoff(
 
     assert evidence.schedule == (fixture,)
     assert evidence.results[0].score == Score(2, 1)
+
+
+@pytest.mark.parametrize("venue", ["home", True, 1])
+def test_direct_fixture_requires_a_typed_venue_when_provided(venue: Any) -> None:
+    with pytest.raises(InvalidValueError):
+        HeadToHeadFixture(FixtureId("test-fixture"), _CUTOFF, _ME, _A, venue=venue)
+
+
+def test_unknown_venue_is_allowed_for_other_direct_criteria_but_not_away_goals() -> None:
+    fixture = _fixture("test-fc-sample-united", _ME, _A)
+    common = dict(evidence=_evidence(((fixture, Score(1, 1)),), (_ME, _A)), replacements=(_replacement(fixture, Score(1, 1), Score(1, 1)),))
+    assert _table((_row(_ME), _row(_A)), criteria=("head_to_head_points",), **common).unresolved_groups
+    with pytest.raises(InvalidValueError, match="venue"):
+        _table((_row(_ME), _row(_A)), criteria=("head_to_head_away_goals",), **common)
+
+
+def test_neutral_direct_match_contributes_no_away_goals_even_for_simulated_scores() -> None:
+    fixture = replace(_fixture("neutral-test", _ME, _A), venue=Venue.NEUTRAL)
+    table = _table((_row(_ME), _row(_A)), criteria=("head_to_head_away_goals",), evidence=_evidence(((fixture, Score(0, 0)),), (_ME, _A)), replacements=(_replacement(fixture, Score(0, 0), Score(3, 7)),))
+    assert table.unresolved_groups == (( _A, _ME),)
+
+
+@pytest.mark.parametrize("home,away,expected", [(_ME, _A, (_A, _ME)), (_A, _ME, (_ME, _A))])
+def test_known_home_venue_counts_only_the_effective_away_clubs_goals(home: ClubSeasonId, away: ClubSeasonId, expected: tuple[ClubSeasonId, ...]) -> None:
+    fixture = replace(_fixture("home-test", home, away), venue=Venue.HOME)
+    table = _table((_row(_ME), _row(_A)), criteria=("head_to_head_away_goals",), evidence=_evidence(((fixture, Score(0, 0)),), (_ME, _A)), replacements=(_replacement(fixture, Score(0, 0), Score(0, 2)),))
+    assert _clubs(table) == expected
