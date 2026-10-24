@@ -402,6 +402,7 @@ class BlockSimRequest:
     competition_priorities: Mapping[CompetitionId, PriorityName] = field(default_factory=dict)
     forced_injuries_from_effects: tuple[ForcedInjuryDTO, ...] = ()
     prior_results: tuple["MatchResultDTO", ...] = ()
+    state_as_of: date | None = None
 
 
 # --------------------------------------------------------------------------- output
