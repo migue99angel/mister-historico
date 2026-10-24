@@ -2,7 +2,7 @@
 
 ## Estado y motivo
 
-Planificación de Astra; pendiente de implementación y revisión independiente Sol. Esta CR precede a T2.6 y al mapeo definitivo de T2.20. No cambia OpenAPI, el kernel ni `ExternalResultsPolicy`.
+Planificación de Astra; implementación Sol terminada, pendiente de revisión independiente Sol y CI. Esta CR precede a T2.6 y al mapeo definitivo de T2.20. No cambia OpenAPI, el kernel ni `ExternalResultsPolicy`.
 
 La API actual solo publica los partidos del equipo gestionado. Eso no basta para desempatar una miniliga con rivales entre sí. Además, la regla de goles fuera durante la prórroga no está representada. La ausencia de esos datos no equivale a cero ni a una regla desactivada.
 
@@ -49,3 +49,5 @@ Test FC conserva todas las tablas, fixtures propios y estadísticas previas: la 
 ## Requisitos previos adicionales para T2.6
 
 El diseño final de T2.4 hace explícitas otras dos carencias contractuales, fuera del alcance de esta CR: la política de reaplicación de miniligas (`reapply_head_to_head`) y una salida que preserve los conjuntos cuyo desempate deportivo sigue sin resolver. No se añaden defaults históricos implícitos. Junto con fechas, sedes y fixtures posteriores a la eliminación real, se resolverán en otra CR antes de declarar completa T2.6. Esta CR no cablea adaptadores, no genera esos fixtures y no convierte el orden de presentación por ID en una posición deportiva.
+
+La evidencia actual orienta local y visitante, pero no publica una sede neutral para H2H de grupos. El mapeo a `GroupEvidence` y los criterios de goles fuera requieren resolver explícitamente ese dato en la CR posterior; no debe darse por acreditado el campo del local a partir de la orientación del marcador.

@@ -605,3 +605,5 @@ Cada etapa admite `away_goals_in_extra_time`, por defecto `null`. Su forma en co
 Los contendientes de `ties` tienen que ser distintos y cada club solo puede participar una vez por etapa. Un perdedor acreditado no puede reaparecer en la siguiente etapa conectada. Un ganador pendiente, una eliminatoria de origen ausente, nuevas entradas, sorteos o una transición desde grupos no autorizan a inventar el linaje: la resolución privada exige evidencia suficiente.
 
 Esta CR no aporta fechas ni sedes de rondas posteriores a la eliminación histórica del equipo propio. Tampoco añade la política de reaplicación de miniligas ni la representación pública de desempates que sigan sin resolver. Son requisitos previos separados al cierre de T2.6; un orden estable para presentación no acredita una posición deportiva definitiva.
+
+La evidencia actual orienta local y visitante, pero no publica una sede neutral para H2H de grupos. El mapeo a `GroupEvidence` y los criterios de goles fuera requieren resolver explícitamente ese dato en la CR posterior; no debe darse por acreditado el campo del local a partir de la orientación del marcador.

@@ -9,6 +9,7 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 from tests.catalog.test_content_tree import FIXTURE_ROOT, OWN, SEASON, assert_issue, edit, issues_of
+from tests.contracts.suites.expected_test_fc import build_expected_test_fc_season
 
 from mister.catalog.infrastructure.content_schema import load_content_tree
 from mister.catalog.infrastructure.content_schema.evidence import HeadToHeadEvidence
@@ -299,24 +300,31 @@ def test_a_pending_predecessor_does_not_create_an_invented_lineage(root: Path) -
 
 def test_managed_id_cannot_be_reused_for_unrelated_rivals_in_a_partial_scope(root: Path) -> None:
     rivals = ["sample-united-2000-01", "demo-athletic-2000-01"]
-    invalid = evidence(covered_clubs=rivals, schedule=[fixture(home=rivals[0], away=rivals[1])], results=[result()])
+    invalid = evidence(
+        covered_clubs=rivals, schedule=[fixture(home=rivals[0], away=rivals[1])], results=[result()]
+    )
     edit(root, f"{SEASON}/standings.yaml", lambda d: d.update(head_to_head=[invalid]))
     assert_issue(issues_of(root), f"{SEASON}/standings.yaml", "head_to_head", "managed fixture")
 
 
-def test_a_postponed_match_after_coverage_does_not_make_an_empty_calendar_incomplete(root: Path) -> None:
+def test_a_postponed_match_after_coverage_does_not_make_an_empty_calendar_incomplete(
+    root: Path,
+) -> None:
     before = evidence(complete_through=DAY - timedelta(days=1))
     edit(root, f"{SEASON}/standings.yaml", lambda d: d.update(head_to_head=[before]))
     load_content_tree(root, release=False)
 
 
-def test_partial_coverage_at_the_first_cutoff_does_not_satisfy_later_release_cutoffs(root: Path) -> None:
+def test_partial_coverage_at_the_first_cutoff_does_not_satisfy_later_release_cutoffs(
+    root: Path,
+) -> None:
     def shorten(data: dict[str, Any]) -> None:
         h = data["head_to_head"][0]
         h["complete_through"] = date(2000, 9, 30)
         ids = {f["fixture_id"] for f in h["schedule"] if f["date"] <= h["complete_through"]}
         for key in ("schedule", "results"):
             h[key] = [f for f in h[key] if f["fixture_id"] in ids]
+
     edit(root, f"{SEASON}/standings.yaml", shorten)
     load_content_tree(root, release=False)
     issues = issues_of(root, release=True)
@@ -328,35 +336,60 @@ def test_partial_coverage_at_the_first_cutoff_does_not_satisfy_later_release_cut
 def test_each_layer_of_pending_evidence_is_blocked_for_release(root: Path, scope: str) -> None:
     def pending(data: dict[str, Any]) -> None:
         h = data["head_to_head"][0]
-        target = h if scope == "coverage" else h["schedule" if scope == "calendar" else "results"][0]
+        target = (
+            h if scope == "coverage" else h["schedule" if scope == "calendar" else "results"][0]
+        )
         target["verify"] = "pending"
+
     edit(root, f"{SEASON}/standings.yaml", pending)
     load_content_tree(root, release=False)
     assert_issue(issues_of(root, release=True), f"{SEASON}/standings.yaml", "verify", "pending")
 
 
 @pytest.mark.parametrize("value", [True, False])
-def test_verified_extra_time_variant_can_ship_and_reaches_the_catalog_oracle(root: Path, value: bool) -> None:
-    from tests.contracts.suites.expected_test_fc import build_expected_test_fc_season
+def test_verified_extra_time_variant_can_ship_and_reaches_the_catalog_oracle(
+    root: Path, value: bool
+) -> None:
     def explicit(data: dict[str, Any]) -> None:
-        data["competitions"][1]["stages"][0].update(extra_time=True, away_goals_in_extra_time={"value": value, "sources": [SOURCE], "verify": "ok"})
+        data["competitions"][1]["stages"][0].update(
+            extra_time=True,
+            away_goals_in_extra_time={"value": value, "sources": [SOURCE], "verify": "ok"},
+        )
+
     edit(root, f"{SEASON}/season.yaml", explicit)
     tree = load_content_tree(root, release=True)
     actual = build_expected_test_fc_season(tree)
     assert actual.competitions[1].stages[0].away_goals_in_extra_time is value
 
 
-@pytest.mark.parametrize("value,verify,sources", [(None, "pending", []), (False, "pending", [SOURCE])])
-def test_unverified_extra_time_variant_is_not_release_ready(root: Path, value: Any, verify: str, sources: list[str]) -> None:
+@pytest.mark.parametrize(
+    ("value", "verify", "sources"), [(None, "pending", []), (False, "pending", [SOURCE])]
+)
+def test_unverified_extra_time_variant_is_not_release_ready(
+    root: Path, value: Any, verify: str, sources: list[str]
+) -> None:
     def pending(data: dict[str, Any]) -> None:
-        data["competitions"][1]["stages"][0].update(extra_time=True, away_goals_in_extra_time={"value": value, "sources": sources, "verify": verify})
+        data["competitions"][1]["stages"][0].update(
+            extra_time=True,
+            away_goals_in_extra_time={"value": value, "sources": sources, "verify": verify},
+        )
+
     edit(root, f"{SEASON}/season.yaml", pending)
     load_content_tree(root, release=False)
-    assert_issue(issues_of(root, release=True), f"{SEASON}/season.yaml", "away_goals_in_extra_time", "explicit")
+    assert_issue(
+        issues_of(root, release=True),
+        f"{SEASON}/season.yaml",
+        "away_goals_in_extra_time",
+        "explicit",
+    )
 
 
 def test_duplicate_coverage_declarations_are_rejected(root: Path) -> None:
-    edit(root, f"{SEASON}/standings.yaml", lambda d: d["head_to_head"].append(deepcopy(d["head_to_head"][0])))
+    edit(
+        root,
+        f"{SEASON}/standings.yaml",
+        lambda d: d["head_to_head"].append(deepcopy(d["head_to_head"][0])),
+    )
     assert_issue(issues_of(root), f"{SEASON}/standings.yaml", "head_to_head", "duplicate coverage")
 
 
@@ -368,10 +401,15 @@ def test_overlapping_calendars_cannot_disagree_by_omitting_a_rival_match(root: P
         extra["schedule"] = []
         extra["results"] = []
         data["head_to_head"].append(extra)
+
     edit(root, f"{SEASON}/standings.yaml", omit)
     assert_issue(issues_of(root), f"{SEASON}/standings.yaml", "head_to_head", "contradict")
 
 
 def test_unknown_predecessor_ties_stay_unresolved_instead_of_being_fabricated(root: Path) -> None:
-    edit(root, f"{SEASON}/standings.yaml", lambda d: d.update(ties=[t for i,t in enumerate(d["ties"]) if i != 1]))
+    edit(
+        root,
+        f"{SEASON}/standings.yaml",
+        lambda d: d.update(ties=[t for i, t in enumerate(d["ties"]) if i != 1]),
+    )
     load_content_tree(root, release=False)
