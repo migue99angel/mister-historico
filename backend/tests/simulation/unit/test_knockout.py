@@ -3,6 +3,7 @@
 from collections import deque
 from dataclasses import dataclass, field, replace
 from datetime import date
+from typing import Any
 
 import pytest
 
@@ -248,43 +249,66 @@ def test_ambiguous_next_tie_is_rejected() -> None:
 
 
 @pytest.mark.parametrize("changes", [{"stage": ""}, {"date": "2001-02-01"}, {"venue": "home"}])
-def test_knockout_fixture_metadata_is_validated(changes: dict[str, object]) -> None:
+def test_knockout_fixture_metadata_is_validated(changes: dict[str, Any]) -> None:
     fixture = replace(_fixtures(single=True)[0], **changes)
     with pytest.raises(InvalidValueError):
         KnockoutTie(KnockoutRules(1, False, False, False), (fixture,))
 
 
-@pytest.mark.parametrize("changes", [
-    {"legs": 3}, {"legs": True}, {"extra_time": 1}, {"away_goals_rule": 1},
-    {"penalties": 0}, {"away_goals_rule": True}, {"away_goals_in_extra_time": False},
-])
-def test_knockout_rules_reject_incoherent_configuration(changes: dict[str, object]) -> None:
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"legs": 3},
+        {"legs": True},
+        {"extra_time": 1},
+        {"away_goals_rule": 1},
+        {"penalties": 0},
+        {"away_goals_rule": True},
+        {"away_goals_in_extra_time": False},
+    ],
+)
+def test_knockout_rules_reject_incoherent_configuration(changes: dict[str, Any]) -> None:
     with pytest.raises(InvalidValueError):
         replace(KnockoutRules(1, False, False, False), **changes)
 
 
-@pytest.mark.parametrize("changes", [
-    {"rules": None}, {"fixtures": []}, {"fixtures": (None,)}, {"results": []},
-    {"results": (None,)}, {"results": (MatchResult(Score(0, 0)),) * 3},
-])
-def test_tie_requires_immutable_typed_inputs(changes: dict[str, object]) -> None:
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"rules": None},
+        {"fixtures": []},
+        {"fixtures": (None,)},
+        {"results": []},
+        {"results": (None,)},
+        {"results": (MatchResult(Score(0, 0)),) * 3},
+    ],
+)
+def test_tie_requires_immutable_typed_inputs(changes: dict[str, Any]) -> None:
     with pytest.raises(InvalidValueError):
         replace(KnockoutTie(KnockoutRules(2, False, False, False), _fixtures()), **changes)
 
 
-@pytest.mark.parametrize("changes", [
-    {"leg": 1}, {"date": date(2001, 2, 1)}, {"fixture_id": FixtureId("test-first")},
-    {"competition_id": CompetitionId("other-cup")}, {"stage": "semi"},
-    {"group": "a"}, {"home": SAMPLE}, {"venue": Venue.NEUTRAL},
-])
-def test_return_leg_must_match_the_same_tie(changes: dict[str, object]) -> None:
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"leg": 1},
+        {"date": date(2001, 2, 1)},
+        {"fixture_id": FixtureId("test-first")},
+        {"competition_id": CompetitionId("other-cup")},
+        {"stage": "semi"},
+        {"group": "a"},
+        {"home": SAMPLE},
+        {"venue": Venue.NEUTRAL},
+    ],
+)
+def test_return_leg_must_match_the_same_tie(changes: dict[str, Any]) -> None:
     first, second = _fixtures()
     with pytest.raises(InvalidValueError):
         KnockoutTie(KnockoutRules(2, True, False, False), (first, replace(second, **changes)))
 
 
 @pytest.mark.parametrize("changes", [{"leg": 2}, {"stage": None}, {"group": "a"}])
-def test_single_match_must_be_a_valid_knockout_fixture(changes: dict[str, object]) -> None:
+def test_single_match_must_be_a_valid_knockout_fixture(changes: dict[str, Any]) -> None:
     first = replace(_fixtures(single=True)[0], **changes)
     with pytest.raises(InvalidValueError):
         KnockoutTie(KnockoutRules(1, False, False, False), (first,))
@@ -295,7 +319,9 @@ def test_first_leg_is_simulated_without_deciding_periods() -> None:
     setup = _setup(fixtures[0])
     rng = StdlibRandomSource(Seed(9))
     simulator = _Simulator(deque([MatchResult(Score(1, 0))]))
-    tie = KnockoutTie(KnockoutRules(2, False, True, True), fixtures).play_next(setup, simulator, rng)
+    tie = KnockoutTie(KnockoutRules(2, False, True, True), fixtures).play_next(
+        setup, simulator, rng
+    )
     assert tie.results == (MatchResult(Score(1, 0)),)
     assert tie.winner is None
     assert simulator.calls == [("regulation", setup, rng, False)]
@@ -330,29 +356,58 @@ def test_regulation_simulator_cannot_prematurely_decide_the_match() -> None:
     simulator = _Simulator(deque([MatchResult(Score(0, 0), Score(1, 0))]))
     with pytest.raises(InvalidValueError, match="unexpected"):
         KnockoutTie(KnockoutRules(1, False, True, True), fixtures).play_next(
-            _setup(fixtures[0]), simulator, StdlibRandomSource(Seed(9)))
+            _setup(fixtures[0]), simulator, StdlibRandomSource(Seed(9))
+        )
 
 
-@pytest.mark.parametrize(("scores", "winner"), [
-    ((Score(0, 1), Score(0, 0)), DEMO), ((Score(0, 1), Score(2, 0)), DEMO),
-    ((Score(2, 1), Score(1, 0)), DEMO), ((Score(2, 0), Score(0, 0)), TEST),
-])
-def test_both_aggregate_and_away_goal_orientations(scores: tuple[Score, Score], winner: ClubSeasonId) -> None:
-    tie = KnockoutTie(KnockoutRules(2, True, False, False), _fixtures(), tuple(MatchResult(s) for s in scores))
+@pytest.mark.parametrize(
+    ("scores", "winner"),
+    [
+        ((Score(0, 1), Score(0, 0)), DEMO),
+        ((Score(0, 1), Score(2, 0)), DEMO),
+        ((Score(2, 1), Score(1, 0)), DEMO),
+        ((Score(2, 0), Score(0, 0)), TEST),
+    ],
+)
+def test_both_aggregate_and_away_goal_orientations(
+    scores: tuple[Score, Score], winner: ClubSeasonId
+) -> None:
+    tie = KnockoutTie(
+        KnockoutRules(2, True, False, False), _fixtures(), tuple(MatchResult(s) for s in scores)
+    )
     assert tie.winner == winner
 
 
-@pytest.mark.parametrize("changes", [{"stage_id": ""}, {"clubs": ()}, {"clubs": (TEST, TEST)},
-                                    {"clubs": (TEST, "demo")}, {"winner": SAMPLE}])
-def test_historical_tie_requires_an_evidenced_participating_winner(changes: dict[str, object]) -> None:
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"stage_id": ""},
+        {"clubs": ()},
+        {"clubs": (TEST, TEST)},
+        {"clubs": (TEST, "demo")},
+        {"winner": SAMPLE},
+    ],
+)
+def test_historical_tie_requires_an_evidenced_participating_winner(
+    changes: dict[str, Any],
+) -> None:
     with pytest.raises(InvalidValueError):
         replace(HistoricalTie("quarter", (TEST, DEMO), DEMO), **changes)
 
 
-@pytest.mark.parametrize("changes", [{"stages": ()}, {"stages": ("quarter", "quarter")},
-                                    {"stages": ("",)}, {"ties": []},
-                                    {"ties": (HistoricalTie("unknown", (TEST, DEMO)),)}])
-def test_bracket_requires_an_explicit_unambiguous_stage_sequence(changes: dict[str, object]) -> None:
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"stages": ()},
+        {"stages": ("quarter", "quarter")},
+        {"stages": ("",)},
+        {"ties": []},
+        {"ties": (HistoricalTie("unknown", (TEST, DEMO)),)},
+    ],
+)
+def test_bracket_requires_an_explicit_unambiguous_stage_sequence(
+    changes: dict[str, Any],
+) -> None:
     with pytest.raises(InvalidValueError):
         replace(_bracket(), **changes)
 

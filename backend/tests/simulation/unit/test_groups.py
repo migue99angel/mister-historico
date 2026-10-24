@@ -2,6 +2,7 @@
 
 from dataclasses import replace
 from datetime import date
+from typing import Any
 
 import pytest
 
@@ -161,31 +162,47 @@ def test_neutral_fixture_goals_do_not_count_as_head_to_head_away_goals() -> None
 
 
 @pytest.mark.parametrize("changes", [{"stage_id": 1}, {"group_id": 1}])
-def test_group_identity_must_use_nonempty_strings(changes: dict[str, object]) -> None:
+def test_group_identity_must_use_nonempty_strings(changes: dict[str, Any]) -> None:
     with pytest.raises(InvalidValueError):
         replace(_table(_rules()), **changes)
 
 
-@pytest.mark.parametrize("changes", [
-    {"points_per_win": -1}, {"points_per_draw": True}, {"advance_per_group": 0},
-    {"advance_per_group": 4}, {"advance_per_group": True}, {"reapply_head_to_head": None},
-    {"tiebreakers": ("alphabetical",)}, {"tiebreakers": ("wins", "wins")},
-    {"tiebreakers": ["wins"]},
-])
-def test_group_rules_reject_unknown_or_invalid_configuration(changes: dict[str, object]) -> None:
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"points_per_win": -1},
+        {"points_per_draw": True},
+        {"advance_per_group": 0},
+        {"advance_per_group": 4},
+        {"advance_per_group": True},
+        {"reapply_head_to_head": None},
+        {"tiebreakers": ("alphabetical",)},
+        {"tiebreakers": ("wins", "wins")},
+        {"tiebreakers": ["wins"]},
+    ],
+)
+def test_group_rules_reject_unknown_or_invalid_configuration(changes: dict[str, Any]) -> None:
     with pytest.raises(InvalidValueError):
         replace(_rules(), **changes)
 
 
 @pytest.mark.parametrize("changes", [{"fixture": None}, {"score": (0, 0)}])
-def test_group_match_needs_typed_evidence(changes: dict[str, object]) -> None:
+def test_group_match_needs_typed_evidence(changes: dict[str, Any]) -> None:
     with pytest.raises(InvalidValueError):
         replace(_match(0, 1, (0, 0)), **changes)
 
 
-@pytest.mark.parametrize("changes", [{"as_of": "2001-02-01"}, {"schedule": []},
-                                    {"results": []}, {"schedule": (None,)}, {"results": (None,)}])
-def test_group_evidence_is_immutable_and_dated(changes: dict[str, object]) -> None:
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"as_of": "2001-02-01"},
+        {"schedule": []},
+        {"results": []},
+        {"schedule": (None,)},
+        {"results": (None,)},
+    ],
+)
+def test_group_evidence_is_immutable_and_dated(changes: dict[str, Any]) -> None:
     with pytest.raises(InvalidValueError):
         replace(_evidence(), **changes)
 
@@ -214,18 +231,30 @@ def test_future_evidence_results_are_rejected() -> None:
         GroupEvidence(date(2000, 12, 31), (match.fixture,), (match,))
 
 
-@pytest.mark.parametrize("changes", [{"competition_id": None}, {"stage_id": ""},
-    {"rules": None}, {"participants": CLUBS[:-1] + CLUBS[:1]}, {"rows": []},
-    {"rows": (None,)}, {"rows": tuple(_row(c) for c in CLUBS[:3])},
-    {"rows": tuple(replace(_row(c), points=9) for c in CLUBS)}, {"evidence": ()}])
-def test_group_table_requires_consistent_rows_and_identity(changes: dict[str, object]) -> None:
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"competition_id": None},
+        {"stage_id": ""},
+        {"rules": None},
+        {"participants": CLUBS[:-1] + CLUBS[:1]},
+        {"rows": []},
+        {"rows": (None,)},
+        {"rows": tuple(_row(c) for c in CLUBS[:3])},
+        {"rows": tuple(replace(_row(c), points=9) for c in CLUBS)},
+        {"evidence": ()},
+    ],
+)
+def test_group_table_requires_consistent_rows_and_identity(changes: dict[str, Any]) -> None:
     with pytest.raises(InvalidValueError):
         replace(_table(_rules()), **changes)
 
 
 def test_group_rejects_evidence_for_an_outside_club() -> None:
     match = _match(0, 1, (1, 0))
-    outside = replace(match, fixture=replace(match.fixture, away=ClubSeasonId("outside-fc-2000-01")))
+    outside = replace(
+        match, fixture=replace(match.fixture, away=ClubSeasonId("outside-fc-2000-01"))
+    )
     with pytest.raises(InvalidValueError, match="clubs"):
         _table(_rules(), evidence=_evidence(outside))
 
@@ -240,7 +269,9 @@ def test_head_to_head_points_apply_the_configured_win_and_draw_values() -> None:
 
 
 def test_a_tie_entirely_within_the_qualified_places_does_not_invent_a_winner() -> None:
-    rows = tuple(_row(c, wins=1 if i < 2 else 0, gf=i if i >= 2 else 0) for i, c in enumerate(CLUBS))
+    rows = tuple(
+        _row(c, wins=1 if i < 2 else 0, gf=i if i >= 2 else 0) for i, c in enumerate(CLUBS)
+    )
     ranking = _table(_rules("goal_difference"), rows=rows).rank()
     assert set(ranking.qualifiers) == set(CLUBS[:2])
     assert ranking.unresolved_ties == (tuple(sorted(CLUBS[:2], key=str)),)
