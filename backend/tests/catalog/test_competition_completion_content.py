@@ -285,3 +285,31 @@ def test_complete_historical_slots_remain_available_beyond_real_elimination(root
     )
     assert OWN not in (final.home, final.away)
     assert final.date == date(2001, 5, 26)
+
+
+def test_destination_must_follow_every_feeding_predecessor_tie(root: Path) -> None:
+    def late_origins(data: dict[str, Any]) -> None:
+        external = [s for s in data["knockout_calendar"][0]["slots"] if s["stage_id"] == "semifinal" and OWN not in (s["home"], s["away"])]
+        for slot in external:
+            slot["date"] = date(2001, 5, 26 + slot["leg"])
+    edit(root, STANDINGS, late_origins)
+    assert_issue(issues_of(root, release=True), STANDINGS, "knockout_calendar", "predecessor")
+
+
+def test_group_entry_target_cannot_add_unqualified_historical_contenders(root: Path) -> None:
+    def extra_final(data: dict[str, Any]) -> None:
+        clubs = ["abroad-athletic-2000-01", "faraway-city-2000-01"]
+        data["ties"].append({"competition": "copa-continental-test", "stage": "final", "clubs": clubs, "winner": clubs[0], "sources": [SOURCE], "verify": "ok"})
+        slot = deepcopy(data["knockout_calendar"][2]["slots"][0])
+        slot.update(fixture_id="unqualified-final", home=clubs[0], away=clubs[1], sources=[SOURCE])
+        data["knockout_calendar"][2]["slots"].append(slot)
+    edit(root, STANDINGS, extra_final)
+    assert_issue(issues_of(root, release=True), STANDINGS, "group_entry_assignments", "exactly")
+
+
+def test_group_target_must_follow_its_final_accredited_table(root: Path) -> None:
+    def early(data: dict[str, Any]) -> None:
+        next(f for f in data["fixtures"] if f["id"] == "tfc-cont-final")["date"] = date(2001, 1, 30)
+    edit(root, f"{SEASON}/fixtures.yaml", early)
+    edit(root, STANDINGS, lambda d: d["knockout_calendar"][2]["slots"][0].update(date=date(2001, 1, 30)))
+    assert_issue(issues_of(root, release=True), STANDINGS, "group_entry_assignments", "table")
