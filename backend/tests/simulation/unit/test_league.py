@@ -5,6 +5,12 @@ from datetime import date, datetime
 from typing import Any
 
 import pytest
+from tests.simulation.unit.test_external_results_contract import (
+    ExternalResultsContract,
+    PolicyFactory,
+    make_accumulated_request,
+    make_request,
+)
 
 from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.ids import ClubSeasonId, CompetitionId, FixtureId
@@ -15,14 +21,12 @@ from mister.simulation.domain.league import (
     HistoricalExternalResults,
     LeagueTable,
 )
-from mister.simulation.domain.league_types import ExternalResultsRequest, LeagueRow, ResultReplacement
-from mister.simulation.domain.model import Score
-from tests.simulation.unit.test_external_results_contract import (
-    ExternalResultsContract,
-    PolicyFactory,
-    make_accumulated_request,
-    make_request,
+from mister.simulation.domain.league_types import (
+    ExternalResultsRequest,
+    LeagueRow,
+    ResultReplacement,
 )
+from mister.simulation.domain.model import Score
 
 _ME = ClubSeasonId("test-fc-2000-01")
 _A = ClubSeasonId("sample-united-2000-01")
@@ -34,12 +38,14 @@ _SOURCES = ("https://example.org/test-content/liga-test",)
 
 
 class TestHistoricalExternalResults(ExternalResultsContract):
+    pytestmark = pytest.mark.contract
+
     @pytest.fixture
     def make_policy(self) -> PolicyFactory:
         return HistoricalExternalResults
 
 
-def _row(
+def _row(  # noqa: PLR0913 - Named league counters keep fixture intent explicit.
     club: ClubSeasonId,
     *,
     won: int = 1,
@@ -118,7 +124,9 @@ def _evidence(
     )
 
 
-def _replacement(fixture: HeadToHeadFixture, historical: Score, simulated: Score) -> ResultReplacement:
+def _replacement(
+    fixture: HeadToHeadFixture, historical: Score, simulated: Score
+) -> ResultReplacement:
     return ResultReplacement(
         fixture.fixture_id, fixture.date, fixture.home, fixture.away, historical, simulated
     )
@@ -343,6 +351,45 @@ def test_a_triple_tie_keeps_the_original_mini_league_after_partitioning() -> Non
     assert table.unresolved_groups == ()
 
 
+def test_rivals_in_a_managed_points_group_keep_sporting_criteria_after_partitioning() -> None:
+    ma = _fixture("test-fc-sample-united", _ME, _A)
+    mb = _fixture("test-fc-mock-city", _ME, _B)
+    table = _table(
+        (_row(_ME), _row(_A), _row(_B)),
+        criteria=("head_to_head_points", "head_to_head_goal_difference"),
+        final_order=(_B, _A, _ME),
+        evidence=_evidence(((ma, Score(1, 0)), (mb, Score(3, 0)))),
+        replacements=(
+            _replacement(ma, Score(1, 0), Score(1, 0)),
+            _replacement(mb, Score(3, 0), Score(3, 0)),
+        ),
+    )
+
+    assert _clubs(table) == (_ME, _A, _B)
+    assert table.unresolved_groups == ()
+
+
+def test_direct_evidence_covers_the_original_group_even_after_a_global_criterion_splits_it() -> (
+    None
+):
+    with pytest.raises(InvalidValueError, match="original points group"):
+        _table(
+            (_row(_ME), _row(_A), _row(_B, goals_for=2)),
+            criteria=("goals_for", "head_to_head_points"),
+            evidence=_evidence(clubs=(_ME, _A)),
+        )
+
+
+def test_replaying_original_results_preserves_the_historical_points_ranking() -> None:
+    request = make_request(reproduce_history=True)
+    adjusted_rows = HistoricalExternalResults().standings(request)
+
+    table = LeagueTable(request, adjusted_rows, (), (_A, _ME))
+
+    assert table.rows == request.historical_rows
+    assert table.unresolved_groups == ()
+
+
 def test_direct_criterion_requires_coverage_of_the_original_points_group() -> None:
     with pytest.raises(InvalidValueError, match="cover"):
         _table(
@@ -450,7 +497,9 @@ def test_table_and_evidence_are_immutable() -> None:
         ("away", _ME),
     ],
 )
-def test_historical_fixture_validates_its_identifiers_date_and_sides(field: str, value: Any) -> None:
+def test_historical_fixture_validates_its_identifiers_date_and_sides(
+    field: str, value: Any
+) -> None:
     with pytest.raises(InvalidValueError):
         replace(_fixture("test-fc-sample-united", _ME, _A), **{field: value})
 
@@ -488,7 +537,9 @@ def test_evidence_requires_typed_metadata_and_a_declared_immutable_calendar(
         replace(_evidence(), **{field: value})
 
 
-@pytest.mark.parametrize("inconsistency", ["missing", "orphan", "duplicate-fixture", "duplicate-result"])
+@pytest.mark.parametrize(
+    "inconsistency", ["missing", "orphan", "duplicate-fixture", "duplicate-result"]
+)
 def test_evidence_requires_exactly_one_result_per_declared_fixture(inconsistency: str) -> None:
     fixture = _fixture("sample-united-mock-city", _A, _B)
     evidence = _evidence(((fixture, Score(2, 1)),))
