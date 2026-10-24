@@ -9,7 +9,7 @@ from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.ids import ClubSeasonId, CompetitionId, FixtureId
 from mister.simulation.domain.groups import GroupEvidence, GroupMatch, GroupRules, GroupTable
 from mister.simulation.domain.league_types import LeagueRow
-from mister.simulation.domain.model import FixtureSpec, Score
+from mister.simulation.domain.model import FixtureSpec, Score, Venue
 
 CLUBS = tuple(
     ClubSeasonId(f"{club}-2000-01")
@@ -151,3 +151,105 @@ def test_group_rejects_evidence_for_another_group() -> None:
 def test_group_requires_four_distinct_rows() -> None:
     with pytest.raises(InvalidValueError):
         replace(_table(_rules("goal_difference")), participants=CLUBS[:3])
+
+
+def test_neutral_fixture_goals_do_not_count_as_head_to_head_away_goals() -> None:
+    match = _match(0, 1, (0, 2))
+    neutral = replace(match, fixture=replace(match.fixture, venue=Venue.NEUTRAL))
+    ranking = _table(_rules("head_to_head_away_goals"), evidence=_evidence(neutral)).rank()
+    assert ranking.unresolved_ties == (tuple(sorted(CLUBS, key=str)),)
+
+
+@pytest.mark.parametrize("changes", [{"stage_id": 1}, {"group_id": 1}])
+def test_group_identity_must_use_nonempty_strings(changes: dict[str, object]) -> None:
+    with pytest.raises(InvalidValueError):
+        replace(_table(_rules()), **changes)
+
+
+@pytest.mark.parametrize("changes", [
+    {"points_per_win": -1}, {"points_per_draw": True}, {"advance_per_group": 0},
+    {"advance_per_group": 4}, {"advance_per_group": True}, {"reapply_head_to_head": None},
+    {"tiebreakers": ("alphabetical",)}, {"tiebreakers": ("wins", "wins")},
+    {"tiebreakers": ["wins"]},
+])
+def test_group_rules_reject_unknown_or_invalid_configuration(changes: dict[str, object]) -> None:
+    with pytest.raises(InvalidValueError):
+        replace(_rules(), **changes)
+
+
+@pytest.mark.parametrize("changes", [{"fixture": None}, {"score": (0, 0)}])
+def test_group_match_needs_typed_evidence(changes: dict[str, object]) -> None:
+    with pytest.raises(InvalidValueError):
+        replace(_match(0, 1, (0, 0)), **changes)
+
+
+@pytest.mark.parametrize("changes", [{"as_of": "2001-02-01"}, {"schedule": []},
+                                    {"results": []}, {"schedule": (None,)}, {"results": (None,)}])
+def test_group_evidence_is_immutable_and_dated(changes: dict[str, object]) -> None:
+    with pytest.raises(InvalidValueError):
+        replace(_evidence(), **changes)
+
+
+def test_duplicate_evidence_calendar_fixtures_are_rejected() -> None:
+    match = _match(0, 1, (1, 0))
+    with pytest.raises(InvalidValueError, match="duplicate"):
+        GroupEvidence(CUTOFF, (match.fixture, match.fixture), ())
+
+
+def test_duplicate_evidence_results_are_rejected() -> None:
+    match = _match(0, 1, (1, 0))
+    with pytest.raises(InvalidValueError, match="duplicate"):
+        GroupEvidence(CUTOFF, (match.fixture,), (match, match))
+
+
+def test_result_without_its_exact_fixture_is_rejected() -> None:
+    match = _match(0, 1, (1, 0))
+    with pytest.raises(InvalidValueError, match="scheduled"):
+        GroupEvidence(CUTOFF, (), (match,))
+
+
+def test_future_evidence_results_are_rejected() -> None:
+    match = _match(0, 1, (1, 0))
+    with pytest.raises(InvalidValueError, match="cutoff"):
+        GroupEvidence(date(2000, 12, 31), (match.fixture,), (match,))
+
+
+@pytest.mark.parametrize("changes", [{"competition_id": None}, {"stage_id": ""},
+    {"rules": None}, {"participants": CLUBS[:-1] + CLUBS[:1]}, {"rows": []},
+    {"rows": (None,)}, {"rows": tuple(_row(c) for c in CLUBS[:3])},
+    {"rows": tuple(replace(_row(c), points=9) for c in CLUBS)}, {"evidence": ()}])
+def test_group_table_requires_consistent_rows_and_identity(changes: dict[str, object]) -> None:
+    with pytest.raises(InvalidValueError):
+        replace(_table(_rules()), **changes)
+
+
+def test_group_rejects_evidence_for_an_outside_club() -> None:
+    match = _match(0, 1, (1, 0))
+    outside = replace(match, fixture=replace(match.fixture, away=ClubSeasonId("outside-fc-2000-01")))
+    with pytest.raises(InvalidValueError, match="clubs"):
+        _table(_rules(), evidence=_evidence(outside))
+
+
+def test_head_to_head_points_apply_the_configured_win_and_draw_values() -> None:
+    matches = (_match(0, 1, (0, 0)), _match(1, 2, (0, 0)), _match(2, 3, (1, 0)))
+    rules = GroupRules(2, 1, ("head_to_head_points",), 2, False)
+    rows = tuple(replace(_row(c), points=3) for c in CLUBS)
+    ranking = _table(rules, rows=rows, evidence=_evidence(*matches)).rank()
+    assert ranking.rows[0].club_season_id == CLUBS[2]
+    assert ranking.rows[-1].club_season_id == CLUBS[3]
+
+
+def test_a_tie_entirely_within_the_qualified_places_does_not_invent_a_winner() -> None:
+    rows = tuple(_row(c, wins=1 if i < 2 else 0, gf=i if i >= 2 else 0) for i, c in enumerate(CLUBS))
+    ranking = _table(_rules("goal_difference"), rows=rows).rank()
+    assert set(ranking.qualifiers) == set(CLUBS[:2])
+    assert ranking.unresolved_ties == (tuple(sorted(CLUBS[:2], key=str)),)
+
+
+def test_only_missing_mini_table_results_are_required_to_break_a_tie() -> None:
+    played = _match(0, 1, (1, 0))
+    unrelated = _match(2, 3, (0, 0))
+    evidence = GroupEvidence(CUTOFF, (played.fixture, unrelated.fixture), (played,))
+    rows = tuple(_row(c, wins=1 if i < 2 else i) for i, c in enumerate(CLUBS))
+    ranking = _table(_rules("head_to_head_points"), rows=rows, evidence=evidence).rank()
+    assert not ranking.unresolved_ties
