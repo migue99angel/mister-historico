@@ -316,7 +316,7 @@ def test_head_to_head_uses_simulated_managed_results_and_historical_rival_result
 def test_direct_goal_criteria_respect_home_and_away(
     criterion: str, score: Score, expected: tuple[ClubSeasonId, ...]
 ) -> None:
-    fixture = _fixture("test-fc-sample-united", _ME, _A)
+    fixture = replace(_fixture("test-fc-sample-united", _ME, _A), venue=Venue.HOME)
 
     table = _table(
         (_row(_ME), _row(_A)),
