@@ -1,5 +1,123 @@
 {
   "$defs": {
+    "GroupEntryAssignment": {
+      "additionalProperties": false,
+      "description": "Historical representative of an explicit group position in a target stage.",
+      "properties": {
+        "group_id": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Group Id",
+          "type": "string"
+        },
+        "historical_representative": {
+          "maxLength": 64,
+          "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
+          "title": "Historical Representative",
+          "type": "string"
+        },
+        "qualifying_position": {
+          "minimum": 1,
+          "title": "Qualifying Position",
+          "type": "integer"
+        },
+        "source_stage_id": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Source Stage Id",
+          "type": "string"
+        },
+        "sources": {
+          "description": "URLs backing the datum.",
+          "items": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "target_stage_id": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Target Stage Id",
+          "type": "string"
+        },
+        "verify": {
+          "enum": [
+            "ok",
+            "pending"
+          ],
+          "title": "Verify",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sources",
+        "verify",
+        "source_stage_id",
+        "group_id",
+        "qualifying_position",
+        "target_stage_id",
+        "historical_representative"
+      ],
+      "title": "GroupEntryAssignment",
+      "type": "object"
+    },
+    "GroupEntryAssignments": {
+      "additionalProperties": false,
+      "description": "All explicitly sourced qualifying positions of one competition.",
+      "properties": {
+        "competition": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Competition",
+          "type": "string"
+        },
+        "entries": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/GroupEntryAssignment"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Entries"
+        },
+        "sources": {
+          "description": "URLs backing the datum.",
+          "items": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "verify": {
+          "enum": [
+            "ok",
+            "pending"
+          ],
+          "title": "Verify",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sources",
+        "verify",
+        "competition",
+        "entries"
+      ],
+      "title": "GroupEntryAssignments",
+      "type": "object"
+    },
     "HeadToHeadEvidence": {
       "additionalProperties": false,
       "description": "Editorial declaration of all matches between covered clubs through an inclusive date.",
@@ -137,6 +255,22 @@
           "title": "Sources",
           "type": "array"
         },
+        "venue": {
+          "anyOf": [
+            {
+              "enum": [
+                "home",
+                "neutral"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Venue"
+        },
         "verify": {
           "enum": [
             "ok",
@@ -219,6 +353,163 @@
         "score"
       ],
       "title": "HeadToHeadResult",
+      "type": "object"
+    },
+    "KnockoutCalendar": {
+      "additionalProperties": false,
+      "description": "A complete explicit calendar for one competition; a null collection is pending.",
+      "properties": {
+        "competition": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Competition",
+          "type": "string"
+        },
+        "slots": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/KnockoutSlot"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Slots"
+        },
+        "sources": {
+          "description": "URLs backing the datum.",
+          "items": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "verify": {
+          "enum": [
+            "ok",
+            "pending"
+          ],
+          "title": "Verify",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sources",
+        "verify",
+        "competition",
+        "slots"
+      ],
+      "title": "KnockoutCalendar",
+      "type": "object"
+    },
+    "KnockoutSlot": {
+      "additionalProperties": false,
+      "description": "Calendar identity of a historical slot; its future occupants are separate game state.",
+      "properties": {
+        "away": {
+          "maxLength": 64,
+          "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
+          "title": "Away",
+          "type": "string"
+        },
+        "date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Date"
+        },
+        "fixture_id": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Fixture Id",
+          "type": "string"
+        },
+        "home": {
+          "maxLength": 64,
+          "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
+          "title": "Home",
+          "type": "string"
+        },
+        "leg": {
+          "anyOf": [
+            {
+              "enum": [
+                1,
+                2
+              ],
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Leg"
+        },
+        "sources": {
+          "description": "URLs backing the datum.",
+          "items": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "stage_id": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Stage Id",
+          "type": "string"
+        },
+        "venue": {
+          "anyOf": [
+            {
+              "enum": [
+                "home",
+                "neutral"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Venue"
+        },
+        "verify": {
+          "enum": [
+            "ok",
+            "pending"
+          ],
+          "title": "Verify",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sources",
+        "verify",
+        "fixture_id",
+        "stage_id",
+        "date",
+        "home",
+        "away",
+        "venue"
+      ],
+      "title": "KnockoutSlot",
       "type": "object"
     },
     "RealTie": {
@@ -477,6 +768,21 @@
       "title": "Cutoffs",
       "type": "array"
     },
+    "group_entry_assignments": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/GroupEntryAssignments"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Group Entry Assignments"
+    },
     "head_to_head": {
       "anyOf": [
         {
@@ -491,6 +797,21 @@
       ],
       "default": null,
       "title": "Head To Head"
+    },
+    "knockout_calendar": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/KnockoutCalendar"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Knockout Calendar"
     },
     "schema_version": {
       "const": 1,

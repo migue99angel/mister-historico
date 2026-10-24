@@ -34,6 +34,8 @@ from mister.catalog.application.api import (
     FixtureDTO,
     GoalStatsDTO,
     GroupDTO,
+    GroupEntryAssignmentDTO,
+    GroupEntryAssignmentsDTO,
     GroupStageDTO,
     HeadToHeadEvidenceDTO,
     HeadToHeadFixtureDTO,
@@ -41,6 +43,8 @@ from mister.catalog.application.api import (
     HistoricalOutcomeDTO,
     InjuryEffectDTO,
     InjuryForcedEventDTO,
+    KnockoutCalendarDTO,
+    KnockoutSlotDTO,
     LeagueRulesDTO,
     ManagerDTO,
     MoraleEffectDTO,
@@ -177,6 +181,9 @@ def _stage(stage: sn.Stage) -> StageDTO:
             points_per_draw=stage.points_per_draw,
             tiebreakers=_tiebreakers(stage.tiebreakers),
             advance_per_group=stage.advance_per_group,
+            reapply_head_to_head=None
+            if stage.reapply_head_to_head is None
+            else stage.reapply_head_to_head.value,
         )
     return StageDTO(
         stage.id,
@@ -365,6 +372,7 @@ def build_expected_test_fc_season(tree: ContentTree | None = None) -> PlayableSe
                         ClubSeasonId(f.away),
                         tuple(str(url) for url in f.sources),
                         f.verify,
+                        f.venue,
                     )
                     for f in h.schedule
                 ),
@@ -383,6 +391,56 @@ def build_expected_test_fc_season(tree: ContentTree | None = None) -> PlayableSe
                 h.group,
             )
             for h in content.standings.head_to_head
+        ),
+        knockout_calendar=None
+        if content.standings.knockout_calendar is None
+        else tuple(
+            KnockoutCalendarDTO(
+                CompetitionId(declaration.competition),
+                None
+                if declaration.slots is None
+                else tuple(
+                    KnockoutSlotDTO(
+                        FixtureId(slot.fixture_id),
+                        slot.stage_id,
+                        slot.date,
+                        ClubSeasonId(slot.home),
+                        ClubSeasonId(slot.away),
+                        slot.venue,
+                        slot.leg,
+                        tuple(str(url) for url in slot.sources),
+                        slot.verify,
+                    )
+                    for slot in declaration.slots
+                ),
+                tuple(str(url) for url in declaration.sources),
+                declaration.verify,
+            )
+            for declaration in content.standings.knockout_calendar
+        ),
+        group_entry_assignments=None
+        if content.standings.group_entry_assignments is None
+        else tuple(
+            GroupEntryAssignmentsDTO(
+                CompetitionId(declaration.competition),
+                None
+                if declaration.entries is None
+                else tuple(
+                    GroupEntryAssignmentDTO(
+                        entry.source_stage_id,
+                        entry.group_id,
+                        entry.qualifying_position,
+                        entry.target_stage_id,
+                        ClubSeasonId(entry.historical_representative),
+                        tuple(str(url) for url in entry.sources),
+                        entry.verify,
+                    )
+                    for entry in declaration.entries
+                ),
+                tuple(str(url) for url in declaration.sources),
+                declaration.verify,
+            )
+            for declaration in content.standings.group_entry_assignments
         ),
         real_ties=tuple(
             RealTieDTO(

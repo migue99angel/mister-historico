@@ -1,7 +1,7 @@
 """Sourced regulation-time evidence, separate from the managed team's fixture calendar."""
 
 from datetime import date
-from typing import Annotated, Self
+from typing import Annotated, Literal, Self
 
 from pydantic import Field, model_validator
 
@@ -12,10 +12,13 @@ from mister.catalog.infrastructure.content_schema.fixtures import Goals
 class HeadToHeadFixture(SourcedModel):
     """One dated home/away match in a declared complete calendar."""
 
+    nullable_when_pending = ("venue",)
+
     fixture_id: Slug
     date: date
     home: ClubSeasonSlug
     away: ClubSeasonSlug
+    venue: Literal["home", "neutral"] | None = None
 
     @model_validator(mode="after")
     def _check_sides(self) -> Self:

@@ -44,6 +44,7 @@ def evidence(**overrides: Any) -> dict[str, Any]:
 def fixture(**overrides: Any) -> dict[str, Any]:
     return {
         "fixture_id": "tfc-liga-01",
+        "venue": "home",
         "date": DAY,
         "home": OWN,
         "away": OTHER,
@@ -410,7 +411,9 @@ def test_unknown_predecessor_ties_stay_unresolved_instead_of_being_fabricated(ro
     edit(
         root,
         f"{SEASON}/standings.yaml",
-        lambda d: d.update(ties=[t for i, t in enumerate(d["ties"]) if i != 1]),
+        lambda d: d.update(
+            ties=[t for i, t in enumerate(d["ties"]) if i != 1], knockout_calendar=None
+        ),
     )
     load_content_tree(root, release=False)
 
