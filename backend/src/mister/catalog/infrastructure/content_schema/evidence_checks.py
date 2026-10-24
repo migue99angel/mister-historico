@@ -6,7 +6,10 @@ from typing import NamedTuple
 
 from mister.catalog.infrastructure.content_schema.base import season_window
 from mister.catalog.infrastructure.content_schema.context import SeasonContext, stage_of
-from mister.catalog.infrastructure.content_schema.evidence import HeadToHeadEvidence, HeadToHeadFixture
+from mister.catalog.infrastructure.content_schema.evidence import (
+    HeadToHeadEvidence,
+    HeadToHeadFixture,
+)
 from mister.catalog.infrastructure.content_schema.fixtures import Fixture
 from mister.catalog.infrastructure.content_schema.season import LeagueCompetition
 from mister.catalog.infrastructure.content_schema.standings import StandingsCutoff

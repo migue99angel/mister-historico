@@ -1,6 +1,6 @@
 """Explicit competition completion contracts for synthetic Test FC scenarios."""
 
-from dataclasses import fields
+from dataclasses import fields, replace
 from datetime import date
 from typing import Any
 
@@ -107,15 +107,35 @@ def test_invalid_unresolved_knockout_identity_is_rejected(clubs: Any, ids: Any) 
 
 
 def second_leg() -> api.MatchResultDTO:
-    return api.MatchResultDTO(FixtureId("second-leg"), COMP, DAY, CLUBS[1], CLUBS[0], (1, 2), "away", CLUBS[1], "win", winner="away", stage_id="semifinal", leg=2)
+    return api.MatchResultDTO(
+        FixtureId("second-leg"),
+        COMP,
+        DAY,
+        CLUBS[1],
+        CLUBS[0],
+        (1, 2),
+        "away",
+        CLUBS[1],
+        "win",
+        winner="away",
+        stage_id="semifinal",
+        leg=2,
+    )
 
 
 def test_exhausted_tie_can_span_blocks_and_have_an_individual_second_leg_winner() -> None:
-    tie = api.UnresolvedKnockoutTieDTO(COMP, "semifinal", CLUBS[:2], (FixtureId("first-leg"), FixtureId("second-leg")))
-    summary = api.BlockSummaryDTO(BlockId("b2"), results=(second_leg(),), unresolved_knockout_ties=(tie,))
+    tie = api.UnresolvedKnockoutTieDTO(
+        COMP, "semifinal", CLUBS[:2], (FixtureId("first-leg"), FixtureId("second-leg"))
+    )
+    summary = api.BlockSummaryDTO(
+        BlockId("b2"), results=(second_leg(),), unresolved_knockout_ties=(tie,)
+    )
     assert summary.unresolved_knockout_ties == (tie,)
     assert summary.results[0].winner == "away"
-    assert api.BlockSummaryDTO(BlockId("b2"), unresolved_knockout_ties=()).unresolved_knockout_ties == ()
+    assert (
+        api.BlockSummaryDTO(BlockId("b2"), unresolved_knockout_ties=()).unresolved_knockout_ties
+        == ()
+    )
 
 
 @pytest.mark.parametrize("bad", [[], ("untyped",)])
@@ -124,23 +144,86 @@ def test_unresolved_knockout_collection_requires_immutable_typed_values(bad: Any
         api.BlockSummaryDTO(BlockId("b2"), unresolved_knockout_ties=bad)
 
 
-@pytest.mark.parametrize("change", [{"competition_id": CompetitionId("other")}, {"stage_id": "final"}, {"home": CLUBS[2]}])
+@pytest.mark.parametrize(
+    "change",
+    [{"competition_id": CompetitionId("other")}, {"stage_id": "final"}, {"home": CLUBS[2]}],
+)
 def test_present_results_must_match_unresolved_knockout_identity(change: dict[str, Any]) -> None:
-    from dataclasses import replace
-    tie = api.UnresolvedKnockoutTieDTO(COMP, "semifinal", CLUBS[:2], (FixtureId("first-leg"), FixtureId("second-leg")))
+    tie = api.UnresolvedKnockoutTieDTO(
+        COMP, "semifinal", CLUBS[:2], (FixtureId("first-leg"), FixtureId("second-leg"))
+    )
     with pytest.raises(InvalidValueError):
-        api.BlockSummaryDTO(BlockId("b2"), results=(replace(second_leg(), **change),), unresolved_knockout_ties=(tie,))
+        api.BlockSummaryDTO(
+            BlockId("b2"),
+            results=(replace(second_leg(), **change),),
+            unresolved_knockout_ties=(tie,),
+        )
 
 
 def test_unresolved_knockout_collection_cannot_repeat_fixtures_or_stage_participants() -> None:
     first = api.UnresolvedKnockoutTieDTO(COMP, "semifinal", CLUBS[:2], (FixtureId("first"),))
-    second = api.UnresolvedKnockoutTieDTO(COMP, "semifinal", (CLUBS[0], CLUBS[2]), (FixtureId("second"),))
+    second = api.UnresolvedKnockoutTieDTO(
+        COMP, "semifinal", (CLUBS[0], CLUBS[2]), (FixtureId("second"),)
+    )
     for pair in ((first, first), (first, second)):
         with pytest.raises(InvalidValueError):
             api.BlockSummaryDTO(BlockId("b2"), unresolved_knockout_ties=pair)
 
 
-@pytest.mark.parametrize("competition,stage", [("untyped", "final"), (COMP, ""), (COMP, True)])
-def test_unresolved_knockout_scope_requires_a_typed_competition_and_nonblank_stage(competition: Any, stage: Any) -> None:
+@pytest.mark.parametrize(("competition", "stage"), [("untyped", "final"), (COMP, ""), (COMP, True)])
+def test_unresolved_knockout_scope_requires_a_typed_competition_and_nonblank_stage(
+    competition: Any, stage: Any
+) -> None:
     with pytest.raises(InvalidValueError):
         api.UnresolvedKnockoutTieDTO(competition, stage, CLUBS[:2], (FixtureId("final"),))
+
+
+def test_swapped_positions_contract_oracle_transforms_both_final_occupants() -> None:
+    # Synthetic oracle for the future connector, not block simulation.
+    historical = api.KnockoutSlotInput(
+        FixtureId("test-final"),
+        "final",
+        DAY,
+        CLUBS[0],
+        CLUBS[1],
+        "neutral",
+        None,
+        ("https://example.org/test-content/calendar",),
+        "ok",
+    )
+    occupants = {CLUBS[0]: CLUBS[1], CLUBS[1]: CLUBS[0]}
+    effective = replace(
+        historical, home=occupants[historical.home], away=occupants[historical.away]
+    )
+    assert (effective.home, effective.away) == (CLUBS[1], CLUBS[0])
+    assert effective.home != effective.away
+    assert (effective.fixture_id, effective.date, effective.venue) == (
+        historical.fixture_id,
+        DAY,
+        "neutral",
+    )
+
+
+def test_mixed_semifinal_oracle_updates_both_surviving_slot_occupants() -> None:
+    # Historical semis Test-Mock and Sample-Demo were won by Test and Sample.
+    # Positions swapped Test/Sample: Sample advances externally via Test's
+    # historical slot, while Demo beats managed Test via Sample's slot.
+    historical = api.KnockoutSlotInput(
+        FixtureId("test-final"),
+        "final",
+        DAY,
+        CLUBS[0],
+        CLUBS[1],
+        "neutral",
+        None,
+        ("https://example.org/test-content/calendar",),
+        "ok",
+    )
+    surviving = {CLUBS[0]: CLUBS[1], CLUBS[1]: CLUBS[3]}
+    effective = replace(
+        historical, home=surviving[historical.home], away=surviving[historical.away]
+    )
+    assert (effective.home, effective.away) == (CLUBS[1], CLUBS[3])
+    assert len(set(surviving.values())) == len(surviving)
+    assert CLUBS[0] not in surviving.values()
+    assert effective.fixture_id == historical.fixture_id

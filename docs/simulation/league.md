@@ -130,3 +130,9 @@ incoherente. Los marcadores ya vienen en la petición: la política de liga no
 invoca un simulador de partidos.
 
 🤖 Generated with Codex
+
+## Sede explícita (CR-T2.6-competition-completion)
+
+`HeadToHeadFixture.venue` se añade al final como `Venue | None = None`; el calendario es la autoridad y el resultado no repite esa sede. Se admiten las sedes de calendario `HOME` y `NEUTRAL`, o `None`; `AWAY` es una orientación relativa a un equipo y se rechaza. Los criterios distintos de goles visitantes conservan la compatibilidad con `None`. Solo al alcanzar `head_to_head_away_goals` se exige sede conocida para los partidos de toda la miniliga original, incluso si un criterio anterior ya separó a algún club. En `Venue.HOME` se cuentan los goles del visitante; en `Venue.NEUTRAL` no se cuentan goles fuera. Los marcadores propios se sustituyen por los simulados antes de ese cómputo.
+
+La CR previa ya proporciona calendario y resultados H2H con fuentes en las APIs. La CR de cierre añade sede explícita y salidas nullable para conservar grupos sin resolver. El futuro traductor T2.6 debe usar los lados del calendario al orientar un partido propio neutral: la neutralidad no determina quién figura como local. No se modifica la política P2 ni la semántica de miniliga de liga.

@@ -199,7 +199,11 @@ def _check_group_completeness(ctx: SeasonContext, competition: Competition) -> N
                     pair = [f for f in own if f.opponent == opponent]
                     if any(f.venue == "neutral" for f in pair):
                         if len(pair) != stage.legs:
-                            ctx.add("fixtures", "fixtures", f"{label}: each opponent needs {stage.legs} matches")
+                            ctx.add(
+                                "fixtures",
+                                "fixtures",
+                                f"{label}: each opponent needs {stage.legs} matches",
+                            )
                     else:
                         _check_pair(ctx, label, opponent, own, stage.legs)
 
