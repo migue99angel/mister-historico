@@ -1,5 +1,226 @@
 {
   "$defs": {
+    "HeadToHeadEvidence": {
+      "additionalProperties": false,
+      "description": "Editorial declaration of all matches between covered clubs through an inclusive date.",
+      "properties": {
+        "competition": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Competition",
+          "type": "string"
+        },
+        "complete_through": {
+          "format": "date",
+          "title": "Complete Through",
+          "type": "string"
+        },
+        "covered_clubs": {
+          "items": {
+            "maxLength": 64,
+            "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
+            "type": "string"
+          },
+          "minItems": 2,
+          "title": "Covered Clubs",
+          "type": "array"
+        },
+        "group": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Group"
+        },
+        "results": {
+          "items": {
+            "$ref": "#/$defs/HeadToHeadResult"
+          },
+          "title": "Results",
+          "type": "array"
+        },
+        "schedule": {
+          "items": {
+            "$ref": "#/$defs/HeadToHeadFixture"
+          },
+          "title": "Schedule",
+          "type": "array"
+        },
+        "sources": {
+          "description": "URLs backing the datum.",
+          "items": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "stage": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stage"
+        },
+        "verify": {
+          "enum": [
+            "ok",
+            "pending"
+          ],
+          "title": "Verify",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sources",
+        "verify",
+        "competition",
+        "complete_through",
+        "covered_clubs",
+        "schedule",
+        "results"
+      ],
+      "title": "HeadToHeadEvidence",
+      "type": "object"
+    },
+    "HeadToHeadFixture": {
+      "additionalProperties": false,
+      "description": "One dated home/away match in a declared complete calendar.",
+      "properties": {
+        "away": {
+          "maxLength": 64,
+          "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
+          "title": "Away",
+          "type": "string"
+        },
+        "date": {
+          "format": "date",
+          "title": "Date",
+          "type": "string"
+        },
+        "fixture_id": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Fixture Id",
+          "type": "string"
+        },
+        "home": {
+          "maxLength": 64,
+          "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
+          "title": "Home",
+          "type": "string"
+        },
+        "sources": {
+          "description": "URLs backing the datum.",
+          "items": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "verify": {
+          "enum": [
+            "ok",
+            "pending"
+          ],
+          "title": "Verify",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sources",
+        "verify",
+        "fixture_id",
+        "date",
+        "home",
+        "away"
+      ],
+      "title": "HeadToHeadFixture",
+      "type": "object"
+    },
+    "HeadToHeadResult": {
+      "additionalProperties": false,
+      "description": "A regulation-time score, home first, identified by its calendar fixture.",
+      "properties": {
+        "fixture_id": {
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Fixture Id",
+          "type": "string"
+        },
+        "score": {
+          "anyOf": [
+            {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "maximum": 30,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "maximum": 30,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Score"
+        },
+        "sources": {
+          "description": "URLs backing the datum.",
+          "items": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "verify": {
+          "enum": [
+            "ok",
+            "pending"
+          ],
+          "title": "Verify",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sources",
+        "verify",
+        "fixture_id",
+        "score"
+      ],
+      "title": "HeadToHeadResult",
+      "type": "object"
+    },
     "RealTie": {
       "additionalProperties": false,
       "description": "A real knockout tie, including those that do not involve the own team (P2).",
@@ -255,6 +476,21 @@
       },
       "title": "Cutoffs",
       "type": "array"
+    },
+    "head_to_head": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/HeadToHeadEvidence"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Head To Head"
     },
     "schema_version": {
       "const": 1,

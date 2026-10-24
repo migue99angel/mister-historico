@@ -35,6 +35,9 @@ from mister.catalog.application.api import (
     GoalStatsDTO,
     GroupDTO,
     GroupStageDTO,
+    HeadToHeadEvidenceDTO,
+    HeadToHeadFixtureDTO,
+    HeadToHeadResultDTO,
     HistoricalOutcomeDTO,
     InjuryEffectDTO,
     InjuryForcedEventDTO,
@@ -184,6 +187,7 @@ def _stage(stage: sn.Stage) -> StageDTO:
         stage.extra_time,
         stage.penalties,
         group_stage,
+        None if stage.away_goals_in_extra_time is None else stage.away_goals_in_extra_time.value,
     )
 
 
@@ -345,6 +349,20 @@ def build_expected_test_fc_season(tree: ContentTree | None = None) -> PlayableSe
                 group=c.group,
             )
             for c in content.standings.cutoffs
+        ),
+        head_to_head=None if content.standings.head_to_head is None else tuple(
+            HeadToHeadEvidenceDTO(
+                CompetitionId(h.competition), h.complete_through,
+                tuple(ClubSeasonId(c) for c in h.covered_clubs),
+                tuple(HeadToHeadFixtureDTO(
+                    FixtureId(f.fixture_id), f.date, ClubSeasonId(f.home), ClubSeasonId(f.away),
+                    tuple(str(url) for url in f.sources), f.verify,
+                ) for f in h.schedule),
+                tuple(HeadToHeadResultDTO(
+                    FixtureId(r.fixture_id), r.score, tuple(str(url) for url in r.sources), r.verify,
+                ) for r in h.results),
+                tuple(str(url) for url in h.sources), h.verify, h.stage, h.group,
+            ) for h in content.standings.head_to_head
         ),
         real_ties=tuple(
             RealTieDTO(
