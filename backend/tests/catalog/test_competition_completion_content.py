@@ -217,3 +217,42 @@ def test_unknown_third_party_venue_is_never_replaced_by_home(root: Path) -> None
 def test_known_direct_venue_cannot_contradict_a_managed_fixture(root: Path) -> None:
     edit(root, STANDINGS, lambda d: d["head_to_head"][0]["schedule"][0].update(venue="neutral"))
     assert_issue(issues_of(root), STANDINGS, "head_to_head", "venue")
+
+
+@pytest.mark.parametrize("managed_home", [True, False])
+def test_neutral_managed_group_fixture_uses_explicit_calendar_orientation(root: Path, managed_home: bool) -> None:
+    def neutral_fixtures(data: dict[str, Any]) -> None:
+        next(f for f in data["fixtures"] if f["id"] == "tfc-cont-g2")["venue"] = "neutral"
+    def neutral_evidence(data: dict[str, Any]) -> None:
+        history = data["head_to_head"][1]
+        slot = next(f for f in history["schedule"] if f["fixture_id"] == "tfc-cont-g2")
+        slot.update(venue="neutral", home=OWN if managed_home else "abroad-athletic-2000-01", away="abroad-athletic-2000-01" if managed_home else OWN)
+        next(r for r in history["results"] if r["fixture_id"] == "tfc-cont-g2")["score"] = [1, 2] if managed_home else [2, 1]
+    edit(root, f"{SEASON}/fixtures.yaml", neutral_fixtures)
+    edit(root, STANDINGS, neutral_evidence)
+    load_content_tree(root, release=True)
+
+
+def test_complete_historical_slots_remain_available_beyond_real_elimination(root: Path) -> None:
+    def earlier_elimination(data: dict[str, Any]) -> None:
+        data["fixtures"] = [f for f in data["fixtures"] if f["id"] != "tfc-copa-final"]
+        for fixture in data["fixtures"]:
+            if fixture["id"] in ("tfc-copa-sf-1", "tfc-copa-sf-2"):
+                fixture["result"].update(goals_for=0, goals_against=1)
+    def history(data: dict[str, Any]) -> None:
+        semi = next(t for t in data["ties"] if t["competition"] == "copa-test" and t["stage"] == "semifinal" and OWN in t["clubs"])
+        semi.update(winner="placeholder-town-2000-01", aggregate="0-2")
+        final = next(t for t in data["ties"] if t["competition"] == "copa-test" and t["stage"] == "final")
+        final.update(clubs=["placeholder-town-2000-01", "sample-united-2000-01"], winner="sample-united-2000-01", aggregate="0-1")
+        slot = next(s for s in data["knockout_calendar"][0]["slots"] if s["stage_id"] == "final")
+        slot.update(fixture_id="external-test-final", home="placeholder-town-2000-01", sources=[SOURCE])
+    def outcome(data: dict[str, Any]) -> None:
+        next(o for o in data["historical_outcome"] if o["competition"] == "copa-test").update(champion=False, eliminated_in="semifinal")
+    edit(root, f"{SEASON}/fixtures.yaml", earlier_elimination)
+    edit(root, STANDINGS, history)
+    edit(root, f"{SEASON}/season.yaml", outcome)
+    content = load_content_tree(root, release=True).seasons[OWN]
+    assert content.standings.knockout_calendar is not None
+    final = next(s for s in content.standings.knockout_calendar[0].slots or () if s.stage_id == "final")
+    assert OWN not in (final.home, final.away)
+    assert final.date == date(2001, 5, 26)
