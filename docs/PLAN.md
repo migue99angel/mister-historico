@@ -1,7 +1,7 @@
 # Míster Histórico: Plan de implementación
 
 > Fecha: 2026-10-22 · Parte de [`PRODUCT_BRIEF.md`](./PRODUCT_BRIEF.md) · Las tareas están en [`TASKS.md`](./TASKS.md).
-> Estado: **plan aprobado** (2026-10-22). **F1 cerrada el 2026-10-23** tras integrar la PR #17 por rebase-merge, con calibración provisional y limitaciones aceptadas. [Registro de cierre y checks](HANDOFF.md#3-estado-comprobado-f1-cerrada). **F2 en curso: primera oleada de Test FC integrada (T2.1 y T2.2, PR #20 y #21).** Todavía no hay una partida completa jugable desde la web. Las secciones §1 y §2 recogen las decisiones del autor.
+> Estado: **plan aprobado** (2026-10-22). **F1 cerrada el 2026-10-23** tras integrar la PR #17 por rebase-merge, con calibración provisional y limitaciones aceptadas. [Registro de cierre y checks](HANDOFF.md#3-estado-comprobado-f1-cerrada). **F2 en curso: integradas T2.1, T2.2, T2.5 y la CR previa de T2.3 (PR #20, #21, #23 y #24).** Todavía no hay una partida completa jugable desde la web. Las secciones §1 y §2 recogen las decisiones del autor.
 
 ---
 
