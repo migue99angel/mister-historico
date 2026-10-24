@@ -64,3 +64,13 @@ Hacen falta, a la vez:
   - Con unas 150 plantillas, la validación del árbol completo tiene que seguir siendo rápida; se vigilará su tiempo.
   - Exigir `sources` en cada jugador hace los ficheros largos.
 - **Seguimiento:** si el volumen de contenido hace lenta la validación, se valida por directorio; si aparecen tipos de efecto nuevos de forma recurrente, se revisa el DSL.
+
+## Ampliación CR-T2.6 · Evidencia y variantes explícitas
+
+`standings.yaml.head_to_head` declara cobertura temporal inclusiva, participantes y calendario/resultados de 90 minutos con procedencia propia. `null` es desconocido; calendario y resultados vacíos dentro de una declaración verificada significan ausencia conocida. Se comprueban referencias, coincidencia con fixtures propios, consistencia entre coberturas y acumulados completos de tablas. Release requiere cobertura verificada suficiente para los cortes con criterios directos. La verificación editorial de completitud sigue siendo imprescindible: la consistencia interna no demuestra que una fuente no haya omitido partidos.
+
+Esta evidencia introduce una excepción estrecha a mantener la procedencia fuera de los DTO publicados: Catalog y Simulation conservan `sources` y `verify` en sus tipos propios de evidencia, porque las estrategias privadas requieren el respaldo del calendario. Los campos de temporada son opcionales al final, con `None` para preservar la construcción anterior; eso no habilita contenido incompleto para release.
+
+`away_goals_in_extra_time` expresa la variante histórica como valor booleano nullable con fuentes y verificación. La combinación de dos partidos, goles fuera y prórroga exige valor explícito verificado para release y ejecución; desconocido no significa desactivado. La API añade únicamente el booleano nullable al final de cada etapa.
+
+El cuadro conserva `RealTie`: valida contendientes distintos, participación única por etapa y que un perdedor conocido no reaparezca en una etapa conectada. No inventa linajes ambiguos, accesos tardíos ni transiciones desde grupos. El calendario posterior a la eliminación real, la política de reaplicación de miniligas y la salida pública de desempates no resueltos quedan pendientes de otra CR antes de completar T2.6.

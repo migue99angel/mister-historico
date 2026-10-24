@@ -144,11 +144,20 @@ class Stage(ContentModel):
         if self.away_goals_rule and self.legs != TWO_LEGS:
             raise ValueError("away_goals_rule only applies to two-legged stages")
         variant = self.away_goals_in_extra_time
-        if variant is not None and variant.value is True and not (
-            self.legs == TWO_LEGS and self.away_goals_rule and self.extra_time
-            and not self.is_group_stage
+        if (
+            variant is not None
+            and variant.value is True
+            and not (
+                self.legs == TWO_LEGS
+                and self.away_goals_rule
+                and self.extra_time
+                and not self.is_group_stage
+            )
         ):
-            raise ValueError("away_goals_in_extra_time true requires a two-legged knockout with away goals and extra time")
+            raise ValueError(
+                "away_goals_in_extra_time true requires a two-legged knockout "
+                "with away goals and extra time"
+            )
         group_fields = {
             "groups": self.groups,
             "points_per_win": self.points_per_win,

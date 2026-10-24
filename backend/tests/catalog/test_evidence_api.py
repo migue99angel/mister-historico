@@ -19,7 +19,9 @@ def test_stage_variant_is_appended_optional_and_keeps_legacy_construction(kind: 
 
 def test_existing_season_constructors_leave_evidence_unknown() -> None:
     assert make_sample_season().head_to_head is None
-    assert simulation.SeasonSimInput(ClubSeasonId("test-fc-2000-01"), (), (), ()).head_to_head is None
+    assert (
+        simulation.SeasonSimInput(ClubSeasonId("test-fc-2000-01"), (), (), ()).head_to_head is None
+    )
 
 
 def test_both_contexts_publish_the_same_independent_evidence_shape() -> None:
@@ -35,11 +37,16 @@ def test_both_contexts_publish_the_same_independent_evidence_shape() -> None:
 
 def test_empty_known_evidence_preserves_coverage_and_editorial_provenance() -> None:
     evidence = catalog.HeadToHeadEvidenceDTO(
-        CompetitionId("liga-test"), date(2000, 9, 1),
+        CompetitionId("liga-test"),
+        date(2000, 9, 1),
         (ClubSeasonId("test-fc-2000-01"), ClubSeasonId("sample-united-2000-01")),
-        (), (), ("https://example.org/test-content/evidence",), "ok",
+        (),
+        (),
+        ("https://example.org/test-content/evidence",),
+        "ok",
     )
-    assert evidence.schedule == evidence.results == ()
+    assert evidence.schedule == ()
+    assert evidence.results == ()
     assert evidence.verify == "ok"
     assert evidence.sources
     with pytest.raises(FrozenInstanceError):

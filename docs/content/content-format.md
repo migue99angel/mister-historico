@@ -562,3 +562,46 @@ Un test de drift falla si el JSON versionado no coincide con los modelos. Para v
 8. ¿La historia real coincide con esas tablas y cruces?
 9. ¿Cada dilema es de la temporada correcta, tiene su opción histórica con fuente y usa solo efectos del DSL?
 10. ¿Validado con `load_content_tree` (y, antes de firmar, con `release=True`)?
+
+## 10. Evidencia explícita para enfrentamientos directos (CR-T2.6)
+
+`standings.yaml` incorpora `head_to_head`, opcional y por defecto `null`: evidencia desconocida. `[]` no acredita ningún ámbito. Una entrada verificada con `schedule: []` y `results: []` sí declara ausencia conocida de partidos entre sus clubes desde el inicio de la temporada hasta `complete_through`, inclusive.
+
+```yaml
+head_to_head:
+  - competition: liga-test
+    complete_through: 2000-09-02
+    covered_clubs: [test-fc-2000-01, fixture-wanderers-2000-01]
+    schedule:
+      - fixture_id: tfc-liga-01
+        date: 2000-09-02
+        home: test-fc-2000-01
+        away: fixture-wanderers-2000-01
+        sources: [https://example.org/test-content/fixtures/liga-test/round-1]
+        verify: ok
+    results:
+      - fixture_id: tfc-liga-01
+        score: [0, 1]
+        sources: [https://example.org/test-content/fixtures/liga-test/round-1]
+        verify: ok
+    sources: [https://example.org/test-content/evidence/liga-test]
+    verify: ok
+```
+
+El ejemplo es enteramente sintético. Cada ámbito es una liga o un grupo concreto (`competition`, `stage` y `group` juntos para grupos). `covered_clubs` es un conjunto explícito, sin repeticiones, de participantes del ámbito. La declaración acredita el calendario completo entre esos clubes desde el inicio de la temporada hasta el corte: no se deduce de los fixtures del equipo propio. La URL y la coherencia interna no prueban que una fuente no omitiera encuentros; `verify: ok` requiere esa comprobación editorial.
+
+Los resultados identifican exactamente los partidos del calendario y `score` orienta **local, visitante a los 90 minutos**, sin prórroga, tanda ni orientación relativa a tu equipo. Un resultado pendiente conserva `score: null`, `verify: pending` y falla en release. Cada entrada de calendario y cada resultado conserva sus propias fuentes y verificación. Los aplazados se fechan en el día en que realmente se jugaron: no se exigen partidos posteriores a `complete_through`, ni se inventan rondas futuras. Las declaraciones que se solapan tienen que coincidir en su cobertura común. Un fixture propio incluido debe coincidir en identificador, ámbito, fecha, localía y marcador con `fixtures.yaml`; tampoco puede omitirse si está dentro de la cobertura declarada.
+
+Si una entrada cubre a todos los participantes, sus resultados se contrastan con todos los acumulados de las tablas de corte cubiertas. En release, cada corte con criterios `head_to_head_*` necesita una declaración verificada de todos los participantes de ese ámbito que llegue al menos a esa fecha; la compatibilidad de los constructores no convierte la falta de evidencia en contenido publicable. T2.6 recorta el calendario y los resultados hasta el corte de ejecución y sustituye los marcadores propios por los simulados.
+
+Las APIs de Catalog y Simulation publican DTOs propios equivalentes. `PlayableSeasonDTO.head_to_head` y `SeasonSimInput.head_to_head` se añaden al final y por defecto valen `None`. **Excepción estrecha:** únicamente esta evidencia conserva `sources` y `verify` en las APIs, porque las estrategias privadas exigen la procedencia del calendario declarado. El resto de los metadatos editoriales permanece en el catálogo.
+
+### Goles fuera durante la prórroga
+
+Cada etapa admite `away_goals_in_extra_time`, por defecto `null`. Su forma en contenido es `{value: true|false|null, sources: [url], verify: ok|pending}`. Si hay dos partidos, goles fuera y prórroga, release exige el booleano explícito y verificado. `value: null` solo se admite con `verify: pending`. Un `true` en una etapa donde la regla no aplica es contradictorio y se rechaza. Los campos finales `StageDTO.away_goals_in_extra_time` y `StageInput.away_goals_in_extra_time` son `bool | None`, compatibles con constructores anteriores: el mapeo publicable solo extrae un valor verificado. Al ejecutar una eliminatoria con las tres condiciones, T2.4 exige también el booleano explícito; `None` nunca equivale a `False`.
+
+### Linaje y límites del calendario
+
+Los contendientes de `ties` tienen que ser distintos y cada club solo puede participar una vez por etapa. Un perdedor acreditado no puede reaparecer en la siguiente etapa conectada. Un ganador pendiente, una eliminatoria de origen ausente, nuevas entradas, sorteos o una transición desde grupos no autorizan a inventar el linaje: la resolución privada exige evidencia suficiente.
+
+Esta CR no aporta fechas ni sedes de rondas posteriores a la eliminación histórica del equipo propio. Tampoco añade la política de reaplicación de miniligas ni la representación pública de desempates que sigan sin resolver. Son requisitos previos separados al cierre de T2.6; un orden estable para presentación no acredita una posición deportiva definitiva.

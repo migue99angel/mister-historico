@@ -11,7 +11,6 @@ from mister.catalog.infrastructure.content_schema.base import (
     Slug,
     SourcedModel,
 )
-
 from mister.catalog.infrastructure.content_schema.evidence import HeadToHeadEvidence
 
 Count = Annotated[int, Field(ge=0)]

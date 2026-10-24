@@ -335,7 +335,7 @@
 - **Aceptación:** todo es determinista con la semilla.
 
 #### CR-T2.6 · Evidencia histórica para la simulación
-- **Estado:** planificada por Astra; implementación y revisión independiente Sol pendientes.
+- **Estado:** implementación Sol en curso; contratos y evidencia sintética ampliados, revisión independiente Sol y CI pendientes.
 - **Alcance y propiedad:** [plan de la CR](changes/CR-T2.6-historical-evidence.md). Entrada de enfrentamientos entre rivales y regla explícita de goles fuera en prórroga, con procedencia y compatibilidad de construcción.
 - **Dependencia:** integrar antes de T2.6 y del mapeo definitivo de T2.20. El calendario posterior a la eliminación real sigue siendo una necesidad aparte que debe resolverse antes del cierre de T2.6.
 
