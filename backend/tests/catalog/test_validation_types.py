@@ -54,7 +54,9 @@ def test_issue_paths_cannot_escape_the_root_or_silently_change_representation(pa
         ValidationIssue(path, "", "invalid file")
 
 
-@pytest.mark.parametrize(("field", "message"), [(None, "invalid"), (1, "invalid"), ("", None), ("", ""), ("", " \n")])
+@pytest.mark.parametrize(
+    ("field", "message"), [(None, "invalid"), (1, "invalid"), ("", None), ("", ""), ("", " \n")]
+)
 def test_fields_are_strings_and_messages_are_non_blank(field: Any, message: Any) -> None:
     with pytest.raises(InvalidValueError):
         ValidationIssue(_PATH, field, message)
@@ -91,7 +93,9 @@ def test_invalid_reports_cannot_publish_a_count_from_a_partial_tree(count: Any) 
         ContentValidationReport((ValidationIssue(_PATH, "", "invalid"),), count)
 
 
-@pytest.mark.parametrize("issues", [[], [ValidationIssue(_PATH, "", "invalid")], ("invalid",), None])
+@pytest.mark.parametrize(
+    "issues", [[], [ValidationIssue(_PATH, "", "invalid")], ("invalid",), None]
+)
 def test_reports_require_an_immutable_tuple_of_application_issues(issues: Any) -> None:
     with pytest.raises(InvalidValueError):
         ContentValidationReport(issues, None)
@@ -132,7 +136,12 @@ def test_operational_failure_has_a_stable_application_error_code() -> None:
 
 @pytest.mark.parametrize(
     "name",
-    ["ContentValidator", "ContentValidationReport", "ContentValidationUnavailableError", "ValidationIssue"],
+    [
+        "ContentValidator",
+        "ContentValidationReport",
+        "ContentValidationUnavailableError",
+        "ValidationIssue",
+    ],
 )
 def test_validation_contract_types_are_available_with_the_other_catalog_ports(name: str) -> None:
     assert name in ports.__all__
