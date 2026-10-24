@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from datetime import date
 from typing import TYPE_CHECKING
 
 from mister.shared_kernel.errors import InvalidValueError
@@ -79,7 +80,10 @@ class KnockoutTie:
 
     def _validate_calendar(self) -> None:
         first = self.fixtures[0]
-        if first.stage is None or first.group is not None:
+        if any(type(fixture.date) is not date or not isinstance(fixture.venue, Venue)
+               for fixture in self.fixtures):
+            raise InvalidValueError("knockout fixtures need calendar dates and typed venues")
+        if not isinstance(first.stage, str) or not first.stage or first.group is not None:
             raise InvalidValueError("a knockout fixture needs a stage and cannot have a group")
         if self.rules.legs == 1:
             if first.leg not in (None, 1):

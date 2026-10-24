@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.ids import ClubSeasonId, CompetitionId
 from mister.simulation.domain.league_types import LeagueRow
-from mister.simulation.domain.model import FixtureSpec, Score
+from mister.simulation.domain.model import FixtureSpec, Score, Venue
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -166,7 +166,9 @@ class GroupTable:
     def __post_init__(self) -> None:
         if (
             not isinstance(self.competition_id, CompetitionId)
+            or not isinstance(self.stage_id, str)
             or not self.stage_id
+            or not isinstance(self.group_id, str)
             or not self.group_id
         ):
             raise InvalidValueError("a group table needs competition, stage and group IDs")
@@ -258,9 +260,10 @@ class GroupTable:
         values = {club: dict.fromkeys(_HEAD_TO_HEAD, 0) for club in members}
         for match in self.evidence.matches(members):
             home, away = match.fixture.home, match.fixture.away
+            away_goals = match.score.away if match.fixture.venue is Venue.HOME else 0
             for club, gf, ga, away_goals in (
                 (home, match.score.home, match.score.away, 0),
-                (away, match.score.away, match.score.home, match.score.away),
+                (away, match.score.away, match.score.home, away_goals),
             ):
                 row = values[club]
                 row["head_to_head_points"] += (
