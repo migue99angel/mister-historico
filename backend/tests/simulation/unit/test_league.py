@@ -634,4 +634,12 @@ def test_away_goals_require_venues_for_the_original_mini_league_after_partitioni
     bm = replace(_fixture("mock-test", _B, _ME), venue=Venue.HOME)
     evidence = _evidence(((ma, Score(0, 1)), (ab, Score(3, 0)), (bm, Score(0, 0))))
     with pytest.raises(InvalidValueError, match="venue"):
-        _table((_row(_ME), _row(_A), _row(_B)), criteria=("head_to_head_points", "head_to_head_away_goals"), evidence=evidence, replacements=(_replacement(ma, Score(0, 1), Score(0, 1)), _replacement(bm, Score(0, 0), Score(0, 0))))
+        _table(
+            (_row(_ME), _row(_A), _row(_B)),
+            criteria=("head_to_head_points", "head_to_head_away_goals"),
+            evidence=evidence,
+            replacements=(
+                _replacement(ma, Score(0, 1), Score(0, 1)),
+                _replacement(bm, Score(0, 0), Score(0, 0)),
+            ),
+        )

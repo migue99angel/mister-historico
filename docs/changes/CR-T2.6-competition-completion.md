@@ -2,7 +2,7 @@
 
 ## Estado y alcance
 
-Planificación de Astra; **todavía no implementada ni integrada**. Posterior a [la CR de evidencia histórica](CR-T2.6-historical-evidence.md), sin ampliar esa tarea. Debe resolverse antes de declarar T2.6 completa. No cambia los puertos, el kernel ni el dominio de copas.
+Planificación de Astra; implementación Sol terminada, pendiente de revisión independiente y comprobación conjunta antes de integrar. Posterior a [la CR de evidencia histórica](CR-T2.6-historical-evidence.md), sin ampliar esa tarea. Debe resolverse antes de declarar T2.6 completa. No cambia los puertos, el kernel ni el dominio de copas.
 
 ## Datos mínimos propuestos
 
@@ -35,3 +35,16 @@ La conexión T2.6 aplicará una **política de diseño** por plazas: las asignac
 Cada partido conserva ID, fecha, sede y orientación del slot; T2.6 transforma ambos contendientes por sus ocupantes efectivos. El cuadro privado sigue usando representantes históricos y la conexión traduce su rival al ocupante. En una eliminatoria externa avanza el ocupante de la plaza cuyo representante ganó históricamente, sin simular terceros ni atribuirles marcadores históricos ajenos. En una eliminatoria gestionada, el ganador simulado ocupa en la siguiente ronda la plaza del ganador histórico de ese cruce. La asignación se actualiza por ronda retirando plazas eliminadas; no mantener un mapa global que duplique al clasificado.
 
 Oráculo ficticio mínimo para la futura conexión: Test fue primero y Sample segundo; el slot final era Test–Sample. Si intercambian posiciones simuladas, el partido efectivo es Sample–Test, con el mismo ID, fecha y sede, sin autopartido. Añadir caso de semifinales que combine una proyección externa y un ganador simulado. Las fuentes respaldan plazas y calendario históricos; la permuta es una regla del juego y se etiqueta como tal. Esta CR aporta los contratos y sus validaciones; no implementa todavía la simulación por bloques.
+
+
+## Decisiones y verificación de la implementación
+
+Las clases publicadas definitivas son `KnockoutSlotDTO/Input`, `KnockoutCalendarDTO/Input`, `GroupEntryAssignmentDTO/Input`, `GroupEntryAssignmentsDTO/Input` y `UnresolvedKnockoutTieDTO`. Se mantienen campos opcionales finales y tipos propios de cada contexto. Se validan explícitamente los grupos sin resolver y la identidad de las eliminatorias; los resultados presentes en el bloque solo se cotejan por competición, etapa y clubes. Acreditar partidos completos y desempates agotados pertenece a T2.6, con el estado de `KnockoutTie`, sin exigir resultados de bloques anteriores en la salida actual ni deducir un ganador global del ganador de la vuelta.
+
+El contenido añade declaraciones verificadas por competición, slots completos y todas las posiciones de entrada desde grupos. Se cotejan con `ties`, fixtures propios, tablas finales e identificadores globales. Se conserva `None` para desconocido; un dato histórico pendiente bloquea release, y la ausencia de declaraciones necesarias también. No se infieren rondas, fechas, exenciones ni entradas tardías. Los formatos sin progresión acreditada siguen bloqueados, sin fallback.
+
+Test FC conserva sus 42 partidos H2H, todas las tablas, fixtures propios, marcadores y baselines. La ampliación añade la sede sintética explícita de esos partidos, las dos piernas externas de Copa que faltaban, los slots de las finales y las dos plazas continentales reales de esta ficción: Test y Overseas. Los ejemplos Test/Sample son oráculos aislados de contrato, no una modificación de ese grupo. Otro caso aislado declara una eliminación anterior y conserva el slot histórico de final para el uso contrafactual futuro.
+
+Una regresión roja adicional detectó la prohibición previa de grupos propios neutrales. Con autorización del coordinador, `fixture_checks.py` admite esas sedes y conserva el número de partidos; la regla de liga no cambia. Al cotejar H2H neutral se usan los lados explícitos del calendario y se conserva el marcador relativo al propio en ambas orientaciones. El futuro mapeo T2.6 tiene esa misma obligación. `groups.py`, `knockout.py`, puertos y configuración compartida permanecen fuera de la CR.
+
+La simulación por bloques y la permuta de plazas no se implementan aquí. La política de diseño por biyección y actualización por ronda está documentada y tiene oráculos sintéticos de intercambio de primero/segundo y de progresión externa combinada con un ganador simulado, conservando ID, fecha y sede sin autopartidos ni marcadores atribuidos falsamente.
