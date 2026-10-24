@@ -21,6 +21,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from typing import Literal
 
+from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.ids import BlockId, ClubSeasonId, CompetitionId, FixtureId, PlayerId
 from mister.shared_kernel.randomness import RandomSource
 from mister.simulation.application import simulate_block
@@ -139,6 +140,7 @@ class StageInput:
     tiebreakers: tuple[TiebreakerName, ...] = ()
     advance_per_group: int | None = None
     away_goals_in_extra_time: bool | None = None
+    reapply_head_to_head: bool | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -219,6 +221,54 @@ class ForcedInjuryDTO:
 
 
 @dataclass(frozen=True, slots=True)
+class KnockoutSlotInput:
+    """Historical bracket slot; swapping occupants never changes its ID, date or venue."""
+
+    fixture_id: FixtureId
+    stage_id: str
+    date: date | None
+    home: ClubSeasonId
+    away: ClubSeasonId
+    venue: Literal["home", "neutral"] | None
+    leg: Literal[1, 2] | None
+    sources: tuple[str, ...]
+    verify: Literal["ok", "pending"]
+
+
+@dataclass(frozen=True, slots=True)
+class KnockoutCalendarInput:
+    """None slots means unknown; an empty sourced tuple declares applicable absence."""
+
+    competition_id: CompetitionId
+    slots: tuple[KnockoutSlotInput, ...] | None
+    sources: tuple[str, ...]
+    verify: Literal["ok", "pending"]
+
+
+@dataclass(frozen=True, slots=True)
+class GroupEntryAssignmentInput:
+    """Historical representative of one explicitly sourced qualifying position."""
+
+    source_stage_id: str
+    group_id: str
+    qualifying_position: int
+    target_stage_id: str
+    historical_representative: ClubSeasonId
+    sources: tuple[str, ...]
+    verify: Literal["ok", "pending"]
+
+
+@dataclass(frozen=True, slots=True)
+class GroupEntryAssignmentsInput:
+    """Complete declarations of historical qualifying slots for one competition."""
+
+    competition_id: CompetitionId
+    entries: tuple[GroupEntryAssignmentInput, ...] | None
+    sources: tuple[str, ...]
+    verify: Literal["ok", "pending"]
+
+
+@dataclass(frozen=True, slots=True)
 class HeadToHeadFixtureInput:
     """Sourced calendar entry; the home/away orientation is independent of the managed club."""
 
@@ -228,6 +278,7 @@ class HeadToHeadFixtureInput:
     away: ClubSeasonId
     sources: tuple[str, ...]
     verify: Literal["ok", "pending"]
+    venue: Literal["home", "neutral"] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -283,6 +334,27 @@ class StandingsDTO:
     rows: tuple[StandingRowDTO, ...]
     stage_id: str | None = None
     group_id: str | None = None
+    unresolved_ties: tuple[tuple[ClubSeasonId, ...], ...] | None = None
+
+    def __post_init__(self) -> None:
+        if self.unresolved_ties is None:
+            return
+        if not isinstance(self.unresolved_ties, tuple):
+            raise InvalidValueError("unresolved ties must be an immutable tuple or None")
+        order = [row.club_season_id for row in self.rows]
+        if len(set(order)) != len(order):
+            raise InvalidValueError("unresolved standings need distinct row participants")
+        used: set[ClubSeasonId] = set()
+        for group in self.unresolved_ties:
+            _require_clubs(group, minimum=2)
+            if used.intersection(group) or not set(group) <= set(order):
+                raise InvalidValueError("unresolved groups must be disjoint row participants")
+            indices = sorted(order.index(club) for club in group)
+            if indices != list(range(indices[0], indices[-1] + 1)):
+                raise InvalidValueError(
+                    "unresolved groups must occupy contiguous presentation rows"
+                )
+            used.update(group)
 
 
 # --------------------------------------------------------------------------- request
@@ -304,6 +376,8 @@ class SeasonSimInput:
     forced_injuries: tuple[ForcedInjuryDTO, ...] = ()
     historical_standings: tuple[StandingsDTO, ...] = ()
     head_to_head: tuple[HeadToHeadEvidenceInput, ...] | None = None
+    knockout_calendar: tuple[KnockoutCalendarInput, ...] | None = None
+    group_entry_assignments: tuple[GroupEntryAssignmentsInput, ...] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -316,6 +390,9 @@ class BlockSimRequest:
     `competition_priorities` defaults to `normal`. `forced_injuries_from_effects` are injuries
     caused by dilemma effects, dated, on top of the season's. `prior_results` are the results
     of earlier blocks, to carry the standings forward.
+    `state_as_of=None` means the incoming state is already situated at `start`. A continuation
+    supplies its previous close explicitly; T2.6 recovers from that date and rejects a date
+    after `start`. It must never infer this cursor from `prior_results`.
     """
 
     season: SeasonSimInput
@@ -328,6 +405,7 @@ class BlockSimRequest:
     competition_priorities: Mapping[CompetitionId, PriorityName] = field(default_factory=dict)
     forced_injuries_from_effects: tuple[ForcedInjuryDTO, ...] = ()
     prior_results: tuple["MatchResultDTO", ...] = ()
+    state_as_of: date | None = None
 
 
 # --------------------------------------------------------------------------- output
@@ -395,6 +473,50 @@ class EventDTO:
     stage_id: str | None = None
 
 
+_TIE_CLUB_COUNT = 2
+_MAX_TIE_FIXTURES = 2
+
+
+def _require_clubs(clubs: tuple[ClubSeasonId, ...], *, minimum: int) -> None:
+    if (
+        not isinstance(clubs, tuple)
+        or len(clubs) < minimum
+        or not all(isinstance(club, ClubSeasonId) for club in clubs)
+        or len(set(clubs)) != len(clubs)
+    ):
+        raise InvalidValueError("clubs must be a tuple of distinct typed club IDs")
+
+
+@dataclass(frozen=True, slots=True)
+class UnresolvedKnockoutTieDTO:
+    """Exhausted tie without a winner, emitted only from complete domain state by T2.6.
+
+    This value validates identity, not exhaustion: rules and previous-block results live
+    in the use case. A match winner is never interpreted here as a tie winner.
+    """
+
+    competition_id: CompetitionId
+    stage_id: str
+    clubs: tuple[ClubSeasonId, ...]
+    fixture_ids: tuple[FixtureId, ...]
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.competition_id, CompetitionId):
+            raise InvalidValueError("an unresolved tie needs a typed competition ID")
+        if not isinstance(self.stage_id, str) or not self.stage_id.strip():
+            raise InvalidValueError("an unresolved tie needs a stage ID")
+        _require_clubs(self.clubs, minimum=2)
+        if len(self.clubs) != _TIE_CLUB_COUNT:
+            raise InvalidValueError("an unresolved knockout tie needs exactly two clubs")
+        if (
+            not isinstance(self.fixture_ids, tuple)
+            or not 1 <= len(self.fixture_ids) <= _MAX_TIE_FIXTURES
+            or not all(isinstance(value, FixtureId) for value in self.fixture_ids)
+            or len(set(self.fixture_ids)) != len(self.fixture_ids)
+        ):
+            raise InvalidValueError("an unresolved tie needs one or two distinct typed fixture IDs")
+
+
 @dataclass(frozen=True, slots=True)
 class BlockSummaryDTO:
     """Outcome of a block: results, key matches (by fixture), tables, events, injuries and
@@ -407,6 +529,32 @@ class BlockSummaryDTO:
     events: tuple[EventDTO, ...] = ()
     injuries: tuple[InjuryDTO, ...] = ()
     player_states: tuple[PlayerStateDTO, ...] = ()
+    unresolved_knockout_ties: tuple[UnresolvedKnockoutTieDTO, ...] | None = None
+
+    def __post_init__(self) -> None:
+        if self.unresolved_knockout_ties is None:
+            return
+        if not isinstance(self.unresolved_knockout_ties, tuple):
+            raise InvalidValueError("unresolved knockout ties must be an immutable tuple or None")
+        used: set[FixtureId] = set()
+        occupied: set[tuple[CompetitionId, str, ClubSeasonId]] = set()
+        for tie in self.unresolved_knockout_ties:
+            if not isinstance(tie, UnresolvedKnockoutTieDTO):
+                raise InvalidValueError("unresolved knockout entries must be typed values")
+            keys = {(tie.competition_id, tie.stage_id, club) for club in tie.clubs}
+            if used.intersection(tie.fixture_ids) or occupied.intersection(keys):
+                raise InvalidValueError(
+                    "unresolved ties cannot repeat fixtures or stage participants"
+                )
+            used.update(tie.fixture_ids)
+            occupied.update(keys)
+            for result in self.results:
+                if result.fixture_id in tie.fixture_ids and (
+                    result.competition_id != tie.competition_id
+                    or result.stage_id != tie.stage_id
+                    or {result.home, result.away} != set(tie.clubs)
+                ):
+                    raise InvalidValueError("a played result contradicts unresolved tie identity")
 
 
 # --------------------------------------------------------------------------- facade

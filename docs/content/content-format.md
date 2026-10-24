@@ -607,3 +607,69 @@ Los contendientes de `ties` tienen que ser distintos y cada club solo puede part
 Esta CR no aporta fechas ni sedes de rondas posteriores a la eliminación histórica del equipo propio. Tampoco añade la política de reaplicación de miniligas ni la representación pública de desempates que sigan sin resolver. Son requisitos previos separados al cierre de T2.6; un orden estable para presentación no acredita una posición deportiva definitiva.
 
 La evidencia actual orienta local y visitante, pero no publica una sede neutral para H2H de grupos. El mapeo a `GroupEvidence` y los criterios de goles fuera requieren resolver explícitamente ese dato en la CR posterior; no debe darse por acreditado el campo del local a partir de la orientación del marcador.
+
+## 11. Cierre explícito de competiciones (CR-T2.6-competition-completion)
+
+La fase de grupos incorpora `reapply_head_to_head`, objeto `{value: true|false|null, sources: [url], verify: ok|pending}`. Con criterios directos, release exige un valor booleano explícito verificado: `null` no significa desactivado. Sin criterios directos, la regla no interviene. Se publica al final de `GroupStageDTO` y `StageInput` como `bool | None`. La semántica es la documentada en `simulation/cups.md`: reiniciar el bloque directo en los subconjuntos solo si ha separado algún club.
+
+`standings.yaml` admite dos colecciones adicionales, por defecto `null`:
+
+```yaml
+knockout_calendar:
+  - competition: copa-test
+    slots:
+      - fixture_id: tfc-copa-final
+        stage_id: final
+        date: 2001-05-26
+        home: test-fc-2000-01
+        away: sample-united-2000-01
+        venue: neutral
+        leg: null
+        sources: [https://example.org/test-content/calendar/copa-test]
+        verify: ok
+    sources: [https://example.org/test-content/calendar/copa-test]
+    verify: ok
+
+group_entry_assignments:
+  - competition: copa-continental-test
+    entries:
+      - source_stage_id: groups
+        group_id: a
+        qualifying_position: 1
+        target_stage_id: final
+        historical_representative: test-fc-2000-01
+        sources: [https://example.org/test-content/entries/copa-continental-test]
+        verify: ok
+      # Declarar también TODAS las demás plazas clasificatorias.
+    sources: [https://example.org/test-content/entries/copa-continental-test]
+    verify: ok
+```
+
+Son extractos sintéticos de Test FC, no declaraciones completas listas para release. La declaración por competición y cada slot/entrada conservan fuentes y verificación. `slots: null` o `entries: null` con `pending` significan desconocido; `[]` declara ausencia aplicable respaldada por fuentes. Las fechas y sedes desconocidas de un slot se mantienen en `null` con `pending`, sin imputarlas por la etapa. El calendario no añade marcadores: el ganador histórico procede de `ties`.
+
+Los identificadores son únicos en la temporada y no pueden reutilizar una identidad H2H ni contradecir un fixture propio. Cada slot debe corresponder a un cruce histórico con participantes distintos. Se validan el número de partidos, las piernas 1/2, las fechas crecientes y las localías invertidas de una eliminatoria a dos partidos. Los calendarios verificados acreditan todas las piernas de todos los cruces. Release exige cobertura de etapas alcanzables, sin inventar entradas tardías, exenciones ni enlaces ambiguos. Las asignaciones se cotejan con el puesto en la tabla histórica final del grupo y un único cruce de destino; hacen falta todas las plazas, no solo la del gestionado.
+
+El mapa publicado usa `KnockoutSlotDTO/Input`, `KnockoutCalendarDTO/Input`, `GroupEntryAssignmentDTO/Input` y `GroupEntryAssignmentsDTO/Input`. `PlayableSeasonDTO` y `SeasonSimInput` añaden los campos nullable al final. La procedencia se conserva con la misma excepción estrecha que H2H.
+
+### Sede y orientación de H2H
+
+El calendario H2H añade `venue: home|neutral|null`, con `null` y `pending` para sede desconocida. No se infiere el campo del local a partir de su etiqueta en el marcador. Un fixture propio se coteja con su sede histórica; en campo neutral, los lados explícitos del calendario determinan cómo se traduce el marcador relativo al propio. El traductor futuro debe conservar esa orientación: `neutral` por sí solo no hace al propio local ni visitante. Los partidos de grupos pueden ser neutrales; la regla existente que excluye neutralidad en liga permanece.
+
+La sede del calendario es la autoridad, por eso `HeadToHeadResult` privado no la repite. La liga solo exige sede conocida al alcanzar `head_to_head_away_goals`, para todos los encuentros de la miniliga original. Un neutral aporta cero goles visitantes; un partido en sede local cuenta los goles del visitante, incluidos los simulados. Los demás criterios pueden consumir una sede desconocida.
+
+### Salidas que conservan un empate deportivo
+
+`StandingsDTO.unresolved_ties` es una colección nullable de grupos: `None` significa información no proporcionada y `()` que se evaluó la tabla sin grupos residuales. Los grupos contienen al menos dos clubes distintos, son disjuntos, pertenecen a filas contiguas y conservan el orden de presentación. La posición dentro de un grupo no acredita un puesto deportivo; no se concede una plaza clasificatoria por ID.
+
+`BlockSummaryDTO.unresolved_knockout_ties` distingue asimismo desconocido de evaluado vacío. Sus valores `UnresolvedKnockoutTieDTO` contienen competición, etapa, dos clubes distintos e identificadores de todos los fixtures de la eliminatoria. No llevan fuentes históricas: son salida simulada. El DTO valida identidad y colecciones inmutables; **T2.6**, que dispone del estado completo y de `KnockoutTie`, debe acreditar que se jugaron todos los partidos y se agotaron los desempates. Una ida pendiente no se emite aquí. Si las piernas se reparten entre bloques, se conservan ambos IDs aunque el resultado de la ida no esté en el bloque actual. El ganador de la vuelta es un ganador individual y puede coexistir con un global sin resolver; nunca sirve por sí solo para deducir el ganador de la eliminatoria.
+
+### Política contrafactual de plazas
+
+Las fuentes acreditan todas las plazas históricas por puesto. La futura conexión T2.6 construirá una biyección entre representantes históricos y ocupantes efectivos de cada etapa. Transformará **ambos** contendientes de cada slot, manteniendo ID, fecha, sede y piernas conforme a ADR-005. Un intercambio de primero y segundo desplaza a ambos clasificados; sustituir únicamente al gestionado puede producir un autopartido.
+
+En una eliminatoria externa avanza el ocupante de la plaza del ganador histórico, sin simular terceros ni atribuirle marcadores ajenos. En una gestionada, el ganador simulado pasa a ocupar la plaza del ganador histórico. El mapa se actualiza por ronda y retira las plazas eliminadas. Esta CR aporta datos, contratos, validación y oráculos sintéticos; no implementa la simulación por bloques ni presenta esta política de juego como una norma histórica.
+
+
+### Fecha efectiva del estado de una continuación
+
+`BlockSimRequest.state_as_of`, último campo opcional, indica la fecha a la que corresponde el estado físico recibido. `None` significa que ya está situado en `start`, para conservar compatibilidad. Una continuación debe enviar explícitamente el cierre anterior. La conexión T2.6 recuperará desde esa fecha y rechazará fechas posteriores a `start`; nunca reconstruirá este cursor a partir de `prior_results`. Esta CR publica el dato y su semántica, sin implementar recuperación entre bloques.

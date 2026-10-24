@@ -26,7 +26,7 @@ from mister.simulation.domain.league_types import (
     LeagueRow,
     ResultReplacement,
 )
-from mister.simulation.domain.model import Score
+from mister.simulation.domain.model import Score, Venue
 
 _ME = ClubSeasonId("test-fc-2000-01")
 _A = ClubSeasonId("sample-united-2000-01")
@@ -316,7 +316,7 @@ def test_head_to_head_uses_simulated_managed_results_and_historical_rival_result
 def test_direct_goal_criteria_respect_home_and_away(
     criterion: str, score: Score, expected: tuple[ClubSeasonId, ...]
 ) -> None:
-    fixture = _fixture("test-fc-sample-united", _ME, _A)
+    fixture = replace(_fixture("test-fc-sample-united", _ME, _A), venue=Venue.HOME)
 
     table = _table(
         (_row(_ME), _row(_A)),
@@ -576,3 +576,70 @@ def test_the_declared_schedule_can_contain_a_single_leg_on_the_inclusive_cutoff(
 
     assert evidence.schedule == (fixture,)
     assert evidence.results[0].score == Score(2, 1)
+
+
+@pytest.mark.parametrize("venue", ["home", True, 1, Venue.AWAY])
+def test_direct_fixture_requires_a_typed_venue_when_provided(venue: Any) -> None:
+    with pytest.raises(InvalidValueError):
+        HeadToHeadFixture(FixtureId("test-fixture"), _CUTOFF, _ME, _A, venue=venue)
+
+
+def test_unknown_venue_is_allowed_for_other_direct_criteria_but_not_away_goals() -> None:
+    fixture = _fixture("test-fc-sample-united", _ME, _A)
+    evidence = _evidence(((fixture, Score(1, 1)),), (_ME, _A))
+    replacements = (_replacement(fixture, Score(1, 1), Score(1, 1)),)
+    assert _table(
+        (_row(_ME), _row(_A)),
+        criteria=("head_to_head_points",),
+        evidence=evidence,
+        replacements=replacements,
+    ).unresolved_groups
+    with pytest.raises(InvalidValueError, match="venue"):
+        _table(
+            (_row(_ME), _row(_A)),
+            criteria=("head_to_head_away_goals",),
+            evidence=evidence,
+            replacements=replacements,
+        )
+
+
+def test_neutral_direct_match_contributes_no_away_goals_even_for_simulated_scores() -> None:
+    fixture = replace(_fixture("neutral-test", _ME, _A), venue=Venue.NEUTRAL)
+    table = _table(
+        (_row(_ME), _row(_A)),
+        criteria=("head_to_head_away_goals",),
+        evidence=_evidence(((fixture, Score(0, 0)),), (_ME, _A)),
+        replacements=(_replacement(fixture, Score(0, 0), Score(3, 7)),),
+    )
+    assert table.unresolved_groups == ((_A, _ME),)
+
+
+@pytest.mark.parametrize(("home", "away", "expected"), [(_ME, _A, (_A, _ME)), (_A, _ME, (_ME, _A))])
+def test_known_home_venue_counts_only_the_effective_away_clubs_goals(
+    home: ClubSeasonId, away: ClubSeasonId, expected: tuple[ClubSeasonId, ...]
+) -> None:
+    fixture = replace(_fixture("home-test", home, away), venue=Venue.HOME)
+    table = _table(
+        (_row(_ME), _row(_A)),
+        criteria=("head_to_head_away_goals",),
+        evidence=_evidence(((fixture, Score(0, 0)),), (_ME, _A)),
+        replacements=(_replacement(fixture, Score(0, 0), Score(0, 2)),),
+    )
+    assert _clubs(table) == expected
+
+
+def test_away_goals_require_venues_for_the_original_mini_league_after_partitioning() -> None:
+    ma = _fixture("test-sample", _ME, _A)
+    ab = replace(_fixture("sample-mock", _A, _B), venue=Venue.HOME)
+    bm = replace(_fixture("mock-test", _B, _ME), venue=Venue.HOME)
+    evidence = _evidence(((ma, Score(0, 1)), (ab, Score(3, 0)), (bm, Score(0, 0))))
+    with pytest.raises(InvalidValueError, match="venue"):
+        _table(
+            (_row(_ME), _row(_A), _row(_B)),
+            criteria=("head_to_head_points", "head_to_head_away_goals"),
+            evidence=evidence,
+            replacements=(
+                _replacement(ma, Score(0, 1), Score(0, 1)),
+                _replacement(bm, Score(0, 0), Score(0, 0)),
+            ),
+        )

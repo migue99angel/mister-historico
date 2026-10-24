@@ -1,5 +1,8 @@
 """Integrity checks of the content tree that need the playable seasons."""
 
+from mister.catalog.infrastructure.content_schema.competition_checks import (
+    check_competition_completion,
+)
 from mister.catalog.infrastructure.content_schema.context import SeasonContext
 from mister.catalog.infrastructure.content_schema.dilemma_checks import check_dilemmas
 from mister.catalog.infrastructure.content_schema.fixture_checks import check_fixtures
@@ -34,6 +37,7 @@ def check_season(
     check_season_file(ctx)
     check_fixtures(ctx)
     check_standings(ctx)
+    check_competition_completion(ctx)
     check_dilemmas(ctx)
 
 

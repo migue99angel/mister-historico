@@ -119,8 +119,6 @@ def _check_group_fixture(ctx: SeasonContext, field: str, fixture: Fixture, stage
     last = (len(group.participants) - 1) * stage.legs
     if fixture.round is None or not 1 <= fixture.round <= last:
         ctx.add("fixtures", f"{field}.round", f"the matchday must be between 1 and {last}")
-    if fixture.venue == "neutral":
-        ctx.add("fixtures", f"{field}.venue", "a group match is never on neutral ground")
 
 
 def _check_knockout_fixture(ctx: SeasonContext, field: str, fixture: Fixture, stage: Stage) -> None:
@@ -198,7 +196,16 @@ def _check_group_completeness(ctx: SeasonContext, competition: Competition) -> N
             _check_unique_rounds(ctx, label, own)
             for opponent in group.participants:
                 if opponent != ctx.own:
-                    _check_pair(ctx, label, opponent, own, stage.legs)
+                    pair = [f for f in own if f.opponent == opponent]
+                    if any(f.venue == "neutral" for f in pair):
+                        if len(pair) != stage.legs:
+                            ctx.add(
+                                "fixtures",
+                                "fixtures",
+                                f"{label}: each opponent needs {stage.legs} matches",
+                            )
+                    else:
+                        _check_pair(ctx, label, opponent, own, stage.legs)
 
 
 def _check_legs(ctx: SeasonContext, competition: Competition) -> None:

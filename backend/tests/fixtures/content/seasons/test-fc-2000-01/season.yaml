@@ -133,6 +133,11 @@ competitions:
     - head_to_head_points
     - goal_difference
     advance_per_group: 2
+    reapply_head_to_head:
+      value: false
+      sources:
+      - https://example.org/test-content/rules/copa-continental-test
+      verify: ok
   - *id001
 forced_events:
 - type: injury

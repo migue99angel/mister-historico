@@ -199,6 +199,7 @@ class GroupStageDTO:
     points_per_draw: int
     tiebreakers: tuple[Tiebreaker, ...]
     advance_per_group: int
+    reapply_head_to_head: bool | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -367,6 +368,54 @@ class FixtureDTO:
 
 
 @dataclass(frozen=True, slots=True)
+class KnockoutSlotDTO:
+    """Historical bracket slot; swapping occupants never changes its ID, date or venue."""
+
+    fixture_id: FixtureId
+    stage_id: str
+    date: date | None
+    home: ClubSeasonId
+    away: ClubSeasonId
+    venue: Literal["home", "neutral"] | None
+    leg: Literal[1, 2] | None
+    sources: tuple[str, ...]
+    verify: Literal["ok", "pending"]
+
+
+@dataclass(frozen=True, slots=True)
+class KnockoutCalendarDTO:
+    """None slots means unknown; an empty sourced tuple declares applicable absence."""
+
+    competition_id: CompetitionId
+    slots: tuple[KnockoutSlotDTO, ...] | None
+    sources: tuple[str, ...]
+    verify: Literal["ok", "pending"]
+
+
+@dataclass(frozen=True, slots=True)
+class GroupEntryAssignmentDTO:
+    """Historical representative of one explicitly sourced qualifying position."""
+
+    source_stage_id: str
+    group_id: str
+    qualifying_position: int
+    target_stage_id: str
+    historical_representative: ClubSeasonId
+    sources: tuple[str, ...]
+    verify: Literal["ok", "pending"]
+
+
+@dataclass(frozen=True, slots=True)
+class GroupEntryAssignmentsDTO:
+    """Complete declarations of historical qualifying slots for one competition."""
+
+    competition_id: CompetitionId
+    entries: tuple[GroupEntryAssignmentDTO, ...] | None
+    sources: tuple[str, ...]
+    verify: Literal["ok", "pending"]
+
+
+@dataclass(frozen=True, slots=True)
 class HeadToHeadFixtureDTO:
     """Sourced calendar entry; the home/away orientation is independent of the managed club."""
 
@@ -376,6 +425,7 @@ class HeadToHeadFixtureDTO:
     away: ClubSeasonId
     sources: tuple[str, ...]
     verify: Literal["ok", "pending"]
+    venue: Literal["home", "neutral"] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -610,6 +660,8 @@ class PlayableSeasonDTO:
     dilemmas: tuple[DilemmaDTO, ...]
     texts: tuple[TextDTO, ...]
     head_to_head: tuple[HeadToHeadEvidenceDTO, ...] | None = None
+    knockout_calendar: tuple[KnockoutCalendarDTO, ...] | None = None
+    group_entry_assignments: tuple[GroupEntryAssignmentsDTO, ...] | None = None
 
     def __post_init__(self) -> None:
         if all(club.id != self.club_season_id for club in self.club_seasons):

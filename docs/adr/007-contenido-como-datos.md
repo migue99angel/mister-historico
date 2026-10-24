@@ -74,3 +74,11 @@ Esta evidencia introduce una excepción estrecha a mantener la procedencia fuera
 `away_goals_in_extra_time` expresa la variante histórica como valor booleano nullable con fuentes y verificación. La combinación de dos partidos, goles fuera y prórroga exige valor explícito verificado para release y ejecución; desconocido no significa desactivado. La API añade únicamente el booleano nullable al final de cada etapa.
 
 El cuadro conserva `RealTie`: valida contendientes distintos, participación única por etapa y que un perdedor conocido no reaparezca en una etapa conectada. No inventa linajes ambiguos, accesos tardíos ni transiciones desde grupos. El calendario posterior a la eliminación real, la política de reaplicación de miniligas y la salida pública de desempates no resueltos quedan pendientes de otra CR antes de completar T2.6.
+
+## Ampliación CR-T2.6-competition-completion
+
+Las competiciones publican calendarios históricos completos de slots y asignaciones explícitas desde posiciones de grupos. Las declaraciones y sus entradas conservan fuentes y verificación; desconocido se mantiene en `null`, nunca se convierte en un calendario vacío o una sede local. Release exige la información necesaria para todos los recorridos alcanzables y plazas clasificatorias, además de una política verificada de reaplicación de miniligas cuando existan criterios directos.
+
+La sede H2H pasa a ser explícita y nullable. En neutral, el calendario decide los lados con los que se traduce el marcador relativo al gestionado; los partidos de grupos pueden tener sede neutral. La excepción estrecha de procedencia de la CR anterior comprende estos nuevos datos históricos. Las salidas simuladas sin resolver no llevan fuentes: preservan el empate y separan orden de presentación de posición deportiva. El productor T2.6 debe acreditar el agotamiento de una eliminatoria con el estado completo, incluso cuando sus partidos atraviesen bloques.
+
+La conexión posterior transformará las dos plazas de cada slot mediante una biyección de representantes históricos y ocupantes contrafactuales, actualizada por ronda. Se mantienen ID, fecha, orientación y sede para conservar las claves del ADR-005. Es una política de diseño del juego; esta CR no implementa el algoritmo de bloques ni inventa resultados externos.

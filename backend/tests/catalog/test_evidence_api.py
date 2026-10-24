@@ -13,8 +13,8 @@ from mister.simulation.application import api as simulation
 
 @pytest.mark.parametrize("kind", [catalog.StageDTO, simulation.StageInput])
 def test_stage_variant_is_appended_optional_and_keeps_legacy_construction(kind: type) -> None:
-    assert fields(kind)[-1].name == "away_goals_in_extra_time"
-    assert fields(kind)[-1].default is None
+    variant = next(field for field in fields(kind) if field.name == "away_goals_in_extra_time")
+    assert variant.default is None
 
 
 def test_existing_season_constructors_leave_evidence_unknown() -> None:

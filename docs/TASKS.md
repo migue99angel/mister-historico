@@ -340,7 +340,7 @@
 - **Dependencia:** integrar antes de T2.6 y del mapeo definitivo de T2.20. El calendario posterior a la eliminación real sigue siendo una necesidad aparte que debe resolverse antes del cierre de T2.6.
 
 #### CR-T2.6-competition-completion · Cierre de datos de competiciones
-- **Estado:** planificada por Astra; implementación y revisión independiente Sol pendientes.
+- **Estado:** implementación Sol terminada; revisión independiente, comprobación conjunta y CI pendientes.
 - **Alcance y propiedad:** [plan y política de plazas](changes/CR-T2.6-competition-completion.md). APIs/esquema, calendarios y asignaciones, salidas sin resolver y ajuste de sede en `league.py` con sus tests/documentación; sin cambiar copas ni puertos.
 - **Dependencia:** CR de evidencia histórica integrada. Debe integrarse antes de T2.6 y del mapeo definitivo de T2.20. No inventar fechas ni equiparar desconocido a vacío o local.
 
