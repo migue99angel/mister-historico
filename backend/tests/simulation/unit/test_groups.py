@@ -315,3 +315,15 @@ def test_typed_home_venue_preserves_the_visitors_head_to_head_away_goals() -> No
     ranking = _table(_rules("head_to_head_away_goals"), evidence=evidence).rank()
     assert ranking.rows[0].club_season_id == CLUBS[1]
     assert ranking.unresolved_ties == (tuple(sorted((CLUBS[0], *CLUBS[2:]), key=str)),)
+
+
+@pytest.mark.parametrize("venue", [Venue.HOME, Venue.NEUTRAL])
+def test_a_result_cannot_bypass_typed_venue_validation_by_matching_its_calendar(
+    venue: Venue,
+) -> None:
+    match = _match(0, 1, (0, 2))
+    typed = replace(match.fixture, venue=venue)
+    untyped = replace(typed, venue=venue.value)  # type: ignore[arg-type]
+    result = replace(match, fixture=untyped)
+    with pytest.raises(InvalidValueError, match="venue"):
+        GroupEvidence(CUTOFF, (typed,), (result,))
