@@ -104,3 +104,43 @@ def test_unresolved_knockout_value_has_typed_distinct_clubs_and_unique_match_ids
 def test_invalid_unresolved_knockout_identity_is_rejected(clubs: Any, ids: Any) -> None:
     with pytest.raises(InvalidValueError):
         api.UnresolvedKnockoutTieDTO(COMP, "final", clubs, ids)
+
+
+def second_leg() -> api.MatchResultDTO:
+    return api.MatchResultDTO(FixtureId("second-leg"), COMP, DAY, CLUBS[1], CLUBS[0], (1, 2), "away", CLUBS[1], "win", winner="away", stage_id="semifinal", leg=2)
+
+
+def test_exhausted_tie_can_span_blocks_and_have_an_individual_second_leg_winner() -> None:
+    tie = api.UnresolvedKnockoutTieDTO(COMP, "semifinal", CLUBS[:2], (FixtureId("first-leg"), FixtureId("second-leg")))
+    summary = api.BlockSummaryDTO(BlockId("b2"), results=(second_leg(),), unresolved_knockout_ties=(tie,))
+    assert summary.unresolved_knockout_ties == (tie,)
+    assert summary.results[0].winner == "away"
+    assert api.BlockSummaryDTO(BlockId("b2"), unresolved_knockout_ties=()).unresolved_knockout_ties == ()
+
+
+@pytest.mark.parametrize("bad", [[], ("untyped",)])
+def test_unresolved_knockout_collection_requires_immutable_typed_values(bad: Any) -> None:
+    with pytest.raises(InvalidValueError):
+        api.BlockSummaryDTO(BlockId("b2"), unresolved_knockout_ties=bad)
+
+
+@pytest.mark.parametrize("change", [{"competition_id": CompetitionId("other")}, {"stage_id": "final"}, {"home": CLUBS[2]}])
+def test_present_results_must_match_unresolved_knockout_identity(change: dict[str, Any]) -> None:
+    from dataclasses import replace
+    tie = api.UnresolvedKnockoutTieDTO(COMP, "semifinal", CLUBS[:2], (FixtureId("first-leg"), FixtureId("second-leg")))
+    with pytest.raises(InvalidValueError):
+        api.BlockSummaryDTO(BlockId("b2"), results=(replace(second_leg(), **change),), unresolved_knockout_ties=(tie,))
+
+
+def test_unresolved_knockout_collection_cannot_repeat_fixtures_or_stage_participants() -> None:
+    first = api.UnresolvedKnockoutTieDTO(COMP, "semifinal", CLUBS[:2], (FixtureId("first"),))
+    second = api.UnresolvedKnockoutTieDTO(COMP, "semifinal", (CLUBS[0], CLUBS[2]), (FixtureId("second"),))
+    for pair in ((first, first), (first, second)):
+        with pytest.raises(InvalidValueError):
+            api.BlockSummaryDTO(BlockId("b2"), unresolved_knockout_ties=pair)
+
+
+@pytest.mark.parametrize("competition,stage", [("untyped", "final"), (COMP, ""), (COMP, True)])
+def test_unresolved_knockout_scope_requires_a_typed_competition_and_nonblank_stage(competition: Any, stage: Any) -> None:
+    with pytest.raises(InvalidValueError):
+        api.UnresolvedKnockoutTieDTO(competition, stage, CLUBS[:2], (FixtureId("final"),))
