@@ -117,10 +117,15 @@ def _check_managed(ctx: SeasonContext, field: str, entry: HeadToHeadEvidence) ->
                 else (own_calendar_fixture.opponent, ctx.own)
             )
             if (calendar_fixture.date, calendar_fixture.home, calendar_fixture.away) != (
-                own_calendar_fixture.date, home, away
+                own_calendar_fixture.date,
+                home,
+                away,
             ):
-                ctx.add("standings", field,
-                        f"calendar contradicts managed fixture {calendar_fixture.fixture_id}")
+                ctx.add(
+                    "standings",
+                    field,
+                    f"calendar contradicts managed fixture {calendar_fixture.fixture_id}",
+                )
             if (
                 own_calendar_fixture.competition,
                 own_calendar_fixture.stage,
