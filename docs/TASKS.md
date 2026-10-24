@@ -378,6 +378,11 @@
 
 ### Track de catálogo (`backend/src/mister/catalog/`)
 
+#### CR-T2.20 · Puerto de validación del catálogo
+- **Estado:** planificada por Astra; implementación y revisión independiente Sol pendientes.
+- **Propiedad y contrato:** [plan de la CR](changes/CR-T2.20-validation-port.md). Nuevo puerto de IO, tipos de aplicación, fake y suite reutilizable; sin modificar APIs de temporadas, esquemas ni configuración compartida.
+- **Dependencia:** integrar antes del adaptador de validación de T2.20. El cableado compartido necesita su CR explícita posterior.
+
 #### T2.20 · Dominio del catálogo, cargador YAML y validación
 - **Oleada:** F2-A · **Tamaño:** M · **Depende de:** T1.2, T1.5
 - **Propiedad:** `catalog/domain/**`, `catalog/application/**` (salvo `ports.py` y `api.py`, que son contrato de T1.5: cambiarlos requiere CR), `catalog/infrastructure/yaml_loader.py`, `entrypoints/cli/content.py` y sus tests y `docs/adr/008-nombres-reales-desactivables.md`
