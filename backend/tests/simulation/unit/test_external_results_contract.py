@@ -207,6 +207,7 @@ class ScriptedExternalResults:
             historical: historical.historical_rows,
             make_request(): expected_rows(),
             make_draw_request(): expected_draw_rows(),
+            make_accumulated_request(): expected_accumulated_rows(),
         }
 
     def standings(self, request: ExternalResultsRequest) -> tuple[LeagueRow, ...]:
