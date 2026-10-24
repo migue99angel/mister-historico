@@ -1,15 +1,18 @@
 """Validate explicit competition calendars and qualifying assignments without inventing paths."""
 
 from collections import defaultdict
+from datetime import date
 from itertools import pairwise
 
 from mister.catalog.infrastructure.content_schema.base import season_window
 from mister.catalog.infrastructure.content_schema.competitions import (
+    GroupEntryAssignment,
     GroupEntryAssignments,
     KnockoutCalendar,
     KnockoutSlot,
 )
 from mister.catalog.infrastructure.content_schema.context import SeasonContext, stage_of
+from mister.catalog.infrastructure.content_schema.standings import StandingsCutoff
 from mister.catalog.infrastructure.content_schema.season import TWO_LEGS, LeagueCompetition, Stage
 
 
@@ -199,15 +202,7 @@ def _check_entries(ctx: SeasonContext, field: str, declaration: GroupEntryAssign
             row = next((r for r in final.table if r.position == entry.qualifying_position), None)
         if row is None or row.club_season != entry.historical_representative:
             ctx.add("standings", part, "entry contradicts the final historical group position")
-        if tables:
-            final_date = max(table.date for table in tables)
-            dates = [slot.date for calendar in ctx.content.standings.knockout_calendar or ()
-                     if calendar.competition == competition.id
-                     for slot in calendar.slots or () if slot.stage_id == target.id
-                     and entry.historical_representative in (slot.home, slot.away)
-                     and slot.date is not None]
-            if any(day <= final_date for day in dates):
-                ctx.add("standings", part, "target slots must follow the accredited final group table")
+        _check_entry_chronology(ctx, competition.id, entry)
         ties = [
             t
             for t in ctx.content.standings.ties
@@ -296,6 +291,8 @@ def _check_group_coverage(
     declaration = entries.get(competition_id)
     if declaration is not None and declaration.entries is not None:
         _check_entry_target_occupants(ctx, declaration)
+        for entry in declaration.entries:
+            _check_entry_chronology(ctx, competition_id, entry, required=True)
     for stage in stages:
         later = stages[stages.index(stage) + 1 :]
         if not stage.is_group_stage or not any(not s.is_group_stage for s in later):
@@ -334,3 +331,60 @@ def _check_entry_target_occupants(ctx: SeasonContext, assignments: GroupEntryAss
         if representatives != contenders:
             ctx.add("standings", "group_entry_assignments",
                     "entry assignments must cover exactly the historical target contenders")
+
+
+def _check_entry_chronology(
+    ctx: SeasonContext, competition_id: str, entry: GroupEntryAssignment, *, required: bool = False
+) -> None:
+    tables = [table for table in ctx.content.standings.cutoffs
+              if (table.competition, table.stage, table.group) ==
+              (competition_id, entry.source_stage_id, entry.group_id)]
+    if not tables:
+        return
+    final = max(tables, key=lambda table: table.date)
+    last_match = _group_calendar_end(ctx, competition_id, entry, final)
+    dates = [slot.date for calendar in ctx.content.standings.knockout_calendar or ()
+             if calendar.competition == competition_id for slot in calendar.slots or ()
+             if slot.stage_id == entry.target_stage_id
+             and entry.historical_representative in (slot.home, slot.away) and slot.date is not None]
+    if last_match is not None:
+        if any(day <= last_match for day in dates):
+            ctx.add("standings", "group_entry_assignments",
+                    "target slots must follow the last accredited group match")
+    elif required and any(day <= final.date for day in dates):
+        ctx.add("standings", "group_entry_assignments",
+                "insufficient calendar evidence to establish group completion before the target")
+
+
+def _group_calendar_end(
+    ctx: SeasonContext, competition_id: str, entry: GroupEntryAssignment, final: StandingsCutoff
+) -> date | None:
+    competition = ctx.competitions.get(competition_id)
+    source = stage_of(competition, entry.source_stage_id) if competition else None
+    group = next((g for g in source.groups or () if g.id == entry.group_id), None) if source else None
+    if source is None or group is None or final.verify != "ok":
+        return None
+    for history in ctx.content.standings.head_to_head or ():
+        if ((history.competition, history.stage, history.group) !=
+                (competition_id, source.id, group.id)
+                or set(history.covered_clubs) != set(group.participants)
+                or history.complete_through < final.date or history.verify != "ok"
+                or any(f.verify != "ok" for f in history.schedule)
+                or any(r.verify != "ok" or r.score is None for r in history.results)):
+            continue
+        scores = {r.fixture_id: r.score for r in history.results if r.score is not None}
+        totals = {club: [0] * 7 for club in group.participants}
+        for fixture in history.schedule:
+            score = scores[fixture.fixture_id]
+            for club, gf, ga in ((fixture.home, score[0], score[1]),
+                                 (fixture.away, score[1], score[0])):
+                won, drawn, lost = int(gf > ga), int(gf == ga), int(gf < ga)
+                values = (1, won, drawn, lost, gf, ga,
+                          won * (source.points_per_win or 0) + drawn * (source.points_per_draw or 0))
+                totals[club] = [a+b for a,b in zip(totals[club], values, strict=True)]
+        coherent = all(totals[row.club_season] == [row.played, row.won, row.drawn, row.lost,
+                                                  row.goals_for, row.goals_against, row.points]
+                       for row in final.table)
+        if coherent:
+            return max((fixture.date for fixture in history.schedule), default=None)
+    return None

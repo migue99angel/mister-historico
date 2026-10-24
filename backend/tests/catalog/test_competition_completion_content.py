@@ -317,7 +317,11 @@ def test_group_target_may_precede_cutoff_when_calendar_proves_group_finished(roo
 
 
 def test_group_target_cannot_precede_the_last_accredited_group_match(root: Path) -> None:
-    day = date(2000, 12, 10)
+    day = date(2000, 12, 18)
     edit(root, f"{SEASON}/fixtures.yaml", lambda d: next(f for f in d["fixtures"] if f["id"] == "tfc-cont-final").update(date=day))
     edit(root, STANDINGS, lambda d: d["knockout_calendar"][2]["slots"][0].update(date=day))
+    def postpone_external(data: dict[str, Any]) -> None:
+        external = max((f for f in data["head_to_head"][1]["schedule"] if OWN not in (f["home"], f["away"])), key=lambda f: f["date"])
+        external["date"] = date(2000, 12, 20)
+    edit(root, STANDINGS, postpone_external)
     assert_issue(issues_of(root, release=True), STANDINGS, "group_entry_assignments", "group match")
