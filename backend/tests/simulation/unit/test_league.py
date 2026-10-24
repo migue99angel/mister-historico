@@ -578,7 +578,7 @@ def test_the_declared_schedule_can_contain_a_single_leg_on_the_inclusive_cutoff(
     assert evidence.results[0].score == Score(2, 1)
 
 
-@pytest.mark.parametrize("venue", ["home", True, 1])
+@pytest.mark.parametrize("venue", ["home", True, 1, Venue.AWAY])
 def test_direct_fixture_requires_a_typed_venue_when_provided(venue: Any) -> None:
     with pytest.raises(InvalidValueError):
         HeadToHeadFixture(FixtureId("test-fixture"), _CUTOFF, _ME, _A, venue=venue)
@@ -626,3 +626,12 @@ def test_known_home_venue_counts_only_the_effective_away_clubs_goals(
         replacements=(_replacement(fixture, Score(0, 0), Score(0, 2)),),
     )
     assert _clubs(table) == expected
+
+
+def test_away_goals_require_venues_for_the_original_mini_league_after_partitioning() -> None:
+    ma = _fixture("test-sample", _ME, _A)
+    ab = replace(_fixture("sample-mock", _A, _B), venue=Venue.HOME)
+    bm = replace(_fixture("mock-test", _B, _ME), venue=Venue.HOME)
+    evidence = _evidence(((ma, Score(0, 1)), (ab, Score(3, 0)), (bm, Score(0, 0))))
+    with pytest.raises(InvalidValueError, match="venue"):
+        _table((_row(_ME), _row(_A), _row(_B)), criteria=("head_to_head_points", "head_to_head_away_goals"), evidence=evidence, replacements=(_replacement(ma, Score(0, 1), Score(0, 1)), _replacement(bm, Score(0, 0), Score(0, 0))))
