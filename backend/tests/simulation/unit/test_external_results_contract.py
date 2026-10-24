@@ -24,6 +24,7 @@ pytestmark = pytest.mark.contract
 
 _ME = ClubSeasonId("test-fc-2000-01")
 _RIVAL = ClubSeasonId("sample-united-2000-01")
+_OTHER = ClubSeasonId("mock-city-2000-01")
 
 
 def make_request(*, reproduce_history: bool = False) -> ExternalResultsRequest:
@@ -78,6 +79,49 @@ def expected_draw_rows() -> tuple[LeagueRow, ...]:
     )
 
 
+def make_accumulated_request() -> ExternalResultsRequest:
+    """Two managed fixtures from different blocks plus an unaffected participant."""
+    return ExternalResultsRequest(
+        competition_id=CompetitionId("liga-test"),
+        as_of=date(2000, 10, 31),
+        managed_club_season_id=_ME,
+        participants=(_ME, _RIVAL, _OTHER),
+        points_per_win=2,
+        points_per_draw=1,
+        historical_rows=(
+            LeagueRow(_RIVAL, 2, 1, 1, 0, 2, 1, 3),
+            LeagueRow(_OTHER, 0, 0, 0, 0, 0, 0, 0),
+            LeagueRow(_ME, 2, 0, 1, 1, 1, 2, 1),
+        ),
+        replacements=(
+            ResultReplacement(
+                FixtureId("sample-united-test-fc"),
+                date(2000, 9, 2),
+                _RIVAL,
+                _ME,
+                historical_score=Score(1, 0),
+                simulated_score=Score(0, 2),
+            ),
+            ResultReplacement(
+                FixtureId("test-fc-sample-united"),
+                date(2000, 10, 2),
+                _ME,
+                _RIVAL,
+                historical_score=Score(1, 1),
+                simulated_score=Score(0, 3),
+            ),
+        ),
+    )
+
+
+def expected_accumulated_rows() -> tuple[LeagueRow, ...]:
+    return (
+        LeagueRow(_RIVAL, 2, 1, 0, 1, 3, 2, 2),
+        LeagueRow(_OTHER, 0, 0, 0, 0, 0, 0, 0),
+        LeagueRow(_ME, 2, 1, 0, 1, 2, 3, 2),
+    )
+
+
 PolicyFactory = Callable[[], ExternalResultsPolicy]
 
 
@@ -126,6 +170,27 @@ class ExternalResultsContract:
         assert policy.standings(request) == first
         assert request.historical_rows == baseline
         assert request.replacements[0].historical_score == Score(1, 0)
+
+    def test_all_prior_block_replacements_are_applied_and_other_rows_are_preserved(
+        self, make_policy: PolicyFactory
+    ) -> None:
+        request = make_accumulated_request()
+
+        rows = make_policy().standings(request)
+
+        assert rows == expected_accumulated_rows()
+        assert rows[1] == request.historical_rows[1]
+        assert tuple(row.club_season_id for row in rows) == (_RIVAL, _OTHER, _ME)
+
+    def test_a_baseline_without_the_historical_contributions_is_rejected(
+        self, make_policy: PolicyFactory
+    ) -> None:
+        request = make_request()
+        zero_rows = tuple(LeagueRow(club, 0, 0, 0, 0, 0, 0, 0) for club in (_RIVAL, _ME))
+        insufficient = replace(request, historical_rows=zero_rows)
+
+        with pytest.raises(InvalidValueError):
+            make_policy().standings(insufficient)
 
     def test_fresh_policies_agree(self, make_policy: PolicyFactory) -> None:
         request = make_request()
