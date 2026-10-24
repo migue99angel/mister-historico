@@ -1,7 +1,7 @@
 """Four synthetic clubs and explicit evidence, without third-party simulation."""
 
 from dataclasses import replace
-from datetime import date
+from datetime import date, datetime
 from typing import Any
 
 import pytest
@@ -284,3 +284,34 @@ def test_only_missing_mini_table_results_are_required_to_break_a_tie() -> None:
     rows = tuple(_row(c, wins=1 if i < 2 else i) for i, c in enumerate(CLUBS))
     ranking = _table(_rules("head_to_head_points"), rows=rows, evidence=evidence).rank()
     assert not ranking.unresolved_ties
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"date": "2001-01-01"},
+        {"date": datetime(2001, 1, 1)},
+        {"date": None},
+        {"venue": "home"},
+        {"venue": "neutral"},
+        {"venue": "away"},
+        {"venue": None},
+        {"fixture_id": "group-0-1"},
+        {"fixture_id": ["group-0-1"]},
+        {"fixture_id": None},
+    ],
+)
+def test_group_calendar_rejects_untyped_fixture_metadata_before_ranking(
+    changes: dict[str, Any],
+) -> None:
+    match = _match(0, 1, (0, 2))
+    malformed = replace(match, fixture=replace(match.fixture, **changes))
+    with pytest.raises(InvalidValueError):
+        _evidence(malformed)
+
+
+def test_typed_home_venue_preserves_the_visitors_head_to_head_away_goals() -> None:
+    evidence = _evidence(_match(0, 1, (0, 2)))
+    ranking = _table(_rules("head_to_head_away_goals"), evidence=evidence).rank()
+    assert ranking.rows[0].club_season_id == CLUBS[1]
+    assert ranking.unresolved_ties == (tuple(sorted((CLUBS[0], *CLUBS[2:]), key=str)),)
