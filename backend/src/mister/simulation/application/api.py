@@ -351,7 +351,9 @@ class StandingsDTO:
                 raise InvalidValueError("unresolved groups must be disjoint row participants")
             indices = sorted(order.index(club) for club in group)
             if indices != list(range(indices[0], indices[-1] + 1)):
-                raise InvalidValueError("unresolved groups must occupy contiguous presentation rows")
+                raise InvalidValueError(
+                    "unresolved groups must occupy contiguous presentation rows"
+                )
             used.update(group)
 
 
@@ -467,10 +469,17 @@ class EventDTO:
     stage_id: str | None = None
 
 
+_TIE_CLUB_COUNT = 2
+_MAX_TIE_FIXTURES = 2
+
+
 def _require_clubs(clubs: tuple[ClubSeasonId, ...], *, minimum: int) -> None:
-    if (not isinstance(clubs, tuple) or len(clubs) < minimum
-            or not all(isinstance(club, ClubSeasonId) for club in clubs)
-            or len(set(clubs)) != len(clubs)):
+    if (
+        not isinstance(clubs, tuple)
+        or len(clubs) < minimum
+        or not all(isinstance(club, ClubSeasonId) for club in clubs)
+        or len(set(clubs)) != len(clubs)
+    ):
         raise InvalidValueError("clubs must be a tuple of distinct typed club IDs")
 
 
@@ -493,11 +502,14 @@ class UnresolvedKnockoutTieDTO:
         if not isinstance(self.stage_id, str) or not self.stage_id.strip():
             raise InvalidValueError("an unresolved tie needs a stage ID")
         _require_clubs(self.clubs, minimum=2)
-        if len(self.clubs) != 2:
+        if len(self.clubs) != _TIE_CLUB_COUNT:
             raise InvalidValueError("an unresolved knockout tie needs exactly two clubs")
-        if (not isinstance(self.fixture_ids, tuple) or not 1 <= len(self.fixture_ids) <= 2
-                or not all(isinstance(value, FixtureId) for value in self.fixture_ids)
-                or len(set(self.fixture_ids)) != len(self.fixture_ids)):
+        if (
+            not isinstance(self.fixture_ids, tuple)
+            or not 1 <= len(self.fixture_ids) <= _MAX_TIE_FIXTURES
+            or not all(isinstance(value, FixtureId) for value in self.fixture_ids)
+            or len(set(self.fixture_ids)) != len(self.fixture_ids)
+        ):
             raise InvalidValueError("an unresolved tie needs one or two distinct typed fixture IDs")
 
 
@@ -527,12 +539,15 @@ class BlockSummaryDTO:
                 raise InvalidValueError("unresolved knockout entries must be typed values")
             keys = {(tie.competition_id, tie.stage_id, club) for club in tie.clubs}
             if used.intersection(tie.fixture_ids) or occupied.intersection(keys):
-                raise InvalidValueError("unresolved ties cannot repeat fixtures or stage participants")
+                raise InvalidValueError(
+                    "unresolved ties cannot repeat fixtures or stage participants"
+                )
             used.update(tie.fixture_ids)
             occupied.update(keys)
             for result in self.results:
                 if result.fixture_id in tie.fixture_ids and (
-                    result.competition_id != tie.competition_id or result.stage_id != tie.stage_id
+                    result.competition_id != tie.competition_id
+                    or result.stage_id != tie.stage_id
                     or {result.home, result.away} != set(tie.clubs)
                 ):
                     raise InvalidValueError("a played result contradicts unresolved tie identity")
