@@ -416,7 +416,9 @@ def test_unknown_predecessor_ties_stay_unresolved_instead_of_being_fabricated(ro
 
 
 @pytest.mark.parametrize("release", [False, True])
-def test_disjoint_coverage_cannot_reuse_one_fixture_id_for_different_matches(root: Path, release: bool) -> None:
+def test_disjoint_coverage_cannot_reuse_one_fixture_id_for_different_matches(
+    root: Path, release: bool
+) -> None:
     def general(data: dict[str, Any]) -> None:
         for competition in data["competitions"]:
             if competition["kind"] == "league":
@@ -424,26 +426,50 @@ def test_disjoint_coverage_cannot_reuse_one_fixture_id_for_different_matches(roo
             for entry in competition.get("stages", []):
                 if entry["round"] == "group_stage":
                     entry["tiebreakers"] = ["goal_difference"]
+
     edit(root, f"{SEASON}/season.yaml", general)
     first_clubs = ["sample-united-2000-01", "demo-athletic-2000-01"]
     second_clubs = ["mock-city-2000-01", "dummy-rovers-2000-01"]
     histories = []
     for clubs, score in ((first_clubs, [1, 0]), (second_clubs, [0, 2])):
-        histories.append(evidence(covered_clubs=clubs, schedule=[fixture(fixture_id="shared-match", home=clubs[0], away=clubs[1])], results=[result(fixture_id="shared-match", score=score)]))
+        histories.append(
+            evidence(
+                covered_clubs=clubs,
+                schedule=[fixture(fixture_id="shared-match", home=clubs[0], away=clubs[1])],
+                results=[result(fixture_id="shared-match", score=score)],
+            )
+        )
     edit(root, f"{SEASON}/standings.yaml", lambda d: d.update(head_to_head=histories))
-    assert_issue(issues_of(root, release=release), f"{SEASON}/standings.yaml", "head_to_head", "fixture id")
+    assert_issue(
+        issues_of(root, release=release), f"{SEASON}/standings.yaml", "head_to_head", "fixture id"
+    )
 
 
-@pytest.mark.parametrize("change", [{"competition": "copa-continental-test", "stage": "groups", "group": "a"}, {"date": DAY+timedelta(days=1)}, {"score": [2, 0]}])
-def test_shared_fixture_ids_preserve_scope_date_and_non_null_score(root: Path, change: dict[str, Any]) -> None:
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"competition": "copa-continental-test", "stage": "groups", "group": "a"},
+        {"date": DAY + timedelta(days=1)},
+        {"score": [2, 0]},
+    ],
+)
+def test_shared_fixture_ids_preserve_scope_date_and_non_null_score(
+    root: Path, change: dict[str, Any]
+) -> None:
     clubs = ["sample-united-2000-01", "demo-athletic-2000-01"]
-    first = evidence(covered_clubs=clubs, schedule=[fixture(fixture_id="shared-match", home=clubs[0], away=clubs[1])], results=[result(fixture_id="shared-match", score=[1, 0])])
+    first = evidence(
+        covered_clubs=clubs,
+        schedule=[fixture(fixture_id="shared-match", home=clubs[0], away=clubs[1])],
+        results=[result(fixture_id="shared-match", score=[1, 0])],
+    )
     second = deepcopy(first)
     second["complete_through"] += timedelta(days=1)
     if "competition" in change:
         second.update(change)
         second["covered_clubs"] = ["overseas-fc-2000-01", "abroad-athletic-2000-01"]
-        second["schedule"][0].update(home=second["covered_clubs"][0], away=second["covered_clubs"][1])
+        second["schedule"][0].update(
+            home=second["covered_clubs"][0], away=second["covered_clubs"][1]
+        )
     elif "date" in change:
         second["schedule"][0]["date"] = change["date"]
     else:
@@ -454,7 +480,11 @@ def test_shared_fixture_ids_preserve_scope_date_and_non_null_score(root: Path, c
 
 def test_consistent_shared_fixture_ids_can_enrich_a_pending_score(root: Path) -> None:
     clubs = ["sample-united-2000-01", "demo-athletic-2000-01"]
-    first = evidence(covered_clubs=clubs, schedule=[fixture(fixture_id="shared-match", home=clubs[0], away=clubs[1])], results=[result(fixture_id="shared-match", score=None, verify="pending")])
+    first = evidence(
+        covered_clubs=clubs,
+        schedule=[fixture(fixture_id="shared-match", home=clubs[0], away=clubs[1])],
+        results=[result(fixture_id="shared-match", score=None, verify="pending")],
+    )
     second = deepcopy(first)
     second["complete_through"] += timedelta(days=1)
     second["results"][0].update(score=[1, 0], verify="ok")

@@ -193,22 +193,27 @@ def _check_shared_ids(
     for fixture_id in first.keys() & second.keys():
         a, b = first[fixture_id], second[fixture_id]
         if (_key(left), a.date, a.home, a.away) != (_key(right), b.date, b.home, b.away):
-            ctx.add("standings", "head_to_head",
-                    f"fixture id {fixture_id} has contradictory scope, date or sides")
-        if (left_scores[fixture_id] is not None and right_scores[fixture_id] is not None
-                and left_scores[fixture_id] != right_scores[fixture_id]):
-            ctx.add("standings", "head_to_head",
-                    f"fixture id {fixture_id} has contradictory non-null scores")
+            ctx.add(
+                "standings",
+                "head_to_head",
+                f"fixture id {fixture_id} has contradictory scope, date or sides",
+            )
+        if (
+            left_scores[fixture_id] is not None
+            and right_scores[fixture_id] is not None
+            and left_scores[fixture_id] != right_scores[fixture_id]
+        ):
+            ctx.add(
+                "standings",
+                "head_to_head",
+                f"fixture id {fixture_id} has contradictory non-null scores",
+            )
 
 
 def _check_overlaps(ctx: SeasonContext, entries: tuple[HeadToHeadEvidence, ...]) -> None:
     for left, right in combinations(entries, 2):
         _check_shared_ids(ctx, left, right)
         if _key(left) != _key(right):
-            if {f.fixture_id for f in left.schedule} & {f.fixture_id for f in right.schedule}:
-                ctx.add(
-                    "standings", "head_to_head", "a fixture id cannot belong to different scopes"
-                )
             continue
         clubs = set(left.covered_clubs) & set(right.covered_clubs)
         through = min(left.complete_through, right.complete_through)
@@ -222,14 +227,6 @@ def _check_overlaps(ctx: SeasonContext, entries: tuple[HeadToHeadEvidence, ...])
         ]
         if calendars[0] != calendars[1]:
             ctx.add("standings", "head_to_head", "overlapping calendar coverage is contradictory")
-        first, second = ({r.fixture_id: r.score for r in e.results} for e in (left, right))
-        if any(
-            first[key] is not None and second.get(key) is not None and first[key] != second[key]
-            for key in calendars[0]
-        ):
-            ctx.add(
-                "standings", "head_to_head", "overlapping historical scores contradict each other"
-            )
         if left.complete_through == right.complete_through and set(left.covered_clubs) == set(
             right.covered_clubs
         ):
