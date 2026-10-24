@@ -182,8 +182,28 @@ def _check_tables(ctx: SeasonContext, field: str, entry: HeadToHeadEvidence, sco
                 )
 
 
+def _check_shared_ids(
+    ctx: SeasonContext, left: HeadToHeadEvidence, right: HeadToHeadEvidence
+) -> None:
+    """Fixture identity is global to the season, even across disjoint club coverage."""
+    first = {f.fixture_id: f for f in left.schedule}
+    second = {f.fixture_id: f for f in right.schedule}
+    left_scores = {r.fixture_id: r.score for r in left.results}
+    right_scores = {r.fixture_id: r.score for r in right.results}
+    for fixture_id in first.keys() & second.keys():
+        a, b = first[fixture_id], second[fixture_id]
+        if (_key(left), a.date, a.home, a.away) != (_key(right), b.date, b.home, b.away):
+            ctx.add("standings", "head_to_head",
+                    f"fixture id {fixture_id} has contradictory scope, date or sides")
+        if (left_scores[fixture_id] is not None and right_scores[fixture_id] is not None
+                and left_scores[fixture_id] != right_scores[fixture_id]):
+            ctx.add("standings", "head_to_head",
+                    f"fixture id {fixture_id} has contradictory non-null scores")
+
+
 def _check_overlaps(ctx: SeasonContext, entries: tuple[HeadToHeadEvidence, ...]) -> None:
     for left, right in combinations(entries, 2):
+        _check_shared_ids(ctx, left, right)
         if _key(left) != _key(right):
             if {f.fixture_id for f in left.schedule} & {f.fixture_id for f in right.schedule}:
                 ctx.add(
