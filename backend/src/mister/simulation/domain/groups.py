@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from itertools import groupby
+from itertools import chain, groupby
 from typing import TYPE_CHECKING
 
 from mister.shared_kernel.errors import InvalidValueError
-from mister.shared_kernel.ids import ClubSeasonId, CompetitionId
+from mister.shared_kernel.ids import ClubSeasonId, CompetitionId, FixtureId
 from mister.simulation.domain.league_types import LeagueRow
 from mister.simulation.domain.model import FixtureSpec, Score, Venue
 
@@ -100,6 +100,16 @@ class GroupEvidence:
             or not all(isinstance(result, GroupMatch) for result in self.results)
         ):
             raise InvalidValueError("group calendar and results must be immutable tuples")
+        for fixture in chain(self.schedule, (result.fixture for result in self.results)):
+            if type(fixture.date) is not date:
+                raise InvalidValueError("group fixtures need calendar dates")
+            if not isinstance(fixture.venue, Venue) or fixture.venue not in (
+                Venue.HOME,
+                Venue.NEUTRAL,
+            ):
+                raise InvalidValueError("group fixtures need typed home or neutral venues")
+            if not isinstance(fixture.fixture_id, FixtureId):
+                raise InvalidValueError("group fixtures need typed fixture IDs")
         fixtures = {fixture.fixture_id: fixture for fixture in self.schedule}
         if len(fixtures) != len(self.schedule):
             raise InvalidValueError("duplicate group fixture in the calendar")
