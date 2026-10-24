@@ -66,27 +66,34 @@ def test_risk_grows_with_minutes(a: int, b: int, fitness: int) -> None:
 def test_non_participant_has_no_risk_no_injury_and_consumes_no_randomness() -> None:
     rng = FixedDraws()
     assert injury_risk(Fitness(0), 0) == 0
-    assert simulate_injury(rng, FIXTURE, PLAYER, DAY, Fitness(0), 0) is None
+    assert simulate_injury(rng, FIXTURE, PLAYER, DAY, fitness=Fitness(0), minutes=0) is None
     assert rng.keys == []
     assert rng.draws == 0
 
 
-@pytest.mark.parametrize("accident,injured", [(0.0, True), (0.019999, True), (0.02, False), (0.99, False)])
+@pytest.mark.parametrize(
+    ("accident", "injured"), [(0.0, True), (0.019999, True), (0.02, False), (0.99, False)]
+)
 def test_each_participant_uses_one_normative_leaf_and_two_draws(
     accident: float, injured: bool
 ) -> None:
     rng = FixedDraws(accident, 0.5)
-    result = simulate_injury(rng, FIXTURE, PLAYER, DAY, Fitness(100), 90)
+    result = simulate_injury(rng, FIXTURE, PLAYER, DAY, fitness=Fitness(100), minutes=90)
     assert (result is not None) is injured
     assert rng.keys == [("match", str(FIXTURE), "injury", str(PLAYER))]
     assert rng.draws == 2
 
 
-@pytest.mark.parametrize("draw,days", [(0.0, 7), (0.599999, 7), (0.6, 14), (0.899999, 14), (0.9, 28), (0.999999, 28)])
+@pytest.mark.parametrize(
+    ("draw", "days"),
+    [(0.0, 7), (0.599999, 7), (0.6, 14), (0.899999, 14), (0.9, 28), (0.999999, 28)],
+)
 def test_duration_distribution_has_provisional_seven_fourteen_and_twenty_eight_day_bands(
     draw: float, days: int
 ) -> None:
-    result = simulate_injury(FixedDraws(0.0, draw), FIXTURE, PLAYER, DAY, Fitness(100), 90)
+    result = simulate_injury(
+        FixedDraws(0.0, draw), FIXTURE, PLAYER, DAY, fitness=Fitness(100), minutes=90
+    )
     assert result == Injury(PLAYER, DAY, days)
 
 
@@ -95,28 +102,39 @@ def test_same_seed_reproduces_injuries_and_durations_without_shifting_other_play
     rng = StdlibRandomSource(Seed(42))
 
     def outcomes(ids: list[PlayerId]) -> dict[PlayerId, Injury | None]:
-        return {p: simulate_injury(rng, FIXTURE, p, DAY, Fitness(0), 120) for p in ids}
+        return {
+            p: simulate_injury(rng, FIXTURE, p, DAY, fitness=Fitness(0), minutes=120) for p in ids
+        }
 
     forward = outcomes(players)
     assert any(injury is not None for injury in forward.values())
     assert outcomes(list(reversed(players))) == forward
     assert outcomes(players[::2]) == {p: forward[p] for p in players[::2]}
     fresh = StdlibRandomSource(Seed(42))
-    assert simulate_injury(fresh, FIXTURE, players[0], DAY, Fitness(0), 120) == forward[players[0]]
+    assert (
+        simulate_injury(fresh, FIXTURE, players[0], DAY, fitness=Fitness(0), minutes=120)
+        == forward[players[0]]
+    )
 
 
 def test_another_fixture_does_not_consume_the_first_fixtures_randomness() -> None:
     rng = StdlibRandomSource(Seed(42))
-    before = simulate_injury(rng, FIXTURE, PLAYER, DAY, Fitness(0), 120)
-    simulate_injury(rng, FixtureId("test-other-match"), PLAYER, DAY, Fitness(0), 120)
-    assert simulate_injury(rng, FIXTURE, PLAYER, DAY, Fitness(0), 120) == before
+    before = simulate_injury(rng, FIXTURE, PLAYER, DAY, fitness=Fitness(0), minutes=120)
+    simulate_injury(
+        rng, FixtureId("test-other-match"), PLAYER, DAY, fitness=Fitness(0), minutes=120
+    )
+    assert simulate_injury(rng, FIXTURE, PLAYER, DAY, fitness=Fitness(0), minutes=120) == before
     recorded = FixedDraws()
-    simulate_injury(recorded, FixtureId("test-other-match"), PLAYER, DAY, Fitness(0), 120)
+    simulate_injury(
+        recorded, FixtureId("test-other-match"), PLAYER, DAY, fitness=Fitness(0), minutes=120
+    )
     assert recorded.keys == [("match", "test-other-match", "injury", "test-player")]
 
 
-@pytest.mark.parametrize("offset,expected", [(-1, None), (0, 7), (6, 7), (7, None), (8, None)])
-def test_absence_is_start_inclusive_and_return_date_exclusive(offset: int, expected: int | None) -> None:
+@pytest.mark.parametrize(("offset", "expected"), [(-1, None), (0, 7), (6, 7), (7, None), (8, None)])
+def test_absence_is_start_inclusive_and_return_date_exclusive(
+    offset: int, expected: int | None
+) -> None:
     injuries = (Injury(PLAYER, DAY, 7, forced=True),)
     assert injured_until(PLAYER, injuries, DAY + timedelta(days=offset)) == (
         None if expected is None else DAY + timedelta(days=expected)
@@ -127,7 +145,9 @@ def test_overlaps_take_latest_active_end_without_applying_future_events_early() 
     injuries = (Injury(PLAYER, DAY, 7), Injury(PLAYER, DAY + timedelta(days=3), 14, True))
     assert injured_until(PLAYER, injuries, DAY + timedelta(days=2)) == DAY + timedelta(days=7)
     assert injured_until(PLAYER, injuries, DAY + timedelta(days=3)) == DAY + timedelta(days=17)
-    assert injured_until(PLAYER, tuple(reversed(injuries)), DAY + timedelta(days=7)) == DAY + timedelta(days=17)
+    assert injured_until(
+        PLAYER, tuple(reversed(injuries)), DAY + timedelta(days=7)
+    ) == DAY + timedelta(days=17)
 
 
 def test_disjoint_historical_absences_keep_the_healthy_gap() -> None:
@@ -144,7 +164,9 @@ def test_forced_absences_apply_before_lineup_with_any_seed(seed: int) -> None:
     target = select_lineup(players, TACTIC).starters[0].player.player_id
     forced = Injury(target, DAY, 7, True)
     # Different seeds may affect accidental injuries, never the forced interval.
-    simulate_injury(StdlibRandomSource(Seed(seed)), FIXTURE, target, DAY, Fitness(100), 90)
+    simulate_injury(
+        StdlibRandomSource(Seed(seed)), FIXTURE, target, DAY, fitness=Fitness(100), minutes=90
+    )
     updated = apply_injuries(players, (forced,), DAY)
     assert target not in {p.player.player_id for p in select_lineup(updated, TACTIC).starters}
     assert players == squad()
@@ -196,7 +218,7 @@ def test_last_representable_return_day_is_valid_but_overflow_is_rejected() -> No
     with pytest.raises(InvalidValueError):
         Injury(PLAYER, date.max, 1)
     with pytest.raises(InvalidValueError):
-        simulate_injury(FixedDraws(), FIXTURE, PLAYER, date.max, Fitness(100), 90)
+        simulate_injury(FixedDraws(), FIXTURE, PLAYER, date.max, fitness=Fitness(100), minutes=90)
 
 
 @pytest.mark.parametrize("bad", [None, "2000-01-01", datetime(2000, 1, 1)])
@@ -208,7 +230,7 @@ def test_injury_operations_require_calendar_dates(bad: Any) -> None:
     with pytest.raises(InvalidValueError):
         apply_injuries(squad(), (), bad)
     with pytest.raises(InvalidValueError):
-        simulate_injury(FixedDraws(), FIXTURE, PLAYER, bad, Fitness(100), 90)
+        simulate_injury(FixedDraws(), FIXTURE, PLAYER, bad, fitness=Fitness(100), minutes=90)
 
 
 @pytest.mark.parametrize("bad", [None, "test-player", True])
@@ -218,13 +240,13 @@ def test_injury_operations_require_typed_player_ids(bad: Any) -> None:
     with pytest.raises(InvalidValueError):
         injured_until(bad, (), DAY)
     with pytest.raises(InvalidValueError):
-        simulate_injury(FixedDraws(), FIXTURE, bad, DAY, Fitness(100), 90)
+        simulate_injury(FixedDraws(), FIXTURE, bad, DAY, fitness=Fitness(100), minutes=90)
 
 
 @pytest.mark.parametrize("bad", [None, "test-match", True])
 def test_simulation_requires_a_typed_fixture_id(bad: Any) -> None:
     with pytest.raises(InvalidValueError):
-        simulate_injury(FixedDraws(), bad, PLAYER, DAY, Fitness(100), 90)
+        simulate_injury(FixedDraws(), bad, PLAYER, DAY, fitness=Fitness(100), minutes=90)
 
 
 @pytest.mark.parametrize("bad", [-1, 121, True, 1.5, None])
@@ -232,7 +254,7 @@ def test_injury_rules_reject_invalid_minutes(bad: Any) -> None:
     with pytest.raises(InvalidValueError):
         injury_risk(Fitness(100), bad)
     with pytest.raises(InvalidValueError):
-        simulate_injury(FixedDraws(), FIXTURE, PLAYER, DAY, Fitness(100), bad)
+        simulate_injury(FixedDraws(), FIXTURE, PLAYER, DAY, fitness=Fitness(100), minutes=bad)
 
 
 @pytest.mark.parametrize("bad", [None, 100, True])
