@@ -227,3 +227,19 @@ def test_mixed_semifinal_oracle_updates_both_surviving_slot_occupants() -> None:
     assert len(set(surviving.values())) == len(surviving)
     assert CLUBS[0] not in surviving.values()
     assert effective.fixture_id == historical.fixture_id
+
+
+def test_block_request_appends_optional_state_date_without_inferring_it_from_results() -> None:
+    season = api.SeasonSimInput(CLUBS[0], (), (), ())
+    team = api.SquadTeamInput(CLUBS[0], (), api.TacticDTO("balanced", "4-4-2"))
+    request = api.BlockSimRequest(season, BlockId("b2"), DAY, DAY, team, prior_results=(second_leg(),))
+    assert fields(api.BlockSimRequest)[-1].name == "state_as_of"
+    assert request.state_as_of is None
+
+
+def test_continuation_request_preserves_the_explicit_previous_state_date() -> None:
+    season = api.SeasonSimInput(CLUBS[0], (), (), ())
+    team = api.SquadTeamInput(CLUBS[0], (), api.TacticDTO("balanced", "4-4-2"))
+    previous_close = date(2000, 9, 29)
+    request = api.BlockSimRequest(season, BlockId("b2"), DAY, DAY, team, state_as_of=previous_close)
+    assert request.state_as_of == previous_close
