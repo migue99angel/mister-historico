@@ -379,7 +379,7 @@
 ### Track de catálogo (`backend/src/mister/catalog/`)
 
 #### CR-T2.20 · Puerto de validación del catálogo
-- **Estado:** planificada por Astra; implementación y revisión independiente Sol pendientes.
+- **Estado:** implementada por Sol; pendiente de revisión independiente, pruebas completas coordinadas y CI antes de integrar.
 - **Propiedad y contrato:** [plan de la CR](changes/CR-T2.20-validation-port.md). Nuevo puerto de IO, tipos de aplicación, fake y suite reutilizable; sin modificar APIs de temporadas, esquemas ni configuración compartida.
 - **Dependencia:** integrar antes del adaptador de validación de T2.20. El cableado compartido necesita su CR explícita posterior.
 

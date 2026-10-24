@@ -3,13 +3,6 @@
 from typing import Any
 
 import pytest
-from tests.contracts.suites.content_validator import (
-    MULTIPLE_ISSUES,
-    PENDING_ISSUE,
-    ContentValidatorContract,
-    ValidationScenario,
-    ValidatorFactory,
-)
 
 from mister.catalog.application.ports import ContentValidator
 from mister.catalog.application.validation_types import (
@@ -18,6 +11,13 @@ from mister.catalog.application.validation_types import (
 )
 from mister.catalog.infrastructure.in_memory.content_validation import InMemoryContentValidator
 from mister.shared_kernel.errors import InvalidValueError
+from tests.contracts.suites.content_validator import (
+    MULTIPLE_ISSUES,
+    PENDING_ISSUE,
+    ContentValidatorContract,
+    ValidationScenario,
+    ValidatorFactory,
+)
 
 
 class TestInMemoryContentValidator(ContentValidatorContract):
@@ -67,8 +67,13 @@ def test_the_fake_requires_an_explicit_boolean_release_mode(mode: Any) -> None:
         validator.validate(release=mode)
 
 
-@pytest.mark.parametrize("outcomes", [{0: ContentValidationReport((), 1)}, {False: None}, {False: RuntimeError("failure")}])
-def test_the_fake_program_accepts_only_boolean_modes_and_application_outcomes(outcomes: Any) -> None:
+@pytest.mark.parametrize(
+    "outcomes",
+    [{0: ContentValidationReport((), 1)}, {False: None}, {False: RuntimeError("failure")}],
+)
+def test_the_fake_program_accepts_only_boolean_modes_and_application_outcomes(
+    outcomes: Any,
+) -> None:
     with pytest.raises(InvalidValueError):
         InMemoryContentValidator(outcomes)
 

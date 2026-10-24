@@ -1,7 +1,10 @@
 """Reusable `ContentValidator` contract over synthetic Test FC validation scenarios.
 
 Subclass and provide `make_validator`. The fake scripts these outcomes; the future YAML
-adapter will construct matching temporary trees without changing these assertions.
+adapter will copy the Test FC tree for valid/pending/invalid scenarios, use a directory
+without files for empty, and arrange an operational read failure for unavailable.
+The invalid tree has an unknown `unexpected` field in fixtures.yaml and texts.yaml;
+the pending tree has its first text in draft. Expected messages match the current loader.
 """
 
 from collections.abc import Callable
@@ -20,11 +23,17 @@ type ValidationScenario = Literal["valid", "empty", "invalid", "pending", "unava
 type ValidatorFactory = Callable[[ValidationScenario], ContentValidator]
 
 MULTIPLE_ISSUES = (
-    ValidationIssue("clubs/test-fc.yaml", "", "file is missing"),
-    ValidationIssue("seasons/test-fc-2000-01/season.yaml", "blocks", "missing dilemmas"),
+    ValidationIssue(
+        "seasons/test-fc-2000-01/fixtures.yaml", "unexpected", "Extra inputs are not permitted"
+    ),
+    ValidationIssue(
+        "seasons/test-fc-2000-01/texts.yaml", "unexpected", "Extra inputs are not permitted"
+    ),
 )
 PENDING_ISSUE = ValidationIssue(
-    "seasons/test-fc-2000-01/texts.yaml", "texts.0.status", "draft is not allowed in release"
+    "seasons/test-fc-2000-01/texts.yaml",
+    "texts.0.status",
+    "draft texts are not allowed in release mode",
 )
 
 
@@ -45,8 +54,11 @@ class ContentValidatorContract:
         assert report.issues == ()
         assert report.season_count == 1
 
-    def test_a_known_empty_tree_reports_zero_seasons(self, make_validator: ValidatorFactory) -> None:
-        report = make_validator("empty").validate(release=False)
+    @pytest.mark.parametrize("release", [False, True])
+    def test_a_known_empty_tree_reports_zero_seasons(
+        self, make_validator: ValidatorFactory, release: bool
+    ) -> None:
+        report = make_validator("empty").validate(release=release)
 
         assert report.valid
         assert report.season_count == 0
