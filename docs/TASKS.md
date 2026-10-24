@@ -334,8 +334,13 @@
   - Una lesión forzada se aplica siempre, con cualquier semilla.
 - **Aceptación:** todo es determinista con la semilla.
 
+#### CR-T2.6 · Evidencia histórica para la simulación
+- **Estado:** planificada por Astra; implementación y revisión independiente Sol pendientes.
+- **Alcance y propiedad:** [plan de la CR](changes/CR-T2.6-historical-evidence.md). Entrada de enfrentamientos entre rivales y regla explícita de goles fuera en prórroga, con procedencia y compatibilidad de construcción.
+- **Dependencia:** integrar antes de T2.6 y del mapeo definitivo de T2.20. El calendario posterior a la eliminación real sigue siendo una necesidad aparte que debe resolverse antes del cierre de T2.6.
+
 #### T2.6 · Simulación por bloques
-- **Oleada:** F2-B · **Tamaño:** M · **Depende de:** T2.1-T2.5
+- **Oleada:** F2-B · **Tamaño:** M · **Depende de:** T2.1-T2.5 y CR-T2.6 integrada
 - **Propiedad:** `simulation/domain/season.py`, `simulation/application/simulate_block.py` (la fachada de `api.py` ya delega en este módulo) y sus tests
 - **Qué hacer:**
   - `simulate_block(state, block)`: recorre en orden de fecha los partidos de todas las competiciones dentro del rango del bloque, actualiza el estado físico, las lesiones y las clasificaciones, y devuelve un `BlockSummary` con los resultados, las clasificaciones, los eventos y los partidos clave marcados (clásicos y eliminatorias).
