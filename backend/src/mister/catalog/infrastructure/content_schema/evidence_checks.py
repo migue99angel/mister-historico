@@ -6,7 +6,8 @@ from typing import NamedTuple
 
 from mister.catalog.infrastructure.content_schema.base import season_window
 from mister.catalog.infrastructure.content_schema.context import SeasonContext, stage_of
-from mister.catalog.infrastructure.content_schema.evidence import HeadToHeadEvidence
+from mister.catalog.infrastructure.content_schema.evidence import HeadToHeadEvidence, HeadToHeadFixture
+from mister.catalog.infrastructure.content_schema.fixtures import Fixture
 from mister.catalog.infrastructure.content_schema.season import LeagueCompetition
 from mister.catalog.infrastructure.content_schema.standings import StandingsCutoff
 
@@ -70,6 +71,13 @@ def check_evidence(ctx: SeasonContext) -> None:
     _check_overlaps(ctx, entries)
 
 
+def _managed_sides_match(own: str, fixture: Fixture, actual: HeadToHeadFixture) -> bool:
+    if fixture.venue == "neutral":
+        return {actual.home, actual.away} == {own, fixture.opponent}
+    expected = (own, fixture.opponent) if fixture.venue == "home" else (fixture.opponent, own)
+    return (actual.home, actual.away) == expected
+
+
 def _check_managed(ctx: SeasonContext, field: str, entry: HeadToHeadEvidence) -> None:
     calendar = {f.fixture_id: f for f in entry.schedule}
     scores = {r.fixture_id: r.score for r in entry.results}
@@ -85,10 +93,7 @@ def _check_managed(ctx: SeasonContext, field: str, entry: HeadToHeadEvidence) ->
         if actual is None:
             ctx.add("standings", field, f"missing managed fixture {fixture.id}")
             continue
-        home, away = (
-            (ctx.own, fixture.opponent) if fixture.venue == "home" else (fixture.opponent, ctx.own)
-        )
-        if (actual.date, actual.home, actual.away) != (fixture.date, home, away):
+        if actual.date != fixture.date or not _managed_sides_match(ctx.own, fixture, actual):
             ctx.add("standings", field, f"calendar contradicts managed fixture {fixture.id}")
         expected_venue = "neutral" if fixture.venue == "neutral" else "home"
         if actual.venue is not None and actual.venue != expected_venue:
@@ -97,7 +102,7 @@ def _check_managed(ctx: SeasonContext, field: str, entry: HeadToHeadEvidence) ->
             own = fixture.result
             expected = (
                 (own.goals_for, own.goals_against)
-                if fixture.venue == "home"
+                if actual.home == ctx.own
                 else (own.goals_against, own.goals_for)
             )
             if scores[fixture.id] != expected:
@@ -119,15 +124,8 @@ def _check_managed_calendar_ids(ctx: SeasonContext, field: str, entry: HeadToHea
             )
         if calendar_fixture.fixture_id in managed:
             own_calendar_fixture = managed[calendar_fixture.fixture_id]
-            home, away = (
-                (ctx.own, own_calendar_fixture.opponent)
-                if own_calendar_fixture.venue == "home"
-                else (own_calendar_fixture.opponent, ctx.own)
-            )
-            if (calendar_fixture.date, calendar_fixture.home, calendar_fixture.away) != (
-                own_calendar_fixture.date,
-                home,
-                away,
+            if calendar_fixture.date != own_calendar_fixture.date or not _managed_sides_match(
+                ctx.own, own_calendar_fixture, calendar_fixture
             ):
                 ctx.add(
                     "standings",

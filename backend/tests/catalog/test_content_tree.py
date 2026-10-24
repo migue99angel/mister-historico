@@ -1034,10 +1034,10 @@ def test_a_group_matchday_out_of_range_is_reported(root: Path) -> None:
     assert_issue(issues_of(root), FIXTURES, ".round", "matchday")
 
 
-def test_a_group_match_on_neutral_ground_is_reported(root: Path) -> None:
+def test_a_neutral_group_fixture_requires_matching_historical_venue(root: Path) -> None:
     edit(root, FIXTURES, lambda d: fixture_of(d, "tfc-cont-g1").update(venue="neutral"))
 
-    assert_issue(issues_of(root), FIXTURES, ".venue", "group match")
+    assert_issue(issues_of(root), STANDINGS, "head_to_head", "venue")
 
 
 def test_a_knockout_fixture_with_a_group_is_reported(root: Path) -> None:
