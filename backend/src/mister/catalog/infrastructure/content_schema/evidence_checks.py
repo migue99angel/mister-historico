@@ -102,6 +102,11 @@ def _check_managed(ctx: SeasonContext, field: str, entry: HeadToHeadEvidence) ->
             )
             if scores[fixture.id] != expected:
                 ctx.add("standings", field, f"score contradicts managed fixture {fixture.id}")
+    _check_managed_calendar_ids(ctx, field, entry)
+
+
+def _check_managed_calendar_ids(ctx: SeasonContext, field: str, entry: HeadToHeadEvidence) -> None:
+    managed = {f.id: f for f in ctx.content.fixtures.fixtures}
     for calendar_fixture in entry.schedule:
         if (
             ctx.own in (calendar_fixture.home, calendar_fixture.away)
