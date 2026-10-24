@@ -135,7 +135,8 @@ fail_under = 85
 exclude_also = [
     "if TYPE_CHECKING:",
     "raise NotImplementedError",
-    "\\.\\.\\.",
+    # Exclude standalone stub bodies without matching executable tuple annotations.
+    '^[ \t]*\.\.\.[ \t]*$',
 ]
 
 # --------------------------------------------------------------------------- import-linter
