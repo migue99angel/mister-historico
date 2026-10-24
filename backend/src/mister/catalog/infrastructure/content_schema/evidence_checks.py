@@ -111,6 +111,16 @@ def _check_managed(ctx: SeasonContext, field: str, entry: HeadToHeadEvidence) ->
             )
         if calendar_fixture.fixture_id in managed:
             own_calendar_fixture = managed[calendar_fixture.fixture_id]
+            home, away = (
+                (ctx.own, own_calendar_fixture.opponent)
+                if own_calendar_fixture.venue == "home"
+                else (own_calendar_fixture.opponent, ctx.own)
+            )
+            if (calendar_fixture.date, calendar_fixture.home, calendar_fixture.away) != (
+                own_calendar_fixture.date, home, away
+            ):
+                ctx.add("standings", field,
+                        f"calendar contradicts managed fixture {calendar_fixture.fixture_id}")
             if (
                 own_calendar_fixture.competition,
                 own_calendar_fixture.stage,
