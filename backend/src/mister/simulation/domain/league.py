@@ -8,7 +8,7 @@ from itertools import groupby
 from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.ids import ClubSeasonId, CompetitionId, FixtureId
 from mister.simulation.domain.league_types import ExternalResultsRequest, LeagueRow
-from mister.simulation.domain.model import Score
+from mister.simulation.domain.model import Score, Venue
 
 _COUNTERS = ("played", "won", "drawn", "lost", "goals_for", "goals_against", "points")
 _DIRECT_CRITERIA = frozenset(
@@ -112,12 +112,15 @@ class HeadToHeadFixture:
     date: date
     home: ClubSeasonId
     away: ClubSeasonId
+    venue: Venue | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.fixture_id, FixtureId) or type(self.date) is not date:
             raise InvalidValueError("a historical fixture needs a FixtureId and a calendar date")
         if not isinstance(self.home, ClubSeasonId) or not isinstance(self.away, ClubSeasonId):
             raise InvalidValueError("historical sides must be ClubSeasonIds")
+        if self.venue is not None and not isinstance(self.venue, Venue):
+            raise InvalidValueError("a direct fixture venue must be a Venue or None")
         if self.home == self.away:
             raise InvalidValueError("a historical fixture must have different sides")
 
@@ -253,7 +256,7 @@ class LeagueTable:
             raise InvalidValueError("head-to-head evidence must match the requested league cutoff")
 
     def _rank_points_group(
-        self, original: tuple[LeagueRow, ...]
+        self, original: tuple[LeagueRow, ...], *, require_venue: bool = False
     ) -> tuple[tuple[LeagueRow, ...], ...]:
         if self.request.managed_club_season_id not in {row.club_season_id for row in original}:
             positions = {club: index for index, club in enumerate(self.historical_final_order)}
@@ -278,7 +281,7 @@ class LeagueTable:
         self, criterion: str, original: tuple[LeagueRow, ...]
     ) -> Callable[[LeagueRow], int]:
         if criterion in _DIRECT_CRITERIA:
-            mini_league, away_goals = self._mini_league(original)
+            mini_league, away_goals = self._mini_league(original, require_venue=criterion == "head_to_head_away_goals")
 
             def direct_key(row: LeagueRow) -> int:
                 mini = mini_league[row.club_season_id]
@@ -298,7 +301,7 @@ class LeagueTable:
         return lambda row: row.won
 
     def _mini_league(
-        self, original: tuple[LeagueRow, ...]
+        self, original: tuple[LeagueRow, ...], *, require_venue: bool = False
     ) -> tuple[dict[ClubSeasonId, LeagueRow], dict[ClubSeasonId, int]]:
         clubs = {row.club_season_id for row in original}
         evidence = self.head_to_head
@@ -330,7 +333,11 @@ class LeagueTable:
                 replacement.historical_score,
             ):
                 raise InvalidValueError("managed replacement must match its historical fixture")
+        calendar = {fixture.fixture_id: fixture for fixture in evidence.schedule}
         for result in results.values():
+            venue = calendar[result.fixture_id].venue
+            if require_venue and venue is None:
+                raise InvalidValueError("away-goal criteria require a known venue for the original mini-league")
             score = result.score
             if self.request.managed_club_season_id in (result.home, result.away):
                 managed_replacement = replacements.get(result.fixture_id)
@@ -342,5 +349,6 @@ class LeagueTable:
                 (result.away, score.away, score.home),
             ):
                 _accumulate(totals, _contribution(club, goals_for, goals_against, self.request))
-            away_goals[result.away] += score.away
+            if venue is Venue.HOME:
+                away_goals[result.away] += score.away
         return {club: LeagueRow(club, *values) for club, values in totals.items()}, away_goals
