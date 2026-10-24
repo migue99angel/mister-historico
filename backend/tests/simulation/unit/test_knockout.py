@@ -428,3 +428,49 @@ def test_bracket_cannot_invent_the_opponents_previous_winning_tie() -> None:
     bracket = _bracket()
     with pytest.raises(InvalidValueError, match="winner"):
         replace(bracket, ties=(bracket.ties[0], bracket.ties[2])).next_opponent("quarter", DEMO)
+
+
+@pytest.mark.parametrize(
+    ("name", "rules", "single", "periods"),
+    [
+        (
+            "test-cup",
+            KnockoutRules(2, True, False, True),
+            False,
+            ("regulation", "regulation", "penalties"),
+        ),
+        (
+            "test-champions",
+            KnockoutRules(2, False, True, True),
+            False,
+            ("regulation", "regulation", "extra_time", "penalties"),
+        ),
+        (
+            "test-uefa",
+            KnockoutRules(2, True, True, True, False),
+            False,
+            ("regulation", "regulation", "extra_time", "penalties"),
+        ),
+        (
+            "test-supercup",
+            KnockoutRules(1, False, True, True),
+            True,
+            ("regulation", "extra_time", "penalties"),
+        ),
+    ],
+)
+def test_synthetic_competitions_follow_their_configured_periods(
+    name: str,
+    rules: KnockoutRules,
+    single: bool,
+    periods: tuple[str, ...],
+) -> None:
+    fixtures = _fixtures(single=single, competition=name)
+    simulator = _Simulator(deque(MatchResult(Score(0, 0)) for _ in fixtures))
+    rng = StdlibRandomSource(Seed(19))
+    tie = KnockoutTie(rules, fixtures)
+    for fixture in fixtures:
+        tie = tie.play_next(_setup(fixture), simulator, rng)
+    assert tie.winner == fixtures[-1].away
+    assert tuple(call[0] for call in simulator.calls) == periods
+    assert all(call[2] is rng and not call[3] for call in simulator.calls)
