@@ -2,9 +2,9 @@
 
 ## Estado y motivo
 
-Planificación de Astra; implementación Sol terminada, pendiente de revisión independiente Sol y CI. Esta CR precede a T2.6 y al mapeo definitivo de T2.20. No cambia OpenAPI, el kernel ni `ExternalResultsPolicy`.
+Planificación de Astra; implementación Sol e integración por rebase-merge en PR #29, tras revisión independiente Sol y CI en verde. Esta CR precede a T2.6 y al mapeo definitivo de T2.20. No cambia OpenAPI, el kernel ni `ExternalResultsPolicy`.
 
-La API actual solo publica los partidos del equipo gestionado. Eso no basta para desempatar una miniliga con rivales entre sí. Además, la regla de goles fuera durante la prórroga no está representada. La ausencia de esos datos no equivale a cero ni a una regla desactivada.
+Antes de esta CR, la API solo publicaba los partidos del equipo gestionado. Eso no bastaba para desempatar una miniliga con rivales entre sí. Además, la regla de goles fuera durante la prórroga no estaba representada. La ausencia de esos datos no equivale a cero ni a una regla desactivada.
 
 ## Evidencia de enfrentamientos directos
 

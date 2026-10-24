@@ -288,7 +288,7 @@
 - **Tests primero:** invariantes de los tipos y suite reutilizable del puerto con fake programado. Integración por rebase-merge tras revisión y checks; no se implementa `league.py` en esta CR.
 
 #### T2.3 · Competición de liga
-- **Estado:** en curso, tercera oleada; implementación Sol y revisión independiente posterior de otro Sol. La CR previa ya está integrada.
+- **Estado:** completada e integrada por rebase-merge en [PR #26](https://github.com/migue99angel/mister-historico/pull/26), tras revisión independiente Sol y CI en verde.
 - **Oleada:** F2-A · **Tamaño:** M · **Depende de:** T1.6 y CR-T2.3 integrada · [P2]
 - **Propiedad:** `simulation/domain/league.py` y sus tests
 - **Qué hacer:**
@@ -303,7 +303,7 @@
 - **Aceptación:** tests de tablas con escenarios de Test FC.
 
 #### T2.4 · Eliminatorias y fases de grupos
-- **Estado:** en curso, tercera oleada; implementación Sol y revisión independiente posterior de otro Sol. Reglas sintéticas de Test FC, sin afirmar normativa histórica.
+- **Estado:** completada e integrada por rebase-merge en [PR #27](https://github.com/migue99angel/mister-historico/pull/27), tras corrección del hallazgo, revisión independiente Sol y CI en verde. Reglas sintéticas de Test FC, sin afirmar normativa histórica.
 - **Oleada:** F2-A · **Tamaño:** L · **Depende de:** T1.6 · [P2]
 - **Propiedad:** `simulation/domain/knockout.py`, `simulation/domain/groups.py` y sus tests
 - **Qué hacer:**
@@ -335,12 +335,17 @@
 - **Aceptación:** todo es determinista con la semilla.
 
 #### CR-T2.6 · Evidencia histórica para la simulación
-- **Estado:** implementación Sol terminada; contratos y evidencia sintética ampliados, revisión independiente Sol y CI pendientes.
+- **Estado:** completada e integrada por rebase-merge en [PR #29](https://github.com/migue99angel/mister-historico/pull/29), tras corrección del hallazgo de identidad global, revisión independiente Sol y CI en verde.
 - **Alcance y propiedad:** [plan de la CR](changes/CR-T2.6-historical-evidence.md). Entrada de enfrentamientos entre rivales y regla explícita de goles fuera en prórroga, con procedencia y compatibilidad de construcción.
 - **Dependencia:** integrar antes de T2.6 y del mapeo definitivo de T2.20. El calendario posterior a la eliminación real sigue siendo una necesidad aparte que debe resolverse antes del cierre de T2.6.
 
+#### CR-T2.6-competition-completion · Cierre de datos de competiciones
+- **Estado:** planificada por Astra; implementación y revisión independiente Sol pendientes.
+- **Alcance y propiedad:** [plan y política de plazas](changes/CR-T2.6-competition-completion.md). APIs/esquema, calendarios y asignaciones, salidas sin resolver y ajuste de sede en `league.py` con sus tests/documentación; sin cambiar copas ni puertos.
+- **Dependencia:** CR de evidencia histórica integrada. Debe integrarse antes de T2.6 y del mapeo definitivo de T2.20. No inventar fechas ni equiparar desconocido a vacío o local.
+
 #### T2.6 · Simulación por bloques
-- **Oleada:** F2-B · **Tamaño:** M · **Depende de:** T2.1-T2.5 y CR-T2.6 integrada
+- **Oleada:** F2-B · **Tamaño:** M · **Depende de:** T2.1-T2.5 y ambas CR-T2.6 integradas
 - **Propiedad:** `simulation/domain/season.py`, `simulation/application/simulate_block.py` (la fachada de `api.py` ya delega en este módulo) y sus tests
 - **Qué hacer:**
   - `simulate_block(state, block)`: recorre en orden de fecha los partidos de todas las competiciones dentro del rango del bloque, actualiza el estado físico, las lesiones y las clasificaciones, y devuelve un `BlockSummary` con los resultados, las clasificaciones, los eventos y los partidos clave marcados (clásicos y eliminatorias).
