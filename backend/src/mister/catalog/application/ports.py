@@ -6,6 +6,9 @@ it is re-exported here so that every context finds its ports in `application/por
 
 `RatingSheetStore` is the port of the ratings tool (ADR-006): it reads the statistics of a
 club-season and saves the ratings computed from them.
+
+`ContentValidator` validates the content root bound to its adapter, returning accumulated
+application diagnostics and exposing operational failures separately.
 """
 
 from collections.abc import Mapping
@@ -13,16 +16,25 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from mister.catalog.application.api import SeasonContentProvider
+from mister.catalog.application.validation_types import (
+    ContentValidationReport,
+    ContentValidationUnavailableError,
+    ValidationIssue,
+)
 from mister.catalog.domain.ratings import ClubContext, PlayerStats
 from mister.shared_kernel.errors import DomainError
 
 __all__ = [
     "ClubSeasonRatings",
     "ClubSeasonRatingsUnavailableError",
+    "ContentValidationReport",
+    "ContentValidationUnavailableError",
+    "ContentValidator",
     "PlayerNotInSquadError",
     "PlayerRatingSource",
     "RatingSheetStore",
     "SeasonContentProvider",
+    "ValidationIssue",
 ]
 
 
@@ -82,5 +94,18 @@ class RatingSheetStore(Protocol):
         """Store the rating of each listed player; `None` leaves him unrated and pending.
 
         Raises `PlayerNotInSquadError` for a player that is not in the squad.
+        """
+        ...
+
+
+class ContentValidator(Protocol):
+    """Validates an adapter-bound content root without publishing infrastructure types."""
+
+    def validate(self, *, release: bool) -> ContentValidationReport:
+        """Return all content issues; release adds the existing stricter content rules.
+
+        Repeated calls over unchanged content and the same mode return equal reports.
+        A valid empty tree has zero seasons; invalid content has an unknown count.
+        Raises `ContentValidationUnavailableError` for operational reading failures.
         """
         ...
