@@ -119,8 +119,8 @@ class HeadToHeadFixture:
             raise InvalidValueError("a historical fixture needs a FixtureId and a calendar date")
         if not isinstance(self.home, ClubSeasonId) or not isinstance(self.away, ClubSeasonId):
             raise InvalidValueError("historical sides must be ClubSeasonIds")
-        if self.venue is not None and not isinstance(self.venue, Venue):
-            raise InvalidValueError("a direct fixture venue must be a Venue or None")
+        if self.venue is not None and (not isinstance(self.venue, Venue) or self.venue is Venue.AWAY):
+            raise InvalidValueError("a direct fixture venue must be HOME, NEUTRAL or None")
         if self.home == self.away:
             raise InvalidValueError("a historical fixture must have different sides")
 
