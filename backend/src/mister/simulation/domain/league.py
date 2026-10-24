@@ -56,6 +56,14 @@ def _contribution(
     )
 
 
+def _accumulate(totals: dict[ClubSeasonId, list[int]], contribution: LeagueRow) -> None:
+    club = contribution.club_season_id
+    totals[club] = [
+        total + getattr(contribution, counter)
+        for total, counter in zip(totals[club], _COUNTERS, strict=True)
+    ]
+
+
 class HistoricalExternalResults:
     """Project every call from the original cutoff baseline and accumulated replacements."""
 
@@ -71,12 +79,8 @@ class HistoricalExternalResults:
                     goals_for, goals_against = (
                         (score.home, score.away) if home_side else (score.away, score.home)
                     )
-                    contribution = _contribution(club, goals_for, goals_against, request)
-                    totals[club] = [
-                        total + getattr(contribution, counter)
-                        for total, counter in zip(totals[club], _COUNTERS, strict=True)
-                    ]
-        adjusted = []
+                    _accumulate(totals, _contribution(club, goals_for, goals_against, request))
+        residuals = {}
         for baseline in request.historical_rows:
             club = baseline.club_season_id
             residual = [
@@ -85,16 +89,19 @@ class HistoricalExternalResults:
             ]
             if any(value < 0 for value in residual):
                 raise InvalidValueError("historical contributions exceed the original baseline")
-            adjusted.append(
-                LeagueRow(
-                    club,
-                    *(
-                        value + amount
-                        for value, amount in zip(residual, simulated[club], strict=True)
-                    ),
-                )
+            residuals[club] = residual
+        return tuple(
+            LeagueRow(
+                row.club_season_id,
+                *(
+                    value + amount
+                    for value, amount in zip(
+                        residuals[row.club_season_id], simulated[row.club_season_id], strict=True
+                    )
+                ),
             )
-        return tuple(adjusted)
+            for row in request.historical_rows
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -334,10 +341,6 @@ class LeagueTable:
                 (result.home, score.home, score.away),
                 (result.away, score.away, score.home),
             ):
-                contribution = _contribution(club, goals_for, goals_against, self.request)
-                totals[club] = [
-                    total + getattr(contribution, counter)
-                    for total, counter in zip(totals[club], _COUNTERS, strict=True)
-                ]
+                _accumulate(totals, _contribution(club, goals_for, goals_against, self.request))
             away_goals[result.away] += score.away
         return {club: LeagueRow(club, *values) for club, values in totals.items()}, away_goals
