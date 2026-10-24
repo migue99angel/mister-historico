@@ -1,6 +1,6 @@
 # Traspaso de la orquestación (2026-10-23)
 
-> Estado tras integrar la PR #17. Léelo junto con `CLAUDE.md`, `docs/PLAN.md` y `docs/TASKS.md`. Las instrucciones del autor prevalecen sobre estos documentos.
+> Estado tras integrar F1 y la primera oleada de F2 (PR #20 y #21). Léelo junto con `CLAUDE.md`, `docs/PLAN.md` y `docs/TASKS.md`. Las instrucciones del autor prevalecen sobre estos documentos.
 
 ## 1. Rol y forma de trabajo
 
@@ -27,7 +27,7 @@
 - Revisión independiente favorable de Astra en [`calibration/anchors-corrections-review.md`](calibration/anchors-corrections-review.md). Se conservan también el informe original y sus hallazgos históricos en [`calibration/anchors-verification.md`](calibration/anchors-verification.md).
 - Combinación local con `main`: **`make test` en verde, 1140 tests de backend y 74 de frontend**, incluidos API y migraciones Postgres/Docker; **`make lint` en verde**. Cobertura: **98,41 % global de backend**, **100 % de líneas y ramas de dominio/aplicación**.
 - Las cuatro comprobaciones de la PR fueron satisfactorias sobre la punta revisada `77c8b6862df1ad26adf7db09231ad6d64bb465ac`: [backend](https://github.com/migue99angel/mister-historico/actions/runs/40008678343), [calibración](https://github.com/migue99angel/mister-historico/actions/runs/40008678223), [contenido](https://github.com/migue99angel/mister-historico/actions/runs/40008678242) y [Docker](https://github.com/migue99angel/mister-historico/actions/runs/40008678290).
-- **F2 iniciada por instrucción del autor.** Primera oleada en curso: T2.1 (goles y partidos) y T2.2 (alineación y fuerza), con implementadores Sol en worktrees separados y Test FC. No se afirma que esas tareas estén completadas. Luna ha explicado el gameplay previsto tras contrastarlo con el código actual.
+- **F2 en curso por instrucción del autor.** Primera oleada completada: T2.1 (goles y partidos, PR #20) y T2.2 (alineación y fuerza, PR #21), implementadas con Sol sobre Test FC, revisadas por Astra e integradas por rebase-merge. El resto de F2 sigue pendiente. Luna ha explicado el gameplay previsto tras contrastarlo con el código; todavía no hay una partida completa jugable desde la web.
 
 ## 4. Decisión de calibración ya tomada: opción 1
 
@@ -43,11 +43,17 @@
 
 La tabla completa, fuentes, correcciones y cálculos reproducibles están en [`calibration/anchors.md`](calibration/anchors.md) y en [`content/rating-rubric.md` §9](content/rating-rubric.md#9-calibración-de-la-fórmula).
 
-## 5. F2 en curso: primera oleada
+## 5. F2 en curso: primera oleada integrada
 
-Se han encargado **T2.1 y T2.2** a Sol. Astra planifica y revisará las PR de forma independiente. Los worktrees son `.claude/worktrees/t2-1-goals` y `.claude/worktrees/t2-2-strength`; las ramas, `task/T2.1-goals` y `task/T2.2-strength`. Comparten un único entorno de dependencias mediante enlaces, sin duplicarlo. Antes de integrar: TDD con commits separados, tests, lint, CI y revisión independiente.
+- **T2.1, [PR #20](https://github.com/migue99angel/mister-historico/pull/20):** integrada el 2026-10-24 a las 00:00:27 UTC, punta `e0b44d3c5554afa9b8bb922080f3819b39444888`. Implementa goles Poisson, prórroga y penaltis mediante los puertos ya publicados. Revisión Astra favorable, 47 tests específicos y muestreo de 100 000 partidos. Benchmark independiente de siete pasadas: medianas de **18,43 ms** por 1000 partidos ordinarios y **22,53 ms** decisivos, por debajo de los 50 ms exigidos en esta máquina. No es una garantía de tiempo en cualquier hardware.
+- **T2.2, [PR #21](https://github.com/migue99angel/mister-historico/pull/21):** integrada el 2026-10-24 a las 00:00:32 UTC, punta `e7f66e0596d19328dd97b6d2291b71b232423928`. Selección determinista del once, posiciones, rotación factible y fuerza con referencias fijas y ajustes acotados. El modelo interno admite edad opcional sin imputarla ni cambiar el DTO o los puertos. Astra contrastó 300 selecciones con búsqueda exhaustiva y encontró un desbordamiento con una edad entera enorme válida: el mismo Sol añadió primero la regresión y después el arreglo. La revisión final de `89ab079` fue favorable, sin pendientes.
+- **Comprobación conjunta:** `make test` completo en verde (**1248 backend y 74 frontend**), `make lint` en verde y ocho contratos de arquitectura conservados. Cobertura backend **98,48 % global** y **100 % de líneas y ramas de dominio/aplicación**. El árbol de código, tests, frontend, contenido y contratos integrado en `main` coincide con el comprobado conjuntamente.
+- **CI antes de integrar:** los tres checks de cada PR quedaron en verde sobre sus puntas revisadas: T2.1 `bb683b8` ([backend](https://github.com/migue99angel/mister-historico/actions/runs/40042103428), [calibración](https://github.com/migue99angel/mister-historico/actions/runs/40042103344), [Docker](https://github.com/migue99angel/mister-historico/actions/runs/40042103358)); T2.2 `89ab079` ([backend](https://github.com/migue99angel/mister-historico/actions/runs/40042374255), [calibración](https://github.com/migue99angel/mister-historico/actions/runs/40042374223), [Docker](https://github.com/migue99angel/mister-historico/actions/runs/40042374200)). No hubo force-push; los commits de tests, implementación y correcciones permanecen separados.
+- La ejecución explícita de calibración conserva **12 aprobados y 6 xfail estrictos**. Los resultados del motor con Test FC no constituyen una calibración histórica ni resuelven las limitaciones de F1. Los coeficientes nuevos de estilo, encaje y penaltis son decisiones de diseño provisionales, pendientes de T2.7.
 
-Las siguientes tareas previstas son T2.3-T2.5, catálogo T2.20 y frontend T4.1-T4.3 contra MSW. TASKS.md determina dependencias y propiedad; se lanzarán en oleadas de 2 o 3 agentes. El contenido real del piloto se abordará después, con fuentes y verificación independiente. No hay todavía una partida jugable completa desde la web.
+**Siguiente trabajo previsto, todavía no encargado:** T2.3-T2.5, catálogo T2.20 y frontend T4.1-T4.3 contra MSW, en oleadas de 2 o 3 agentes. Hay que revisar dependencias y propiedad antes de cada tarea. Si T2.3 necesita añadir `ExternalResultsPolicy` a `domain/ports.py`, exige una CR previa; la integración de T2.20 con Makefile y workflows compartidos también se gestiona mediante CR. El contenido real del piloto se abordará después con fuentes y verificación independiente.
+
+**Gameplay explicado por Luna:** la V1 prevista permite elegir un equipo y una temporada, tomar 8-12 decisiones durante cinco o seis bloques, simular los partidos de cada bloque y ver resultados, clasificación y eventos. Al final se compara con el entrenador real; la tarjeta para compartir y el ranking llegan en F5. Hoy la web solo tiene la presentación: faltan el resto del motor y catálogo, la lógica/API de partida y las pantallas del bucle. No se han inventado dilemas ni datos históricos para esta explicación.
 
 ## 6. Entorno y asuntos personales pendientes
 

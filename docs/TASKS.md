@@ -248,7 +248,7 @@
 ### Track de simulación (`backend/src/mister/simulation/`)
 
 #### T2.1 · Modelo de goles Poisson
-- **Estado:** en curso, primera oleada autorizada de F2; implementador Sol.
+- **Estado:** completada e integrada por rebase-merge en [PR #20](https://github.com/migue99angel/mister-historico/pull/20), tras implementación Sol, revisión independiente Astra y CI en verde.
 - **Oleada:** F2-A · **Tamaño:** M · **Depende de:** T1.6
 - **Propiedad:** `simulation/domain/goal_model.py`, `simulation/domain/match_simulator.py` y sus tests
 - **Qué hacer:** `PoissonGoalModel`, con λ calculada según el ADR-004, y `PoissonMatchSimulator`, que usa `rng.stream("match", fixture_id)`.
@@ -261,7 +261,7 @@
 - **Aceptación:** un benchmark de 1 000 partidos tarda menos de 50 ms.
 
 #### T2.2 · Fuerza del equipo y alineación
-- **Estado:** en curso, primera oleada autorizada de F2; implementador Sol.
+- **Estado:** completada e integrada por rebase-merge en [PR #21](https://github.com/migue99angel/mister-historico/pull/21), tras implementación Sol, corrección del hallazgo de revisión, visto bueno independiente Astra y CI en verde.
 - **Oleada:** F2-A · **Tamaño:** M · **Depende de:** T1.6
 - **Propiedad:** `simulation/domain/strength.py`, `simulation/domain/lineup.py` y sus tests. Extensión interna autorizada para esta oleada: añadir al final de `SimPlayer` en `simulation/domain/model.py` el campo compatible `age: int | None = None` y su validación, con sus tests en `test_model.py`. No cambia el DTO publicado, que ya admite edad, ni los puertos.
 - **Qué hacer:**
