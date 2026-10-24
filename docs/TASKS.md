@@ -279,8 +279,16 @@
   - Un rival agregado tiene una fuerza constante.
 - **Aceptación:** todas las funciones son puras y no dependen de `RandomSource`.
 
+#### CR-T2.3 · Política de resultados externos y tipos de liga
+- **Estado:** en curso, Sol; requiere revisión independiente Astra y CI antes de integrar y empezar T2.3.
+- **Depende de:** T1.6. No modifica las firmas de `GoalModel` o `MatchSimulator` ni la API publicada de aplicación.
+- **Propiedad:** ampliación de `simulation/domain/ports.py` con `ExternalResultsPolicy`; nuevo `simulation/domain/league_types.py`; `tests/simulation/unit/test_external_results_contract.py`, `test_league_types.py` y `docs/changes/CR-T2.3-external-results.md`.
+- **Contrato:** estrategia pura que recibe una petición inmutable con el corte, participantes, puntuación configurada, baseline histórico original y todos los reemplazos acumulados de partidos gestionados hasta ese corte. Devuelve acumulados sin clasificar, en el orden del baseline. `LeagueTable` recibirá el orden final real por separado; no se confunde con la posición real de cada corte.
+- **Límite explícito:** el puerto no aporta enfrentamientos históricos entre otros rivales ni acredita por sí solo la completitud del calendario o la procedencia del baseline. T2.3 no puede inventar una minitabla directa incompleta. Antes de necesitar esos datos en T2.6 debe resolverse su entrada mediante CR de API/contenido.
+- **Tests primero:** invariantes de los tipos y suite reutilizable del puerto con fake programado. Integración por rebase-merge tras revisión y checks; no se implementa `league.py` en esta CR.
+
 #### T2.3 · Competición de liga
-- **Oleada:** F2-A · **Tamaño:** M · **Depende de:** T1.6 · [P2]
+- **Oleada:** F2-A · **Tamaño:** M · **Depende de:** T1.6 y CR-T2.3 integrada · [P2]
 - **Propiedad:** `simulation/domain/league.py` y sus tests
 - **Qué hacer:**
   - `LeagueTable` con criterios de desempate configurables por temporada (la Liga desempata por enfrentamiento directo [VERIFICAR la normativa de cada temporada]).
@@ -309,6 +317,7 @@
 - **Aceptación:** cubre las Copas del Rey, la Champions, la UEFA y la Supercopa del Test FC.
 
 #### T2.5 · Estado físico y lesiones
+- **Estado:** en curso, segunda oleada sobre Test FC; implementador Sol, revisión posterior Astra.
 - **Oleada:** F2-A · **Tamaño:** M · **Depende de:** T1.6
 - **Propiedad:** `simulation/domain/fitness.py`, `simulation/domain/injuries.py` y sus tests
 - **Qué hacer:**
