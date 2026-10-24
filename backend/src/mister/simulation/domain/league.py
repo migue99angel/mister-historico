@@ -281,7 +281,9 @@ class LeagueTable:
         self, criterion: str, original: tuple[LeagueRow, ...]
     ) -> Callable[[LeagueRow], int]:
         if criterion in _DIRECT_CRITERIA:
-            mini_league, away_goals = self._mini_league(original, require_venue=criterion == "head_to_head_away_goals")
+            mini_league, away_goals = self._mini_league(
+                original, require_venue=criterion == "head_to_head_away_goals"
+            )
 
             def direct_key(row: LeagueRow) -> int:
                 mini = mini_league[row.club_season_id]
@@ -337,7 +339,9 @@ class LeagueTable:
         for result in results.values():
             venue = calendar[result.fixture_id].venue
             if require_venue and venue is None:
-                raise InvalidValueError("away-goal criteria require a known venue for the original mini-league")
+                raise InvalidValueError(
+                    "away-goal criteria require a known venue for the original mini-league"
+                )
             score = result.score
             if self.request.managed_club_season_id in (result.home, result.away):
                 managed_replacement = replacements.get(result.fixture_id)
