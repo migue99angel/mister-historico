@@ -307,9 +307,17 @@ def test_group_entry_target_cannot_add_unqualified_historical_contenders(root: P
     assert_issue(issues_of(root, release=True), STANDINGS, "group_entry_assignments", "exactly")
 
 
-def test_group_target_must_follow_its_final_accredited_table(root: Path) -> None:
+def test_group_target_may_precede_cutoff_when_calendar_proves_group_finished(root: Path) -> None:
     def early(data: dict[str, Any]) -> None:
         next(f for f in data["fixtures"] if f["id"] == "tfc-cont-final")["date"] = date(2001, 1, 30)
     edit(root, f"{SEASON}/fixtures.yaml", early)
     edit(root, STANDINGS, lambda d: d["knockout_calendar"][2]["slots"][0].update(date=date(2001, 1, 30)))
-    assert_issue(issues_of(root, release=True), STANDINGS, "group_entry_assignments", "table")
+    load_content_tree(root, release=True)
+
+
+
+def test_group_target_cannot_precede_the_last_accredited_group_match(root: Path) -> None:
+    day = date(2000, 12, 10)
+    edit(root, f"{SEASON}/fixtures.yaml", lambda d: next(f for f in d["fixtures"] if f["id"] == "tfc-cont-final").update(date=day))
+    edit(root, STANDINGS, lambda d: d["knockout_calendar"][2]["slots"][0].update(date=day))
+    assert_issue(issues_of(root, release=True), STANDINGS, "group_entry_assignments", "group match")
