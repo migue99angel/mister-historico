@@ -113,19 +113,24 @@ def test_replacement_preserves_both_scores_in_home_away_orientation() -> None:
         {"simulated_score": (2, 0)},
     ],
 )
-def test_replacements_require_a_dated_fixture_and_two_known_scores(overrides: dict[str, Any]) -> None:
+def test_replacements_require_a_dated_fixture_and_two_known_scores(
+    overrides: dict[str, Any],
+) -> None:
     with pytest.raises(InvalidValueError):
         _replacement(**overrides)
 
 
-@pytest.mark.parametrize("factory", [_row, _replacement, _request])
-def test_league_values_are_immutable_and_compare_by_value(factory: Any) -> None:
+@pytest.mark.parametrize(
+    ("factory", "field"),
+    [(_row, "points"), (_replacement, "historical_score"), (_request, "historical_rows")],
+)
+def test_league_values_are_immutable_and_compare_by_value(factory: Any, field: str) -> None:
     value = factory()
 
     assert value == factory()
     assert hash(value) == hash(factory())
     with pytest.raises(FrozenInstanceError):
-        value.points = 100
+        setattr(value, field, None)
 
 
 def test_request_uses_configured_points_instead_of_assuming_three_for_a_win() -> None:
@@ -166,7 +171,7 @@ def test_point_rules_require_non_negative_integers(field: str, value: Any) -> No
         {"historical_rows": (_row(),)},
         {"historical_rows": (_row(), _row())},
         {"historical_rows": (_row(), _row(club_season_id=_OTHER))},
-        {"historical_rows": [ _row(), _row(club_season_id=_RIVAL)]},
+        {"historical_rows": [_row(), _row(club_season_id=_RIVAL)]},
         {"historical_rows": (_row(), None)},
         {"replacements": [_replacement()]},
         {"replacements": (None,)},
@@ -198,8 +203,7 @@ def test_replacements_on_the_cutoff_date_are_included() -> None:
 
 def test_initial_request_can_have_no_played_fixtures() -> None:
     rows = tuple(
-        _row(club_season_id=club, played=0, lost=0, goals_against=0)
-        for club in (_RIVAL, _ME)
+        _row(club_season_id=club, played=0, lost=0, goals_against=0) for club in (_RIVAL, _ME)
     )
 
     assert _request(historical_rows=rows, replacements=()).replacements == ()
@@ -211,3 +215,14 @@ def test_replacement_ids_must_be_unique_even_if_scores_differ() -> None:
 
     with pytest.raises(InvalidValueError):
         _request(replacements=(first, second))
+
+
+def test_drawn_rows_use_the_configured_draw_points() -> None:
+    rows = tuple(
+        _row(club_season_id=club, drawn=1, lost=0, goals_for=1, points=2) for club in (_RIVAL, _ME)
+    )
+    request = _request(points_per_win=5, points_per_draw=2, historical_rows=rows)
+
+    assert request.historical_rows == rows
+    with pytest.raises(InvalidValueError):
+        replace(request, points_per_draw=1)
