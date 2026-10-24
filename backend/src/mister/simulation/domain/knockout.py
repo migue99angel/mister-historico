@@ -15,6 +15,10 @@ if TYPE_CHECKING:
     from mister.simulation.domain.ports import MatchSimulator
 
 
+_TWO_LEGS = 2
+_TIE_SIZE = 2
+
+
 @dataclass(frozen=True, slots=True)
 class KnockoutRules:
     """Season-specific rules; extra-time away goals require an explicit design choice."""
@@ -28,10 +32,12 @@ class KnockoutRules:
     def __post_init__(self) -> None:
         if type(self.legs) is not int or self.legs not in (1, 2):
             raise InvalidValueError("a knockout tie needs one or two legs")
-        if any(type(value) is not bool for value in
-               (self.away_goals_rule, self.extra_time, self.penalties)):
+        if any(
+            type(value) is not bool
+            for value in (self.away_goals_rule, self.extra_time, self.penalties)
+        ):
             raise InvalidValueError("knockout switches must be booleans")
-        if self.away_goals_rule and self.legs != 2:
+        if self.away_goals_rule and self.legs != _TWO_LEGS:
             raise InvalidValueError("away goals require two legs")
         if self.away_goals_rule and self.extra_time:
             if type(self.away_goals_in_extra_time) is not bool:
@@ -56,13 +62,17 @@ class KnockoutTie:
     def __post_init__(self) -> None:
         if not isinstance(self.rules, KnockoutRules):
             raise InvalidValueError("a tie needs knockout rules")
-        if not isinstance(self.fixtures, tuple) or not all(
-            isinstance(fixture, FixtureSpec) for fixture in self.fixtures
-        ) or len(self.fixtures) != self.rules.legs:
+        if (
+            not isinstance(self.fixtures, tuple)
+            or not all(isinstance(fixture, FixtureSpec) for fixture in self.fixtures)
+            or len(self.fixtures) != self.rules.legs
+        ):
             raise InvalidValueError("the calendar must contain exactly the configured legs")
-        if not isinstance(self.results, tuple) or not all(
-            isinstance(result, MatchResult) for result in self.results
-        ) or len(self.results) > len(self.fixtures):
+        if (
+            not isinstance(self.results, tuple)
+            or not all(isinstance(result, MatchResult) for result in self.results)
+            or len(self.results) > len(self.fixtures)
+        ):
             raise InvalidValueError("results must be an immutable prefix of scheduled legs")
         self._validate_calendar()
         self._validate_periods()
@@ -76,12 +86,14 @@ class KnockoutTie:
                 raise InvalidValueError("a single fixture cannot be a second leg")
             return
         second = self.fixtures[1]
-        if first.leg != 1 or second.leg != 2:
+        if first.leg != 1 or second.leg != _TWO_LEGS:
             raise InvalidValueError("two-leg fixtures must be ordered as legs one and two")
         if first.date >= second.date or first.fixture_id == second.fixture_id:
             raise InvalidValueError("legs need distinct IDs and increasing dates")
         if (first.competition_id, first.stage, None) != (
-            second.competition_id, second.stage, second.group
+            second.competition_id,
+            second.stage,
+            second.group,
         ):
             raise InvalidValueError("both legs must belong to the same competition and stage")
         if (first.home, first.away) != (second.away, second.home):
@@ -124,7 +136,9 @@ class KnockoutTie:
             away += score.away if index == 0 else score.home
         return Score(home, away)
 
-    def _decision(self, results: tuple[MatchResult, ...], *, include_extra: bool) -> ClubSeasonId | None:
+    def _decision(
+        self, results: tuple[MatchResult, ...], *, include_extra: bool
+    ) -> ClubSeasonId | None:
         if len(results) != self.rules.legs:
             return None
         score = self._aggregate(results, include_extra=include_extra)
@@ -157,9 +171,14 @@ class KnockoutTie:
         """All legs have been played and a winner is known."""
         return self.winner is not None
 
-    def play_next(self, setup: MatchSetup, simulator: MatchSimulator, rng: RandomSource) -> KnockoutTie:
+    def play_next(
+        self, setup: MatchSetup, simulator: MatchSimulator, rng: RandomSource
+    ) -> KnockoutTie:
         """Draw regulation exactly once; decide additional periods from the aggregate."""
-        if len(self.results) == self.rules.legs or setup.fixture != self.fixtures[len(self.results)]:
+        if (
+            len(self.results) == self.rules.legs
+            or setup.fixture != self.fixtures[len(self.results)]
+        ):
             raise InvalidValueError("the setup must match the next unplayed fixture")
         result = simulator.simulate(setup, rng, decisive=False)
         if result.extra_time is not None or result.penalties is not None:
@@ -185,9 +204,12 @@ class HistoricalTie:
     def __post_init__(self) -> None:
         if not isinstance(self.stage_id, str) or not self.stage_id:
             raise InvalidValueError("a historical tie needs a stage ID")
-        if not isinstance(self.clubs, tuple) or len(self.clubs) != 2 or not all(
-            isinstance(club, ClubSeasonId) for club in self.clubs
-        ) or self.clubs[0] == self.clubs[1]:
+        if (
+            not isinstance(self.clubs, tuple)
+            or len(self.clubs) != _TIE_SIZE
+            or not all(isinstance(club, ClubSeasonId) for club in self.clubs)
+            or self.clubs[0] == self.clubs[1]
+        ):
             raise InvalidValueError("a historical tie needs two distinct clubs")
         if self.winner is not None and self.winner not in self.clubs:
             raise InvalidValueError("the real winner must participate in the tie")
@@ -206,11 +228,18 @@ class HistoricalBracket:
     ties: tuple[HistoricalTie, ...]
 
     def __post_init__(self) -> None:
-        if not isinstance(self.stages, tuple) or not self.stages or not all(
-            isinstance(stage, str) and stage for stage in self.stages
-        ) or len(set(self.stages)) != len(self.stages):
-            raise InvalidValueError("the bracket needs distinct stages in explicit progression order")
-        if not isinstance(self.ties, tuple) or not all(isinstance(tie, HistoricalTie) for tie in self.ties):
+        if (
+            not isinstance(self.stages, tuple)
+            or not self.stages
+            or not all(isinstance(stage, str) and stage for stage in self.stages)
+            or len(set(self.stages)) != len(self.stages)
+        ):
+            raise InvalidValueError(
+                "the bracket needs distinct stages in explicit progression order"
+            )
+        if not isinstance(self.ties, tuple) or not all(
+            isinstance(tie, HistoricalTie) for tie in self.ties
+        ):
             raise InvalidValueError("historical ties must be an immutable tuple")
         slots: set[tuple[str, ClubSeasonId]] = set()
         for tie in self.ties:
@@ -228,14 +257,19 @@ class HistoricalBracket:
             raise InvalidValueError("the pertinent preceding tie needs a unique known real winner")
         return candidates[0]
 
-    def next_opponent(self, completed_stage: str, historical_representative: ClubSeasonId) -> ClubSeasonId:
+    def next_opponent(
+        self, completed_stage: str, historical_representative: ClubSeasonId
+    ) -> ClubSeasonId:
         """Follow the club whose historical slot the simulated advancing club occupies."""
         if completed_stage not in self.stages or completed_stage == self.stages[-1]:
             raise InvalidValueError("the completed stage must have an explicit following stage")
         previous = self._winning_tie(completed_stage, historical_representative)
         next_stage = self.stages[self.stages.index(completed_stage) + 1]
-        candidates = tuple(tie for tie in self.ties if tie.stage_id == next_stage
-                           and historical_representative in tie.clubs)
+        candidates = tuple(
+            tie
+            for tie in self.ties
+            if tie.stage_id == next_stage and historical_representative in tie.clubs
+        )
         if len(candidates) != 1:
             raise InvalidValueError("the historical lineage has no unique next tie")
         opponent = next(club for club in candidates[0].clubs if club != historical_representative)

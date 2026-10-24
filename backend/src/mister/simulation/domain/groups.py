@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from itertools import groupby
 from typing import TYPE_CHECKING
 
@@ -13,11 +14,16 @@ from mister.simulation.domain.model import FixtureSpec, Score
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-    from datetime import date
 
 _GROUP_SIZE = 4
-_HEAD_TO_HEAD = frozenset({"head_to_head_points", "head_to_head_goal_difference",
-                           "head_to_head_goals_for", "head_to_head_away_goals"})
+_HEAD_TO_HEAD = frozenset(
+    {
+        "head_to_head_points",
+        "head_to_head_goal_difference",
+        "head_to_head_goals_for",
+        "head_to_head_away_goals",
+    }
+)
 _CRITERIA = _HEAD_TO_HEAD | {"goal_difference", "goals_for", "wins"}
 
 
@@ -38,16 +44,23 @@ class GroupRules:
     reapply_head_to_head: bool
 
     def __post_init__(self) -> None:
-        if any(type(value) is not int or value < 0 for value in
-               (self.points_per_win, self.points_per_draw)):
+        if any(
+            type(value) is not int or value < 0
+            for value in (self.points_per_win, self.points_per_draw)
+        ):
             raise InvalidValueError("group points must be non-negative integers")
         if type(self.advance_per_group) is not int or not 0 < self.advance_per_group < _GROUP_SIZE:
             raise InvalidValueError("qualifiers must be between one and three")
         if type(self.reapply_head_to_head) is not bool:
             raise InvalidValueError("mini-table reapplication needs an explicit boolean")
-        if not isinstance(self.tiebreakers, tuple) or not all(
-            isinstance(criterion, str) and criterion in _CRITERIA for criterion in self.tiebreakers
-        ) or len(set(self.tiebreakers)) != len(self.tiebreakers):
+        if (
+            not isinstance(self.tiebreakers, tuple)
+            or not all(
+                isinstance(criterion, str) and criterion in _CRITERIA
+                for criterion in self.tiebreakers
+            )
+            or len(set(self.tiebreakers)) != len(self.tiebreakers)
+        ):
             raise InvalidValueError("group tiebreakers must be distinct supported criterion names")
 
 
@@ -78,15 +91,13 @@ class GroupEvidence:
     results: tuple[GroupMatch, ...]
 
     def __post_init__(self) -> None:
-        # Runtime validation needs the class even though annotations are postponed.
-        from datetime import date as calendar_date
-
-        if type(self.as_of) is not calendar_date:
+        if type(self.as_of) is not date:
             raise InvalidValueError("group evidence needs a calendar cutoff")
-        if not isinstance(self.schedule, tuple) or not all(
-            isinstance(fixture, FixtureSpec) for fixture in self.schedule
-        ) or not isinstance(self.results, tuple) or not all(
-            isinstance(result, GroupMatch) for result in self.results
+        if (
+            not isinstance(self.schedule, tuple)
+            or not all(isinstance(fixture, FixtureSpec) for fixture in self.schedule)
+            or not isinstance(self.results, tuple)
+            or not all(isinstance(result, GroupMatch) for result in self.results)
         ):
             raise InvalidValueError("group calendar and results must be immutable tuples")
         fixtures = {fixture.fixture_id: fixture for fixture in self.schedule}
@@ -105,8 +116,11 @@ class GroupEvidence:
 
     def matches(self, members: tuple[ClubSeasonId, ...]) -> tuple[GroupMatch, ...]:
         """Return all scheduled mini-table scores by the cutoff, rejecting missing ones."""
-        required = {fixture.fixture_id for fixture in self.schedule
-                    if fixture.date <= self.as_of and fixture.home in members and fixture.away in members}
+        required = {
+            fixture.fixture_id
+            for fixture in self.schedule
+            if fixture.date <= self.as_of and fixture.home in members and fixture.away in members
+        }
         results = tuple(result for result in self.results if result.fixture.fixture_id in required)
         if len(results) != len(required):
             raise InvalidValueError("missing required head-to-head result evidence")
@@ -124,9 +138,11 @@ class GroupRanking:
     @property
     def qualifiers(self) -> tuple[ClubSeasonId, ...]:
         """Refuse to promote a club by its stable ID when a tie crosses qualification."""
-        advancing = tuple(row.club_season_id for row in self.rows[:self.advance_per_group])
+        advancing = tuple(row.club_season_id for row in self.rows[: self.advance_per_group])
         for tied in self.unresolved_ties:
-            if any(club in advancing for club in tied) and any(club not in advancing for club in tied):
+            if any(club in advancing for club in tied) and any(
+                club not in advancing for club in tied
+            ):
                 raise InvalidValueError("qualification crosses an unresolved group tie")
         return advancing
 
@@ -148,21 +164,33 @@ class GroupTable:
     evidence: GroupEvidence | None = None
 
     def __post_init__(self) -> None:
-        if not isinstance(self.competition_id, CompetitionId) or not self.stage_id or not self.group_id:
+        if (
+            not isinstance(self.competition_id, CompetitionId)
+            or not self.stage_id
+            or not self.group_id
+        ):
             raise InvalidValueError("a group table needs competition, stage and group IDs")
         if not isinstance(self.rules, GroupRules):
             raise InvalidValueError("a group table needs group rules")
-        if not isinstance(self.participants, tuple) or len(self.participants) != _GROUP_SIZE or not all(
-            isinstance(club, ClubSeasonId) for club in self.participants
-        ) or len(set(self.participants)) != _GROUP_SIZE:
+        if (
+            not isinstance(self.participants, tuple)
+            or len(self.participants) != _GROUP_SIZE
+            or not all(isinstance(club, ClubSeasonId) for club in self.participants)
+            or len(set(self.participants)) != _GROUP_SIZE
+        ):
             raise InvalidValueError("a group needs four distinct clubs")
-        if not isinstance(self.rows, tuple) or not all(isinstance(row, LeagueRow) for row in self.rows):
+        if not isinstance(self.rows, tuple) or not all(
+            isinstance(row, LeagueRow) for row in self.rows
+        ):
             raise InvalidValueError("group rows must be an immutable tuple")
         clubs = tuple(row.club_season_id for row in self.rows)
         if len(clubs) != _GROUP_SIZE or set(clubs) != set(self.participants):
             raise InvalidValueError("group rows must cover every club exactly once")
-        if any(row.points != row.won * self.rules.points_per_win + row.drawn * self.rules.points_per_draw
-               for row in self.rows):
+        if any(
+            row.points
+            != row.won * self.rules.points_per_win + row.drawn * self.rules.points_per_draw
+            for row in self.rows
+        ):
             raise InvalidValueError("group row points do not follow the configured rules")
         if self.evidence is not None:
             self._validate_evidence()
@@ -172,7 +200,9 @@ class GroupTable:
             raise InvalidValueError("group evidence must be known or None")
         for fixture in self.evidence.schedule:
             if (fixture.competition_id, fixture.stage, fixture.group) != (
-                self.competition_id, self.stage_id, self.group_id
+                self.competition_id,
+                self.stage_id,
+                self.group_id,
             ) or fixture.leg is not None:
                 raise InvalidValueError("evidence fixtures must belong to this group")
             if fixture.home not in self.participants or fixture.away not in self.participants:
@@ -195,21 +225,32 @@ class GroupTable:
                 partitions = _partition(members, lambda club: _overall_value(rows[club], criterion))
                 return tuple(club for part in partitions for club in resolve(part, index + 1))
             end = index
-            while end < len(self.rules.tiebreakers) and self.rules.tiebreakers[end] in _HEAD_TO_HEAD:
+            while (
+                end < len(self.rules.tiebreakers) and self.rules.tiebreakers[end] in _HEAD_TO_HEAD
+            ):
                 end += 1
             values = self._mini_table(members)
             partitions = (members,)
             for head_criterion in self.rules.tiebreakers[index:end]:
-                partitions = tuple(part for group in partitions
-                                   for part in _partition(group, lambda club: values[club][head_criterion]))
+                criterion_values = {club: values[club][head_criterion] for club in members}
+                partitions = tuple(
+                    part
+                    for group in partitions
+                    for part in _partition(group, criterion_values.__getitem__)
+                )
             restart = self.rules.reapply_head_to_head and len(partitions) > 1
-            return tuple(club for part in partitions
-                         for club in resolve(part, index if restart else end))
+            return tuple(
+                club for part in partitions for club in resolve(part, index if restart else end)
+            )
 
-        ordered = tuple(club for part in _partition(self.participants, lambda club: rows[club].points)
-                        for club in resolve(part, 0))
-        return GroupRanking(tuple(rows[club] for club in ordered), tuple(unresolved),
-                            self.rules.advance_per_group)
+        ordered = tuple(
+            club
+            for part in _partition(self.participants, lambda club: rows[club].points)
+            for club in resolve(part, 0)
+        )
+        return GroupRanking(
+            tuple(rows[club] for club in ordered), tuple(unresolved), self.rules.advance_per_group
+        )
 
     def _mini_table(self, members: tuple[ClubSeasonId, ...]) -> dict[ClubSeasonId, dict[str, int]]:
         if self.evidence is None:
@@ -217,18 +258,27 @@ class GroupTable:
         values = {club: dict.fromkeys(_HEAD_TO_HEAD, 0) for club in members}
         for match in self.evidence.matches(members):
             home, away = match.fixture.home, match.fixture.away
-            for club, gf, ga, away_goals in ((home, match.score.home, match.score.away, 0),
-                                           (away, match.score.away, match.score.home, match.score.away)):
+            for club, gf, ga, away_goals in (
+                (home, match.score.home, match.score.away, 0),
+                (away, match.score.away, match.score.home, match.score.away),
+            ):
                 row = values[club]
-                row["head_to_head_points"] += (self.rules.points_per_win if gf > ga else
-                                               self.rules.points_per_draw if gf == ga else 0)
+                row["head_to_head_points"] += (
+                    self.rules.points_per_win
+                    if gf > ga
+                    else self.rules.points_per_draw
+                    if gf == ga
+                    else 0
+                )
                 row["head_to_head_goal_difference"] += gf - ga
                 row["head_to_head_goals_for"] += gf
                 row["head_to_head_away_goals"] += away_goals
         return values
 
 
-def _partition(members: tuple[ClubSeasonId, ...], value: Callable[[ClubSeasonId], int]) -> tuple[tuple[ClubSeasonId, ...], ...]:
+def _partition(
+    members: tuple[ClubSeasonId, ...], value: Callable[[ClubSeasonId], int]
+) -> tuple[tuple[ClubSeasonId, ...], ...]:
     ordered = sorted(members, key=value, reverse=True)
     return tuple(tuple(group) for _, group in groupby(ordered, key=value))
 
