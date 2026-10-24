@@ -1,6 +1,7 @@
 """Checks of `standings.yaml`: league tables, group tables, real brackets and real league goals."""
 
 from collections.abc import Sequence
+from itertools import pairwise
 from typing import NamedTuple
 
 from mister.catalog.infrastructure.content_schema.context import SeasonContext, stage_of
@@ -200,18 +201,31 @@ def _check_lineage(ctx: SeasonContext) -> None:
     for competition in ctx.competitions.values():
         if isinstance(competition, LeagueCompetition):
             continue
-        for previous, current in zip(competition.stages, competition.stages[1:]):
+        for previous, current in pairwise(competition.stages):
             if previous.is_group_stage or current.is_group_stage:
                 continue
-            ancestors = [t for t in ctx.content.standings.ties
-                         if (t.competition, t.stage) == (competition.id, previous.id)]
-            known_losers = {club for t in ancestors if t.winner is not None and t.verify == "ok"
-                            for club in t.clubs if club != t.winner}
+            ancestors = [
+                t
+                for t in ctx.content.standings.ties
+                if (t.competition, t.stage) == (competition.id, previous.id)
+            ]
+            known_losers = {
+                club
+                for t in ancestors
+                if t.winner is not None and t.verify == "ok"
+                for club in t.clubs
+                if club != t.winner
+            }
             for index, tie in enumerate(ctx.content.standings.ties):
-                if (tie.competition, tie.stage) == (competition.id, current.id):
-                    if known_losers.intersection(tie.clubs):
-                        ctx.add("standings", f"ties.{index}.clubs",
-                                "a connected stage must use the previous winner, not an eliminated club")
+                if (tie.competition, tie.stage) == (
+                    competition.id,
+                    current.id,
+                ) and known_losers.intersection(tie.clubs):
+                    ctx.add(
+                        "standings",
+                        f"ties.{index}.clubs",
+                        "a connected stage must use the previous winner, not an eliminated club",
+                    )
 
 
 def _check_real_league_goals(ctx: SeasonContext) -> None:

@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from mister.catalog.infrastructure.content_schema.context import SeasonContext
 from mister.catalog.infrastructure.content_schema.evidence_checks import check_release_evidence
 from mister.catalog.infrastructure.content_schema.issues import IssueSink
-from mister.catalog.infrastructure.content_schema.season import LeagueCompetition
+from mister.catalog.infrastructure.content_schema.season import TWO_LEGS, LeagueCompetition
 from mister.catalog.infrastructure.content_schema.tree import ContentTree
 
 
@@ -34,14 +34,21 @@ def check_release(tree: ContentTree, sink: IssueSink) -> None:
             if isinstance(competition, LeagueCompetition):
                 continue
             for si, stage in enumerate(competition.stages):
-                if stage.legs == 2 and stage.away_goals_rule and stage.extra_time and (
-                    stage.away_goals_in_extra_time is None
-                    or stage.away_goals_in_extra_time.value is None
-                    or stage.away_goals_in_extra_time.verify != "ok"
+                if (
+                    stage.legs == TWO_LEGS
+                    and stage.away_goals_rule
+                    and stage.extra_time
+                    and (
+                        stage.away_goals_in_extra_time is None
+                        or stage.away_goals_in_extra_time.value is None
+                        or stage.away_goals_in_extra_time.verify != "ok"
+                    )
                 ):
-                    sink.add(f"seasons/{slug}/season.yaml",
-                             f"competitions.{ci}.stages.{si}.away_goals_in_extra_time",
-                             "an explicit verified extra-time away-goals rule is required")
+                    sink.add(
+                        f"seasons/{slug}/season.yaml",
+                        f"competitions.{ci}.stages.{si}.away_goals_in_extra_time",
+                        "an explicit verified extra-time away-goals rule is required",
+                    )
         base = f"seasons/{slug}"
         _walk_pending(content.season, f"{base}/season.yaml", [], sink)
         _walk_pending(content.fixtures, f"{base}/fixtures.yaml", [], sink)

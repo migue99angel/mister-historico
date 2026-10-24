@@ -35,3 +35,17 @@ Propiedad: APIs de Catalog y Simulation; modelos y validadores de contenido de t
 Tests primero con commits separados: desconocido/vacío conocido, corte inclusivo, aplazados, evidencia incompleta, conflictos con fixtures/tablas, empate triple con partido entre rivales, variantes de prórroga, linaje único/ambiguo y compatibilidad de constructores. Test FC es ficticio: su migración se hace de forma deliberada y consistente, sin presentarla como reconstrucción histórica. Mantener schema drift, arquitectura, cobertura, `make test` y `make lint`; revisión independiente Sol y CI antes de rebase-merge.
 
 T2.20 comenzará tras integrar esta CR. Su cableado de `Makefile` (solo `validate-content`), workflow de contenido, registro CLI y composición requiere propiedad expresa o una CR previa; este plan no autoriza cambios silenciosos en esos archivos compartidos.
+
+## Decisión implementada
+
+Se añaden `HeadToHeadFixtureDTO`, `HeadToHeadResultDTO` y `HeadToHeadEvidenceDTO` en Catalog y sus equivalentes `Input` independientes en Simulation. La declaración conserva `complete_through`, `covered_clubs`, calendario/resultados con fuentes y verificación y el ámbito `competition_id`, `stage_id`, `group_id`. Los campos `head_to_head` de temporada se añaden al final con valor por defecto `None`. Los marcadores son pares local/visitante reglamentarios; un marcador desconocido conserva `None` y `pending`.
+
+El contenido valida identidad exacta calendario/resultados, cobertura inclusiva y del ámbito, coincidencia con fixtures gestionados, coherencia entre declaraciones y acumulados en tablas cuando todos los participantes están cubiertos. Release requiere que una declaración verificada cubra a todos los participantes hasta cada corte que pueda usar criterios directos. La verificación editorial de que el calendario no omite partidos no puede sustituirse por coherencia aritmética.
+
+La variante de goles fuera durante la prórroga se representa como objeto `{value, sources, verify}` en contenido y booleano nullable al final de las etapas publicadas. Las reglas que la necesitan exigen un valor explícito y verificado en release; T2.4 lo exige asimismo al ejecutar el dominio. La compatibilidad de construcción permite `None` sin darle el significado de `False`.
+
+Test FC conserva todas las tablas, fixtures propios y estadísticas previas: la migración añade un calendario sintético explícito de 30 partidos de liga y 12 de grupos, con doble enfrentamiento y localía invertida. Sus resultados cuadran en cada corte y con los goles local/visitante de las bases existentes (40/27 y 17/11). Son datos ficticios deliberados con fuentes `example.org`, nunca una reconstrucción histórica acreditada. El oráculo contractual se amplía para publicar los nuevos campos y su procedencia.
+
+## Requisitos previos adicionales para T2.6
+
+El diseño final de T2.4 hace explícitas otras dos carencias contractuales, fuera del alcance de esta CR: la política de reaplicación de miniligas (`reapply_head_to_head`) y una salida que preserve los conjuntos cuyo desempate deportivo sigue sin resolver. No se añaden defaults históricos implícitos. Junto con fechas, sedes y fixtures posteriores a la eliminación real, se resolverán en otra CR antes de declarar completa T2.6. Esta CR no cablea adaptadores, no genera esos fixtures y no convierte el orden de presentación por ID en una posición deportiva.
