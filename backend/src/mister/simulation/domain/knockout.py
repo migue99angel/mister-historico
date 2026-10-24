@@ -80,8 +80,10 @@ class KnockoutTie:
 
     def _validate_calendar(self) -> None:
         first = self.fixtures[0]
-        if any(type(fixture.date) is not date or not isinstance(fixture.venue, Venue)
-               for fixture in self.fixtures):
+        if any(
+            type(fixture.date) is not date or not isinstance(fixture.venue, Venue)
+            for fixture in self.fixtures
+        ):
             raise InvalidValueError("knockout fixtures need calendar dates and typed venues")
         if not isinstance(first.stage, str) or not first.stage or first.group is not None:
             raise InvalidValueError("a knockout fixture needs a stage and cannot have a group")
@@ -267,7 +269,7 @@ class HistoricalBracket:
         """Follow the club whose historical slot the simulated advancing club occupies."""
         if completed_stage not in self.stages or completed_stage == self.stages[-1]:
             raise InvalidValueError("the completed stage must have an explicit following stage")
-        previous = self._winning_tie(completed_stage, historical_representative)
+        self._winning_tie(completed_stage, historical_representative)
         next_stage = self.stages[self.stages.index(completed_stage) + 1]
         candidates = tuple(
             tie
@@ -277,7 +279,5 @@ class HistoricalBracket:
         if len(candidates) != 1:
             raise InvalidValueError("the historical lineage has no unique next tie")
         opponent = next(club for club in candidates[0].clubs if club != historical_representative)
-        feeder = self._winning_tie(completed_stage, opponent)
-        if feeder == previous:
-            raise InvalidValueError("next-stage opponents must have distinct feeder ties")
+        self._winning_tie(completed_stage, opponent)
         return opponent

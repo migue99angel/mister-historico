@@ -260,10 +260,10 @@ class GroupTable:
         values = {club: dict.fromkeys(_HEAD_TO_HEAD, 0) for club in members}
         for match in self.evidence.matches(members):
             home, away = match.fixture.home, match.fixture.away
-            away_goals = match.score.away if match.fixture.venue is Venue.HOME else 0
+            visiting_goals = match.score.away if match.fixture.venue is Venue.HOME else 0
             for club, gf, ga, away_goals in (
                 (home, match.score.home, match.score.away, 0),
-                (away, match.score.away, match.score.home, away_goals),
+                (away, match.score.away, match.score.home, visiting_goals),
             ):
                 row = values[club]
                 row["head_to_head_points"] += (
