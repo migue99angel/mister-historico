@@ -5,7 +5,7 @@
 ## 1. Rol y forma de trabajo
 
 - Actúas como **orquestador**: planificas, encargas la implementación y la revisión independiente, verificas e integras. El autor decide el criterio de producto y de datos.
-- **Modelos elegidos por el autor:** **Astra** para planificación y revisión independiente, **Sol** para implementar. Se puede usar **Luna** para tareas acotadas que lo justifiquen. Sustituye la preferencia anterior de modelos.
+- **Modelos elegidos por el autor:** **Astra** para planificación; **Sol** para implementar y para las revisiones independientes, mediante agentes distintos. Se puede usar **Luna** para tareas acotadas que lo justifiquen. Sustituye la preferencia anterior de modelos.
 - **Cada PR pasa por un revisor independiente antes de integrarse.** El revisor recibe el código y la especificación, sin las conclusiones del implementador. Las correcciones vuelven al mismo agente si sigue disponible. Antes de integrar, el orquestador comprueba la combinación con `main`.
 - **Integración: rebase-merge, nunca squash.** El historial conserva los commits de tests y de implementación separados. El autor ha autorizado integrar tras revisión y checks. **Un force-push sigue necesitando autorización explícita.**
 - **Ritmo:** oleadas de 2 o 3 agentes. Si uno se corta por el límite, reanúdalo en lugar de sustituirlo.
@@ -53,7 +53,7 @@ La tabla completa, fuentes, correcciones y cálculos reproducibles están en [`c
 
 **Segunda oleada en curso:** Sol implementa T2.5 (físico y lesiones) en `.claude/worktrees/t2-5-fitness`, rama `task/T2.5-fitness-injuries`. Otro Sol prepara la CR-T2.3 (política de resultados externos y tipos inmutables de liga) en `.claude/worktrees/cr-t2-3-policy`, rama `task/CR-T2.3-external-results`. Se mantienen los agentes si se corta el límite de uso. No se afirma que estas tareas estén terminadas ni revisadas.
 
-La CR debe integrarse con revisión Astra y CI antes de implementar T2.3. La API actual aporta los partidos gestionados y tablas de corte, pero no los enfrentamientos históricos entre todos los rivales: no se puede fabricar una minitabla directa de un empate múltiple. El orden final real de rivales se toma de su clasificación final, separado del orden de cada corte. La carencia de enfrentamientos requiere una CR de entrada de datos antes de los casos de T2.6 que los necesiten. La política P2 parte siempre del baseline histórico original; sin calendario completo ni trazabilidad, el puerto no puede certificar por sí solo todos esos hechos.
+La CR debe integrarse con revisión independiente Sol y CI antes de implementar T2.3. La API actual aporta los partidos gestionados y tablas de corte, pero no los enfrentamientos históricos entre todos los rivales: no se puede fabricar una minitabla directa de un empate múltiple. El orden final real de rivales se toma de su clasificación final, separado del orden de cada corte. La carencia de enfrentamientos requiere una CR de entrada de datos antes de los casos de T2.6 que los necesiten. La política P2 parte siempre del baseline histórico original; sin calendario completo ni trazabilidad, el puerto no puede certificar por sí solo todos esos hechos.
 
 **Trabajo posterior todavía no encargado:** T2.3 después de su CR, T2.4, catálogo T2.20 y frontend T4.1-T4.3 contra MSW. La integración de T2.20 con Makefile y workflows compartidos también requiere CR. Mantener oleadas de 2 o 3 agentes. El contenido real del piloto se abordará después con fuentes y verificación independiente.
 
