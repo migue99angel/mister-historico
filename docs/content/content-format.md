@@ -668,3 +668,8 @@ La sede del calendario es la autoridad, por eso `HeadToHeadResult` privado no la
 Las fuentes acreditan todas las plazas históricas por puesto. La futura conexión T2.6 construirá una biyección entre representantes históricos y ocupantes efectivos de cada etapa. Transformará **ambos** contendientes de cada slot, manteniendo ID, fecha, sede y piernas conforme a ADR-005. Un intercambio de primero y segundo desplaza a ambos clasificados; sustituir únicamente al gestionado puede producir un autopartido.
 
 En una eliminatoria externa avanza el ocupante de la plaza del ganador histórico, sin simular terceros ni atribuirle marcadores ajenos. En una gestionada, el ganador simulado pasa a ocupar la plaza del ganador histórico. El mapa se actualiza por ronda y retira las plazas eliminadas. Esta CR aporta datos, contratos, validación y oráculos sintéticos; no implementa la simulación por bloques ni presenta esta política de juego como una norma histórica.
+
+
+### Fecha efectiva del estado de una continuación
+
+`BlockSimRequest.state_as_of`, último campo opcional, indica la fecha a la que corresponde el estado físico recibido. `None` significa que ya está situado en `start`, para conservar compatibilidad. Una continuación debe enviar explícitamente el cierre anterior. La conexión T2.6 recuperará desde esa fecha y rechazará fechas posteriores a `start`; nunca reconstruirá este cursor a partir de `prior_results`. Esta CR publica el dato y su semántica, sin implementar recuperación entre bloques.

@@ -390,6 +390,9 @@ class BlockSimRequest:
     `competition_priorities` defaults to `normal`. `forced_injuries_from_effects` are injuries
     caused by dilemma effects, dated, on top of the season's. `prior_results` are the results
     of earlier blocks, to carry the standings forward.
+    `state_as_of=None` means the incoming state is already situated at `start`. A continuation
+    supplies its previous close explicitly; T2.6 recovers from that date and rejects a date
+    after `start`. It must never infer this cursor from `prior_results`.
     """
 
     season: SeasonSimInput
