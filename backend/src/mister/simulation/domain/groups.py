@@ -100,16 +100,7 @@ class GroupEvidence:
             or not all(isinstance(result, GroupMatch) for result in self.results)
         ):
             raise InvalidValueError("group calendar and results must be immutable tuples")
-        for fixture in chain(self.schedule, (result.fixture for result in self.results)):
-            if type(fixture.date) is not date:
-                raise InvalidValueError("group fixtures need calendar dates")
-            if not isinstance(fixture.venue, Venue) or fixture.venue not in (
-                Venue.HOME,
-                Venue.NEUTRAL,
-            ):
-                raise InvalidValueError("group fixtures need typed home or neutral venues")
-            if not isinstance(fixture.fixture_id, FixtureId):
-                raise InvalidValueError("group fixtures need typed fixture IDs")
+        self._validate_fixture_metadata()
         fixtures = {fixture.fixture_id: fixture for fixture in self.schedule}
         if len(fixtures) != len(self.schedule):
             raise InvalidValueError("duplicate group fixture in the calendar")
@@ -123,6 +114,18 @@ class GroupEvidence:
                 raise InvalidValueError("group result does not match a scheduled fixture")
             if fixture.date > self.as_of:
                 raise InvalidValueError("group results cannot be later than the cutoff")
+
+    def _validate_fixture_metadata(self) -> None:
+        for fixture in chain(self.schedule, (result.fixture for result in self.results)):
+            if type(fixture.date) is not date:
+                raise InvalidValueError("group fixtures need calendar dates")
+            if not isinstance(fixture.venue, Venue) or fixture.venue not in (
+                Venue.HOME,
+                Venue.NEUTRAL,
+            ):
+                raise InvalidValueError("group fixtures need typed home or neutral venues")
+            if not isinstance(fixture.fixture_id, FixtureId):
+                raise InvalidValueError("group fixtures need typed fixture IDs")
 
     def matches(self, members: tuple[ClubSeasonId, ...]) -> tuple[GroupMatch, ...]:
         """Return all scheduled mini-table scores by the cutoff, rejecting missing ones."""
