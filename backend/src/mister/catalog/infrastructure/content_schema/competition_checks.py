@@ -65,6 +65,7 @@ def _check_calendar(ctx: SeasonContext, field: str, declaration: KnockoutCalenda
         stage = stage_of(competition, key[0])
         if stage is not None:
             _check_legs(ctx, field, slots, stage.legs)
+    _check_feeder_chronology(ctx, declaration)
     if declaration.verify == "ok":
         for key in historical:
             stage = stage_of(competition, key[0])
@@ -72,6 +73,32 @@ def _check_calendar(ctx: SeasonContext, field: str, declaration: KnockoutCalenda
                 ctx.add(
                     "standings", field, "calendar must contain all legs of every historical tie"
                 )
+
+
+def _check_feeder_chronology(ctx: SeasonContext, calendar: KnockoutCalendar) -> None:
+    """Compare only actual feeder edges, never unrelated branches of the bracket."""
+    competition = ctx.competitions[calendar.competition]
+    if isinstance(competition, LeagueCompetition):
+        return
+    ties = [tie for tie in ctx.content.standings.ties if tie.competition == competition.id]
+    for source, target in pairwise(competition.stages):
+        if source.is_group_stage or target.is_group_stage:
+            continue
+        for destination in calendar.slots or ():
+            if destination.stage_id != target.id or destination.date is None:
+                continue
+            for club in (destination.home, destination.away):
+                origins = [tie for tie in ties if tie.stage == source.id
+                           and tie.winner == club and tie.verify == "ok"]
+                if len(origins) != 1:
+                    continue  # No invented link when the predecessor is unknown or ambiguous.
+                origin = origins[0]
+                dates = [slot.date for slot in calendar.slots or ()
+                         if slot.stage_id == source.id and {slot.home, slot.away} == set(origin.clubs)
+                         and slot.date is not None]
+                if dates and destination.date <= max(dates):
+                    ctx.add("standings", "knockout_calendar",
+                            "a destination must follow every feeding predecessor tie")
 
 
 def _check_legs(ctx: SeasonContext, field: str, slots: list[KnockoutSlot], legs: int) -> None:
@@ -172,6 +199,15 @@ def _check_entries(ctx: SeasonContext, field: str, declaration: GroupEntryAssign
             row = next((r for r in final.table if r.position == entry.qualifying_position), None)
         if row is None or row.club_season != entry.historical_representative:
             ctx.add("standings", part, "entry contradicts the final historical group position")
+        if tables:
+            final_date = max(table.date for table in tables)
+            dates = [slot.date for calendar in ctx.content.standings.knockout_calendar or ()
+                     if calendar.competition == competition.id
+                     for slot in calendar.slots or () if slot.stage_id == target.id
+                     and entry.historical_representative in (slot.home, slot.away)
+                     and slot.date is not None]
+            if any(day <= final_date for day in dates):
+                ctx.add("standings", part, "target slots must follow the accredited final group table")
         ties = [
             t
             for t in ctx.content.standings.ties
@@ -257,6 +293,9 @@ def _check_group_coverage(
     ctx: SeasonContext, competition_id: str, stages: tuple[Stage, ...]
 ) -> None:
     entries = {d.competition: d for d in ctx.content.standings.group_entry_assignments or ()}
+    declaration = entries.get(competition_id)
+    if declaration is not None and declaration.entries is not None:
+        _check_entry_target_occupants(ctx, declaration)
     for stage in stages:
         later = stages[stages.index(stage) + 1 :]
         if not stage.is_group_stage or not any(not s.is_group_stage for s in later):
@@ -283,3 +322,15 @@ def _check_group_coverage(
                 "group_entry_assignments",
                 "every qualifying position requires an assignment",
             )
+
+
+def _check_entry_target_occupants(ctx: SeasonContext, assignments: GroupEntryAssignments) -> None:
+    for target in {entry.target_stage_id for entry in assignments.entries or ()}:
+        representatives = {entry.historical_representative for entry in assignments.entries or ()
+                           if entry.target_stage_id == target}
+        contenders = {club for tie in ctx.content.standings.ties
+                      if (tie.competition, tie.stage) == (assignments.competition, target)
+                      for club in tie.clubs}
+        if representatives != contenders:
+            ctx.add("standings", "group_entry_assignments",
+                    "entry assignments must cover exactly the historical target contenders")
