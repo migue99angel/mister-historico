@@ -232,7 +232,9 @@ def test_mixed_semifinal_oracle_updates_both_surviving_slot_occupants() -> None:
 def test_block_request_appends_optional_state_date_without_inferring_it_from_results() -> None:
     season = api.SeasonSimInput(CLUBS[0], (), (), ())
     team = api.SquadTeamInput(CLUBS[0], (), api.TacticDTO("balanced", "4-4-2"))
-    request = api.BlockSimRequest(season, BlockId("b2"), DAY, DAY, team, prior_results=(second_leg(),))
+    request = api.BlockSimRequest(
+        season, BlockId("b2"), DAY, DAY, team, prior_results=(second_leg(),)
+    )
     assert fields(api.BlockSimRequest)[-1].name == "state_as_of"
     assert request.state_as_of is None
 

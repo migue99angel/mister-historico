@@ -48,3 +48,10 @@ Test FC conserva sus 42 partidos H2H, todas las tablas, fixtures propios, marcad
 Una regresión roja adicional detectó la prohibición previa de grupos propios neutrales. Con autorización del coordinador, `fixture_checks.py` admite esas sedes y conserva el número de partidos; la regla de liga no cambia. Al cotejar H2H neutral se usan los lados explícitos del calendario y se conserva el marcador relativo al propio en ambas orientaciones. El futuro mapeo T2.6 tiene esa misma obligación. `groups.py`, `knockout.py`, puertos y configuración compartida permanecen fuera de la CR.
 
 La simulación por bloques y la permuta de plazas no se implementan aquí. La política de diseño por biyección y actualización por ronda está documentada y tiene oráculos sintéticos de intercambio de primero/segundo y de progresión externa combinada con un ganador simulado, conservando ID, fecha y sede sin autopartidos ni marcadores atribuidos falsamente.
+
+
+## Ampliación autorizada: fecha efectiva del estado del bloque
+
+El coordinador autoriza añadir a esta CR `BlockSimRequest.state_as_of: date | None = None` al final. `None` conserva la construcción anterior y significa que el estado ya está situado en `start`. Una continuación debe indicar explícitamente la fecha del cierre anterior; no se infiere de `prior_results`, que puede no contener partidos en días con recuperación.
+
+Esta ampliación es solo de contrato, documentación y compatibilidad. T2.6 implementará la recuperación desde esa fecha hasta los partidos o el cierre siguiente y rechazará una fecha posterior a `start`; esta CR no añade lógica de bloques ni recuperación implícita. Las pruebas fijan la construcción anterior y la conservación de una fecha explícita con commits separados de rojo y verde.
