@@ -3,17 +3,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from datetime import date
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from mister.shared_kernel.errors import InvalidValueError
-from mister.shared_kernel.ids import ClubSeasonId, CompetitionId, PlayerId
 from mister.simulation.domain.fitness import match_fitness, recover_between
-from mister.simulation.domain.injuries import Injury, injured_until, simulate_injury
 from mister.simulation.domain.groups import GroupEvidence, GroupMatch, GroupRules, GroupTable
+from mister.simulation.domain.injuries import Injury, injured_until, simulate_injury
 from mister.simulation.domain.knockout import HistoricalTie, KnockoutRules, KnockoutTie
 from mister.simulation.domain.league import (
     HeadToHeadEvidence,
+    HeadToHeadFixture,
+    HeadToHeadResult,
     HistoricalExternalResults,
     LeagueTable,
 )
@@ -35,7 +35,11 @@ from mister.simulation.domain.model import (
 from mister.simulation.domain.strength import StrengthReference, calculate_strength
 
 if TYPE_CHECKING:
+    from datetime import date
+
+    from mister.shared_kernel.ids import ClubSeasonId, CompetitionId, PlayerId
     from mister.shared_kernel.randomness import RandomSource
+    from mister.simulation.domain.model import SimPlayer, Tactic
     from mister.simulation.domain.ports import MatchSimulator
 
 
@@ -216,18 +220,24 @@ class SeasonSimulation:
         priority = self.block.priorities.get(spec.competition_id, Priority.NORMAL)
         available = {p.player_id for p in self.team.squad or () if not p.injured}
         required = frozenset(p for p in self.block.youth & available if self.minutes[p] == 0)
-        assert self.team.squad is not None and self.team.tactic is not None
-        lineup = select_lineup(
-            self.team.squad, self.team.tactic, priority=priority, required=required
-        )
+        squad = cast("tuple[SimPlayer, ...]", self.team.squad)
+        tactic = cast("Tactic", self.team.tactic)
+        lineup = select_lineup(squad, tactic, priority=priority, required=required)
         own = calculate_strength(self.team, self.references[spec.competition_id], lineup=lineup)
         rival_id = spec.away if spec.home == self.team.club_season_id else spec.home
         rival_team = self.rivals[rival_id]
         if rival_team.squad is not None:
-            unavailable = {pid for club, pid, until in self.block.rival_absences
-                           if club == rival_id and spec.date < until}
-            rival_team = replace(rival_team, squad=tuple(replace(p, injured=p.player_id in unavailable)
-                                                        for p in rival_team.squad))
+            unavailable = {
+                pid
+                for club, pid, until in self.block.rival_absences
+                if club == rival_id and spec.date < until
+            }
+            rival_team = replace(
+                rival_team,
+                squad=tuple(
+                    replace(p, injured=p.player_id in unavailable) for p in rival_team.squad
+                ),
+            )
         rival = calculate_strength(rival_team, self.references[spec.competition_id], neutral=True)
         setup = MatchSetup(
             spec,
@@ -235,14 +245,17 @@ class SeasonSimulation:
             rival if spec.home == self.team.club_season_id else own,
             competition.params,
         )
-        result = (self.simulator.simulate(setup, self.rng, decisive=False) if tie is None
-                  else tie.play_next(setup, self.simulator, self.rng).results[-1])
+        result = (
+            self.simulator.simulate(setup, self.rng, decisive=False)
+            if tie is None
+            else tie.play_next(setup, self.simulator, self.rng).results[-1]
+        )
         if tie is None and (result.extra_time is not None or result.penalties is not None):
             raise InvalidValueError("league and group matches cannot have deciding periods")
         minutes = 120 if result.extra_time is not None else 90
         starters = {p.player.player_id for p in lineup.starters}
         players = []
-        for p in self.team.squad:
+        for p in squad:
             exposure = minutes if p.player_id in starters else 0
             injury = simulate_injury(
                 self.rng,
@@ -264,12 +277,18 @@ class SeasonSimulation:
         return played
 
     def _evidence(
-        self, competition_id: CompetitionId, cutoff: date,
-        stage_id: str | None = None, group_id: str | None = None,
+        self,
+        competition_id: CompetitionId,
+        cutoff: date,
+        stage_id: str | None = None,
+        group_id: str | None = None,
     ) -> HistoricalEvidence | None:
-        candidates = [e for e in self.block.evidence if
-            (e.competition_id, e.stage_id, e.group_id) == (competition_id, stage_id, group_id)
-            and (e.complete_through >= cutoff or self._complete_group_evidence(e, cutoff))]
+        candidates = [
+            e
+            for e in self.block.evidence
+            if (e.competition_id, e.stage_id, e.group_id) == (competition_id, stage_id, group_id)
+            and (e.complete_through >= cutoff or self._complete_group_evidence(e, cutoff))
+        ]
         return min(candidates, key=lambda e: e.complete_through, default=None)
 
     def _complete_group_evidence(self, evidence: HistoricalEvidence, cutoff: date) -> bool:
@@ -282,47 +301,81 @@ class SeasonSimulation:
             f.date > min(cutoff, evidence.complete_through) for f in evidence.schedule
         ):
             return False
-        counts = {club: sum(club in (f.home, f.away) for f in evidence.schedule)
-                  for club in participants}
-        return all(count == (len(participants)-1)*stage.group_rounds for count in counts.values())
+        counts = {
+            club: sum(club in (f.home, f.away) for f in evidence.schedule) for club in participants
+        }
+        return all(
+            count == (len(participants) - 1) * stage.group_rounds for count in counts.values()
+        )
 
     def _replacements(
-        self, competition_id: CompetitionId, cutoff: date,
-        stage_id: str | None = None, group_id: str | None = None,
+        self,
+        competition_id: CompetitionId,
+        cutoff: date,
+        stage_id: str | None = None,
+        group_id: str | None = None,
     ) -> tuple[ResultReplacement, ...]:
         replacements = []
         for fixture in self.block.fixtures:
             spec = fixture.spec
-            if (spec.competition_id, spec.stage, spec.group) != (competition_id, stage_id, group_id):
+            if (spec.competition_id, spec.stage, spec.group) != (
+                competition_id,
+                stage_id,
+                group_id,
+            ):
                 continue
             if spec.date > cutoff:
                 continue
             played = self.played.get(spec.fixture_id)
             if played is None or fixture.historical is None:
-                raise InvalidValueError("missing prior result or historical score for P2 replacement")
-            replacements.append(ResultReplacement(spec.fixture_id, spec.date, spec.home, spec.away,
-                                                  fixture.historical, played.result.regulation))
+                raise InvalidValueError(
+                    "missing prior result or historical score for P2 replacement"
+                )
+            replacements.append(
+                ResultReplacement(
+                    spec.fixture_id,
+                    spec.date,
+                    spec.home,
+                    spec.away,
+                    fixture.historical,
+                    played.result.regulation,
+                )
+            )
         return tuple(replacements)
 
     def _baseline(
-        self, competition: Competition, cutoff: date, participants: tuple[ClubSeasonId, ...],
-        stage: Stage | None = None, group_id: str | None = None,
+        self,
+        competition: Competition,
+        cutoff: date,
+        participants: tuple[ClubSeasonId, ...],
+        stage: Stage | None = None,
+        group_id: str | None = None,
     ) -> tuple[TableSnapshot, tuple[ClubSeasonId, ...]]:
-        snapshots = sorted((s for s in self.block.snapshots if
-            (s.competition_id, s.stage_id, s.group_id) ==
-            (competition.competition_id, stage.stage_id if stage else None, group_id)),
-            key=lambda s: s.as_of)
+        snapshots = sorted(
+            (
+                s
+                for s in self.block.snapshots
+                if (s.competition_id, s.stage_id, s.group_id)
+                == (competition.competition_id, stage.stage_id if stage else None, group_id)
+            ),
+            key=lambda s: s.as_of,
+        )
         rounds = stage.knockout_rules.legs if stage and stage.knockout_rules else competition.rounds
         # Group legs denote round-robin repetitions and are kept separately from KO rules.
         if stage is not None:
             rounds = stage.group_rounds
-        full_played = (len(participants)-1) * (rounds or 1)
-        candidates = [s for s in snapshots if s.as_of == cutoff or
-                      (s.as_of <= cutoff and all(r.played == full_played for r in s.rows))]
+        full_played = (len(participants) - 1) * (rounds or 1)
+        candidates = [
+            s
+            for s in snapshots
+            if s.as_of == cutoff
+            or (s.as_of <= cutoff and all(r.played == full_played for r in s.rows))
+        ]
         if candidates:
             return candidates[-1], snapshots[-1].order
-        evidence = self._evidence(competition.competition_id, cutoff,
-                                  stage.stage_id if stage else None, group_id)
+        evidence = self._evidence(
+            competition.competition_id, cutoff, stage.stage_id if stage else None, group_id
+        )
         if evidence is None or set(evidence.participants) != set(participants):
             raise InvalidValueError("missing original historical standings at block cutoff")
         # A declared complete calendar can provide the original baseline at an arbitrary cutoff.
@@ -330,99 +383,172 @@ class SeasonSimulation:
         ppw = rules.points_per_win if rules else competition.points_per_win
         ppd = rules.points_per_draw if rules else competition.points_per_draw
         rows = self._historical_rows(evidence, participants, cutoff, ppw, ppd)
-        return TableSnapshot(competition.competition_id, cutoff, rows, tuple(participants),
-            stage.stage_id if stage else None, group_id), snapshots[-1].order if snapshots else ()
+        return TableSnapshot(
+            competition.competition_id,
+            cutoff,
+            rows,
+            tuple(participants),
+            stage.stage_id if stage else None,
+            group_id,
+        ), snapshots[-1].order if snapshots else ()
 
     @staticmethod
     def _historical_rows(
-        evidence: HistoricalEvidence, participants: tuple[ClubSeasonId, ...], cutoff: date,
-        ppw: int, ppd: int,
+        evidence: HistoricalEvidence,
+        participants: tuple[ClubSeasonId, ...],
+        cutoff: date,
+        ppw: int,
+        ppd: int,
     ) -> tuple[LeagueRow, ...]:
         required = {f.fixture_id for f in evidence.schedule if f.date <= cutoff}
         matches = {m.fixture.fixture_id: m for m in evidence.results if m.fixture.date <= cutoff}
         if required != matches.keys():
             raise InvalidValueError("missing historical score in complete calendar")
-        values = {club: [0]*7 for club in participants}
+        values = {club: [0] * 7 for club in participants}
         for match in matches.values():
-            for club, gf, ga in ((match.fixture.home, match.score.home, match.score.away),
-                                 (match.fixture.away, match.score.away, match.score.home)):
+            for club, gf, ga in (
+                (match.fixture.home, match.score.home, match.score.away),
+                (match.fixture.away, match.score.away, match.score.home),
+            ):
                 row = values[club]
                 win, draw, loss = int(gf > ga), int(gf == ga), int(gf < ga)
-                for i, amount in enumerate((1, win, draw, loss, gf, ga, win*ppw+draw*ppd)):
+                for i, amount in enumerate((1, win, draw, loss, gf, ga, win * ppw + draw * ppd)):
                     row[i] += amount
         return tuple(LeagueRow(club, *values[club]) for club in participants)
 
     def _table(self, competition: Competition) -> RankedTable:
-        from mister.simulation.domain.league import HeadToHeadFixture, HeadToHeadResult
-
-        baseline, final_order = self._baseline(competition, self.block.end, competition.participants)
+        baseline, final_order = self._baseline(
+            competition, self.block.end, competition.participants
+        )
         if not final_order:
             raise InvalidValueError("league requires a separate original final historical order")
-        request = ExternalResultsRequest(competition.competition_id, self.block.end,
-            self.team.club_season_id, competition.participants, competition.points_per_win,
-            competition.points_per_draw, baseline.rows,
-            self._replacements(competition.competition_id, self.block.end))
+        request = ExternalResultsRequest(
+            competition.competition_id,
+            self.block.end,
+            self.team.club_season_id,
+            competition.participants,
+            competition.points_per_win,
+            competition.points_per_draw,
+            baseline.rows,
+            self._replacements(competition.competition_id, self.block.end),
+        )
         original = self._evidence(competition.competition_id, self.block.end)
         evidence = None
         if original is not None:
             fixtures = tuple(f for f in original.schedule if f.date <= self.block.end)
             scores = {m.fixture.fixture_id: m.score for m in original.results}
-            evidence = HeadToHeadEvidence(competition.competition_id, self.block.end,
+            evidence = HeadToHeadEvidence(
+                competition.competition_id,
+                self.block.end,
                 original.participants,
-                tuple(HeadToHeadFixture(f.fixture_id, f.date, f.home, f.away, f.venue) for f in fixtures),
-                tuple(HeadToHeadResult(f.fixture_id, f.date, f.home, f.away, scores[f.fixture_id],
-                                      original.sources) for f in fixtures), original.sources)
-        table = LeagueTable(request, HistoricalExternalResults().standings(request),
-                            competition.tiebreakers, final_order, evidence)
-        return RankedTable(replace(baseline, as_of=self.block.end, rows=table.rows), table.unresolved_groups)
+                tuple(
+                    HeadToHeadFixture(f.fixture_id, f.date, f.home, f.away, f.venue)
+                    for f in fixtures
+                ),
+                tuple(
+                    HeadToHeadResult(
+                        f.fixture_id, f.date, f.home, f.away, scores[f.fixture_id], original.sources
+                    )
+                    for f in fixtures
+                ),
+                original.sources,
+            )
+        table = LeagueTable(
+            request,
+            HistoricalExternalResults().standings(request),
+            competition.tiebreakers,
+            final_order,
+            evidence,
+        )
+        return RankedTable(
+            replace(baseline, as_of=self.block.end, rows=table.rows), table.unresolved_groups
+        )
 
     def _group_table(
-        self, competition: Competition, stage: Stage, group_id: str,
-        participants: tuple[ClubSeasonId, ...], cutoff: date,
+        self,
+        competition: Competition,
+        stage: Stage,
+        group_id: str,
+        participants: tuple[ClubSeasonId, ...],
+        cutoff: date,
     ) -> tuple[RankedTable, tuple[ClubSeasonId, ...]]:
         rules = stage.group_rules
         if rules is None:
             raise InvalidValueError("group stage requires explicit group rules")
         baseline, _ = self._baseline(competition, cutoff, participants, stage, group_id)
         own_group = self.team.club_season_id in participants
-        replacements = self._replacements(competition.competition_id, cutoff, stage.stage_id, group_id)
+        replacements = self._replacements(
+            competition.competition_id, cutoff, stage.stage_id, group_id
+        )
         # P2's replacement value includes the managed club; external groups retain original totals.
         rows = baseline.rows
         if own_group:
-            request = ExternalResultsRequest(competition.competition_id, cutoff,
-                self.team.club_season_id, participants, rules.points_per_win, rules.points_per_draw,
-                baseline.rows, replacements)
+            request = ExternalResultsRequest(
+                competition.competition_id,
+                cutoff,
+                self.team.club_season_id,
+                participants,
+                rules.points_per_win,
+                rules.points_per_draw,
+                baseline.rows,
+                replacements,
+            )
             rows = HistoricalExternalResults().standings(request)
         original = self._evidence(competition.competition_id, cutoff, stage.stage_id, group_id)
         evidence = None
         if original is not None:
             simulated = {r.fixture_id: r.simulated_score for r in replacements}
-            results = tuple(GroupMatch(m.fixture, simulated.get(m.fixture.fixture_id, m.score))
-                for m in original.results if m.fixture.date <= cutoff)
+            results = tuple(
+                GroupMatch(m.fixture, simulated.get(m.fixture.fixture_id, m.score))
+                for m in original.results
+                if m.fixture.date <= cutoff
+            )
             evidence = GroupEvidence(cutoff, original.schedule, results)
-        ranking = GroupTable(competition.competition_id, stage.stage_id, group_id,
-            participants, rows, rules, evidence).rank()
+        ranking = GroupTable(
+            competition.competition_id,
+            stage.stage_id,
+            group_id,
+            participants,
+            rows,
+            rules,
+            evidence,
+        ).rank()
         # Qualifier evaluation is deferred until closure, preserving intermediate unresolved tables.
-        return RankedTable(replace(baseline, as_of=cutoff, rows=ranking.rows),
-                           ranking.unresolved_ties), ranking.qualifiers if self._group_closed(
-                               competition, stage, group_id, participants, cutoff) else ()
+        return RankedTable(
+            replace(baseline, as_of=cutoff, rows=ranking.rows), ranking.unresolved_ties
+        ), ranking.qualifiers if self._group_closed(
+            competition, stage, group_id, participants, cutoff
+        ) else ()
 
     def _group_closed(
-        self, competition: Competition, stage: Stage, group_id: str,
-        participants: tuple[ClubSeasonId, ...], cutoff: date,
+        self,
+        competition: Competition,
+        stage: Stage,
+        group_id: str,
+        participants: tuple[ClubSeasonId, ...],
+        cutoff: date,
     ) -> bool:
-        full = (len(participants)-1)*stage.group_rounds
+        full = (len(participants) - 1) * stage.group_rounds
         evidence = self._evidence(competition.competition_id, cutoff, stage.stage_id, group_id)
         if evidence is not None and set(evidence.participants) == set(participants):
             if any(f.date > cutoff for f in evidence.schedule):
                 return False
-            rows = self._historical_rows(evidence, participants, cutoff,
+            rows = self._historical_rows(
+                evidence,
+                participants,
+                cutoff,
                 stage.group_rules.points_per_win if stage.group_rules else 0,
-                stage.group_rules.points_per_draw if stage.group_rules else 0)
+                stage.group_rules.points_per_draw if stage.group_rules else 0,
+            )
             return all(r.played == full for r in rows)
-        return any(s.competition_id == competition.competition_id and s.stage_id == stage.stage_id
-                   and s.group_id == group_id and s.as_of <= cutoff
-                   and all(r.played == full for r in s.rows) for s in self.block.snapshots)
+        return any(
+            s.competition_id == competition.competition_id
+            and s.stage_id == stage.stage_id
+            and s.group_id == group_id
+            and s.as_of <= cutoff
+            and all(r.played == full for r in s.rows)
+            for s in self.block.snapshots
+        )
 
     def _close_groups(self, competition: Competition, stage: Stage, cutoff: date) -> None:
         key = competition.competition_id, stage.stage_id
@@ -430,20 +556,94 @@ class SeasonSimulation:
             return
         for group_id, participants in stage.groups:
             if self.team.club_season_id not in participants or not self._group_closed(
-                competition, stage, group_id, participants, cutoff):
+                competition, stage, group_id, participants, cutoff
+            ):
                 continue
             _, qualifiers = self._group_table(competition, stage, group_id, participants, cutoff)
             evidence = self._evidence(competition.competition_id, cutoff, stage.stage_id, group_id)
-            close = max((f.date for f in evidence.schedule), default=cutoff) if evidence else min(
-                s.as_of for s in self.block.snapshots if s.competition_id == competition.competition_id
-                and s.stage_id == stage.stage_id and s.group_id == group_id
-                and all(r.played == (len(participants)-1)*stage.group_rounds for r in s.rows))
+            close = (
+                max((f.date for f in evidence.schedule), default=cutoff)
+                if evidence
+                else min(
+                    s.as_of
+                    for s in self.block.snapshots
+                    if s.competition_id == competition.competition_id
+                    and s.stage_id == stage.stage_id
+                    and s.group_id == group_id
+                    and all(
+                        r.played == (len(participants) - 1) * stage.group_rounds for r in s.rows
+                    )
+                )
+            )
             if self.block.start <= close <= self.block.end:
-                self.events.append(SeasonEvent("advanced" if self.team.club_season_id in qualifiers
-                    else "eliminated", close, competition.competition_id, stage.stage_id))
+                self.events.append(
+                    SeasonEvent(
+                        "advanced" if self.team.club_season_id in qualifiers else "eliminated",
+                        close,
+                        competition.competition_id,
+                        stage.stage_id,
+                    )
+                )
             self.closed_groups.add(key)
 
-    def _mapping(self, competition: Competition, stage: Stage) -> dict[ClubSeasonId, ClubSeasonId] | None:
+    def _group_mapping(
+        self,
+        competition: Competition,
+        previous: Stage,
+        stage: Stage,
+    ) -> dict[ClubSeasonId, ClubSeasonId] | None:
+        mapping = {}
+        entries = [
+            e
+            for e in self.block.entries
+            if e.competition_id == competition.competition_id
+            and e.source_stage_id == previous.stage_id
+            and e.target_stage_id == stage.stage_id
+        ]
+        for group_id, participants in previous.groups:
+            if not self._group_closed(
+                competition, previous, group_id, participants, self.block.end
+            ):
+                return None
+            ranked, qualifiers = self._group_table(
+                competition, previous, group_id, participants, self.block.end
+            )
+            if any(set(tied).intersection(qualifiers) for tied in ranked.unresolved):
+                raise InvalidValueError("unresolved group positions cannot select knockout slots")
+            for entry in (e for e in entries if e.group_id == group_id):
+                mapping[entry.representative] = qualifiers[entry.position - 1]
+        if not mapping or len(set(mapping.values())) != len(mapping):
+            raise InvalidValueError("group entry assignments must form a complete bijection")
+        self._close_groups(competition, previous, self.block.end)
+        return mapping
+
+    def _knockout_mapping(
+        self,
+        competition: Competition,
+        previous: Stage,
+    ) -> dict[ClubSeasonId, ClubSeasonId] | None:
+        mapping = {}
+        previous_map = self._mapping(competition, previous)
+        if previous_map is None:
+            return None
+        for historical in (t for t in competition.ties if t.stage_id == previous.stage_id):
+            if historical.winner is None:
+                raise InvalidValueError(
+                    "progression requires a known historical winning representative"
+                )
+            effective = tuple(previous_map[c] for c in historical.clubs)
+            if self.team.club_season_id in effective:
+                tie = self._tie(competition, previous, historical, previous_map)
+                if tie.winner is None:
+                    return None
+                mapping[historical.winner] = tie.winner
+            else:
+                mapping[historical.winner] = previous_map[historical.winner]
+        return mapping
+
+    def _mapping(
+        self, competition: Competition, stage: Stage
+    ) -> dict[ClubSeasonId, ClubSeasonId] | None:
         key = competition.competition_id, stage.stage_id
         if key in self.stage_maps:
             return self.stage_maps[key]
@@ -451,52 +651,40 @@ class SeasonSimulation:
         if index == 0:
             mapping = {p: p for p in competition.participants}
         else:
-            previous = competition.stages[index-1]
+            previous = competition.stages[index - 1]
             mapping = {}
-            if previous.groups:
-                entries = [e for e in self.block.entries if e.competition_id == competition.competition_id
-                           and e.source_stage_id == previous.stage_id and e.target_stage_id == stage.stage_id]
-                for group_id, participants in previous.groups:
-                    if not self._group_closed(competition, previous, group_id, participants, self.block.end):
-                        return None
-                    ranked, qualifiers = self._group_table(competition, previous, group_id, participants,
-                                                       self.block.end)
-                    if any(set(tied).intersection(qualifiers) for tied in ranked.unresolved):
-                        raise InvalidValueError("unresolved group positions cannot select knockout slots")
-                    for entry in (e for e in entries if e.group_id == group_id):
-                        mapping[entry.representative] = qualifiers[entry.position-1]
-                if not mapping or len(set(mapping.values())) != len(mapping):
-                    raise InvalidValueError("group entry assignments must form a complete bijection")
-                self._close_groups(competition, previous, self.block.end)
-            else:
-                previous_map = self._mapping(competition, previous)
-                if previous_map is None:
-                    return None
-                for historical in (t for t in competition.ties if t.stage_id == previous.stage_id):
-                    if historical.winner is None:
-                        raise InvalidValueError("progression requires a known historical winning representative")
-                    effective = tuple(previous_map[c] for c in historical.clubs)
-                    if self.team.club_season_id in effective:
-                        tie = self._tie(competition, previous, historical, previous_map)
-                        if tie.winner is None:
-                            return None
-                        mapping[historical.winner] = tie.winner
-                    else:
-                        mapping[historical.winner] = previous_map[historical.winner]
-            expected = {club for t in competition.ties if t.stage_id == stage.stage_id for club in t.clubs}
+            resolved = (
+                self._group_mapping(competition, previous, stage)
+                if previous.groups
+                else self._knockout_mapping(competition, previous)
+            )
+            if resolved is None:
+                return None
+            mapping = resolved
+            expected = {
+                club for t in competition.ties if t.stage_id == stage.stage_id for club in t.clubs
+            }
             if set(mapping) != expected or len(set(mapping.values())) != len(mapping):
-                raise InvalidValueError("historical feeders must exactly cover the next stage's slots")
+                raise InvalidValueError(
+                    "historical feeders must exactly cover the next stage's slots"
+                )
         self.stage_maps[key] = mapping
         return mapping
 
     def _tie(
-        self, competition: Competition, stage: Stage, historical: HistoricalTie,
+        self,
+        competition: Competition,
+        stage: Stage,
+        historical: HistoricalTie,
         mapping: dict[ClubSeasonId, ClubSeasonId],
     ) -> KnockoutTie:
-        fixtures = tuple(replace(f.spec, home=mapping[f.spec.home], away=mapping[f.spec.away], key=True)
+        fixtures = tuple(
+            replace(f.spec, home=mapping[f.spec.home], away=mapping[f.spec.away], key=True)
             for f in sorted(self.block.slots, key=lambda f: (f.spec.date, str(f.spec.fixture_id)))
-            if f.spec.competition_id == competition.competition_id and f.spec.stage == stage.stage_id
-            and {f.spec.home, f.spec.away} == set(historical.clubs))
+            if f.spec.competition_id == competition.competition_id
+            and f.spec.stage == stage.stage_id
+            and {f.spec.home, f.spec.away} == set(historical.clubs)
+        )
         if stage.knockout_rules is None:
             raise InvalidValueError("a knockout stage requires knockout rules")
         results = []
@@ -515,46 +703,44 @@ class SeasonSimulation:
             prior = self.played.get(spec.fixture_id)
             if prior is None or prior.fixture != fixture:
                 raise InvalidValueError("missing or incoherent prior result in continuation gap")
-            if tie is None and (prior.result.extra_time is not None or prior.result.penalties is not None):
+            if tie is None and (
+                prior.result.extra_time is not None or prior.result.penalties is not None
+            ):
                 raise InvalidValueError("league and group matches cannot have deciding periods")
             self.used_prior.add(spec.fixture_id)
             return
         self._play(fixture, tie)
 
-    def run(self) -> SeasonOutcome:
-        regular = tuple(f for f in self.block.fixtures if f.spec.group is not None or
-                        self.competitions[f.spec.competition_id].kind == "league")
-        schedule = sorted((*regular, *self.block.slots),
-                          key=lambda f: (f.spec.date, str(f.spec.fixture_id)))
-        for fixture in schedule:
-            spec = fixture.spec
-            if spec.date > self.block.end:
-                continue
-            competition = self.competitions[spec.competition_id]
-            if fixture in regular:
-                self._consume(fixture)
-                continue
-            stage = next(s for s in competition.stages if s.stage_id == spec.stage)
-            mapping = self._mapping(competition, stage)
-            if mapping is None:
-                continue
-            effective = replace(spec, home=mapping[spec.home], away=mapping[spec.away], key=True)
-            if self.team.club_season_id not in (effective.home, effective.away):
-                continue
-            historical = next(t for t in competition.ties if t.stage_id == stage.stage_id
-                              and set(t.clubs) == {spec.home, spec.away})
-            tie = self._tie(competition, stage, historical, mapping)
-            current = SeasonFixture(effective, fixture.round, fixture.historical)
-            self._consume(current, tie)
-            if spec.date >= self.block.start:
-                completed = self._tie(competition, stage, historical, mapping)
-                if completed.winner is not None:
-                    kind = "eliminated" if completed.winner != self.team.club_season_id else (
-                        "champion" if stage.round == "final" else "advanced")
-                    self.events.append(SeasonEvent(kind, spec.date, competition.competition_id, stage.stage_id))
-        if self.used_prior != {p.fixture.spec.fixture_id for p in self.block.prior}:
-            raise InvalidValueError("prior results include an inactive or unexpected fixture")
-        self._recover(self.block.end)
+    def _process_knockout(self, fixture: SeasonFixture, competition: Competition) -> None:
+        spec = fixture.spec
+        stage = next(s for s in competition.stages if s.stage_id == spec.stage)
+        mapping = self._mapping(competition, stage)
+        if mapping is None:
+            return
+        effective = replace(spec, home=mapping[spec.home], away=mapping[spec.away], key=True)
+        if self.team.club_season_id not in (effective.home, effective.away):
+            return
+        historical = next(
+            t
+            for t in competition.ties
+            if t.stage_id == stage.stage_id and set(t.clubs) == {spec.home, spec.away}
+        )
+        tie = self._tie(competition, stage, historical, mapping)
+        current = SeasonFixture(effective, fixture.round, fixture.historical)
+        self._consume(current, tie)
+        if spec.date >= self.block.start:
+            completed = self._tie(competition, stage, historical, mapping)
+            if completed.winner is not None:
+                kind = (
+                    "eliminated"
+                    if completed.winner != self.team.club_season_id
+                    else ("champion" if stage.round == "final" else "advanced")
+                )
+                self.events.append(
+                    SeasonEvent(kind, spec.date, competition.competition_id, stage.stage_id)
+                )
+
+    def _tables_and_unresolved(self) -> tuple[tuple[RankedTable, ...], tuple[KnockoutTie, ...]]:
         tables = []
         unresolved = []
         for competition in self.block.competitions:
@@ -563,8 +749,11 @@ class SeasonSimulation:
             for stage in competition.stages:
                 for group_id, participants in stage.groups:
                     if self.team.club_season_id in participants:
-                        tables.append(self._group_table(competition, stage, group_id, participants,
-                                                        self.block.end)[0])
+                        tables.append(
+                            self._group_table(
+                                competition, stage, group_id, participants, self.block.end
+                            )[0]
+                        )
                 if stage.groups:
                     self._close_groups(competition, stage, self.block.end)
                     continue
@@ -577,8 +766,47 @@ class SeasonSimulation:
                     tie = self._tie(competition, stage, historical, mapping)
                     if len(tie.results) == tie.rules.legs and tie.winner is None:
                         unresolved.append(tie)
-        return SeasonOutcome(tuple(self.results), tuple(tables), tuple(sorted(self.new_injuries, key=lambda i: (i.date, str(i.player_id), i.forced, i.days))),
-            tuple(PlayerState(p.player_id, p.fitness.value, self._absence(p.player_id, self.block.end),
-                              self.minutes[p.player_id]) for p in self.team.squad or ()),
+        return tuple(tables), tuple(unresolved)
+
+    def run(self) -> SeasonOutcome:
+        regular = tuple(
+            f
+            for f in self.block.fixtures
+            if f.spec.group is not None or self.competitions[f.spec.competition_id].kind == "league"
+        )
+        schedule = sorted(
+            (*regular, *self.block.slots), key=lambda f: (f.spec.date, str(f.spec.fixture_id))
+        )
+        for fixture in schedule:
+            spec = fixture.spec
+            if spec.date > self.block.end:
+                continue
+            competition = self.competitions[spec.competition_id]
+            if fixture in regular:
+                self._consume(fixture)
+                continue
+            self._process_knockout(fixture, competition)
+        if self.used_prior != {p.fixture.spec.fixture_id for p in self.block.prior}:
+            raise InvalidValueError("prior results include an inactive or unexpected fixture")
+        self._recover(self.block.end)
+        tables, unresolved = self._tables_and_unresolved()
+        return SeasonOutcome(
+            tuple(self.results),
+            tuple(tables),
+            tuple(
+                sorted(
+                    self.new_injuries, key=lambda i: (i.date, str(i.player_id), i.forced, i.days)
+                )
+            ),
+            tuple(
+                PlayerState(
+                    p.player_id,
+                    p.fitness.value,
+                    self._absence(p.player_id, self.block.end),
+                    self.minutes[p.player_id],
+                )
+                for p in self.team.squad or ()
+            ),
             tuple(sorted(self.events, key=lambda e: (e.date, str(e.competition_id), e.stage_id))),
-            tuple(unresolved))
+            tuple(unresolved),
+        )

@@ -1,11 +1,14 @@
 """Position-preserving deterministic selection using invented Test FC players."""
 
 from dataclasses import replace
+from itertools import combinations
 
 import pytest
 
 from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.ids import PlayerId
+from mister.shared_kernel.randomness import StdlibRandomSource
+from mister.shared_kernel.seed import Seed
 from mister.simulation.domain.lineup import effective_rating, select_lineup
 from mister.simulation.domain.model import (
     Fitness,
@@ -172,11 +175,6 @@ def test_constrained_selection_matches_exhaustive_native_coverage_and_rotation(
     seed: int,
     priority: Priority,
 ) -> None:
-    from itertools import combinations
-
-    from mister.shared_kernel.randomness import StdlibRandomSource
-    from mister.shared_kernel.seed import Seed
-
     rng = StdlibRandomSource(Seed(seed))
     players = tuple(
         SimPlayer(
