@@ -81,7 +81,7 @@ class SqlCatalogLoader:
                 .with_for_update()
             )
             if current is None:
-                raise InvalidValueError("catalog migration has not initialized its version row")
+                raise sa.exc.NoResultFound("catalog migration has not initialized its version row")
             if current == before:
                 return CatalogLoadResult(before, len(seasons), changed=False)
             connection.execute(sa.delete(catalog_seasons))

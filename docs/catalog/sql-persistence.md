@@ -8,4 +8,4 @@ El adaptador SQL guarda una instantánea de cada `PlayableSeasonDTO` en `catalog
 
 En esta máquina, siete cargas iniciales de Test FC sobre Postgres de testcontainers dieron **192,18–218,85 ms**, con mediana **203,07 ms**. La medición excluye el arranque del contenedor y la migración; no garantiza ese tiempo en otros equipos.
 
-La CLI `mister content load` y el cableado de despliegue quedan para una CR posterior: `bootstrap.py` y la composición compartida no pertenecen a esta parte de T2.21. La migración es manual; conectar la metadata a la generación automática de Alembic también requiere propiedad expresa de `migrations/env.py` si se decide hacerlo.
+La [CR de carga](../changes/CR-T2.21-load-wiring.md) añade el puerto, la CLI `mister content load` y su composición, sin que el punto de entrada importe infraestructura directamente. El despliegue concreto de F7 deberá ejecutar migraciones y después el comando. La migración es manual; conectar la metadata a la generación automática de Alembic requiere propiedad expresa de `migrations/env.py` si se decide hacerlo.

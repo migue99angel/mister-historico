@@ -5,7 +5,11 @@ from typing import Annotated
 
 import typer
 
-from mister.bootstrap import build_validate_content
+from mister.bootstrap import build_load_catalog, build_validate_content
+from mister.catalog.application.load_types import (
+    CatalogContentInvalidError,
+    CatalogLoadUnavailableError,
+)
 from mister.catalog.application.validation_types import ContentValidationUnavailableError
 
 EXIT_INVALID_CONTENT = 1
@@ -55,3 +59,33 @@ def validate_content(
         typer.echo("Contenido válido: 1 temporada jugable")
     else:
         typer.echo(f"Contenido válido: {count} temporadas jugables")
+
+
+def load_catalog(
+    root: Annotated[
+        Path | None,
+        typer.Option(
+            help="Directorio del contenido (por defecto: ./content o el del repositorio)."
+        ),
+    ] = None,
+) -> None:
+    """Publish release content to PostgreSQL with an idempotent content hash."""
+    try:
+        with build_load_catalog() as loader:
+            report = loader.execute(resolve_content_root(root))
+    except CatalogContentInvalidError as error:
+        for issue in error.issues:
+            location = f"{issue.path}:{issue.field}" if issue.field else issue.path
+            typer.echo(f"{location}: {issue.message}")
+        if not error.issues:
+            typer.echo(f"Contenido no publicable: {error}")
+        raise typer.Exit(EXIT_INVALID_CONTENT) from error
+    except CatalogLoadUnavailableError as error:
+        typer.echo(f"Error de carga: {error}", err=True)
+        raise typer.Exit(EXIT_UNAVAILABLE_CONTENT) from error
+
+    if report.changed:
+        unit = "temporada jugable" if report.season_count == 1 else "temporadas jugables"
+        typer.echo(f"Contenido cargado: {report.season_count} {unit}; hash {report.content_hash}")
+    else:
+        typer.echo(f"Catálogo sin cambios; hash {report.content_hash}")

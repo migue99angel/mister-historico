@@ -13,9 +13,11 @@ application diagnostics and exposing operational failures separately.
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Protocol
 
 from mister.catalog.application.api import SeasonContentProvider
+from mister.catalog.application.load_types import CatalogLoadReport
 from mister.catalog.application.validation_types import (
     ContentValidationReport,
     ContentValidationUnavailableError,
@@ -25,6 +27,7 @@ from mister.catalog.domain.ratings import ClubContext, PlayerStats
 from mister.shared_kernel.errors import DomainError
 
 __all__ = [
+    "CatalogPublisher",
     "ClubSeasonRatings",
     "ClubSeasonRatingsUnavailableError",
     "ContentValidationReport",
@@ -36,6 +39,14 @@ __all__ = [
     "SeasonContentProvider",
     "ValidationIssue",
 ]
+
+
+class CatalogPublisher(Protocol):
+    """Publish a release content tree atomically and report its version."""
+
+    def load(self, root: Path) -> CatalogLoadReport:
+        """Return the new or existing version; raise application content or IO errors."""
+        ...
 
 
 class ClubSeasonRatingsUnavailableError(DomainError):
