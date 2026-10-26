@@ -29,7 +29,9 @@ from mister.simulation.application.api import (
     TacticDTO,
 )
 from mister.simulation.application.simulate_block import _map_request, _simulate
+from mister.simulation.domain.lineup import select_lineup
 from mister.simulation.domain.model import MatchResult, MatchSetup, Score
+from mister.simulation.domain.strength import StrengthReference, calculate_strength
 
 ME = ClubSeasonId("test-fc-2000-01")
 RIVAL = ClubSeasonId("sample-united-2000-01")
@@ -481,3 +483,42 @@ def test_independent_live_squads_cannot_mutate_an_existing_request_or_summary() 
     SimulationService().simulate_block(changed, StdlibRandomSource(Seed(15)))
     assert value == before
     assert first == SimulationService().simulate_block(value, StdlibRandomSource(Seed(15)))
+
+
+def many_youth_request() -> BlockSimRequest:
+    value = request()
+    players = tuple(
+        replace(p, youth_minutes=i < 12) for i, p in enumerate(value.managed_team.players)
+    )
+    return replace(value, managed_team=replace(value.managed_team, players=players))
+
+
+def test_twelve_available_youth_players_receive_minutes_across_two_matches() -> None:
+    value = many_youth_request()
+    fake = FixedMatches()
+    summary = play(value, fake)
+    states = {p.player_id: p for p in summary.player_states}
+    assert all(
+        states[p.player_id].minutes_played >= 90
+        for p in value.managed_team.players
+        if p.youth_minutes
+    )
+    assert sum(p.minutes_played for p in summary.player_states) == 11 * 180
+    block = _map_request(value)
+    assert block.managed_team.squad is not None
+    assert block.managed_team.tactic is not None
+    required = frozenset(p.player_id for p in value.managed_team.players[:11])
+    lineup = select_lineup(block.managed_team.squad, block.managed_team.tactic, required=required)
+    strength = calculate_strength(
+        block.managed_team, StrengthReference.from_teams(block.references), lineup=lineup
+    )
+    assert fake.setups[0].home == strength
+    assert all(
+        p.rating == original.rating
+        for p, original in zip(value.managed_team.players, team().players, strict=True)
+    )
+
+
+def test_twelve_available_youth_players_cannot_fit_in_one_match() -> None:
+    with pytest.raises(InvalidValueError, match=r"youth|required|eleven"):
+        play(replace(many_youth_request(), end=START))
