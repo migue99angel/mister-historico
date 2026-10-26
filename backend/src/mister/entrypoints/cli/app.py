@@ -10,6 +10,7 @@ from mister.catalog.application.ratings_tool import (
     PlayerRatingLine,
     RatingsReport,
 )
+from mister.entrypoints.cli.content import resolve_content_root, validate_content
 from mister.shared_kernel.errors import DomainError
 
 EXIT_DISCREPANCY = 1
@@ -20,6 +21,7 @@ content_app = typer.Typer(help="Historical content tools.", no_args_is_help=True
 ratings_app = typer.Typer(help="Player ratings (ADR-006).", no_args_is_help=True)
 app.add_typer(content_app, name="content")
 content_app.add_typer(ratings_app, name="ratings")
+content_app.command("validate", help="Valida el catálogo histórico.")(validate_content)
 
 
 @ratings_app.command("compute")
@@ -45,7 +47,7 @@ def compute(
     written and the exit code is 1 when a stored rating differs from the formula (or from its
     override), which makes it usable in CI. Exit code 2 means the club-season could not be read.
     """
-    tool = build_ratings_tool(_content_root(root))
+    tool = build_ratings_tool(resolve_content_root(root))
     try:
         if explain is not None:
             typer.echo(_explanation(tool.explain(club_season, explain)))
@@ -57,20 +59,6 @@ def compute(
     _print_report(report, check=check)
     if report.problems or (check and report.discrepancies):
         raise typer.Exit(EXIT_DISCREPANCY)
-
-
-def _content_root(root: Path | None) -> Path:
-    """The given root; else `./content`; else the `content/` of the repository this package is in.
-
-    The last fallback makes the command work from `backend/`, where `uv run` is used.
-    """
-    if root is not None:
-        return root
-    local = Path("content")
-    repository = Path(__file__).resolve().parents[5] / "content"
-    if not local.is_dir() and repository.is_dir():
-        return repository
-    return local
 
 
 def _print_report(report: RatingsReport, *, check: bool) -> None:

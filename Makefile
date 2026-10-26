@@ -24,8 +24,8 @@ lint-frontend: ## eslint, tsc and dependency-cruiser
 dev: ## Start the development environment (Docker Compose)
 	docker compose up --build
 
-validate-content: ## Validate historical content (pending: T2.20)
-	@echo "Not implemented yet (T2.20)" && exit 1
+validate-content: ## Validate historical content under content/
+	cd backend && uv run mister content validate --root ../content
 
 calibrate: ## Run engine calibration (pending: T2.7). Usage: make calibrate SEASON=<slug>
 	@echo "Not implemented yet (T2.7)" && exit 1
