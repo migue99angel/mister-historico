@@ -45,8 +45,8 @@ def build_load_catalog(database_url: str | None = None) -> Iterator[LoadCatalog]
     url = database_url if database_url is not None else Settings().database_url
     try:
         engine = sa.create_engine(url)
-    except sa.exc.SQLAlchemyError as error:
-        raise CatalogLoadUnavailableError(f"database configuration unavailable: {error}") from error
+    except (sa.exc.SQLAlchemyError, ValueError) as error:
+        raise CatalogLoadUnavailableError("database configuration unavailable") from error
     try:
         yield LoadCatalog(SqlCatalogPublisher(engine))
     finally:
