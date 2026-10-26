@@ -34,13 +34,23 @@ def test_an_empty_field_identifies_a_whole_file_issue() -> None:
 
 @pytest.mark.parametrize(
     "path",
+    [r"clubs/bad\name.yaml", r"seasons\season.yaml", r"..\season.yaml", r"\season.yaml"],
+)
+def test_backslashes_are_preserved_as_literal_posix_filename_characters(path: str) -> None:
+    issue = ValidationIssue(path, "", "invalid file")
+
+    assert issue.path == path
+    assert issue.path != path.replace("\\", "/")
+
+
+@pytest.mark.parametrize(
+    "path",
     [
         "",
         " ",
         "/content/season.yaml",
         "../season.yaml",
         "seasons/../season.yaml",
-        "seasons\\season.yaml",
         "./season.yaml",
         "seasons//season.yaml",
         "seasons/",
