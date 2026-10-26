@@ -289,9 +289,14 @@ def test_complete_historical_slots_remain_available_beyond_real_elimination(root
 
 def test_destination_must_follow_every_feeding_predecessor_tie(root: Path) -> None:
     def late_origins(data: dict[str, Any]) -> None:
-        external = [s for s in data["knockout_calendar"][0]["slots"] if s["stage_id"] == "semifinal" and OWN not in (s["home"], s["away"])]
+        external = [
+            s
+            for s in data["knockout_calendar"][0]["slots"]
+            if s["stage_id"] == "semifinal" and OWN not in (s["home"], s["away"])
+        ]
         for slot in external:
             slot["date"] = date(2001, 5, 26 + slot["leg"])
+
     edit(root, STANDINGS, late_origins)
     assert_issue(issues_of(root, release=True), STANDINGS, "knockout_calendar", "predecessor")
 
@@ -299,10 +304,20 @@ def test_destination_must_follow_every_feeding_predecessor_tie(root: Path) -> No
 def test_group_entry_target_cannot_add_unqualified_historical_contenders(root: Path) -> None:
     def extra_final(data: dict[str, Any]) -> None:
         clubs = ["abroad-athletic-2000-01", "faraway-city-2000-01"]
-        data["ties"].append({"competition": "copa-continental-test", "stage": "final", "clubs": clubs, "winner": clubs[0], "sources": [SOURCE], "verify": "ok"})
+        data["ties"].append(
+            {
+                "competition": "copa-continental-test",
+                "stage": "final",
+                "clubs": clubs,
+                "winner": clubs[0],
+                "sources": [SOURCE],
+                "verify": "ok",
+            }
+        )
         slot = deepcopy(data["knockout_calendar"][2]["slots"][0])
         slot.update(fixture_id="unqualified-final", home=clubs[0], away=clubs[1], sources=[SOURCE])
         data["knockout_calendar"][2]["slots"].append(slot)
+
     edit(root, STANDINGS, extra_final)
     assert_issue(issues_of(root, release=True), STANDINGS, "group_entry_assignments", "exactly")
 
@@ -310,18 +325,170 @@ def test_group_entry_target_cannot_add_unqualified_historical_contenders(root: P
 def test_group_target_may_precede_cutoff_when_calendar_proves_group_finished(root: Path) -> None:
     def early(data: dict[str, Any]) -> None:
         next(f for f in data["fixtures"] if f["id"] == "tfc-cont-final")["date"] = date(2001, 1, 30)
-    edit(root, f"{SEASON}/fixtures.yaml", early)
-    edit(root, STANDINGS, lambda d: d["knockout_calendar"][2]["slots"][0].update(date=date(2001, 1, 30)))
-    load_content_tree(root, release=True)
 
+    edit(root, f"{SEASON}/fixtures.yaml", early)
+    edit(
+        root,
+        STANDINGS,
+        lambda d: d["knockout_calendar"][2]["slots"][0].update(date=date(2001, 1, 30)),
+    )
+    load_content_tree(root, release=True)
 
 
 def test_group_target_cannot_precede_the_last_accredited_group_match(root: Path) -> None:
     day = date(2000, 12, 18)
-    edit(root, f"{SEASON}/fixtures.yaml", lambda d: next(f for f in d["fixtures"] if f["id"] == "tfc-cont-final").update(date=day))
+    edit(
+        root,
+        f"{SEASON}/fixtures.yaml",
+        lambda d: next(f for f in d["fixtures"] if f["id"] == "tfc-cont-final").update(date=day),
+    )
     edit(root, STANDINGS, lambda d: d["knockout_calendar"][2]["slots"][0].update(date=day))
+
     def postpone_external(data: dict[str, Any]) -> None:
-        external = max((f for f in data["head_to_head"][1]["schedule"] if OWN not in (f["home"], f["away"])), key=lambda f: f["date"])
+        external = max(
+            (f for f in data["head_to_head"][1]["schedule"] if OWN not in (f["home"], f["away"])),
+            key=lambda f: f["date"],
+        )
         external["date"] = date(2000, 12, 20)
+
     edit(root, STANDINGS, postpone_external)
     assert_issue(issues_of(root, release=True), STANDINGS, "group_entry_assignments", "group match")
+
+
+def general_criteria(data: dict[str, Any]) -> None:
+    for competition in data["competitions"]:
+        if competition["kind"] == "league":
+            competition["tiebreakers"] = ["goal_difference"]
+        for stage in competition.get("stages", []):
+            if stage["round"] == "group_stage":
+                stage["tiebreakers"] = ["goal_difference"]
+
+
+def test_an_earlier_final_table_can_accredit_group_completion_without_a_calendar(
+    root: Path,
+) -> None:
+    edit(root, f"{SEASON}/season.yaml", general_criteria)
+    edit(root, STANDINGS, lambda d: d.update(head_to_head=None))
+    load_content_tree(root, release=True)
+
+
+def test_a_later_table_without_complete_calendar_cannot_accredit_earlier_group_completion(
+    root: Path,
+) -> None:
+    edit(root, f"{SEASON}/season.yaml", general_criteria)
+    edit(root, STANDINGS, lambda d: d.update(head_to_head=None))
+    day = date(2001, 1, 30)
+    edit(
+        root,
+        f"{SEASON}/fixtures.yaml",
+        lambda d: next(f for f in d["fixtures"] if f["id"] == "tfc-cont-final").update(date=day),
+    )
+    edit(root, STANDINGS, lambda d: d["knockout_calendar"][2]["slots"][0].update(date=day))
+    assert_issue(
+        issues_of(root, release=True),
+        STANDINGS,
+        "group_entry_assignments",
+        "insufficient calendar evidence",
+    )
+
+
+def test_independent_branches_may_overlap_rounds_when_each_feeder_finishes_first(
+    root: Path,
+) -> None:
+    additions = [
+        "demo-athletic-2000-01",
+        "dummy-rovers-2000-01",
+        "fixture-wanderers-2000-01",
+        "overseas-fc-2000-01",
+    ]
+    pairs = [
+        (OWN, additions[0], OWN, date(2000, 8, 25)),
+        ("placeholder-town-2000-01", additions[1], "placeholder-town-2000-01", date(2000, 10, 1)),
+        ("sample-united-2000-01", additions[2], "sample-united-2000-01", date(2000, 12, 10)),
+        ("mock-city-2000-01", additions[3], "mock-city-2000-01", date(2000, 12, 15)),
+    ]
+
+    def format_change(data: dict[str, Any]) -> None:
+        cup = data["competitions"][1]
+        cup["participants"].extend(additions)
+        cup["stages"].insert(
+            0,
+            {
+                "id": "quarterfinal",
+                "name": "Test quarterfinal",
+                "round": "quarter_final",
+                "legs": 1,
+                "away_goals_rule": False,
+                "extra_time": False,
+                "penalties": False,
+            },
+        )
+
+    def calendar(data: dict[str, Any]) -> None:
+        for index, (home, away, winner, day) in enumerate(pairs):
+            data["ties"].append(
+                {
+                    "competition": "copa-test",
+                    "stage": "quarterfinal",
+                    "clubs": [home, away],
+                    "winner": winner,
+                    "sources": [SOURCE],
+                    "verify": "ok",
+                }
+            )
+            data["knockout_calendar"][0]["slots"].append(
+                {
+                    "fixture_id": f"test-quarter-{index}",
+                    "stage_id": "quarterfinal",
+                    "home": home,
+                    "away": away,
+                    "date": day,
+                    "venue": "home",
+                    "leg": None,
+                    "sources": [SOURCE],
+                    "verify": "ok",
+                }
+            )
+        external = next(
+            s
+            for s in data["knockout_calendar"][0]["slots"]
+            if s["fixture_id"] == "copa-test-external-sf-1"
+        )
+        external["date"] = date(2000, 12, 20)
+
+    def managed(data: dict[str, Any]) -> None:
+        data["fixtures"].append(
+            {
+                "id": "test-quarter-0",
+                "competition": "copa-test",
+                "stage": "quarterfinal",
+                "date": date(2000, 8, 25),
+                "opponent": additions[0],
+                "venue": "home",
+                "result": {"goals_for": 2, "goals_against": 0},
+                "sources": [SOURCE],
+                "verify": "ok",
+            }
+        )
+
+    edit(root, f"{SEASON}/season.yaml", format_change)
+    edit(root, STANDINGS, calendar)
+    edit(root, f"{SEASON}/fixtures.yaml", managed)
+    load_content_tree(root, release=True)
+
+
+def test_group_assignments_cannot_skip_an_unaccredited_first_knockout_stage(root: Path) -> None:
+    def add_stage(data: dict[str, Any]) -> None:
+        stages = data["competitions"][3]["stages"]
+        stages.insert(1, {"id": "semifinal", "name": "Synthetic semifinal", "round": "semi_final", "legs": 1, "away_goals_rule": False, "extra_time": False, "penalties": False})
+    def add_history(data: dict[str, Any]) -> None:
+        pairs = [(OWN, "abroad-athletic-2000-01"), ("overseas-fc-2000-01", "faraway-city-2000-01")]
+        for index, (home, away) in enumerate(pairs):
+            data["ties"].append({"competition": "copa-continental-test", "stage": "semifinal", "clubs": [home, away], "winner": home, "sources": [SOURCE], "verify": "ok"})
+            data["knockout_calendar"][2]["slots"].append({"fixture_id": f"continental-semi-{index}", "stage_id": "semifinal", "date": date(2001, 2, 15), "home": home, "away": away, "venue": "home", "leg": None, "sources": [SOURCE], "verify": "ok"})
+    def add_managed(data: dict[str, Any]) -> None:
+        data["fixtures"].append({"id": "continental-semi-0", "date": date(2001, 2, 15), "competition": "copa-continental-test", "stage": "semifinal", "opponent": "abroad-athletic-2000-01", "venue": "home", "result": {"goals_for": 1, "goals_against": 0}, "sources": [SOURCE], "verify": "ok"})
+    edit(root, f"{SEASON}/season.yaml", add_stage)
+    edit(root, STANDINGS, add_history)
+    edit(root, f"{SEASON}/fixtures.yaml", add_managed)
+    assert_issue(issues_of(root, release=True), STANDINGS, "group_entry_assignments", "exactly")
