@@ -346,15 +346,92 @@ class SeasonSimulation:
         )
         self.cursor = on_date
 
+    def _youth_calendar(
+        self, current: FixtureSpec, tie: KnockoutTie | None
+    ) -> tuple[FixtureSpec, ...]:
+        """Use fixed regular games and already accredited knockout participation.
+
+        An undecided later knockout round is not a guaranteed opportunity for minutes.
+        """
+        fixtures = {current.fixture_id: current}
+        for fixture in self.block.fixtures:
+            if (
+                fixture.spec.group is not None
+                or self.competitions[fixture.spec.competition_id].kind == "league"
+            ):
+                fixtures[fixture.spec.fixture_id] = fixture.spec
+        for fixture in self.block.slots:
+            spec = fixture.spec
+            competition = self.competitions[spec.competition_id]
+            mapping = self.stage_maps.get((spec.competition_id, spec.stage or ""))
+            if mapping is None and competition.stages[0].stage_id == spec.stage:
+                mapping = {club: club for club in competition.participants}
+            if mapping is not None and self.team.club_season_id in (
+                mapping[spec.home],
+                mapping[spec.away],
+            ):
+                fixtures[spec.fixture_id] = spec
+        if tie is not None:
+            fixtures.update((fixture.fixture_id, fixture) for fixture in tie.fixtures)
+        return tuple(
+            sorted(
+                (
+                    fixture
+                    for fixture in fixtures.values()
+                    if (fixture.date, str(fixture.fixture_id))
+                    >= (current.date, str(current.fixture_id))
+                    and fixture.date <= self.block.end
+                    and fixture.fixture_id not in self.played
+                ),
+                key=lambda fixture: (fixture.date, str(fixture.fixture_id)),
+            )
+        )
+
+    def _youth_required(self, current: FixtureSpec, tie: KnockoutTie | None) -> frozenset[PlayerId]:
+        available = {player.player_id for player in self.team.squad or () if not player.injured}
+        self.youth_available.update(self.block.youth & available)
+        pending = tuple(
+            sorted((player for player in self.block.youth if self.minutes[player] == 0), key=str)
+        )
+        ready = frozenset(player for player in pending if player in available)
+        if len(ready) <= _STARTERS:
+            return ready
+        calendar = self._youth_calendar(current, tie)
+        opportunities = {
+            player: tuple(
+                index
+                for index, fixture in enumerate(calendar)
+                if self._absence(player, fixture.date) is None
+            )
+            for player in pending
+        }
+        assignments: list[list[PlayerId]] = [[] for _ in calendar]
+
+        def place(player: PlayerId, visited: set[int]) -> bool:
+            eligible = tuple(index for index in opportunities[player] if index not in visited)
+            for index in eligible:
+                if len(assignments[index]) < _STARTERS:
+                    assignments[index].append(player)
+                    return True
+            for index in eligible:
+                visited.add(index)
+                for occupant in reversed(assignments[index]):
+                    if place(occupant, visited):
+                        assignments[index].remove(occupant)
+                        assignments[index].append(player)
+                        return True
+            return False
+
+        for player in sorted(pending, key=lambda player: (len(opportunities[player]), str(player))):
+            place(player, set())
+        return frozenset(assignments[0])
+
     def _play(self, fixture: SeasonFixture, tie: KnockoutTie | None = None) -> PlayedMatch:
         spec = fixture.spec
         self._recover(spec.date)
         competition = self.competitions[spec.competition_id]
         priority = self.block.priorities.get(spec.competition_id, Priority.NORMAL)
-        available = {p.player_id for p in self.team.squad or () if not p.injured}
-        self.youth_available.update(self.block.youth & available)
-        pending = sorted((p for p in self.block.youth & available if self.minutes[p] == 0), key=str)
-        required = frozenset(pending[:_STARTERS])
+        required = self._youth_required(spec, tie)
         squad = cast("tuple[SimPlayer, ...]", self.team.squad)
         tactic = cast("Tactic", self.team.tactic)
         lineup = select_lineup(squad, tactic, priority=priority, required=required)

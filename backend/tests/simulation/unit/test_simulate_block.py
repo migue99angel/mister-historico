@@ -531,8 +531,11 @@ def test_known_future_absence_prioritizes_youth_who_can_only_play_the_first_matc
     value = replace(value, forced_injuries_from_effects=(injury,))
     summary = play(value)
     states = {state.player_id: state for state in summary.player_states}
-    assert all(states[player.player_id].minutes_played >= 90
-               for player in value.managed_team.players if player.youth_minutes)
+    assert all(
+        states[player.player_id].minutes_played >= 90
+        for player in value.managed_team.players
+        if player.youth_minutes
+    )
     assert states[youth.player_id].minutes_played == 90
     assert states[youth.player_id].injured_until == date(2000, 9, 10)
     assert summary.injuries[-1].forced
