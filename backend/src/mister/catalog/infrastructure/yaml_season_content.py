@@ -122,7 +122,7 @@ def _effect(effect: object) -> EffectDTO:  # noqa: PLR0911
         case fx.FitnessEffect():
             who = effect.player_id
             return FitnessEffectDTO(effect.delta, None if who is None else PlayerId(who))
-    raise AssertionError(f"unmapped effect {effect!r}")  # pragma: no cover
+    raise InvalidValueError(f"unmapped effect {effect!r}")
 
 
 def _player(entry: PlayerEntry) -> PlayerDTO:
@@ -184,13 +184,10 @@ def _stage(stage: sn.Stage) -> StageDTO:
 def _competition(
     competition: sn.Competition, leagues: dict[str, sn.LeagueCompetition]
 ) -> CompetitionDTO:
-    common = {
-        "id": CompetitionId(competition.id),
-        "name": competition.name,
-        "kind": CompetitionKind(competition.kind),
-        "tier": CompetitionTier(competition.tier),
-        "participants": tuple(ClubSeasonId(p) for p in competition.participants),
-    }
+    competition_id = CompetitionId(competition.id)
+    kind = CompetitionKind(competition.kind)
+    tier = CompetitionTier(competition.tier)
+    participants = tuple(ClubSeasonId(p) for p in competition.participants)
     if isinstance(competition, sn.LeagueCompetition):
         stats = _stats(competition.league_stats)
         rules = LeagueRulesDTO(
@@ -200,7 +197,15 @@ def _competition(
             tiebreakers=_tiebreakers(competition.tiebreakers),
             league_stats=stats,
         )
-        return CompetitionDTO(goal_baseline=stats, league=rules, **common)  # type: ignore[arg-type]
+        return CompetitionDTO(
+            id=competition_id,
+            name=competition.name,
+            kind=kind,
+            tier=tier,
+            participants=participants,
+            goal_baseline=stats,
+            league=rules,
+        )
     baseline = competition.goal_baseline
     stats = (
         _stats(leagues[baseline.from_league].league_stats)
@@ -208,7 +213,15 @@ def _competition(
         else _stats(baseline)
     )
     stages = tuple(_stage(stage) for stage in competition.stages)
-    return CompetitionDTO(goal_baseline=stats, stages=stages, **common)  # type: ignore[arg-type]
+    return CompetitionDTO(
+        id=competition_id,
+        name=competition.name,
+        kind=kind,
+        tier=tier,
+        participants=participants,
+        goal_baseline=stats,
+        stages=stages,
+    )
 
 
 def _map_season(tree: ContentTree, slug: str) -> PlayableSeasonDTO:
