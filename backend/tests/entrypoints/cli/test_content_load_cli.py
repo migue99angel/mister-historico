@@ -80,3 +80,32 @@ def test_missing_root_exits_two(
 
     assert result.exit_code == 2
     assert "missing" in result.output
+
+
+def test_empty_root_exits_one_without_erasing_the_catalog(
+    database_url: str, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("DATABASE_URL", database_url)
+
+    result = runner.invoke(app, ["content", "load", "--root", str(tmp_path)])
+
+    assert result.exit_code == 1
+    assert "Contenido no publicable" in result.output
+    engine = sa.create_engine(database_url)
+    try:
+        with engine.connect() as connection:
+            assert connection.scalar(sa.text("SELECT count(*) FROM catalog_seasons")) == 1
+    finally:
+        engine.dispose()
+
+
+def test_unreachable_database_exits_two(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgresql+psycopg://user:pass@127.0.0.1:1/mister?connect_timeout=1",
+    )
+
+    result = runner.invoke(app, ["content", "load", "--root", str(CONTENT_ROOT)])
+
+    assert result.exit_code == 2
+    assert "Error de carga" in result.output
