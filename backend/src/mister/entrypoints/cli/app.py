@@ -10,7 +10,7 @@ from mister.catalog.application.ratings_tool import (
     PlayerRatingLine,
     RatingsReport,
 )
-from mister.entrypoints.cli.content import resolve_content_root, validate_content
+from mister.entrypoints.cli.content import load_catalog, resolve_content_root, validate_content
 from mister.shared_kernel.errors import DomainError
 
 EXIT_DISCREPANCY = 1
@@ -22,6 +22,7 @@ ratings_app = typer.Typer(help="Player ratings (ADR-006).", no_args_is_help=True
 app.add_typer(content_app, name="content")
 content_app.add_typer(ratings_app, name="ratings")
 content_app.command("validate", help="Valida el catálogo histórico.")(validate_content)
+content_app.command("load", help="Carga el catálogo validado en PostgreSQL.")(load_catalog)
 
 
 @ratings_app.command("compute")
