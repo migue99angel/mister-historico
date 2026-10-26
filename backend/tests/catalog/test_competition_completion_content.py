@@ -539,3 +539,21 @@ def test_group_assignments_cannot_skip_an_unaccredited_first_knockout_stage(root
     edit(root, STANDINGS, add_history)
     edit(root, f"{SEASON}/fixtures.yaml", add_managed)
     assert_issue(issues_of(root, release=True), STANDINGS, "group_entry_assignments", "exactly")
+
+
+@pytest.mark.parametrize("earlier_proof", [None, "before", "after"])
+def test_additional_verified_group_matches_contradict_the_accredited_final_table(
+    root: Path, earlier_proof: str | None
+) -> None:
+    def extra_match(data: dict[str, Any]) -> None:
+        history = data["head_to_head"][1]
+        earlier = deepcopy(history)
+        earlier["complete_through"] = date(2001, 1, 31)
+        history["schedule"].append({"fixture_id": "extra-external-group-match", "date": date(2001, 5, 24), "home": "abroad-athletic-2000-01", "away": "faraway-city-2000-01", "venue": "home", "sources": [SOURCE], "verify": "ok"})
+        history["results"].append({"fixture_id": "extra-external-group-match", "score": [1, 0], "sources": [SOURCE], "verify": "ok"})
+        if earlier_proof == "before":
+            data["head_to_head"].insert(1, earlier)
+        elif earlier_proof == "after":
+            data["head_to_head"].append(earlier)
+    edit(root, STANDINGS, extra_match)
+    assert_issue(issues_of(root, release=True), STANDINGS, "group_entry_assignments", "contradicts")
