@@ -499,6 +499,8 @@ class SeasonSimulation:
             prior = self.played.get(spec.fixture_id)
             if prior is None or prior.fixture != fixture:
                 raise InvalidValueError("missing or incoherent prior result in continuation gap")
+            if tie is None and (prior.result.extra_time is not None or prior.result.penalties is not None):
+                raise InvalidValueError("league and group matches cannot have deciding periods")
             self.used_prior.add(spec.fixture_id)
             return
         self._play(fixture, tie)

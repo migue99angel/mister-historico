@@ -80,6 +80,8 @@ def _team(value: TeamInput, *, morale: int = 50, neutral: bool = False) -> SimTe
     if not isinstance(value, SquadTeamInput):
         raise InvalidValueError("a squad or aggregate team is required")
     for p in value.players:
+        Morale(p.morale)
+        Fitness(p.fitness)
         if not isinstance(p.player_id, PlayerId) or type(p.youth_minutes) is not bool:
             raise InvalidValueError("player ID and youth flag must be typed")
         if p.injured_until is not None:
@@ -458,10 +460,10 @@ def _map_request(value: BlockSimRequest) -> Block:
     _unique(
         tuple((s.competition_id, s.as_of, s.stage_id, s.group_id) for s in snapshots), "snapshots"
     )
-    injuries = tuple(
+    injuries = tuple(dict.fromkeys(
         Injury(i.player_id, _date(i.date), i.days, True)
         for i in (*season.forced_injuries, *value.forced_injuries_from_effects)
-    )
+    ))
     squad_ids = {p.player_id for p in value.managed_team.players}
     if any(i.player_id not in squad_ids for i in injuries):
         raise InvalidValueError("forced injury refers to a player outside managed squad")
@@ -487,6 +489,11 @@ def _map_request(value: BlockSimRequest) -> Block:
         tuple(prior),
         slots,
         _entries(season, tuple(competitions), tuple(snapshots)),
+        tuple((club, p.player_id, p.injured_until)
+              for club, source in {t.club_season_id: t for t in
+                  (*season.teams, *value.team_overrides)}.items()
+              if isinstance(source, SquadTeamInput) and club != season.managed_club_season_id
+              for p in source.players if p.injured_until is not None),
     )
 
 
