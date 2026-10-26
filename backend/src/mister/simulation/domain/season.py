@@ -1024,7 +1024,9 @@ class SeasonSimulation:
         if self.used_prior != {p.fixture.spec.fixture_id for p in self.block.prior}:
             raise InvalidValueError("prior results include an inactive or unexpected fixture")
         if any(self.minutes[player] == 0 for player in self.youth_available):
-            raise InvalidValueError("youth participation requirements exceed the block's available minutes")
+            raise InvalidValueError(
+                "youth participation requirements exceed the block's available minutes"
+            )
         self._recover(self.block.end)
         tables, unresolved = self._tables_and_unresolved()
         return SeasonOutcome(
