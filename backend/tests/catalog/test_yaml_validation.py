@@ -60,6 +60,32 @@ def test_a_missing_required_file_is_content_invalidity_in_an_available_tree(root
 
 
 @pytest.mark.parametrize("release", [False, True])
+def test_a_literal_backslash_filename_keeps_its_original_loader_diagnostic(
+    tmp_path: Path, release: bool
+) -> None:
+    clubs = tmp_path / "clubs"
+    clubs.mkdir()
+    (clubs / r"bad\name.yaml").write_text("not: [valid YAML", encoding="utf-8")
+    with pytest.raises(ContentValidationError) as caught:
+        load_content_tree(tmp_path, release=release)
+    assert len(caught.value.issues) == 1
+    original = caught.value.issues[0]
+
+    report = YamlContentValidator(tmp_path).validate(release=release)
+
+    assert not report.valid
+    assert report.season_count is None
+    assert len(report.issues) == 1
+    issue = report.issues[0]
+    assert issue.path == r"clubs/bad\name.yaml"
+    assert (issue.path, issue.field, issue.message) == (
+        original.path,
+        original.field,
+        original.message,
+    )
+
+
+@pytest.mark.parametrize("release", [False, True])
 def test_a_file_cannot_be_used_as_the_content_root(tmp_path: Path, release: bool) -> None:
     root = tmp_path / "content"
     root.write_text("not a directory", encoding="utf-8")
