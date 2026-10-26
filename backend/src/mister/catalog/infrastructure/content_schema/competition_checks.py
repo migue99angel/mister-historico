@@ -383,7 +383,8 @@ def _check_entry_chronology(
     completion = _group_calendar_end(ctx, competition_id, entry, final)
     if completion.contradictory:
         ctx.add(
-            "standings", "group_entry_assignments",
+            "standings",
+            "group_entry_assignments",
             "verified group calendar contradicts the accredited final table totals",
         )
         return  # An earlier table cannot override contradictory verified calendar evidence.
@@ -415,6 +416,7 @@ def _check_entry_chronology(
 def _group_calendar_end(
     ctx: SeasonContext, competition_id: str, entry: GroupEntryAssignment, final: StandingsCutoff
 ) -> _GroupCalendarCompletion:
+    """Inspect all complete declarations, preserving explicit conflicts even beside valid proofs."""
     competition = ctx.competitions.get(competition_id)
     source = stage_of(competition, entry.source_stage_id) if competition else None
     group = (
@@ -422,7 +424,7 @@ def _group_calendar_end(
     )
     if source is None or group is None or final.verify != "ok":
         return _GroupCalendarCompletion()
-    last_match = None
+    last_match: date | None = None
     contradictory = False
     for history in ctx.content.standings.head_to_head or ():
         if (
