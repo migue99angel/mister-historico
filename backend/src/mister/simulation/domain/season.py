@@ -42,6 +42,8 @@ from mister.simulation.domain.model import (
 )
 from mister.simulation.domain.strength import StrengthReference, calculate_strength
 
+_STARTERS = 11
+
 if TYPE_CHECKING:
     from datetime import date
 
@@ -188,6 +190,7 @@ class SeasonSimulation:
         self.injuries = list(block.injuries)
         self.new_injuries = [i for i in block.injuries if block.start <= i.date <= block.end]
         self.minutes = dict.fromkeys((p.player_id for p in self.team.squad or ()), 0)
+        self.youth_available: set[PlayerId] = set()
         teams = {t.club_season_id: t for t in block.references}
         self.references = {
             c.competition_id: StrengthReference.from_teams(tuple(teams[p] for p in c.participants))
@@ -349,7 +352,9 @@ class SeasonSimulation:
         competition = self.competitions[spec.competition_id]
         priority = self.block.priorities.get(spec.competition_id, Priority.NORMAL)
         available = {p.player_id for p in self.team.squad or () if not p.injured}
-        required = frozenset(p for p in self.block.youth & available if self.minutes[p] == 0)
+        self.youth_available.update(self.block.youth & available)
+        pending = sorted((p for p in self.block.youth & available if self.minutes[p] == 0), key=str)
+        required = frozenset(pending[:_STARTERS])
         squad = cast("tuple[SimPlayer, ...]", self.team.squad)
         tactic = cast("Tactic", self.team.tactic)
         lineup = select_lineup(squad, tactic, priority=priority, required=required)
@@ -1018,6 +1023,8 @@ class SeasonSimulation:
             self._process_knockout(fixture, competition)
         if self.used_prior != {p.fixture.spec.fixture_id for p in self.block.prior}:
             raise InvalidValueError("prior results include an inactive or unexpected fixture")
+        if any(self.minutes[player] == 0 for player in self.youth_available):
+            raise InvalidValueError("youth participation requirements exceed the block's available minutes")
         self._recover(self.block.end)
         tables, unresolved = self._tables_and_unresolved()
         return SeasonOutcome(
