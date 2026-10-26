@@ -345,6 +345,7 @@
 - **Dependencia:** CR de evidencia histórica integrada. Debe integrarse antes de T2.6 y del mapeo definitivo de T2.20. No inventar fechas ni equiparar desconocido a vacío o local.
 
 #### T2.6 · Simulación por bloques
+- **Estado:** completada e integrada por rebase-merge en [PR #37](https://github.com/migue99angel/mister-historico/pull/37), tras revisión independiente y CI en verde. La temporada sintética de Test FC cumple el presupuesto de 20 ms en el benchmark local; no es calibración histórica.
 - **Oleada:** F2-B · **Tamaño:** M · **Depende de:** T2.1-T2.5 y ambas CR-T2.6 integradas
 - **Propiedad:** `simulation/domain/season.py`, `simulation/application/simulate_block.py` (la fachada de `api.py` ya delega en este módulo) y sus tests. Ampliación expresa a los helpers privados `lineup.py`, `strength.py` y sus tests para juventud obligatoria y fuerza desde la alineación efectiva. [Plan de conexión de Astra](simulation/block-plan.md).
 - **Qué hacer:**
@@ -387,7 +388,7 @@
 - **Oleada:** F2-A · **Tamaño:** M · **Depende de:** T1.2, T1.5
 - **Propiedad:** `catalog/domain/**`, `catalog/application/**` (salvo `ports.py` y `api.py`, que son contrato de T1.5: cambiarlos requiere CR), `catalog/infrastructure/yaml_loader.py`, `entrypoints/cli/content.py` y sus tests y `docs/adr/008-nombres-reales-desactivables.md`
 - **T2.20a — validación:** implementados `catalog/infrastructure/yaml_validation.py` (ampliación expresa de propiedad), el caso de uso `application/validate_content.py`, tests propios y [documentación](catalog/content-validation.md); integrada en [PR #33](https://github.com/migue99angel/mister-historico/pull/33), tras revisión independiente Sol, CI y comprobación conjunta. Reutiliza `load_content_tree` y la suite del puerto integrado.
-- **Estado de T2.20:** abierta. La fase b aportará el proveedor YAML, el mapeo del catálogo y `NamePolicy` tras la CR de competiciones. Composición, CLI, Makefile y CI necesitan una CR de cableado explícita; T2.20a no activa por sí sola `make validate-content`.
+- **Estado de T2.20:** completada e integrada por rebase-merge. La [PR #38](https://github.com/migue99angel/mister-historico/pull/38) añadió proveedor YAML, mapeo y `NamePolicy`; la [PR #39](https://github.com/migue99angel/mister-historico/pull/39) activó CLI, Makefile y CI mediante CR. `make validate-content` funciona sobre `content/` y comunica que todavía hay cero temporadas jugables.
 - **Qué hacer:**
   - Entidades del catálogo.
   - `YamlSeasonContentProvider`.
@@ -401,6 +402,7 @@
 - **Aceptación:** `make validate-content` funciona sobre `content/`.
 
 #### T2.21 · Persistencia del catálogo y carga al desplegar
+- **Estado:** persistencia y comando de carga completados e integrados por rebase-merge en [PR #40](https://github.com/migue99angel/mister-historico/pull/40) y [PR #41](https://github.com/migue99angel/mister-historico/pull/41), con revisión independiente y CI en verde. La integración automática en un despliegue real pertenece a F7.
 - **Oleada:** F2-B · **Tamaño:** M · **Depende de:** T2.20, T0.5
 - **Propiedad:** `catalog/infrastructure/sqlalchemy/**`, `backend/migrations/versions/*catalog*` y `entrypoints/cli/content.py` (el subcomando `load`)
 - **Qué hacer:**
