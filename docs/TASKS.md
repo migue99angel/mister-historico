@@ -346,7 +346,7 @@
 
 #### T2.6 · Simulación por bloques
 - **Oleada:** F2-B · **Tamaño:** M · **Depende de:** T2.1-T2.5 y ambas CR-T2.6 integradas
-- **Propiedad:** `simulation/domain/season.py`, `simulation/application/simulate_block.py` (la fachada de `api.py` ya delega en este módulo) y sus tests
+- **Propiedad:** `simulation/domain/season.py`, `simulation/application/simulate_block.py` (la fachada de `api.py` ya delega en este módulo) y sus tests. Ampliación expresa a los helpers privados `lineup.py`, `strength.py` y sus tests para juventud obligatoria y fuerza desde la alineación efectiva. [Plan de conexión de Astra](simulation/block-plan.md).
 - **Qué hacer:**
   - `simulate_block(state, block)`: recorre en orden de fecha los partidos de todas las competiciones dentro del rango del bloque, actualiza el estado físico, las lesiones y las clasificaciones, y devuelve un `BlockSummary` con los resultados, las clasificaciones, los eventos y los partidos clave marcados (clásicos y eliminatorias).
 - **Tests primero:**
