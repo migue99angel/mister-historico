@@ -269,8 +269,22 @@ class SeasonSimulation:
     ) -> HistoricalEvidence | None:
         candidates = [e for e in self.block.evidence if
             (e.competition_id, e.stage_id, e.group_id) == (competition_id, stage_id, group_id)
-            and e.complete_through >= cutoff]
+            and (e.complete_through >= cutoff or self._complete_group_evidence(e, cutoff))]
         return min(candidates, key=lambda e: e.complete_through, default=None)
+
+    def _complete_group_evidence(self, evidence: HistoricalEvidence, cutoff: date) -> bool:
+        if evidence.stage_id is None or evidence.group_id is None:
+            return False
+        competition = self.competitions[evidence.competition_id]
+        stage = next(s for s in competition.stages if s.stage_id == evidence.stage_id)
+        participants = next(clubs for group, clubs in stage.groups if group == evidence.group_id)
+        if set(evidence.participants) != set(participants) or any(
+            f.date > min(cutoff, evidence.complete_through) for f in evidence.schedule
+        ):
+            return False
+        counts = {club: sum(club in (f.home, f.away) for f in evidence.schedule)
+                  for club in participants}
+        return all(count == (len(participants)-1)*stage.group_rounds for count in counts.values())
 
     def _replacements(
         self, competition_id: CompetitionId, cutoff: date,
@@ -445,8 +459,10 @@ class SeasonSimulation:
                 for group_id, participants in previous.groups:
                     if not self._group_closed(competition, previous, group_id, participants, self.block.end):
                         return None
-                    _, qualifiers = self._group_table(competition, previous, group_id, participants,
+                    ranked, qualifiers = self._group_table(competition, previous, group_id, participants,
                                                        self.block.end)
+                    if any(set(tied).intersection(qualifiers) for tied in ranked.unresolved):
+                        raise InvalidValueError("unresolved group positions cannot select knockout slots")
                     for entry in (e for e in entries if e.group_id == group_id):
                         mapping[entry.representative] = qualifiers[entry.position-1]
                 if not mapping or len(set(mapping.values())) != len(mapping):
