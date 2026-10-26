@@ -541,7 +541,7 @@ def test_group_assignments_cannot_skip_an_unaccredited_first_knockout_stage(root
     assert_issue(issues_of(root, release=True), STANDINGS, "group_entry_assignments", "exactly")
 
 
-@pytest.mark.parametrize("earlier_proof", [None, "before", "after"])
+@pytest.mark.parametrize("earlier_proof", [None, "before", "after", "partial"])
 def test_additional_verified_group_matches_contradict_the_accredited_final_table(
     root: Path, earlier_proof: str | None
 ) -> None:
@@ -572,6 +572,13 @@ def test_additional_verified_group_matches_contradict_the_accredited_final_table
             data["head_to_head"].insert(1, earlier)
         elif earlier_proof == "after":
             data["head_to_head"].append(earlier)
+        elif earlier_proof == "partial":
+            clubs = {"abroad-athletic-2000-01", "faraway-city-2000-01"}
+            history["covered_clubs"] = sorted(clubs)
+            history["schedule"] = [f for f in history["schedule"] if {f["home"], f["away"]} <= clubs]
+            ids = {f["fixture_id"] for f in history["schedule"]}
+            history["results"] = [r for r in history["results"] if r["fixture_id"] in ids]
+            data["head_to_head"].insert(1, earlier)
 
     edit(root, STANDINGS, extra_match)
     assert_issue(issues_of(root, release=True), STANDINGS, "group_entry_assignments", "contradicts")
