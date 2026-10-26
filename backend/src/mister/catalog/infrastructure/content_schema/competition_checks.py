@@ -377,25 +377,33 @@ def _check_entry_chronology(
         if calendar.competition == competition_id
         for slot in calendar.slots or ()
         if slot.stage_id == entry.target_stage_id
-        and entry.historical_representative in (slot.home, slot.away) and slot.date is not None
+        and entry.historical_representative in (slot.home, slot.away)
+        and slot.date is not None
     ]
     known_dates = _known_group_match_dates(ctx, competition_id, entry)
     known_conflict = bool(dates and known_dates and max(known_dates) >= min(dates))
     if known_conflict:
-        ctx.add("standings", "group_entry_assignments",
-                "a known group match contradicts the knockout entry chronology")
+        ctx.add(
+            "standings",
+            "group_entry_assignments",
+            "a known group match contradicts the knockout entry chronology",
+        )
     tables = [
-        table for table in ctx.content.standings.cutoffs
-        if (table.competition, table.stage, table.group) ==
-           (competition_id, entry.source_stage_id, entry.group_id)
+        table
+        for table in ctx.content.standings.cutoffs
+        if (table.competition, table.stage, table.group)
+        == (competition_id, entry.source_stage_id, entry.group_id)
     ]
     if not tables:
         return
     final = max(tables, key=lambda table: table.date)
     completion = _group_calendar_end(ctx, competition_id, entry, final)
     if completion.contradictory:
-        ctx.add("standings", "group_entry_assignments",
-                "verified group calendar contradicts the accredited final table totals")
+        ctx.add(
+            "standings",
+            "group_entry_assignments",
+            "verified group calendar contradicts the accredited final table totals",
+        )
     if known_conflict or completion.contradictory:
         return  # Neither missing coverage nor a table fallback can erase explicit conflicts.
     last_match = completion.last_match
@@ -419,19 +427,27 @@ def _known_group_match_dates(
 ) -> tuple[date, ...]:
     """Read dated facts independently of whether their calendar proves completeness."""
     scope = (competition_id, entry.source_stage_id, entry.group_id)
-    direct = [fixture.date for history in ctx.content.standings.head_to_head or ()
-              if (history.competition, history.stage, history.group) == scope
-              for fixture in history.schedule if fixture.verify == "ok"]
-    managed = [fixture.date for fixture in ctx.content.fixtures.fixtures
-               if (fixture.competition, fixture.stage, fixture.group) == scope
-               and fixture.verify == "ok" and fixture.result is not None]
-    return tuple([*direct, *managed])
+    direct = [
+        fixture.date
+        for history in ctx.content.standings.head_to_head or ()
+        if (history.competition, history.stage, history.group) == scope
+        for fixture in history.schedule
+        if fixture.verify == "ok"
+    ]
+    managed = [
+        fixture.date
+        for fixture in ctx.content.fixtures.fixtures
+        if (fixture.competition, fixture.stage, fixture.group) == scope
+        and fixture.verify == "ok"
+        and fixture.result is not None
+    ]
+    return (*direct, *managed)
 
 
 def _group_calendar_end(
     ctx: SeasonContext, competition_id: str, entry: GroupEntryAssignment, final: StandingsCutoff
 ) -> _GroupCalendarCompletion:
-    """Inspect all complete declarations, preserving explicit conflicts even beside valid proofs."""
+    """Separate known contradictions from the complete coverage needed to prove an end date."""
     competition = ctx.competitions.get(competition_id)
     source = stage_of(competition, entry.source_stage_id) if competition else None
     group = (
@@ -445,9 +461,15 @@ def _group_calendar_end(
         row.played == (len(group.participants) - 1) * source.legs for row in final.table
     )
     for history in ctx.content.standings.head_to_head or ():
-        if (history.competition, history.stage, history.group) != (competition_id, source.id, group.id):
+        if (history.competition, history.stage, history.group) != (
+            competition_id,
+            source.id,
+            group.id,
+        ):
             continue
-        if final_complete and any(f.verify == "ok" and f.date > final.date for f in history.schedule):
+        if final_complete and any(
+            f.verify == "ok" and f.date > final.date for f in history.schedule
+        ):
             contradictory = True
         if (
             set(history.covered_clubs) != set(group.participants)
