@@ -10,10 +10,19 @@ from mister.catalog.application.load_types import (
     CatalogContentInvalidError,
     CatalogLoadUnavailableError,
 )
-from mister.catalog.application.validation_types import ContentValidationUnavailableError
+from mister.catalog.application.validation_types import (
+    ContentValidationUnavailableError,
+    ValidationIssue,
+)
 
 EXIT_INVALID_CONTENT = 1
 EXIT_UNAVAILABLE_CONTENT = 2
+
+
+def _print_issues(issues: tuple[ValidationIssue, ...]) -> None:
+    for issue in issues:
+        location = f"{issue.path}:{issue.field}" if issue.field else issue.path
+        typer.echo(f"{location}: {issue.message}")
 
 
 def resolve_content_root(root: Path | None) -> Path:
@@ -47,9 +56,7 @@ def validate_content(
         raise typer.Exit(EXIT_UNAVAILABLE_CONTENT) from error
 
     if report.issues:
-        for issue in report.issues:
-            location = f"{issue.path}:{issue.field}" if issue.field else issue.path
-            typer.echo(f"{location}: {issue.message}")
+        _print_issues(report.issues)
         raise typer.Exit(EXIT_INVALID_CONTENT)
 
     count = report.season_count
@@ -74,9 +81,7 @@ def load_catalog(
         with build_load_catalog() as loader:
             report = loader.execute(resolve_content_root(root))
     except CatalogContentInvalidError as error:
-        for issue in error.issues:
-            location = f"{issue.path}:{issue.field}" if issue.field else issue.path
-            typer.echo(f"{location}: {issue.message}")
+        _print_issues(error.issues)
         if not error.issues:
             typer.echo(f"Contenido no publicable: {error}")
         raise typer.Exit(EXIT_INVALID_CONTENT) from error
