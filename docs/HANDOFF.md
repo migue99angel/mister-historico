@@ -1,6 +1,6 @@
 # Traspaso de la orquestación (2026-10-26)
 
-> Estado tras integrar F1, los módulos puros de T2.1-T2.5, los contratos de competiciones y la validación del catálogo (PR #31–34). F2 continúa abierta. Léelo junto con `CLAUDE.md`, `docs/PLAN.md` y `docs/TASKS.md`. Las instrucciones del autor prevalecen sobre estos documentos.
+> Las secciones 1–8 conservan las comprobaciones de su fecha. La sección 9 recoge el estado más reciente, tras la PR #41. F2 continúa abierta. Léelo junto con `CLAUDE.md`, `docs/PLAN.md` y `docs/TASKS.md`. Las instrucciones del autor prevalecen sobre estos documentos.
 
 ## 1. Rol y forma de trabajo
 
@@ -95,3 +95,15 @@ Esta sección actualiza la foto anterior sin reescribir sus comprobaciones hist�
 La tanda de contratos y validación está cerrada. Para comenzar T2.6 en otra conversación, basta pedir: «Continúa Míster Histórico. Lee docs/HANDOFF.md, CLAUDE.md, docs/PLAN.md y docs/TASKS.md; comprueba el estado real. Astra planifica; Sol implementa y otro Sol revisa. Proyecto exclusivamente personal». El estado del repositorio y los informes prevalecen sobre cualquier resumen conversacional antiguo.
 
 CI de la punta final de PR #32: [backend](https://github.com/migue99angel/mister-historico/actions/runs/40299884467), [calibración](https://github.com/migue99angel/mister-historico/actions/runs/40299884442), [contratos](https://github.com/migue99angel/mister-historico/actions/runs/40299884395) y [Docker](https://github.com/migue99angel/mister-historico/actions/runs/40299884420). El job de contenido sigue siendo el placeholder anterior al cableado T2.20.
+
+## 9. Estado posterior a la integración de T2.21 (2026-10-26)
+
+Esta sección sustituye **solo como estado actual** las indicaciones anteriores de iniciar T2.6 o completar el catálogo. Las comprobaciones históricas de las secciones previas se conservan con sus fechas.
+
+- **Motor T2.6:** [PR #37](https://github.com/migue99angel/mister-historico/pull/37) integrada por rebase-merge. Conecta los bloques cronológicos y conserva el determinismo, el estado físico y las competiciones entre bloques. La temporada sintética de Test FC cumple el presupuesto local de 20 ms. No se ha calibrado con una temporada real.
+- **Catálogo T2.20:** [PR #38](https://github.com/migue99angel/mister-historico/pull/38) integró el proveedor YAML y `NamePolicy`; [PR #39](https://github.com/migue99angel/mister-historico/pull/39) activó `mister content validate`, `make validate-content` y el job de CI. El árbol actual de `content/` valida, pero contiene **cero temporadas jugables**.
+- **Catálogo T2.21:** [PR #40](https://github.com/migue99angel/mister-historico/pull/40) integró snapshots transaccionales en PostgreSQL y proveedor SQL; [PR #41](https://github.com/migue99angel/mister-historico/pull/41) integró `mister content load` mediante puerto y composición, con hash e idempotencia. Su punta en `main` es `ba668a8347de27e6bf39e31c0690db1e6775dc55`. La carga se ha comprobado dos veces sobre Test FC: primera publicación y segunda sin cambios. El despliegue automático sigue siendo trabajo de F7.
+- **Calidad de PR #41:** revisión independiente Sol favorable sobre `2fd1c20` tras corregir una URL de base de datos malformada. `make test` y `make lint` locales en verde. Los cuatro checks de CI de la punta revisada pasaron: [backend](https://github.com/migue99angel/mister-historico/actions/runs/40401412986), [contenido](https://github.com/migue99angel/mister-historico/actions/runs/40401412964), [contratos](https://github.com/migue99angel/mister-historico/actions/runs/40401412954) y [Docker](https://github.com/migue99angel/mister-historico/actions/runs/40401413321). Backend CI: **2110 aprobados, 18 descartados**; cobertura de dominio y aplicación **98,79 % de líneas y 95,98 % de ramas**.
+- **Próximo trabajo de F2:** T2.10–T2.13 y T2.16 preparan la temporada real del Real Madrid 2012-13 y sus rivales; T2.14 contrasta los datos sin las notas de investigación y T2.15 requiere la firma del autor. T2.7 depende de esa firma. T2.8 necesita medir el bloque del RM real; puede prepararse sobre Test FC, pero el criterio de aceptación exige el piloto. No presentar F2 como cerrada hasta completar esas puertas.
+
+Para los datos históricos, aplicar la regla del proyecto: fuente por dato; si falta evidencia, `null` con `verify: pending`, sin deducciones. Antes de continuar, comprobar `git status`, `git log`, `git worktree list` y las PR abiertas: el estado real prevalece sobre esta foto.
