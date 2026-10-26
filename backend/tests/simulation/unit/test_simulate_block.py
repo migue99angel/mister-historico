@@ -522,3 +522,17 @@ def test_twelve_available_youth_players_receive_minutes_across_two_matches() -> 
 def test_twelve_available_youth_players_cannot_fit_in_one_match() -> None:
     with pytest.raises(InvalidValueError, match=r"youth|required|eleven"):
         play(replace(many_youth_request(), end=START))
+
+
+def test_known_future_absence_prioritizes_youth_who_can_only_play_the_first_match() -> None:
+    value = many_youth_request()
+    youth = value.managed_team.players[11]
+    injury = ForcedInjuryDTO(youth.player_id, END, 7)
+    value = replace(value, forced_injuries_from_effects=(injury,))
+    summary = play(value)
+    states = {state.player_id: state for state in summary.player_states}
+    assert all(states[player.player_id].minutes_played >= 90
+               for player in value.managed_team.players if player.youth_minutes)
+    assert states[youth.player_id].minutes_played == 90
+    assert states[youth.player_id].injured_until == date(2000, 9, 10)
+    assert summary.injuries[-1].forced
