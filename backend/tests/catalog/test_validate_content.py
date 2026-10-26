@@ -28,7 +28,9 @@ def test_the_use_case_returns_the_report_for_the_requested_mode(release: bool) -
 def test_a_known_empty_catalog_remains_a_success_with_zero_seasons() -> None:
     report = ContentValidationReport((), 0)
 
-    assert ValidateContent(InMemoryContentValidator({False: report})).execute(release=False) is report
+    assert (
+        ValidateContent(InMemoryContentValidator({False: report})).execute(release=False) is report
+    )
 
 
 def test_all_content_issues_and_an_unknown_count_reach_the_caller() -> None:

@@ -4,15 +4,15 @@ import shutil
 from pathlib import Path
 
 import pytest
+
+from mister.catalog.application.ports import ContentValidator
+from mister.catalog.infrastructure.yaml_validation import YamlContentValidator
 from tests.catalog.test_content_tree import edit
 from tests.contracts.suites.content_validator import (
     ContentValidatorContract,
     ValidationScenario,
     ValidatorFactory,
 )
-
-from mister.catalog.application.ports import ContentValidator
-from mister.catalog.infrastructure.yaml_validation import YamlContentValidator
 
 _FIXTURE_ROOT = Path(__file__).parent.parent / "fixtures" / "content"
 _SEASON = "seasons/test-fc-2000-01"
@@ -32,7 +32,11 @@ class TestYamlContentValidator(ContentValidatorContract):
                 shutil.copytree(_FIXTURE_ROOT, root)
                 if scenario == "invalid":
                     for name in ("fixtures", "texts"):
-                        edit(root, f"{_SEASON}/{name}.yaml", lambda data: data.update(unexpected=True))
+                        edit(
+                            root,
+                            f"{_SEASON}/{name}.yaml",
+                            lambda data: data.update(unexpected=True),
+                        )
                 elif scenario == "pending":
                     edit(
                         root,

@@ -34,7 +34,9 @@ def test_all_loader_diagnostics_cross_the_boundary_with_their_original_text(root
     with pytest.raises(ContentValidationError) as caught:
         load_content_tree(root, release=False)
     expected = ContentValidationReport(
-        tuple(ValidationIssue(issue.path, issue.field, issue.message) for issue in caught.value.issues),
+        tuple(
+            ValidationIssue(issue.path, issue.field, issue.message) for issue in caught.value.issues
+        ),
         None,
     )
 
