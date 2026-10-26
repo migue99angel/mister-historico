@@ -27,7 +27,6 @@ class ValidationIssue:
         if (
             path.is_absolute()
             or ".." in path.parts
-            or "\\" in self.path
             or "\x00" in self.path
             or path.as_posix() != self.path
         ):
