@@ -262,3 +262,66 @@ def test_future_prior_results_are_rejected() -> None:
     value = request()
     with pytest.raises(InvalidValueError):
         play(replace(value, prior_results=play(value).results))
+
+
+@pytest.mark.parametrize("field,bad", [("morale", 101), ("fitness", -1), ("rating", 100)])
+@pytest.mark.parametrize("source", ["reference", "override"])
+def test_neutral_rival_inputs_are_validated_before_state_is_normalized(
+    field: str, bad: int, source: str,
+) -> None:
+    value = request()
+    rival = replace(team(), club_season_id=RIVAL)
+    bad_player = replace(rival.players[0], **{field: bad})
+    rival = replace(rival, players=(bad_player, *rival.players[1:]))
+    if source == "reference":
+        value = replace(value, season=replace(value.season, teams=(team(), rival)))
+    else:
+        value = replace(value, team_overrides=(rival,))
+    with pytest.raises(InvalidValueError):
+        play(value)
+
+
+def test_rival_injury_is_projected_at_match_date_without_changing_reference() -> None:
+    value = request()
+    rival = replace(team(), club_season_id=RIVAL)
+    star = replace(rival.players[-1], rating=99)
+    rival = replace(rival, players=(*rival.players[:-1], star))
+    healthy_fake = FixedMatches()
+    injured_fake = FixedMatches()
+    play(replace(value, team_overrides=(rival,)), healthy_fake)
+    injured = replace(star, injured_until=END)
+    play(replace(value, team_overrides=(replace(rival, players=(*rival.players[:-1], injured)),)),
+         injured_fake)
+    assert injured_fake.setups[0].away.attack < healthy_fake.setups[0].away.attack
+    assert injured_fake.setups[1].home.attack == healthy_fake.setups[1].home.attack
+
+
+def test_duplicate_forced_injury_from_content_and_effect_is_emitted_once() -> None:
+    value = request()
+    injury = ForcedInjuryDTO(value.managed_team.players[0].player_id, START, 2)
+    value = replace(value, season=replace(value.season, forced_injuries=(injury,)),
+                    forced_injuries_from_effects=(injury,))
+    summary = play(value)
+    assert len(tuple(i for i in summary.injuries if i.forced)) == 1
+
+
+def test_prior_league_match_cannot_contain_extra_time_or_penalties() -> None:
+    value = request()
+    first = play(replace(value, end=START), FixedMatches(Score(0, 0)))
+    invalid = replace(first.results[0], extra_time=(0, 0), penalties=(4, 3),
+                      winner="home", user_result="win")
+    with pytest.raises(InvalidValueError):
+        play(replace(continuation(value, first), prior_results=(invalid,)))
+
+
+def test_team_override_is_measured_against_the_original_strength_reference() -> None:
+    value = request()
+    old = FixedMatches()
+    better = FixedMatches()
+    play(value, old)
+    rival = replace(team(), club_season_id=RIVAL,
+                    players=tuple(replace(p, rating=99) for p in team().players))
+    play(replace(value, team_overrides=(rival,)), better)
+    assert old.setups[0].home == better.setups[0].home
+    assert old.setups[0].away.attack < better.setups[0].away.attack
+    assert old.setups[0].away.defense > better.setups[0].away.defense

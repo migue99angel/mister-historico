@@ -140,3 +140,26 @@ def test_duplicate_player_ids_cannot_fill_two_slots() -> None:
     players = squad()
     with pytest.raises(InvalidValueError, match="distinct"):
         select_lineup((*players, players[0]), TACTIC)
+
+
+@pytest.mark.parametrize("priority", list(Priority))
+def test_required_reserve_starts_under_every_rotation_priority(priority: Priority) -> None:
+    required = PlayerId("reserve-fw")
+    lineup = select_lineup(squad(), TACTIC, priority=priority, required=frozenset({required}))
+    assert required in {entry.player.player_id for entry in lineup.starters}
+    assert len(lineup.starters) == 11
+
+
+@pytest.mark.parametrize("required", [frozenset({PlayerId("missing")}),
+                                      frozenset(p.player_id for p in squad()[:12])])
+def test_incompatible_required_starters_are_rejected(required: frozenset[PlayerId]) -> None:
+    with pytest.raises(InvalidValueError):
+        select_lineup(squad(), TACTIC, required=required)
+
+
+def test_an_injured_required_player_is_rejected_without_changing_injury() -> None:
+    players = squad()
+    injured = replace(players[-1], injured=True)
+    with pytest.raises(InvalidValueError):
+        select_lineup((*players[:-1], injured), TACTIC, required=frozenset({injured.player_id}))
+    assert injured.injured
