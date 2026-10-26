@@ -3,6 +3,7 @@
 from collections import defaultdict
 from datetime import date
 from itertools import pairwise
+from typing import NamedTuple
 
 from mister.catalog.infrastructure.content_schema.base import season_window
 from mister.catalog.infrastructure.content_schema.competitions import (
@@ -360,6 +361,13 @@ def _check_entry_target_occupants(ctx: SeasonContext, assignments: GroupEntryAss
             )
 
 
+class _GroupCalendarCompletion(NamedTuple):
+    """Keep an absent proof distinct from an explicit conflict with the final table."""
+
+    last_match: date | None = None
+    contradictory: bool = False
+
+
 def _check_entry_chronology(
     ctx: SeasonContext, competition_id: str, entry: GroupEntryAssignment, *, required: bool = False
 ) -> None:
@@ -372,7 +380,14 @@ def _check_entry_chronology(
     if not tables:
         return
     final = max(tables, key=lambda table: table.date)
-    last_match = _group_calendar_end(ctx, competition_id, entry, final)
+    completion = _group_calendar_end(ctx, competition_id, entry, final)
+    if completion.contradictory:
+        ctx.add(
+            "standings", "group_entry_assignments",
+            "verified group calendar contradicts the accredited final table totals",
+        )
+        return  # An earlier table cannot override contradictory verified calendar evidence.
+    last_match = completion.last_match
     dates = [
         slot.date
         for calendar in ctx.content.standings.knockout_calendar or ()
@@ -399,14 +414,16 @@ def _check_entry_chronology(
 
 def _group_calendar_end(
     ctx: SeasonContext, competition_id: str, entry: GroupEntryAssignment, final: StandingsCutoff
-) -> date | None:
+) -> _GroupCalendarCompletion:
     competition = ctx.competitions.get(competition_id)
     source = stage_of(competition, entry.source_stage_id) if competition else None
     group = (
         next((g for g in source.groups or () if g.id == entry.group_id), None) if source else None
     )
     if source is None or group is None or final.verify != "ok":
-        return None
+        return _GroupCalendarCompletion()
+    last_match = None
+    contradictory = False
     for history in ctx.content.standings.head_to_head or ():
         if (
             (history.competition, history.stage, history.group)
@@ -451,5 +468,9 @@ def _group_calendar_end(
             for row in final.table
         )
         if coherent:
-            return max((fixture.date for fixture in history.schedule), default=None)
-    return None
+            end = max((fixture.date for fixture in history.schedule), default=None)
+            if end is not None and (last_match is None or end > last_match):
+                last_match = end
+        else:
+            contradictory = True
+    return _GroupCalendarCompletion(last_match, contradictory)
