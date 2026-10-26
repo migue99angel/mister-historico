@@ -68,3 +68,6 @@ Las regresiones incluyen semifinales externas posteriores a su final, contendien
 
 
 Un calendario completo y verificado que contradice los acumulados de la tabla final no equivale a evidencia ausente. Los encuentros adicionales incompatibles producen una incidencia explícita y bloquean el uso de una tabla anterior como alternativa. Se inspeccionan todas las declaraciones acreditadas: una declaración coherente anterior o posterior no puede ocultar otra contradictoria. Se conserva el caso legítimo sin calendario cuando una tabla anterior al KO ya acredita el estado previo.
+
+
+La comprobación temporal tiene dos fases: primero considera todos los encuentros fechados acreditados del grupo, incluidas declaraciones H2H parciales y fixtures propios con resultado verificado; cualquier encuentro que no preceda al destino invalida la entrada. Después busca una prueba completa y coherente del cierre o, si falta, una tabla anterior suficiente. La falta de cobertura completa no elimina los hechos conocidos ni permite eludir una contradicción. Se conservan además las comparaciones de todos los acumulados y la detección de partidos posteriores a una tabla acreditada como completa.
