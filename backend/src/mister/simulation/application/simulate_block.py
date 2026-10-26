@@ -355,30 +355,80 @@ def _slots(
     return tuple(slots)
 
 
+def _table_scope(
+    competition: Competition,
+    stage_id: str | None,
+    group_id: str | None,
+) -> tuple[tuple[ClubSeasonId, ...], Stage | None]:
+    if competition.kind == "league":
+        if stage_id is not None or group_id is not None:
+            raise InvalidValueError("league tables and evidence cannot identify a group stage")
+        return competition.participants, None
+    stage = next((s for s in competition.stages if s.stage_id == stage_id), None)
+    if stage is None or not stage.groups:
+        raise InvalidValueError("table or evidence needs a declared group stage")
+    participants = next((clubs for group, clubs in stage.groups if group == group_id), None)
+    if participants is None:
+        raise InvalidValueError("table or evidence needs a declared group ID")
+    return participants, stage
+
+
+def _fixture_scope(spec: FixtureSpec, competition: Competition) -> None:
+    if competition.kind == "league":
+        if spec.stage is not None or spec.group is not None or spec.leg is not None:
+            raise InvalidValueError("a league fixture cannot carry group or knockout metadata")
+        return
+    stage = next((s for s in competition.stages if s.stage_id == spec.stage), None)
+    if stage is None:
+        raise InvalidValueError("fixture needs a declared competition stage")
+    if stage.groups:
+        participants, _ = _table_scope(competition, spec.stage, spec.group)
+        if not {spec.home, spec.away} <= set(participants) or spec.leg is not None:
+            raise InvalidValueError("group fixture sides must belong to its declared group")
+    elif spec.group is not None:
+        raise InvalidValueError("a knockout fixture cannot identify a group")
+
+
 def _evidence(
-    season: dto.SeasonSimInput, fixtures: tuple[SeasonFixture, ...]
+    season: dto.SeasonSimInput,
+    fixtures: tuple[SeasonFixture, ...],
+    competition_map: dict[CompetitionId, Competition],
 ) -> tuple[HistoricalEvidence, ...]:
     evidence = []
     own = {f.spec.fixture_id: f for f in fixtures}
     for declaration in season.head_to_head or ():
         _sources(declaration.sources, declaration.verify)
+        if declaration.competition_id not in competition_map:
+            raise InvalidValueError("historical evidence identifies an unknown competition")
+        participants, _ = _table_scope(
+            competition_map[declaration.competition_id], declaration.stage_id, declaration.group_id
+        )
+        if not declaration.covered_clubs or not set(declaration.covered_clubs) <= set(participants):
+            raise InvalidValueError("historical evidence coverage must belong to its table scope")
         _unique(declaration.covered_clubs, "evidence participants")
         _unique(tuple(f.fixture_id for f in declaration.schedule), "evidence fixtures")
         _unique(tuple(r.fixture_id for r in declaration.results), "evidence results")
         scores = {r.fixture_id: r for r in declaration.results}
         schedule = []
         matches = []
+        unknown_venues = set()
         for fixture in declaration.schedule:
             _sources(fixture.sources, fixture.verify)
-            if fixture.venue is None:
-                raise InvalidValueError("historical fixture venue remains unknown")
+            original = own.get(fixture.fixture_id)
+            venue = (
+                Venue(fixture.venue)
+                if fixture.venue is not None
+                else (original.spec.venue if original is not None else Venue.NEUTRAL)
+            )
+            if fixture.venue is None and original is None:
+                unknown_venues.add(fixture.fixture_id)
             spec = FixtureSpec(
                 fixture.fixture_id,
                 _date(fixture.date),
                 declaration.competition_id,
                 fixture.home,
                 fixture.away,
-                Venue(fixture.venue),
+                venue,
                 stage=declaration.stage_id,
                 group=declaration.group_id,
             )
@@ -413,6 +463,7 @@ def _evidence(
                 declaration.sources,
                 declaration.stage_id,
                 declaration.group_id,
+                frozenset(unknown_venues),
             )
         )
     _unique(
@@ -420,6 +471,12 @@ def _evidence(
         "historical evidence cutoffs",
     )
     return tuple(evidence)
+
+
+def _qualifying_position(value: object) -> int:
+    if type(value) is not int or value <= 0:
+        raise InvalidValueError("qualifying position must be an exact positive integer")
+    return value
 
 
 def _entries(
@@ -441,7 +498,7 @@ def _entries(
                     declaration.competition_id,
                     source_entry.source_stage_id,
                     source_entry.group_id,
-                    source_entry.qualifying_position,
+                    _qualifying_position(source_entry.qualifying_position),
                     source_entry.target_stage_id,
                     source_entry.historical_representative,
                 )
@@ -485,11 +542,14 @@ def _entries(
                     if (s.competition_id, s.stage_id, s.group_id)
                     == (competition.competition_id, stage.stage_id, entry.group_id)
                 ]
-                if (
-                    not candidates
-                    or max(candidates, key=lambda s: s.as_of).order[entry.position - 1]
-                    != entry.representative
-                ):
+                if not candidates:
+                    raise InvalidValueError("group entry needs an original final table")
+                final = max(candidates, key=lambda s: s.as_of)
+                if any(entry.representative in tied for tied in final.unresolved_ties or ()):
+                    raise InvalidValueError(
+                        "unresolved historical positions cannot justify group entry slots"
+                    )
+                if final.order[entry.position - 1] != entry.representative:
                     raise InvalidValueError(
                         "historical group entry must agree with the original final order"
                     )
@@ -556,6 +616,7 @@ def _orient_fixtures(
             or (managed not in (spec.home, spec.away))
         ):
             raise InvalidValueError("fixture must belong to managed team and its competition")
+        _fixture_scope(spec, effective_competition)
     return tuple(
         SeasonFixture(
             f.spec,
@@ -581,6 +642,8 @@ def _prior_results(
     prior = []
     for result in value.prior_results:
         prior_fixture = fixture_map.get(result.fixture_id)
+        if value.state_as_of is not None and result.date > value.state_as_of:
+            raise InvalidValueError("incoming state cursor cannot precede a prior match")
         if prior_fixture is None or result.date >= value.start:
             raise InvalidValueError("prior result must identify an earlier scheduled fixture")
         if (
@@ -595,12 +658,31 @@ def _prior_results(
 
 
 def _snapshots(
-    season: dto.SeasonSimInput, competition_ids: set[CompetitionId]
+    season: dto.SeasonSimInput, competition_map: dict[CompetitionId, Competition]
 ) -> tuple[TableSnapshot, ...]:
     snapshots = []
     for snapshot in season.historical_standings:
-        if snapshot.competition_id not in competition_ids:
+        if snapshot.competition_id not in competition_map:
             raise InvalidValueError("table belongs to unknown competition")
+        competition = competition_map[snapshot.competition_id]
+        participants, stage = _table_scope(competition, snapshot.stage_id, snapshot.group_id)
+        clubs = tuple(r.club_season_id for r in snapshot.rows)
+        if len(clubs) != len(participants) or set(clubs) != set(participants):
+            raise InvalidValueError(
+                "historical snapshot rows must cover every participant exactly once"
+            )
+        positions = tuple(r.position for r in snapshot.rows)
+        if any(type(position) is not int for position in positions) or set(positions) != set(
+            range(1, len(clubs) + 1)
+        ):
+            raise InvalidValueError(
+                "snapshot positions must be distinct consecutive positive integers"
+            )
+        rules = stage.group_rules if stage else None
+        ppw = rules.points_per_win if rules else competition.points_per_win
+        ppd = rules.points_per_draw if rules else competition.points_per_draw
+        if any(r.points != r.won * ppw + r.drawn * ppd for r in snapshot.rows):
+            raise InvalidValueError("original table points must follow the declared scoring rules")
         rows = tuple(
             LeagueRow(
                 r.club_season_id,
@@ -622,6 +704,7 @@ def _snapshots(
                 tuple(r.club_season_id for r in sorted(snapshot.rows, key=lambda r: r.position)),
                 snapshot.stage_id,
                 snapshot.group_id,
+                snapshot.unresolved_ties,
             )
         )
     _unique(
@@ -668,7 +751,7 @@ def _map_request(value: dto.BlockSimRequest) -> Block:
         raise InvalidValueError("override needs a known rival")
     slots = _slots(season, tuple(competitions), fixtures)
     prior = _prior_results(value, fixtures, slots, competition_map)
-    snapshots = _snapshots(season, competition_ids)
+    snapshots = _snapshots(season, competition_map)
     injuries = tuple(
         dict.fromkeys(
             Injury(i.player_id, _date(i.date), i.days, True)
@@ -688,7 +771,7 @@ def _map_request(value: dto.BlockSimRequest) -> Block:
         tuple(competitions),
         fixtures,
         tuple(snapshots),
-        _evidence(season, fixtures),
+        _evidence(season, fixtures, competition_map),
         priorities,
         injuries,
         {
