@@ -1,4 +1,4 @@
-# Traspaso de la orquestación (2026-10-24)
+# Traspaso de la orquestación (2026-10-26)
 
 > Estado tras integrar F1, los módulos puros de T2.1-T2.5 y la primera CR de entrada histórica (hasta PR #29). Léelo junto con `CLAUDE.md`, `docs/PLAN.md` y `docs/TASKS.md`. Las instrucciones del autor prevalecen sobre estos documentos.
 
@@ -80,3 +80,16 @@ La instalación local de uv observada seguía siendo 0.9.7; su actualización pe
 ## 7. Limpieza y conservación
 
 Los informes de F1 están versionados y sus worktrees temporales ya se eliminaron. Conserva los worktrees activos de F2 hasta integrar sus cambios. Usa un único entorno backend y otro frontend compartidos; limpia los worktrees terminados sin perder cambios. Los cambios de inicio de F2 aclaran implementación y propiedad, sin alterar los puertos ni los DTO publicados.
+
+## 8. Reanudación y próximo cambio de conversación (2026-10-26)
+
+Esta sección actualiza la foto anterior sin reescribir sus comprobaciones históricas. Antes de actuar, contrastar siempre `git status`, `git log`, `git worktree list` y `gh pr list`.
+
+- **PR #31 integrada:** puerto de validación del catálogo, punta `61f2ac9a09aa86d48caa5973afafad4560e7c2b8`, el 2026-10-24 a las 16:10:50 UTC. Revisión independiente Sol y CI en verde. Su informe distingue árbol válido sin temporadas de un catálogo jugable.
+- **PR #34 integrada:** contrato de rutas POSIX corregido, punta `04ca5379cd1cb2662635572345324cffa37e8fb5`, el 2026-10-26 a las 09:17:04 UTC. Una barra inversa es un carácter literal válido en un nombre POSIX; se conserva, sin cambiar mensajes ni normalizarlo a separador. Las otras restricciones de rutas permanecen. Revisión Sol y CI en verde.
+- **PR #33 integrada:** adaptador YAML y caso de uso de validación, punta `af9ca363cb5ae39b97721fb16e367665e061131b`, el 2026-10-26 a las 09:24:52 UTC. La punta revisada `05fa42e9c2f0ce3215f4c5238727be258b2e4abd` incluye la regresión real de ruta literal; revisión independiente Sol y CI completa en verde antes de rebase-merge. T2.20 sigue pendiente de proveedor/mapeo y del cableado explícito de CLI/Makefile/workflow/composición.
+- **PR #32 abierta:** cierre de competiciones, rama `task/CR-T2.6-competition-completion`, worktree `.claude/worktrees/cr-t2-6-competitions`. Los hallazgos iniciales de cronología y contendientes se corrigieron. Sigue pendiente verificar el caso de una declaración parcial del grupo con partido posterior al KO: una contradicción conocida no puede ignorarse por falta de cobertura completa. El implementador Sol conserva el trabajo; no sustituirlo por cortes de límite. Comprobar la punta real y solicitar al revisor independiente Sol el cierre del parche final antes de integrar.
+- **Verificación conjunta:** la ejecución del 26/10 se interrumpió al aparecer ese hallazgo; no cuenta como prueba aprobada. El árbol temporal `/tmp/mister-f2-resume` contiene la combinación para comprobar. Solo actualizar cifras después de un `make test` completo y lint/cobertura en verde sobre las puntas finales.
+- **Siguiente tarea del motor:** [plan de Astra para T2.6](simulation/block-plan.md). Incluye fecha explícita del estado físico, continuidad entre bloques, juventud sin alterar ratings y biyección de plazas. La propiedad privada adicional de alineación/fuerza está registrada en TASKS. No iniciar la implementación hasta integrar PR #32.
+
+Puede continuarse en esta conversación para cerrar las PR abiertas. Para comenzar T2.6 en otra, basta pedir: «Continúa Míster Histórico. Lee docs/HANDOFF.md, CLAUDE.md, docs/PLAN.md y docs/TASKS.md; comprueba el estado real. Astra planifica; Sol implementa y otro Sol revisa. Proyecto exclusivamente personal». El estado del repositorio y los informes prevalecen sobre cualquier resumen conversacional antiguo.
