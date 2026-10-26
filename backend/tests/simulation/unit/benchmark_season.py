@@ -272,16 +272,22 @@ def _measure(value: api.BlockSimRequest, youth: int) -> float:
 
     summary = run()
     samples = []
+    individual_samples = []
     for _ in range(7):
         start = perf_counter()
         for _ in range(20):
+            individual_start = perf_counter()
             run()
+            individual_samples.append((perf_counter() - individual_start) * 1000)
         samples.append((perf_counter() - start) * 1000 / 20)
     report = {
         "seed": 20261026,
         "youth_commitments": youth,
         "matches": len(summary.results),
         "samples_ms": samples,
+        "individual_count": len(individual_samples),
+        "individual_min_ms": min(individual_samples),
+        "individual_max_ms": max(individual_samples),
         "median_ms": median(samples),
         "budget_ms": _BUDGET_MS,
     }
