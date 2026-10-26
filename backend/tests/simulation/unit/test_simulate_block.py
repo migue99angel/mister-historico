@@ -392,3 +392,62 @@ def test_full_test_fc_season_matches_five_continuations_including_injuries_and_e
     assert tuple(
         (p.player_id, p.fitness, p.injured_until) for p in summaries[-1].player_states
     ) == tuple((p.player_id, p.fitness, p.injured_until) for p in whole.player_states)
+
+
+class ManagedWins(FixedMatches):
+    def simulate(self, setup: MatchSetup, rng: object, *, decisive: bool = False) -> MatchResult:
+        return MatchResult(Score(1, 0) if setup.fixture.home == ME else Score(0, 1))
+
+
+def test_league_champion_is_emitted_at_evidenced_completion_and_never_repeated() -> None:
+    value = request()
+    whole = play(value, ManagedWins())
+    assert tuple((event.kind, event.date, event.competition_id, event.stage_id)
+                 for event in whole.events) == (("champion", END, LEAGUE, None),)
+    first = play(replace(value, end=START), ManagedWins())
+    assert first.events == ()
+    last = play(replace(value, start=date(2000, 9, 4), end=date(2000, 9, 5),
+                        prior_results=whole.results, state_as_of=END))
+    assert last.events == ()
+
+
+def test_unresolved_original_rival_tie_is_preserved_in_the_adjusted_table() -> None:
+    value = request()
+    third = ClubSeasonId("demo-athletic-2000-01")
+    competition = replace(value.season.competitions[0], participants=(ME, RIVAL, third), rounds=1)
+    fixtures = (
+        FixtureInput(FixtureId("first"), START, LEAGUE, ME, RIVAL, real_result=RealResultInput(0, 1)),
+        FixtureInput(FixtureId("last"), END, LEAGUE, ME, third, real_result=RealResultInput(0, 1)),
+    )
+    snapshot = StandingsDTO(LEAGUE, END, (
+        StandingRowDTO(RIVAL, 1, 2, 1, 1, 0, 1, 0, 4),
+        StandingRowDTO(third, 2, 2, 1, 1, 0, 1, 0, 4),
+        StandingRowDTO(ME, 3, 2, 0, 0, 2, 0, 2, 0),
+    ), unresolved_ties=((RIVAL, third),))
+    value = replace(value, season=replace(value.season, competitions=(competition,), fixtures=fixtures,
+        teams=(*value.season.teams, AggregateTeamInput(third, 65, 65)), historical_standings=(snapshot,)))
+    summary = play(value, FixedMatches(Score(0, 1)))
+    assert summary.standings[0].unresolved_ties == ((RIVAL, third),)
+
+
+@pytest.mark.parametrize("unresolved", [None, ()])
+def test_original_snapshot_preserves_unknown_and_known_empty_unresolved_metadata(
+    unresolved: tuple[tuple[ClubSeasonId, ...], ...] | None,
+) -> None:
+    from mister.simulation.application.simulate_block import _map_request
+
+    value = request()
+    snapshots = tuple(replace(s, unresolved_ties=unresolved) for s in value.season.historical_standings)
+    block = _map_request(replace(value, season=replace(value.season, historical_standings=snapshots)))
+    assert block.snapshots[0].unresolved_ties is unresolved
+
+
+def test_independent_live_squads_cannot_mutate_an_existing_request_or_summary() -> None:
+    value = request()
+    before = request()
+    first = SimulationService().simulate_block(value, StdlibRandomSource(Seed(15)))
+    changed = replace(value, managed_team=replace(value.managed_team,
+        players=tuple(replace(p, fitness=40, morale=80) for p in value.managed_team.players)))
+    SimulationService().simulate_block(changed, StdlibRandomSource(Seed(15)))
+    assert value == before
+    assert first == SimulationService().simulate_block(value, StdlibRandomSource(Seed(15)))
