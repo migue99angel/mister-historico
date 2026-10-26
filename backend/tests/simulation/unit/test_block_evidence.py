@@ -371,7 +371,7 @@ def test_verified_declarations_cannot_disagree_on_a_known_historical_score() -> 
 
 
 @pytest.mark.parametrize(
-    "criteria,leader",
+    ("criteria", "leader"),
     [
         (("head_to_head_away_goals",), RIVAL),
         (("goal_difference", "head_to_head_away_goals"), ME),
