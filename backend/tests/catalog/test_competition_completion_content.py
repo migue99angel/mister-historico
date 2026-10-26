@@ -541,7 +541,7 @@ def test_group_assignments_cannot_skip_an_unaccredited_first_knockout_stage(root
     assert_issue(issues_of(root, release=True), STANDINGS, "group_entry_assignments", "exactly")
 
 
-@pytest.mark.parametrize("earlier_proof", [None, "before", "after", "partial"])
+@pytest.mark.parametrize("earlier_proof", [None, "before", "after", "partial", "partial_after", "partial_only"])
 def test_additional_verified_group_matches_contradict_the_accredited_final_table(
     root: Path, earlier_proof: str | None
 ) -> None:
@@ -572,13 +572,26 @@ def test_additional_verified_group_matches_contradict_the_accredited_final_table
             data["head_to_head"].insert(1, earlier)
         elif earlier_proof == "after":
             data["head_to_head"].append(earlier)
-        elif earlier_proof == "partial":
+        elif earlier_proof in ("partial", "partial_after", "partial_only"):
             clubs = {"abroad-athletic-2000-01", "faraway-city-2000-01"}
             history["covered_clubs"] = sorted(clubs)
             history["schedule"] = [f for f in history["schedule"] if {f["home"], f["away"]} <= clubs]
             ids = {f["fixture_id"] for f in history["schedule"]}
             history["results"] = [r for r in history["results"] if r["fixture_id"] in ids]
-            data["head_to_head"].insert(1, earlier)
+            if earlier_proof == "partial":
+                data["head_to_head"].insert(1, earlier)
+            elif earlier_proof == "partial_after":
+                data["head_to_head"].append(earlier)
 
+    if earlier_proof == "partial_only":
+        edit(root, f"{SEASON}/season.yaml", general_criteria)
     edit(root, STANDINGS, extra_match)
     assert_issue(issues_of(root, release=True), STANDINGS, "group_entry_assignments", "contradicts")
+
+
+
+def test_known_managed_group_match_cannot_be_ignored_without_head_to_head_coverage(root: Path) -> None:
+    edit(root, f"{SEASON}/season.yaml", general_criteria)
+    edit(root, STANDINGS, lambda d: d.update(head_to_head=None))
+    edit(root, f"{SEASON}/fixtures.yaml", lambda d: next(f for f in d["fixtures"] if f["id"] == "tfc-cont-g6").update(date=date(2001, 5, 24)))
+    assert_issue(issues_of(root, release=True), STANDINGS, "group_entry_assignments", "known group match")
