@@ -386,6 +386,8 @@
 #### T2.20 · Dominio del catálogo, cargador YAML y validación
 - **Oleada:** F2-A · **Tamaño:** M · **Depende de:** T1.2, T1.5
 - **Propiedad:** `catalog/domain/**`, `catalog/application/**` (salvo `ports.py` y `api.py`, que son contrato de T1.5: cambiarlos requiere CR), `catalog/infrastructure/yaml_loader.py`, `entrypoints/cli/content.py` y sus tests y `docs/adr/008-nombres-reales-desactivables.md`
+- **T2.20a — validación:** implementados `catalog/infrastructure/yaml_validation.py` (ampliación expresa de propiedad), el caso de uso `application/validate_content.py`, tests propios y [documentación](catalog/content-validation.md); pendiente de revisión independiente, CI y pruebas completas coordinadas. Reutiliza `load_content_tree` y la suite del puerto integrado.
+- **Estado de T2.20:** abierta. La fase b aportará el proveedor YAML, el mapeo del catálogo y `NamePolicy` tras la CR de competiciones. Composición, CLI, Makefile y CI necesitan una CR de cableado explícita; T2.20a no activa por sí sola `make validate-content`.
 - **Qué hacer:**
   - Entidades del catálogo.
   - `YamlSeasonContentProvider`.
