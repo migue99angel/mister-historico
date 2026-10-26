@@ -8,7 +8,14 @@ from typing import TYPE_CHECKING, cast
 
 from mister.shared_kernel.errors import InvalidValueError
 from mister.simulation.domain.fitness import match_fitness, recover_between
-from mister.simulation.domain.groups import GroupEvidence, GroupMatch, GroupRules, GroupTable
+from mister.simulation.domain.groups import (
+    GroupEvidence,
+    GroupMatch,
+    GroupRules,
+    GroupTable,
+    _overall_value,
+    _partition,
+)
 from mister.simulation.domain.injuries import Injury, injured_until, simulate_injury
 from mister.simulation.domain.knockout import HistoricalTie, KnockoutRules, KnockoutTie
 from mister.simulation.domain.league import (
@@ -40,7 +47,7 @@ if TYPE_CHECKING:
 
     from mister.shared_kernel.ids import ClubSeasonId, CompetitionId, FixtureId, PlayerId
     from mister.shared_kernel.randomness import RandomSource
-    from mister.simulation.domain.model import SimPlayer, Tactic
+    from mister.simulation.domain.model import SimPlayer, Tactic, Venue
     from mister.simulation.domain.ports import MatchSimulator
 
 
@@ -201,6 +208,7 @@ class SeasonSimulation:
     def _validate_evidence_consistency(self) -> None:
         fixtures: dict[FixtureId, FixtureSpec] = {}
         scores: dict[FixtureId, Score] = {}
+        venues: dict[FixtureId, Venue] = {}
         for evidence in self.block.evidence:
             for fixture in evidence.schedule:
                 previous = fixtures.get(fixture.fixture_id)
@@ -209,6 +217,11 @@ class SeasonSimulation:
                         "historical declarations contradict fixture identity or dates"
                     )
                 fixtures[fixture.fixture_id] = fixture
+                if fixture.fixture_id not in evidence.unknown_venues:
+                    previous_venue = venues.get(fixture.fixture_id)
+                    if previous_venue is not None and previous_venue is not fixture.venue:
+                        raise InvalidValueError("historical declarations contradict a known venue")
+                    venues[fixture.fixture_id] = fixture.venue
             for match in evidence.results:
                 previous_score = scores.get(match.fixture.fixture_id)
                 if previous_score is not None and previous_score != match.score:
@@ -216,6 +229,31 @@ class SeasonSimulation:
                         "historical declarations contradict the same fixture score"
                     )
                 scores[match.fixture.fixture_id] = match.score
+        self._resolve_known_venues(venues)
+
+    def _resolve_known_venues(self, venues: dict[FixtureId, Venue]) -> None:
+        declarations = []
+        for evidence in self.block.evidence:
+            completed = evidence.unknown_venues.intersection(venues)
+            if not completed:
+                declarations.append(evidence)
+                continue
+            fixtures = tuple(
+                replace(f, venue=venues[f.fixture_id]) if f.fixture_id in completed else f
+                for f in evidence.schedule
+            )
+            by_id = {f.fixture_id: f for f in fixtures}
+            declarations.append(
+                replace(
+                    evidence,
+                    schedule=fixtures,
+                    results=tuple(
+                        GroupMatch(by_id[m.fixture.fixture_id], m.score) for m in evidence.results
+                    ),
+                    unknown_venues=evidence.unknown_venues.difference(completed),
+                )
+            )
+        self.block = replace(self.block, evidence=tuple(declarations))
 
     def _validate_group_feeders(self) -> None:
         for entry in self.block.entries:
@@ -640,7 +678,7 @@ class SeasonSimulation:
                 if m.fixture.date <= cutoff
             )
             evidence = GroupEvidence(cutoff, original.schedule, results)
-        ranking = GroupTable(
+        table = GroupTable(
             competition.competition_id,
             stage.stage_id,
             group_id,
@@ -648,13 +686,69 @@ class SeasonSimulation:
             rows,
             rules,
             evidence,
-        ).rank()
+        )
+        if original is not None and original.unknown_venues:
+            self._require_group_venues(table, original, cutoff)
+        ranking = table.rank()
         # Qualifier evaluation is deferred until closure, preserving intermediate unresolved tables.
         return RankedTable(
             replace(baseline, as_of=cutoff, rows=ranking.rows), ranking.unresolved_ties
         ), ranking.qualifiers if self._group_closed(
             competition, stage, group_id, participants, cutoff
         ) else ()
+
+    @staticmethod
+    def _require_group_venues(
+        table: GroupTable, original: HistoricalEvidence, cutoff: date
+    ) -> None:
+        """Validate venues only when ranking reaches the away-goal criterion.
+
+        Mini-table counters are computed together by the ranking strategy. This traversal
+        preserves its original tied sets, criterion order and reapplication while checking
+        provenance only at the criterion that actually depends on the venue.
+        """
+        rows = {row.club_season_id: row for row in table.rows}
+        criteria = table.rules.tiebreakers
+
+        def resolve(members: tuple[ClubSeasonId, ...], index: int) -> None:
+            if len(members) <= 1 or index == len(criteria):
+                return
+            if not criteria[index].startswith("head_to_head_"):
+                for part in _partition(
+                    members, lambda club: _overall_value(rows[club], criteria[index])
+                ):
+                    resolve(part, index + 1)
+                return
+            end = index
+            while end < len(criteria) and criteria[end].startswith("head_to_head_"):
+                end += 1
+            values = table._mini_table(members)
+            partitions: tuple[tuple[ClubSeasonId, ...], ...] = (members,)
+            for criterion in criteria[index:end]:
+                if (
+                    criterion == "head_to_head_away_goals"
+                    and any(len(part) > 1 for part in partitions)
+                    and any(
+                        f.fixture_id in original.unknown_venues
+                        and f.date <= cutoff
+                        and f.home in members
+                        and f.away in members
+                        for f in original.schedule
+                    )
+                ):
+                    raise InvalidValueError("group away-goal criterion requires known venues")
+                criterion_values = {club: values[club][criterion] for club in members}
+                partitions = tuple(
+                    part
+                    for group in partitions
+                    for part in _partition(group, criterion_values.__getitem__)
+                )
+            restart = table.rules.reapply_head_to_head and len(partitions) > 1
+            for part in partitions:
+                resolve(part, index if restart else end)
+
+        for members in _partition(table.participants, lambda club: rows[club].points):
+            resolve(members, 0)
 
     def _group_closed(
         self,
