@@ -577,7 +577,7 @@ class SeasonSimulation:
                     tie = self._tie(competition, stage, historical, mapping)
                     if len(tie.results) == tie.rules.legs and tie.winner is None:
                         unresolved.append(tie)
-        return SeasonOutcome(tuple(self.results), tuple(tables), tuple(self.new_injuries),
+        return SeasonOutcome(tuple(self.results), tuple(tables), tuple(sorted(self.new_injuries, key=lambda i: (i.date, str(i.player_id), i.forced, i.days))),
             tuple(PlayerState(p.player_id, p.fitness.value, self._absence(p.player_id, self.block.end),
                               self.minutes[p.player_id]) for p in self.team.squad or ()),
             tuple(sorted(self.events, key=lambda e: (e.date, str(e.competition_id), e.stage_id))),
