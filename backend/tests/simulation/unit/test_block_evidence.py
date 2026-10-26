@@ -5,6 +5,8 @@ from datetime import date
 
 import pytest
 from tests.simulation.unit.test_season_competitions import (
+    CUP,
+    FINAL_DAY,
     FOURTH,
     OTHER,
     SOURCES,
@@ -14,12 +16,14 @@ from tests.simulation.unit.test_season_competitions import (
 from tests.simulation.unit.test_simulate_block import END, LEAGUE, ME, RIVAL, START, play, request
 
 from mister.shared_kernel.errors import InvalidValueError
+from mister.simulation.application import api
 from mister.simulation.application.api import (
     HeadToHeadEvidenceInput,
     HeadToHeadFixtureInput,
     HeadToHeadResultInput,
     RealResultInput,
 )
+from mister.simulation.domain.model import MatchResult, MatchSetup, Score
 
 
 def test_group_calendar_cannot_close_after_its_knockout_destination() -> None:
@@ -197,3 +201,117 @@ def test_group_snapshot_must_cover_every_participant_before_seed_lookup() -> Non
             replace(value, season=replace(value.season, historical_standings=(snapshot,))),
             OwnWins(),
         )
+
+
+def test_group_away_goals_cannot_treat_unknown_external_venue_as_neutral() -> None:
+    value = group_request()
+    competition = value.season.competitions[0]
+    group = replace(
+        competition.stages[0], tiebreakers=("head_to_head_away_goals",), reapply_head_to_head=False
+    )
+    competition = replace(
+        competition,
+        stages=(group, competition.stages[1]),
+        real_ties=(api.RealTieInput("final", (OTHER, RIVAL), OTHER),),
+    )
+    evidence = (value.season.head_to_head or ())[0]
+    actual = ((2, 1), (1, 2), (1, 0), (2, 1), (1, 0), (1, 0))
+    evidence = replace(
+        evidence,
+        schedule=(
+            *evidence.schedule[:3],
+            replace(evidence.schedule[3], venue=None),
+            *evidence.schedule[4:],
+        ),
+        results=tuple(
+            replace(r, score=score) for r, score in zip(evidence.results, actual, strict=True)
+        ),
+    )
+    snapshot = api.StandingsDTO(
+        CUP,
+        END,
+        tuple(
+            api.StandingRowDTO(
+                club,
+                i + 1,
+                3,
+                2 if i < 3 else 0,
+                0,
+                1 if i < 3 else 3,
+                4 if i < 3 else 0,
+                3,
+                6 if i < 3 else 0,
+            )
+            for i, club in enumerate((OTHER, RIVAL, ME, FOURTH))
+        ),
+        "groups",
+        "a",
+        (),
+    )
+    own = tuple(
+        replace(f, real_result=RealResultInput(*score))
+        for f, score in zip(value.season.fixtures[:3], actual[:3], strict=True)
+    )
+    calendar = (value.season.knockout_calendar or ())[0]
+    calendar = replace(
+        calendar, slots=tuple(replace(slot, home=OTHER) for slot in calendar.slots or ())
+    )
+    entries = (value.season.group_entry_assignments or ())[0]
+    entries = replace(
+        entries,
+        entries=tuple(
+            replace(entry, historical_representative=club)
+            for entry, club in zip(entries.entries or (), (OTHER, RIVAL), strict=True)
+        ),
+    )
+    value = replace(
+        value,
+        season=replace(
+            value.season,
+            competitions=(competition,),
+            fixtures=own,
+            head_to_head=(evidence,),
+            historical_standings=(snapshot,),
+            knockout_calendar=(calendar,),
+            group_entry_assignments=(entries,),
+        ),
+    )
+
+    class Exact(FixedMatches):
+        def simulate(
+            self, setup: MatchSetup, rng: object, *, decisive: bool = False
+        ) -> MatchResult:
+            scores = {f.fixture_id: Score(*score) for f, score in zip(own, actual[:3], strict=True)}
+            return MatchResult(scores.get(setup.fixture.fixture_id, Score(1, 0)))
+
+    with pytest.raises(InvalidValueError, match=r"venue|unknown"):
+        play(value, Exact())
+
+
+def test_verified_declarations_cannot_disagree_on_a_known_external_venue() -> None:
+    value = group_request()
+    evidence = (value.season.head_to_head or ())[0]
+    conflicting = replace(
+        evidence,
+        complete_through=FINAL_DAY,
+        schedule=(*evidence.schedule[:-1], replace(evidence.schedule[-1], venue="neutral")),
+    )
+    with pytest.raises(InvalidValueError, match=r"venue|contradict"):
+        play(
+            replace(value, season=replace(value.season, head_to_head=(evidence, conflicting))),
+            OwnWins(),
+        )
+
+
+def test_a_known_venue_can_complete_unknown_evidence_without_changing_other_facts() -> None:
+    value = group_request()
+    evidence = (value.season.head_to_head or ())[0]
+    incomplete = replace(
+        evidence, schedule=(*evidence.schedule[:-1], replace(evidence.schedule[-1], venue=None))
+    )
+    completed = replace(evidence, complete_through=FINAL_DAY)
+    summary = play(
+        replace(value, season=replace(value.season, head_to_head=(incomplete, completed))),
+        OwnWins(),
+    )
+    assert summary.results == play(value, OwnWins()).results
