@@ -20,6 +20,7 @@ from mister.simulation.domain.model import (
 )
 
 _BETA = 0.40
+_NEUTRAL_MORALE = 50
 # Design coefficients, not historical data or calibrated estimates. Both entries are gains:
 # positive attack improves scoring; positive defence reduces vulnerability.
 _STYLE_GAINS = {
@@ -92,6 +93,13 @@ def tactical_multipliers(tactic: Tactic, lineup: Lineup) -> tuple[float, float]:
 
 def _neutral_team(team: SimTeam, *, reference: bool = False) -> SimTeam:
     if team.squad is None:
+        return team
+    if team.morale.value == _NEUTRAL_MORALE and all(
+        player.fitness.value == Fitness.HIGH
+        and player.morale.value == _NEUTRAL_MORALE
+        and (not reference or not player.injured)
+        for player in team.squad
+    ):
         return team
     return replace(
         team,
