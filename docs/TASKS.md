@@ -337,10 +337,10 @@
 #### CR-T2.6 · Evidencia histórica para la simulación
 - **Estado:** completada e integrada por rebase-merge en [PR #29](https://github.com/migue99angel/mister-historico/pull/29), tras corrección del hallazgo de identidad global, revisión independiente Sol y CI en verde.
 - **Alcance y propiedad:** [plan de la CR](changes/CR-T2.6-historical-evidence.md). Entrada de enfrentamientos entre rivales y regla explícita de goles fuera en prórroga, con procedencia y compatibilidad de construcción.
-- **Dependencia:** integrar antes de T2.6 y del mapeo definitivo de T2.20. El calendario posterior a la eliminación real sigue siendo una necesidad aparte que debe resolverse antes del cierre de T2.6.
+- **Dependencia:** integrar antes de T2.6 y del mapeo definitivo de T2.20. La entrada del calendario posterior a la eliminación real se resolvió en la CR de competiciones integrada en PR #32. Su conexión efectiva pertenece a T2.6.
 
 #### CR-T2.6-competition-completion · Cierre de datos de competiciones
-- **Estado:** implementación Sol terminada; revisión independiente, comprobación conjunta y CI pendientes.
+- **Estado:** completada e integrada por rebase-merge en [PR #32](https://github.com/migue99angel/mister-historico/pull/32), con revisión independiente Sol, correcciones verificadas y CI/pruebas conjuntas en verde.
 - **Alcance y propiedad:** [plan y política de plazas](changes/CR-T2.6-competition-completion.md). APIs/esquema, calendarios y asignaciones, salidas sin resolver y ajuste de sede en `league.py` con sus tests/documentación; sin cambiar copas ni puertos.
 - **Dependencia:** CR de evidencia histórica integrada. Debe integrarse antes de T2.6 y del mapeo definitivo de T2.20. No inventar fechas ni equiparar desconocido a vacío o local.
 
@@ -379,14 +379,14 @@
 ### Track de catálogo (`backend/src/mister/catalog/`)
 
 #### CR-T2.20 · Puerto de validación del catálogo
-- **Estado:** implementada por Sol; pendiente de revisión independiente, pruebas completas coordinadas y CI antes de integrar.
+- **Estado:** completada e integrada por rebase-merge en [PR #31](https://github.com/migue99angel/mister-historico/pull/31), con revisión independiente Sol y CI en verde.
 - **Propiedad y contrato:** [plan de la CR](changes/CR-T2.20-validation-port.md). Nuevo puerto de IO, tipos de aplicación, fake y suite reutilizable; sin modificar APIs de temporadas, esquemas ni configuración compartida.
 - **Dependencia:** integrar antes del adaptador de validación de T2.20. El cableado compartido necesita su CR explícita posterior.
 
 #### T2.20 · Dominio del catálogo, cargador YAML y validación
 - **Oleada:** F2-A · **Tamaño:** M · **Depende de:** T1.2, T1.5
 - **Propiedad:** `catalog/domain/**`, `catalog/application/**` (salvo `ports.py` y `api.py`, que son contrato de T1.5: cambiarlos requiere CR), `catalog/infrastructure/yaml_loader.py`, `entrypoints/cli/content.py` y sus tests y `docs/adr/008-nombres-reales-desactivables.md`
-- **T2.20a — validación:** implementados `catalog/infrastructure/yaml_validation.py` (ampliación expresa de propiedad), el caso de uso `application/validate_content.py`, tests propios y [documentación](catalog/content-validation.md); pendiente de revisión independiente, CI y pruebas completas coordinadas. Reutiliza `load_content_tree` y la suite del puerto integrado.
+- **T2.20a — validación:** implementados `catalog/infrastructure/yaml_validation.py` (ampliación expresa de propiedad), el caso de uso `application/validate_content.py`, tests propios y [documentación](catalog/content-validation.md); integrada en [PR #33](https://github.com/migue99angel/mister-historico/pull/33), tras revisión independiente Sol, CI y comprobación conjunta. Reutiliza `load_content_tree` y la suite del puerto integrado.
 - **Estado de T2.20:** abierta. La fase b aportará el proveedor YAML, el mapeo del catálogo y `NamePolicy` tras la CR de competiciones. Composición, CLI, Makefile y CI necesitan una CR de cableado explícita; T2.20a no activa por sí sola `make validate-content`.
 - **Qué hacer:**
   - Entidades del catálogo.
