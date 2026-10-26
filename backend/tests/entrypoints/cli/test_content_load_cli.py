@@ -109,3 +109,18 @@ def test_unreachable_database_exits_two(monkeypatch: pytest.MonkeyPatch) -> None
 
     assert result.exit_code == 2
     assert "Error de carga" in result.output
+
+
+def test_invalid_database_url_exits_two_without_exposing_credentials(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgresql+psycopg://user:secret@localhost:bad/mister",
+    )
+
+    result = runner.invoke(app, ["content", "load", "--root", str(CONTENT_ROOT)])
+
+    assert result.exit_code == 2
+    assert "Error de carga" in result.output
+    assert "secret" not in result.output
