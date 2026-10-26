@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Literal, cast
+
+type EventKind = Literal["advanced", "eliminated", "champion"]
 
 from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.ids import BlockId, ClubSeasonId, CompetitionId, FixtureId, PlayerId
 from mister.simulation.domain.injuries import Injury
+from mister.simulation.domain.groups import GroupMatch, GroupRules
+from mister.simulation.domain.knockout import HistoricalBracket, HistoricalTie, KnockoutRules, KnockoutTie
 from mister.simulation.domain.league_types import LeagueRow
 from mister.simulation.domain.match_simulator import PoissonMatchSimulator
 from mister.simulation.domain.model import (
@@ -30,6 +35,9 @@ from mister.simulation.domain.model import (
 from mister.simulation.domain.season import (
     Block,
     Competition,
+    GroupEntry,
+    HistoricalEvidence,
+    Stage,
     PlayedMatch,
     SeasonFixture,
     SeasonSimulation,
@@ -41,6 +49,8 @@ if TYPE_CHECKING:
     from mister.simulation.application.api import (
         BlockSimRequest,
         BlockSummaryDTO,
+        CompetitionInput,
+        SeasonSimInput,
         MatchResultDTO,
         TeamInput,
     )
@@ -146,6 +156,171 @@ def _record(value: MatchResultDTO, fixture: SeasonFixture, managed: ClubSeasonId
     return record
 
 
+def _stages(value: CompetitionInput) -> tuple[Stage, ...]:
+    stages = []
+    for stage in value.stages:
+        if not stage.stage_id.strip():
+            raise InvalidValueError("a stage needs an ID")
+        if stage.round == "group_stage":
+            if stage.points_per_win is None or stage.points_per_draw is None or stage.advance_per_group is None:
+                raise InvalidValueError("groups need explicit scoring and qualification rules")
+            if stage.reapply_head_to_head is None and any(t.startswith("head_to_head") for t in stage.tiebreakers):
+                raise InvalidValueError("direct group criteria require an explicit reapplication rule")
+            rules = GroupRules(stage.points_per_win, stage.points_per_draw, stage.tiebreakers,
+                stage.advance_per_group, stage.reapply_head_to_head if stage.reapply_head_to_head is not None else False)
+            groups = tuple((g.group_id, g.participants) for g in stage.groups)
+            _unique(tuple(g[0] for g in groups), "group IDs")
+            members = tuple(c for _, clubs in groups for c in clubs)
+            _unique(members, "group participants")
+            if not groups or not set(members) <= set(value.participants) or any(len(clubs) != 4 for _, clubs in groups):
+                raise InvalidValueError("groups need four distinct competition participants")
+            if type(stage.legs) is not int or stage.legs not in (1, 2):
+                raise InvalidValueError("group repetitions must be one or two")
+            stages.append(Stage(stage.stage_id, stage.round, groups=groups, group_rules=rules,
+                                group_rounds=stage.legs))
+        else:
+            if stage.groups:
+                raise InvalidValueError("knockout rounds cannot contain groups")
+            stages.append(Stage(stage.stage_id, stage.round, KnockoutRules(stage.legs,
+                stage.away_goals_rule, stage.extra_time, stage.penalties, stage.away_goals_in_extra_time)))
+    _unique(tuple(s.stage_id for s in stages), "stage IDs")
+    if value.kind != "league" and not stages:
+        raise InvalidValueError("a knockout competition needs stages")
+    return tuple(stages)
+
+
+def _sources(sources: tuple[str, ...], verify: str) -> None:
+    if verify != "ok" or not isinstance(sources, tuple) or not sources or any(
+        not isinstance(source, str) or not source.strip() for source in sources):
+        raise InvalidValueError("required historical evidence needs verified nonempty sources")
+
+
+def _slots(season: SeasonSimInput, competitions: tuple[Competition, ...],
+           fixtures: tuple[SeasonFixture, ...]) -> tuple[SeasonFixture, ...]:
+    declarations = season.knockout_calendar or ()
+    _unique(tuple(d.competition_id for d in declarations), "knockout calendar declarations")
+    calendars = {d.competition_id: d for d in declarations}
+    originals = {f.spec.fixture_id: f for f in fixtures}
+    slots = []
+    for competition in competitions:
+        if competition.kind == "league":
+            continue
+        declaration = calendars.get(competition.competition_id)
+        if declaration is None or declaration.slots is None:
+            raise InvalidValueError("missing knockout calendar slots for a reachable competition")
+        _sources(declaration.sources, declaration.verify)
+        stage_ids = {s.stage_id for s in competition.stages if not s.groups}
+        for slot in declaration.slots:
+            _sources(slot.sources, slot.verify)
+            if slot.date is None or slot.venue is None or slot.stage_id not in stage_ids:
+                raise InvalidValueError("knockout slot needs known date, venue and knockout stage")
+            if not {slot.home, slot.away} <= set(competition.participants):
+                raise InvalidValueError("slot clubs must participate in the competition")
+            spec = FixtureSpec(slot.fixture_id, _date(slot.date), competition.competition_id,
+                slot.home, slot.away, Venue(slot.venue), True, slot.leg, slot.stage_id)
+            original = originals.get(slot.fixture_id)
+            if original is not None and replace(original.spec, key=True) != spec:
+                raise InvalidValueError("knockout slot contradicts the managed historical fixture")
+            slots.append(SeasonFixture(spec, original.round if original else None,
+                                      original.historical if original else None))
+        for stage in competition.stages:
+            if stage.groups:
+                continue
+            ties = [t for t in competition.ties if t.stage_id == stage.stage_id]
+            if not ties:
+                raise InvalidValueError("a knockout stage needs historical ties")
+            for historical in ties:
+                calendar = tuple(f.spec for f in sorted(slots, key=lambda f: (f.spec.date, str(f.spec.fixture_id)))
+                    if f.spec.competition_id == competition.competition_id and f.spec.stage == stage.stage_id
+                    and {f.spec.home, f.spec.away} == set(historical.clubs))
+                if stage.knockout_rules is None:
+                    raise InvalidValueError("a knockout stage needs rules")
+                KnockoutTie(stage.knockout_rules, calendar)
+    _unique(tuple(f.spec.fixture_id for f in slots), "knockout slots")
+    for fixture in fixtures:
+        if fixture.spec.stage is not None and fixture.spec.group is None and fixture.spec.fixture_id not in {
+            f.spec.fixture_id for f in slots}:
+            raise InvalidValueError("a managed knockout fixture must match a historical slot")
+    return tuple(slots)
+
+
+def _evidence(season: SeasonSimInput, fixtures: tuple[SeasonFixture, ...]) -> tuple[HistoricalEvidence, ...]:
+    evidence = []
+    own = {f.spec.fixture_id: f for f in fixtures}
+    for declaration in season.head_to_head or ():
+        _sources(declaration.sources, declaration.verify)
+        _unique(declaration.covered_clubs, "evidence participants")
+        _unique(tuple(f.fixture_id for f in declaration.schedule), "evidence fixtures")
+        _unique(tuple(r.fixture_id for r in declaration.results), "evidence results")
+        scores = {r.fixture_id: r for r in declaration.results}
+        schedule = []
+        matches = []
+        for fixture in declaration.schedule:
+            _sources(fixture.sources, fixture.verify)
+            if fixture.venue is None:
+                raise InvalidValueError("historical fixture venue remains unknown")
+            spec = FixtureSpec(fixture.fixture_id, _date(fixture.date), declaration.competition_id,
+                fixture.home, fixture.away, Venue(fixture.venue), stage=declaration.stage_id,
+                group=declaration.group_id)
+            if not {spec.home, spec.away} <= set(declaration.covered_clubs):
+                raise InvalidValueError("fixture lies outside historical evidence coverage")
+            original = own.get(spec.fixture_id)
+            if original is not None and replace(original.spec, key=False) != replace(spec, key=False):
+                raise InvalidValueError("historical evidence contradicts a managed fixture")
+            schedule.append(spec)
+            result = scores.get(spec.fixture_id)
+            if result is not None and result.score is not None and result.verify == "ok":
+                _sources(result.sources, result.verify)
+                score = Score(*result.score)
+                if original is not None and original.historical is not None and original.historical != score:
+                    raise InvalidValueError("evidence contradicts the managed historical score")
+                matches.append(GroupMatch(spec, score))
+        if not set(scores) <= {f.fixture_id for f in schedule}:
+            raise InvalidValueError("historical result has no scheduled fixture")
+        evidence.append(HistoricalEvidence(declaration.competition_id, _date(declaration.complete_through),
+            declaration.covered_clubs, tuple(schedule), tuple(matches), declaration.sources,
+            declaration.stage_id, declaration.group_id))
+    _unique(tuple((e.competition_id, e.complete_through, e.stage_id, e.group_id) for e in evidence),
+            "historical evidence cutoffs")
+    return tuple(evidence)
+
+
+def _entries(season: SeasonSimInput, competitions: tuple[Competition, ...],
+             snapshots: tuple[TableSnapshot, ...]) -> tuple[GroupEntry, ...]:
+    declarations = season.group_entry_assignments or ()
+    _unique(tuple(d.competition_id for d in declarations), "group entry declarations")
+    entries = []
+    for declaration in declarations:
+        if declaration.entries is None:
+            continue
+        _sources(declaration.sources, declaration.verify)
+        for entry in declaration.entries:
+            _sources(entry.sources, entry.verify)
+            entries.append(GroupEntry(declaration.competition_id, entry.source_stage_id, entry.group_id,
+                entry.qualifying_position, entry.target_stage_id, entry.historical_representative))
+    for competition in competitions:
+        for index, stage in enumerate(competition.stages):
+            if not stage.groups or index == len(competition.stages)-1:
+                continue
+            target = competition.stages[index+1]
+            selected = [e for e in entries if e.competition_id == competition.competition_id
+                        and e.source_stage_id == stage.stage_id]
+            expected = {(group, position) for group, _ in stage.groups for position in
+                        range(1, (stage.group_rules.advance_per_group if stage.group_rules else 0)+1)}
+            if len(selected) != len(expected) or {(e.group_id, e.position) for e in selected} != expected:
+                raise InvalidValueError("group entries must cover every qualifying position exactly once")
+            representatives = {c for t in competition.ties if t.stage_id == target.stage_id for c in t.clubs}
+            if {e.representative for e in selected} != representatives or any(
+                e.target_stage_id != target.stage_id for e in selected):
+                raise InvalidValueError("group entries must exactly cover the first knockout stage")
+            for entry in selected:
+                candidates = [s for s in snapshots if (s.competition_id, s.stage_id, s.group_id) ==
+                    (competition.competition_id, stage.stage_id, entry.group_id)]
+                if not candidates or max(candidates, key=lambda s: s.as_of).order[entry.position-1] != entry.representative:
+                    raise InvalidValueError("historical group entry must agree with the original final order")
+    return tuple(entries)
+
+
 def _map_request(value: BlockSimRequest) -> Block:
     from mister.simulation.application.api import SquadTeamInput
 
@@ -196,9 +371,15 @@ def _map_request(value: BlockSimRequest) -> Block:
                 ppw if ppw is not None else 0,
                 ppd if ppd is not None else 0,
                 c.tiebreakers,
+                _stages(c),
+                tuple(HistoricalTie(t.stage_id, t.clubs, t.winner) for t in c.real_ties),
             )
         )
     _unique(tuple(c.competition_id for c in competitions), "competitions")
+    for competition in competitions:
+        knockout_stages = tuple(s.stage_id for s in competition.stages if not s.groups)
+        if knockout_stages:
+            HistoricalBracket(knockout_stages, competition.ties)
     competition_ids = {c.competition_id for c in competitions}
     priorities = {}
     for competition_id, priority in value.competition_priorities.items():
@@ -217,9 +398,6 @@ def _map_request(value: BlockSimRequest) -> Block:
             or (season.managed_club_season_id not in (spec.home, spec.away))
         ):
             raise InvalidValueError("fixture must belong to managed team and its competition")
-        if fixture.historical is not None and spec.away == season.managed_club_season_id:
-            # Content scores are relative to the managed club, not the nominal home side.
-            pass
     fixtures = tuple(
         SeasonFixture(
             f.spec,
@@ -239,13 +417,16 @@ def _map_request(value: BlockSimRequest) -> Block:
         for t in rivals
     ):
         raise InvalidValueError("override needs a known rival")
-    fixture_map = {f.spec.fixture_id: f for f in fixtures}
+    slots = _slots(season, tuple(competitions), fixtures)
+    fixture_map = {f.spec.fixture_id: f for f in (*fixtures, *slots)}
     _unique(tuple(r.fixture_id for r in value.prior_results), "prior results")
     prior = []
     for result in value.prior_results:
         fixture = fixture_map.get(result.fixture_id)
         if fixture is None or result.date >= start:
             raise InvalidValueError("prior result must identify an earlier scheduled fixture")
+        if fixture.spec.group is None and competition_map[fixture.spec.competition_id].kind != "league":
+            fixture = replace(fixture, spec=replace(fixture.spec, home=result.home, away=result.away))
         prior.append(_record(result, fixture, season.managed_club_season_id))
     snapshots = []
     for snapshot in season.historical_standings:
@@ -294,7 +475,7 @@ def _map_request(value: BlockSimRequest) -> Block:
         tuple(competitions),
         fixtures,
         tuple(snapshots),
-        (),
+        _evidence(season, fixtures),
         priorities,
         injuries,
         {
@@ -304,6 +485,8 @@ def _map_request(value: BlockSimRequest) -> Block:
         },
         frozenset(p.player_id for p in value.managed_team.players if p.youth_minutes),
         tuple(prior),
+        slots,
+        _entries(season, tuple(competitions), tuple(snapshots)),
     )
 
 
@@ -351,8 +534,12 @@ def _simulate(
 ) -> BlockSummaryDTO:
     from mister.simulation.application.api import (
         BlockSummaryDTO,
+        CompetitionInput,
+        SeasonSimInput,
         InjuryDTO,
         PlayerStateDTO,
+        EventDTO,
+        UnresolvedKnockoutTieDTO,
         StandingRowDTO,
         StandingsDTO,
     )
@@ -397,7 +584,11 @@ def _simulate(
             PlayerStateDTO(p.player_id, p.fitness, p.injured_until, p.minutes)
             for p in outcome.states
         ),
-        unresolved_knockout_ties=(),
+        events=tuple(EventDTO(cast("EventKind", e.kind), e.date,
+            block.managed_team.club_season_id, e.competition_id, e.stage_id) for e in outcome.events),
+        unresolved_knockout_ties=tuple(UnresolvedKnockoutTieDTO(t.fixtures[0].competition_id,
+            t.fixtures[0].stage or "", (t.fixtures[0].home, t.fixtures[0].away),
+            tuple(f.fixture_id for f in t.fixtures)) for t in outcome.unresolved),
     )
 
 
