@@ -2,7 +2,7 @@
 
 ## Estado y alcance
 
-Planificación de Astra; implementación Sol terminada, pendiente de revisión independiente y comprobación conjunta antes de integrar. Posterior a [la CR de evidencia histórica](CR-T2.6-historical-evidence.md), sin ampliar esa tarea. Debe resolverse antes de declarar T2.6 completa. No cambia los puertos, el kernel ni el dominio de copas.
+Planificación de Astra; implementación Sol integrada por rebase-merge en PR #32, tras revisión independiente Sol, correcciones, CI y comprobación conjunta en verde. Posterior a [la CR de evidencia histórica](CR-T2.6-historical-evidence.md), sin ampliar esa tarea. Debe resolverse antes de declarar T2.6 completa. No cambia los puertos, el kernel ni el dominio de copas.
 
 ## Datos mínimos propuestos
 

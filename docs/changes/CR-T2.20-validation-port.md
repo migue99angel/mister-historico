@@ -1,6 +1,6 @@
 # CR-T2.20 · Puerto de validación del catálogo
 
-Contrato implementado a partir de la planificación de Astra, en paralelo al cierre de competiciones y pendiente de revisión independiente e integración. Debe integrarse antes del adaptador de validación de T2.20.
+Contrato implementado a partir de la planificación de Astra e integrado en PR #31, tras revisión independiente Sol y CI en verde. Debe integrarse antes del adaptador de validación de T2.20.
 
 ## Contrato
 
