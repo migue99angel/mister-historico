@@ -628,3 +628,37 @@ def test_extra_time_uses_120_minutes_for_each_actual_starter_and_no_substitutes(
     assert sum(p.minutes_played == 0 for p in summary.player_states) == 7
     assert all(p.fitness == 85 for p in summary.player_states if p.minutes_played)
     assert all(p.fitness == 100 for p in summary.player_states if not p.minutes_played)
+
+
+def test_prior_result_for_a_final_after_managed_elimination_is_rejected() -> None:
+    value = cup_request()
+    eliminated = play(value, OwnLoses())
+    final = play(value, OwnWins()).results[-1]
+    with pytest.raises(InvalidValueError, match="inactive"):
+        play(
+            replace(
+                value,
+                start=date(2000, 9, 8),
+                end=date(2000, 9, 8),
+                prior_results=(*eliminated.results, final),
+            ),
+            OwnWins(),
+        )
+
+
+def test_self_consistent_prior_report_still_needs_the_effective_group_seed_occupants() -> None:
+    value = group_request()
+    whole = play(value, SwapGroupPositions())
+    final = replace(
+        whole.results[-1], home=ME, away=RIVAL, regulation=(1, 0), winner="home", user_result="win"
+    )
+    with pytest.raises(InvalidValueError, match="effective knockout slot"):
+        play(
+            replace(
+                value,
+                start=date(2000, 9, 8),
+                end=date(2000, 9, 8),
+                prior_results=(*whole.results[:-1], final),
+            ),
+            SwapGroupPositions(),
+        )

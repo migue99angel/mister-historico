@@ -25,6 +25,7 @@ from tests.simulation.unit.test_simulate_block import (
 )
 
 from mister.shared_kernel.errors import InvalidValueError
+from mister.shared_kernel.ids import ClubSeasonId, FixtureId
 from mister.simulation.application import api
 from mister.simulation.application.api import (
     HeadToHeadEvidenceInput,
@@ -345,3 +346,62 @@ def test_an_unreached_group_away_goal_criterion_does_not_require_unknown_venues(
         OwnWins(),
     )
     assert tuple(row.points for row in summary.standings[0].rows) == (9, 6, 3, 0)
+
+
+def test_a_pending_historical_score_cannot_complete_an_original_group_table() -> None:
+    value = group_request()
+    evidence = (value.season.head_to_head or ())[0]
+    evidence = replace(
+        evidence, results=(*evidence.results[:-1], replace(evidence.results[-1], score=None))
+    )
+    with pytest.raises(InvalidValueError, match="missing historical score"):
+        play(replace(value, season=replace(value.season, head_to_head=(evidence,))))
+
+
+def test_verified_declarations_cannot_disagree_on_a_known_historical_score() -> None:
+    value = group_request()
+    evidence = (value.season.head_to_head or ())[0]
+    conflicting = replace(
+        evidence,
+        complete_through=FINAL_DAY,
+        results=(*evidence.results[:-1], replace(evidence.results[-1], score=(2, 0))),
+    )
+    with pytest.raises(InvalidValueError, match="same fixture score"):
+        play(replace(value, season=replace(value.season, head_to_head=(evidence, conflicting))))
+
+
+@pytest.mark.parametrize(
+    "criteria,leader",
+    [
+        (("head_to_head_away_goals",), RIVAL),
+        (("goal_difference", "head_to_head_away_goals"), ME),
+    ],
+)
+def test_unknown_venues_outside_the_evaluated_mini_table_do_not_block_group_ranking(
+    criteria: tuple[api.TiebreakerName, ...],
+    leader: ClubSeasonId,
+) -> None:
+    value = group_request()
+    competition = value.season.competitions[0]
+    group = replace(competition.stages[0], tiebreakers=criteria, reapply_head_to_head=False)
+    competition = replace(competition, stages=(group, competition.stages[1]))
+    evidence = (value.season.head_to_head or ())[0]
+    evidence = replace(
+        evidence, schedule=(*evidence.schedule[:-1], replace(evidence.schedule[-1], venue=None))
+    )
+    value = replace(
+        value, season=replace(value.season, competitions=(competition,), head_to_head=(evidence,))
+    )
+
+    class DirectDraw(OwnWins):
+        def simulate(
+            self, setup: MatchSetup, rng: object, *, decisive: bool = False
+        ) -> MatchResult:
+            if setup.fixture.group is not None:
+                return MatchResult(
+                    Score(2, 2) if setup.fixture.fixture_id == FixtureId("group-0") else Score(2, 0)
+                )
+            return super().simulate(setup, rng, decisive=decisive)
+
+    summary = play(value, DirectDraw())
+    assert summary.standings[0].rows[0].club_season_id == leader
