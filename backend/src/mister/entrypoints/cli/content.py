@@ -26,7 +26,9 @@ def resolve_content_root(root: Path | None) -> Path:
 def validate_content(
     root: Annotated[
         Path | None,
-        typer.Option(help="Directorio del contenido (por defecto: ./content o el del repositorio)."),
+        typer.Option(
+            help="Directorio del contenido (por defecto: ./content o el del repositorio)."
+        ),
     ] = None,
     release: Annotated[
         bool,
