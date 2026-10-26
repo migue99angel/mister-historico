@@ -13,7 +13,16 @@ from tests.simulation.unit.test_season_competitions import (
     OwnWins,
     group_request,
 )
-from tests.simulation.unit.test_simulate_block import END, LEAGUE, ME, RIVAL, START, play, request
+from tests.simulation.unit.test_simulate_block import (
+    END,
+    LEAGUE,
+    ME,
+    RIVAL,
+    START,
+    FixedMatches,
+    play,
+    request,
+)
 
 from mister.shared_kernel.errors import InvalidValueError
 from mister.simulation.application import api
@@ -315,3 +324,24 @@ def test_a_known_venue_can_complete_unknown_evidence_without_changing_other_fact
         OwnWins(),
     )
     assert summary.results == play(value, OwnWins()).results
+
+
+def test_an_unreached_group_away_goal_criterion_does_not_require_unknown_venues() -> None:
+    value = group_request()
+    competition = value.season.competitions[0]
+    group = replace(
+        competition.stages[0], tiebreakers=("head_to_head_away_goals",), reapply_head_to_head=False
+    )
+    competition = replace(competition, stages=(group, competition.stages[1]))
+    evidence = (value.season.head_to_head or ())[0]
+    evidence = replace(
+        evidence, schedule=(*evidence.schedule[:-1], replace(evidence.schedule[-1], venue=None))
+    )
+    summary = play(
+        replace(
+            value,
+            season=replace(value.season, competitions=(competition,), head_to_head=(evidence,)),
+        ),
+        OwnWins(),
+    )
+    assert tuple(row.points for row in summary.standings[0].rows) == (9, 6, 3, 0)
