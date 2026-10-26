@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from datetime import timedelta
 from typing import TYPE_CHECKING, cast
 
 from mister.shared_kernel.errors import InvalidValueError
@@ -37,7 +38,7 @@ from mister.simulation.domain.strength import StrengthReference, calculate_stren
 if TYPE_CHECKING:
     from datetime import date
 
-    from mister.shared_kernel.ids import ClubSeasonId, CompetitionId, PlayerId
+    from mister.shared_kernel.ids import ClubSeasonId, CompetitionId, FixtureId, PlayerId
     from mister.shared_kernel.randomness import RandomSource
     from mister.simulation.domain.model import SimPlayer, Tactic
     from mister.simulation.domain.ports import MatchSimulator
@@ -58,6 +59,7 @@ class TableSnapshot:
     order: tuple[ClubSeasonId, ...]
     stage_id: str | None = None
     group_id: str | None = None
+    unresolved_ties: tuple[tuple[ClubSeasonId, ...], ...] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,6 +96,7 @@ class HistoricalEvidence:
     sources: tuple[str, ...]
     stage_id: str | None = None
     group_id: str | None = None
+    unknown_venues: frozenset[FixtureId] = frozenset()
 
 
 @dataclass(frozen=True, slots=True)
@@ -163,7 +166,7 @@ class SeasonEvent:
     kind: str
     date: date
     competition_id: CompetitionId
-    stage_id: str
+    stage_id: str | None
 
 
 class SeasonSimulation:
@@ -191,6 +194,95 @@ class SeasonSimulation:
         self.used_prior: set[object] = set()
         self.stage_maps: dict[tuple[CompetitionId, str], dict[ClubSeasonId, ClubSeasonId]] = {}
         self.closed_groups: set[tuple[CompetitionId, str]] = set()
+        self._validate_evidence_consistency()
+        self._validate_original_tables()
+        self._validate_group_feeders()
+
+    def _validate_evidence_consistency(self) -> None:
+        fixtures: dict[FixtureId, FixtureSpec] = {}
+        scores: dict[FixtureId, Score] = {}
+        for evidence in self.block.evidence:
+            for fixture in evidence.schedule:
+                previous = fixtures.get(fixture.fixture_id)
+                if previous is not None and replace(previous, venue=fixture.venue) != fixture:
+                    raise InvalidValueError(
+                        "historical declarations contradict fixture identity or dates"
+                    )
+                fixtures[fixture.fixture_id] = fixture
+            for match in evidence.results:
+                previous_score = scores.get(match.fixture.fixture_id)
+                if previous_score is not None and previous_score != match.score:
+                    raise InvalidValueError(
+                        "historical declarations contradict the same fixture score"
+                    )
+                scores[match.fixture.fixture_id] = match.score
+
+    def _validate_group_feeders(self) -> None:
+        for entry in self.block.entries:
+            destinations = [
+                f.spec.date
+                for f in self.block.slots
+                if (f.spec.competition_id, f.spec.stage)
+                == (entry.competition_id, entry.target_stage_id)
+                and entry.representative in (f.spec.home, f.spec.away)
+            ]
+            if not destinations:
+                raise InvalidValueError("group entry has no destination fixture")
+            destination = min(destinations)
+            known = [
+                f.date
+                for e in self.block.evidence
+                if (e.competition_id, e.stage_id, e.group_id)
+                == (entry.competition_id, entry.source_stage_id, entry.group_id)
+                for f in e.schedule
+            ]
+            known.extend(
+                f.spec.date
+                for f in self.block.fixtures
+                if (f.spec.competition_id, f.spec.stage, f.spec.group)
+                == (entry.competition_id, entry.source_stage_id, entry.group_id)
+            )
+            if any(day >= destination for day in known):
+                raise InvalidValueError("group calendar must close before its knockout destination")
+            if destination > self.block.end:
+                continue
+            competition = self.competitions[entry.competition_id]
+            stage = next(s for s in competition.stages if s.stage_id == entry.source_stage_id)
+            participants = next(clubs for group, clubs in stage.groups if group == entry.group_id)
+            if not self._group_closed(
+                competition, stage, entry.group_id, participants, destination - timedelta(days=1)
+            ):
+                raise InvalidValueError(
+                    "missing group closure evidence before knockout destination"
+                )
+
+    def _validate_original_tables(self) -> None:
+        for snapshot in self.block.snapshots:
+            competition = self.competitions[snapshot.competition_id]
+            stage = next((s for s in competition.stages if s.stage_id == snapshot.stage_id), None)
+            rules = stage.group_rules if stage else None
+            ppw = rules.points_per_win if rules else competition.points_per_win
+            ppd = rules.points_per_draw if rules else competition.points_per_draw
+            for evidence in self.block.evidence:
+                if (evidence.competition_id, evidence.stage_id, evidence.group_id) != (
+                    snapshot.competition_id,
+                    snapshot.stage_id,
+                    snapshot.group_id,
+                ) or set(evidence.participants) != {r.club_season_id for r in snapshot.rows}:
+                    continue
+                if evidence.complete_through < snapshot.as_of and not self._complete_group_evidence(
+                    evidence, snapshot.as_of
+                ):
+                    continue
+                original = self._historical_rows(
+                    evidence, evidence.participants, snapshot.as_of, ppw, ppd
+                )
+                if {r.club_season_id: r for r in original} != {
+                    r.club_season_id: r for r in snapshot.rows
+                }:
+                    raise InvalidValueError(
+                        "complete historical calendar contradicts original snapshot totals"
+                    )
 
     def _absence(self, player_id: PlayerId, on_date: date) -> date | None:
         ends = [injured_until(player_id, tuple(self.injuries), on_date)]
@@ -442,7 +534,13 @@ class SeasonSimulation:
                 self.block.end,
                 original.participants,
                 tuple(
-                    HeadToHeadFixture(f.fixture_id, f.date, f.home, f.away, f.venue)
+                    HeadToHeadFixture(
+                        f.fixture_id,
+                        f.date,
+                        f.home,
+                        f.away,
+                        None if f.fixture_id in original.unknown_venues else f.venue,
+                    )
                     for f in fixtures
                 ),
                 tuple(
@@ -460,9 +558,47 @@ class SeasonSimulation:
             final_order,
             evidence,
         )
-        return RankedTable(
-            replace(baseline, as_of=self.block.end, rows=table.rows), table.unresolved_groups
+        historical_final = max(
+            (
+                s
+                for s in self.block.snapshots
+                if s.competition_id == competition.competition_id and s.stage_id is None
+            ),
+            key=lambda s: s.as_of,
         )
+        unresolved = list(table.unresolved_groups)
+        for tied in historical_final.unresolved_ties or ():
+            for points in {r.points for r in table.rows if r.club_season_id in tied}:
+                point_group = tuple(r.club_season_id for r in table.rows if r.points == points)
+                remaining = tuple(club for club in point_group if club in tied)
+                if len(remaining) > 1 and self.team.club_season_id not in point_group:
+                    unresolved.append(remaining)
+        ranked = RankedTable(
+            replace(baseline, as_of=self.block.end, rows=table.rows), tuple(unresolved)
+        )
+        self._league_champion(competition, ranked, baseline.as_of)
+        return ranked
+
+    def _league_champion(
+        self, competition: Competition, table: RankedTable, baseline_date: date
+    ) -> None:
+        rows = table.snapshot.rows
+        full = (len(competition.participants) - 1) * (competition.rounds or 1)
+        if (
+            not all(r.played == full for r in rows)
+            or rows[0].club_season_id != self.team.club_season_id
+        ):
+            return
+        if any(self.team.club_season_id in tied for tied in table.unresolved):
+            return
+        evidence = self._evidence(competition.competition_id, self.block.end)
+        close = (
+            max((f.date for f in evidence.schedule), default=baseline_date)
+            if evidence
+            else baseline_date
+        )
+        if self.block.start <= close <= self.block.end:
+            self.events.append(SeasonEvent("champion", close, competition.competition_id, None))
 
     def _group_table(
         self,
@@ -807,6 +943,8 @@ class SeasonSimulation:
                 )
                 for p in self.team.squad or ()
             ),
-            tuple(sorted(self.events, key=lambda e: (e.date, str(e.competition_id), e.stage_id))),
+            tuple(
+                sorted(self.events, key=lambda e: (e.date, str(e.competition_id), e.stage_id or ""))
+            ),
             tuple(unresolved),
         )
