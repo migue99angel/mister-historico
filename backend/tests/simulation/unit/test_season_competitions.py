@@ -215,3 +215,89 @@ def test_inconsistent_prior_effective_occupants_are_rejected() -> None:
     with pytest.raises(InvalidValueError):
         play(replace(value, start=date(2000, 9, 8), end=date(2000, 9, 8),
                      prior_results=(*whole.results[:-1], changed)), SwapGroupPositions())
+
+
+def test_closed_group_keeps_direct_evidence_after_the_last_calendar_date() -> None:
+    value = group_request()
+    competition = value.season.competitions[0]
+    group = replace(competition.stages[0], tiebreakers=("head_to_head_points", "goal_difference"),
+                    reapply_head_to_head=False)
+    competition = replace(competition, stages=(group, competition.stages[1]))
+    summary = play(replace(value, season=replace(value.season, competitions=(competition,))),
+                   SwapGroupPositions())
+    assert summary.results[-1].home == RIVAL
+    assert summary.results[-1].away == ME
+
+
+def test_complete_group_calendar_closes_before_a_later_snapshot_cutoff() -> None:
+    value = group_request()
+    table = replace(value.season.historical_standings[0], as_of=date(2000, 9, 9))
+    value = replace(value, season=replace(value.season, historical_standings=(table,)))
+    summary = play(value, SwapGroupPositions())
+    assert summary.events[0].date == END
+    assert summary.results[-1].fixture_id == FixtureId("group-final")
+
+
+def test_a_residual_group_tie_cannot_assign_qualifying_positions_by_identifier() -> None:
+    value = group_request()
+    competition = value.season.competitions[0]
+    group = replace(competition.stages[0], tiebreakers=())
+    competition = replace(competition, stages=(group, competition.stages[1]))
+    # A direct draw makes Test and Sample level at the two qualifying positions.
+    class SeedTie(OwnWins):
+        def simulate(self, setup: MatchSetup, rng: object, *, decisive: bool = False) -> MatchResult:
+            if setup.fixture.fixture_id == FixtureId("group-0"):
+                return MatchResult(Score(0, 0))
+            return super().simulate(setup, rng, decisive=decisive)
+
+    with pytest.raises(InvalidValueError, match=r"tie|position|slot"):
+        play(replace(value, season=replace(value.season, competitions=(competition,))), SeedTie())
+
+
+def test_incomplete_group_entry_bijection_is_rejected() -> None:
+    value = group_request()
+    assert value.season.group_entry_assignments is not None
+    declaration = value.season.group_entry_assignments[0]
+    assert declaration.entries is not None
+    declaration = replace(declaration, entries=declaration.entries[:1])
+    with pytest.raises(InvalidValueError):
+        play(replace(value, season=replace(value.season, group_entry_assignments=(declaration,))))
+
+
+def test_a_first_leg_prior_result_cannot_include_deciding_periods() -> None:
+    value = cup_request()
+    first = play(replace(value, end=START), OwnWins())
+    invalid = replace(first.results[0], extra_time=(0, 0))
+    with pytest.raises(InvalidValueError):
+        play(replace(continuation(value, first), prior_results=(invalid,)), OwnWins())
+
+
+def test_duplicate_slots_cannot_simulate_a_fixture_twice() -> None:
+    value = cup_request()
+    assert value.season.knockout_calendar is not None
+    calendar = value.season.knockout_calendar[0]
+    assert calendar.slots is not None
+    calendar = replace(calendar, slots=(*calendar.slots, calendar.slots[0]))
+    with pytest.raises(InvalidValueError):
+        play(replace(value, season=replace(value.season, knockout_calendar=(calendar,))))
+
+
+def test_unknown_group_calendar_does_not_promote_from_a_future_table() -> None:
+    value = group_request()
+    table = replace(value.season.historical_standings[0], as_of=date(2000, 9, 9))
+    value = replace(value, end=FINAL_DAY, season=replace(value.season, head_to_head=None,
+                    historical_standings=(table,)))
+    with pytest.raises(InvalidValueError):
+        play(value, SwapGroupPositions())
+
+
+def test_a_knockout_slot_must_be_later_than_its_feeder_tie() -> None:
+    value = cup_request()
+    assert value.season.knockout_calendar is not None
+    calendar = value.season.knockout_calendar[0]
+    assert calendar.slots is not None
+    slots = tuple(replace(s, date=START) if s.stage_id == "final" else s for s in calendar.slots)
+    own = tuple(replace(f, date=START) if f.stage_id == "final" else f for f in value.season.fixtures)
+    with pytest.raises(InvalidValueError, match=r"date|preced|feeder|chronolog"):
+        play(replace(value, season=replace(value.season, fixtures=own,
+            knockout_calendar=(replace(calendar, slots=slots),))), OwnWins())
