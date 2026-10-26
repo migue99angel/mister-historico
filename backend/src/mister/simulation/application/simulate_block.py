@@ -243,6 +243,24 @@ def _slots(season: SeasonSimInput, competitions: tuple[Competition, ...],
         if fixture.spec.stage is not None and fixture.spec.group is None and fixture.spec.fixture_id not in {
             f.spec.fixture_id for f in slots}:
             raise InvalidValueError("a managed knockout fixture must match a historical slot")
+    for competition in competitions:
+        for index, stage in enumerate(competition.stages):
+            if index == 0 or competition.stages[index-1].groups:
+                continue
+            previous = competition.stages[index-1]
+            for fixture in (f for f in slots if f.spec.competition_id == competition.competition_id
+                            and f.spec.stage == stage.stage_id):
+                for club in (fixture.spec.home, fixture.spec.away):
+                    feeders = [t for t in competition.ties if t.stage_id == previous.stage_id
+                               and t.winner == club]
+                    if len(feeders) != 1:
+                        raise InvalidValueError("a knockout slot needs a unique historical feeder")
+                    dates = [f.spec.date for f in slots if
+                             f.spec.competition_id == competition.competition_id and
+                             f.spec.stage == previous.stage_id and
+                             {f.spec.home, f.spec.away} == set(feeders[0].clubs)]
+                    if not dates or max(dates) >= fixture.spec.date:
+                        raise InvalidValueError("knockout slot date must follow its feeder tie")
     return tuple(slots)
 
 
