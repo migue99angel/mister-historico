@@ -6,6 +6,7 @@ from typing import get_type_hints
 
 import pytest
 
+from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.ids import BlockId, ClubSeasonId, CompetitionId, FixtureId, PlayerId
 from mister.shared_kernel.randomness import StdlibRandomSource
 from mister.shared_kernel.seed import Seed
@@ -81,12 +82,12 @@ def _request(**overrides: object) -> BlockSimRequest:
     return BlockSimRequest(**{**fields, **overrides})  # type: ignore[arg-type]
 
 
-def test_simulate_block_delegates_to_the_use_case_module_until_t2_6() -> None:
+def test_simulate_block_validates_a_missing_original_p2_snapshot() -> None:
     rng = StdlibRandomSource(Seed(1))
 
-    with pytest.raises(NotImplementedError, match=r"T2\.6"):
+    with pytest.raises(InvalidValueError, match="historical standings"):
         SimulationService().simulate_block(_request(), rng)
-    with pytest.raises(NotImplementedError, match=r"T2\.6"):
+    with pytest.raises(InvalidValueError, match="historical standings"):
         simulate_block.simulate_block(_request(), rng)
 
 

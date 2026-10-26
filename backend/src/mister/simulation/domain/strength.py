@@ -166,6 +166,7 @@ def calculate_strength(
     *,
     priority: Priority = Priority.HIGH,
     neutral: bool = False,
+    lineup: Lineup | None = None,
 ) -> TeamStrength:
     """Normalize A/C, then apply tactic and morale once; aggregates stay fixed.
 
@@ -175,7 +176,7 @@ def calculate_strength(
     are clamped to 0.4-2.5 before bounded tactic/morale; final lambda safety belongs to T2.1.
     """
     current = _neutral_team(team) if neutral else team
-    lineup = (
+    lineup = lineup or (
         None
         if current.aggregate is not None
         else _squad_lineup(current, Priority.HIGH if neutral else priority)

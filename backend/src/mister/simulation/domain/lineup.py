@@ -63,6 +63,7 @@ def _choices(
     slots: dict[Position, int],
     baseline: frozenset[PlayerId],
     rotations: int,
+    required: frozenset[PlayerId] = frozenset(),
 ) -> dict[int, _Choice]:
     """Optimize four positional groups, retaining the best result per size/rotation count.
 
@@ -73,11 +74,12 @@ def _choices(
     states = {(0, 0): _Choice()}
     for position in Position:
         regulars = sorted(
-            (p for p in players if p.position is position and p.player_id in baseline), key=_rank
+            (p for p in players if p.position is position and p.player_id in baseline),
+            key=lambda p: (p.player_id not in required, _rank(p)),
         )
         reserves = sorted(
             (p for p in players if p.position is position and p.player_id not in baseline),
-            key=_rank,
+            key=lambda p: (p.player_id not in required, _rank(p)),
         )
         next_states: dict[tuple[int, int], _Choice] = {}
         for (size, rotated), previous in states.items():
@@ -86,6 +88,9 @@ def _choices(
                     min(len(reserves), rotations - rotated, _STARTERS - size - kept) + 1
                 ):
                     selected = (*regulars[:kept], *reserves[:added])
+                    needed = {p.player_id for p in players if p.position is position} & required
+                    if not needed <= {p.player_id for p in selected}:
+                        continue
                     candidate = _Choice(
                         (*previous.players, *selected),
                         previous.native + min(len(selected), slots[position]),
@@ -120,7 +125,11 @@ def _assign(choice: _Choice, slots: dict[Position, int], rotated: int) -> Lineup
 
 
 def select_lineup(
-    squad: tuple[SimPlayer, ...], tactic: Tactic, *, priority: Priority = Priority.HIGH
+    squad: tuple[SimPlayer, ...],
+    tactic: Tactic,
+    *,
+    priority: Priority = Priority.HIGH,
+    required: frozenset[PlayerId] = frozenset(),
 ) -> Lineup:
     """Select the strongest eleven, then rotate up to 0/2/4 for high/normal/low priority.
 
@@ -135,11 +144,15 @@ def select_lineup(
         raise InvalidValueError("a lineup needs at least eleven healthy players")
     if len({p.player_id for p in healthy}) != len(healthy):
         raise InvalidValueError("a lineup needs distinct player IDs")
+    if len(required) > _STARTERS or not required <= {p.player_id for p in healthy}:
+        raise InvalidValueError("required starters must be at most eleven available squad players")
     slots = _slots(tactic)
-    best = _choices(healthy, slots, frozenset(p.player_id for p in healthy), 0)[0]
+    best = _choices(healthy, slots, frozenset(p.player_id for p in healthy), 0, required)[0]
     target = _ROTATIONS[priority]
     if target == 0:
         return _assign(best, slots, 0)
-    candidates = _choices(healthy, slots, frozenset(p.player_id for p in best.players), target)
+    candidates = _choices(
+        healthy, slots, frozenset(p.player_id for p in best.players), target, required
+    )
     feasible = max(count for count, choice in candidates.items() if choice.native == best.native)
     return _assign(candidates[feasible], slots, feasible)
