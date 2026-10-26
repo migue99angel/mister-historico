@@ -7,7 +7,7 @@ import pytest
 
 from mister.catalog.application.api import SeasonContentProvider
 from mister.catalog.infrastructure.content_schema import ContentValidationError
-from mister.catalog.infrastructure.yaml_season_content import YamlSeasonContentProvider
+from mister.catalog.infrastructure.yaml_loader import YamlSeasonContentProvider
 from mister.shared_kernel.errors import InvalidValueError
 from tests.contracts.suites.season_content_provider import SeasonContentProviderContract
 
