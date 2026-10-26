@@ -8,7 +8,9 @@ from mister.catalog.application.validation_types import ContentValidationReport,
 from mister.catalog.infrastructure.content_schema import ContentValidationError, load_content_tree
 
 
-def test_a_malformed_file_with_a_literal_backslash_keeps_the_loader_diagnostic(tmp_path: Path) -> None:
+def test_a_malformed_file_with_a_literal_backslash_keeps_the_loader_diagnostic(
+    tmp_path: Path,
+) -> None:
     clubs = tmp_path / "clubs"
     clubs.mkdir()
     path = clubs / r"bad\name.yaml"
