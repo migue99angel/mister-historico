@@ -5,6 +5,7 @@ Run from backend with PYTHONPATH=src python -m tests.simulation.unit.benchmark_s
 
 import json
 import math
+from dataclasses import replace
 from pathlib import Path
 from statistics import median
 from time import perf_counter
@@ -263,8 +264,7 @@ def build_test_fc_request() -> api.BlockSimRequest:
     )
 
 
-def main() -> None:
-    value = build_test_fc_request()
+def _measure(value: api.BlockSimRequest, youth: int) -> float:
     service = api.SimulationService()
 
     def run() -> api.BlockSummaryDTO:
@@ -279,13 +279,29 @@ def main() -> None:
         samples.append((perf_counter() - start) * 1000 / 20)
     report = {
         "seed": 20261026,
+        "youth_commitments": youth,
         "matches": len(summary.results),
         "samples_ms": samples,
         "median_ms": median(samples),
         "budget_ms": _BUDGET_MS,
     }
     print(json.dumps(report, indent=2))  # noqa: T201 - standalone benchmark
-    if median(samples) >= _BUDGET_MS:
+    return median(samples)
+
+
+def main() -> None:
+    value = build_test_fc_request()
+    measurements = []
+    for youth in (0, 12):
+        managed = replace(
+            value.managed_team,
+            players=tuple(
+                replace(player, youth_minutes=i < youth)
+                for i, player in enumerate(value.managed_team.players)
+            ),
+        )
+        measurements.append(_measure(replace(value, managed_team=managed), youth))
+    if any(measurement >= _BUDGET_MS for measurement in measurements):
         raise SystemExit("Full Test FC season exceeds the 20 ms budget")
 
 
