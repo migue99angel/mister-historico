@@ -263,3 +263,14 @@ def test_pressing_saturates_unbounded_integer_ages_before_float_conversion() -> 
     players = tuple(replace(player, age=10**400) for player in squad())
     multipliers = tactical_multipliers(tactic, select_lineup(players, tactic))
     assert multipliers == pytest.approx((1.01, 1.07))
+
+
+def test_strength_uses_the_exact_supplied_lineup_instead_of_selecting_again() -> None:
+    value = team()
+    assert value.squad is not None and value.tactic is not None
+    constrained = select_lineup(value.squad, value.tactic,
+        required=frozenset({value.squad[-1].player_id}))
+    actual = calculate_strength(value, reference(), lineup=constrained)
+    indices = lineup_indices(constrained)
+    assert actual.attack == pytest.approx(math.exp(0.4 * indices.attack / 10) / reference().attack_mean)
+    assert actual.attack < calculate_strength(value, reference()).attack
