@@ -55,3 +55,13 @@ La simulación por bloques y la permuta de plazas no se implementan aquí. La po
 El coordinador autoriza añadir a esta CR `BlockSimRequest.state_as_of: date | None = None` al final. `None` conserva la construcción anterior y significa que el estado ya está situado en `start`. Una continuación debe indicar explícitamente la fecha del cierre anterior; no se infiere de `prior_results`, que puede no contener partidos en días con recuperación.
 
 Esta ampliación es solo de contrato, documentación y compatibilidad. T2.6 implementará la recuperación desde esa fecha hasta los partidos o el cierre siguiente y rechazará una fecha posterior a `start`; esta CR no añade lógica de bloques ni recuperación implícita. Las pruebas fijan la construcción anterior y la conservación de una fecha explícita con commits separados de rojo y verde.
+
+## Integridad de las transiciones acreditadas
+
+Cada partido de destino debe ser posterior a las eliminatorias de origen de sus dos plazas históricas. La comprobación sigue los ganadores acreditados entre etapas conectadas; no impone un orden global entre ramas independientes que puedan solaparse.
+
+Las asignaciones de grupos deben cubrir exactamente los contendientes de su etapa de destino. Se comprueba también la primera etapa de eliminatorias posterior a grupos aunque ninguna asignación la nombre: dirigir todas las entradas a una ronda posterior no acredita los contendientes de una ronda intermedia.
+
+Para fechar el fin de un grupo se usa su calendario H2H completo, verificado y de todos los participantes, con resultados y acumulados coherentes con la tabla final. El KO debe ser posterior a su último partido. La fecha de la tabla es un corte de bloque y puede ser posterior al inicio del KO: ese caso es válido cuando el calendario acredita el cierre anterior. Sin calendario suficiente, una tabla anterior al KO acredita el estado previo; una tabla posterior no permite inventar la fecha de cierre y se informa falta de evidencia.
+
+Las regresiones incluyen semifinales externas posteriores a su final, contendientes no clasificados añadidos al destino, omisión de una etapa intermedia, ramas independientes con rondas solapadas, un partido externo del grupo posterior al KO y el caso legítimo `último partido < KO < corte de tabla`.
