@@ -267,7 +267,9 @@ def test_future_prior_results_are_rejected() -> None:
 @pytest.mark.parametrize("field,bad", [("morale", 101), ("fitness", -1), ("rating", 100)])
 @pytest.mark.parametrize("source", ["reference", "override"])
 def test_neutral_rival_inputs_are_validated_before_state_is_normalized(
-    field: str, bad: int, source: str,
+    field: str,
+    bad: int,
+    source: str,
 ) -> None:
     value = request()
     rival = replace(team(), club_season_id=RIVAL)
@@ -290,8 +292,10 @@ def test_rival_injury_is_projected_at_match_date_without_changing_reference() ->
     injured_fake = FixedMatches()
     play(replace(value, team_overrides=(rival,)), healthy_fake)
     injured = replace(star, injured_until=END)
-    play(replace(value, team_overrides=(replace(rival, players=(*rival.players[:-1], injured)),)),
-         injured_fake)
+    play(
+        replace(value, team_overrides=(replace(rival, players=(*rival.players[:-1], injured)),)),
+        injured_fake,
+    )
     assert injured_fake.setups[0].away.attack < healthy_fake.setups[0].away.attack
     assert injured_fake.setups[1].home.attack == healthy_fake.setups[1].home.attack
 
@@ -299,8 +303,11 @@ def test_rival_injury_is_projected_at_match_date_without_changing_reference() ->
 def test_duplicate_forced_injury_from_content_and_effect_is_emitted_once() -> None:
     value = request()
     injury = ForcedInjuryDTO(value.managed_team.players[0].player_id, START, 2)
-    value = replace(value, season=replace(value.season, forced_injuries=(injury,)),
-                    forced_injuries_from_effects=(injury,))
+    value = replace(
+        value,
+        season=replace(value.season, forced_injuries=(injury,)),
+        forced_injuries_from_effects=(injury,),
+    )
     summary = play(value)
     assert len(tuple(i for i in summary.injuries if i.forced)) == 1
 
@@ -308,8 +315,9 @@ def test_duplicate_forced_injury_from_content_and_effect_is_emitted_once() -> No
 def test_prior_league_match_cannot_contain_extra_time_or_penalties() -> None:
     value = request()
     first = play(replace(value, end=START), FixedMatches(Score(0, 0)))
-    invalid = replace(first.results[0], extra_time=(0, 0), penalties=(4, 3),
-                      winner="home", user_result="win")
+    invalid = replace(
+        first.results[0], extra_time=(0, 0), penalties=(4, 3), winner="home", user_result="win"
+    )
     with pytest.raises(InvalidValueError):
         play(replace(continuation(value, first), prior_results=(invalid,)))
 
@@ -319,8 +327,9 @@ def test_team_override_is_measured_against_the_original_strength_reference() -> 
     old = FixedMatches()
     better = FixedMatches()
     play(value, old)
-    rival = replace(team(), club_season_id=RIVAL,
-                    players=tuple(replace(p, rating=99) for p in team().players))
+    rival = replace(
+        team(), club_season_id=RIVAL, players=tuple(replace(p, rating=99) for p in team().players)
+    )
     play(replace(value, team_overrides=(rival,)), better)
     assert old.setups[0].home == better.setups[0].home
     assert old.setups[0].away.attack < better.setups[0].away.attack
@@ -332,28 +341,48 @@ def test_full_test_fc_season_matches_five_continuations_including_injuries_and_e
 
     value = test_fc_request()
     whole = SimulationService().simulate_block(value, StdlibRandomSource(Seed(20261026)))
-    periods = ((date(2000, 8, 1), date(2000, 9, 30)),
-               (date(2000, 10, 1), date(2000, 11, 30)),
-               (date(2000, 12, 1), date(2001, 1, 31)),
-               (date(2001, 2, 1), date(2001, 3, 31)),
-               (date(2001, 4, 1), date(2001, 5, 31)))
+    periods = (
+        (date(2000, 8, 1), date(2000, 9, 30)),
+        (date(2000, 10, 1), date(2000, 11, 30)),
+        (date(2000, 12, 1), date(2001, 1, 31)),
+        (date(2001, 2, 1), date(2001, 3, 31)),
+        (date(2001, 4, 1), date(2001, 5, 31)),
+    )
     summaries = []
     prior = ()
     managed = value.managed_team
     cursor = None
     for start, end in periods:
-        summary = SimulationService().simulate_block(replace(value, start=start, end=end,
-            managed_team=managed, state_as_of=cursor, prior_results=prior),
-            StdlibRandomSource(Seed(20261026)))
+        summary = SimulationService().simulate_block(
+            replace(
+                value,
+                start=start,
+                end=end,
+                managed_team=managed,
+                state_as_of=cursor,
+                prior_results=prior,
+            ),
+            StdlibRandomSource(Seed(20261026)),
+        )
         summaries.append(summary)
         prior = (*prior, *summary.results)
         states = {p.player_id: p for p in summary.player_states}
-        managed = replace(managed, players=tuple(replace(p, fitness=states[p.player_id].fitness,
-            injured_until=states[p.player_id].injured_until) for p in managed.players))
+        managed = replace(
+            managed,
+            players=tuple(
+                replace(
+                    p,
+                    fitness=states[p.player_id].fitness,
+                    injured_until=states[p.player_id].injured_until,
+                )
+                for p in managed.players
+            ),
+        )
         cursor = end
     assert prior == whole.results
     assert tuple(e for s in summaries for e in s.events) == whole.events
     assert tuple(i for s in summaries for i in s.injuries) == whole.injuries
     assert summaries[-1].standings == whole.standings
-    assert tuple((p.player_id, p.fitness, p.injured_until) for p in summaries[-1].player_states) == tuple(
-        (p.player_id, p.fitness, p.injured_until) for p in whole.player_states)
+    assert tuple(
+        (p.player_id, p.fitness, p.injured_until) for p in summaries[-1].player_states
+    ) == tuple((p.player_id, p.fitness, p.injured_until) for p in whole.player_states)

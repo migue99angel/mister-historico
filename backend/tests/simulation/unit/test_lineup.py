@@ -150,8 +150,9 @@ def test_required_reserve_starts_under_every_rotation_priority(priority: Priorit
     assert len(lineup.starters) == 11
 
 
-@pytest.mark.parametrize("required", [frozenset({PlayerId("missing")}),
-                                      frozenset(p.player_id for p in squad()[:12])])
+@pytest.mark.parametrize(
+    "required", [frozenset({PlayerId("missing")}), frozenset(p.player_id for p in squad()[:12])]
+)
 def test_incompatible_required_starters_are_rejected(required: frozenset[PlayerId]) -> None:
     with pytest.raises(InvalidValueError):
         select_lineup(squad(), TACTIC, required=required)
@@ -168,28 +169,47 @@ def test_an_injured_required_player_is_rejected_without_changing_injury() -> Non
 @pytest.mark.parametrize("seed", range(12))
 @pytest.mark.parametrize("priority", list(Priority))
 def test_constrained_selection_matches_exhaustive_native_coverage_and_rotation(
-    seed: int, priority: Priority,
+    seed: int,
+    priority: Priority,
 ) -> None:
     from itertools import combinations
+
     from mister.shared_kernel.randomness import StdlibRandomSource
     from mister.shared_kernel.seed import Seed
 
     rng = StdlibRandomSource(Seed(seed))
-    players = tuple(SimPlayer(PlayerId(f"test-{i:02}"), rng.choice(tuple(Position)),
-                             Rating(rng.choice(tuple(range(40, 91))))) for i in range(14))
+    players = tuple(
+        SimPlayer(
+            PlayerId(f"test-{i:02}"),
+            rng.choice(tuple(Position)),
+            Rating(rng.choice(tuple(range(40, 91)))),
+        )
+        for i in range(14)
+    )
     required = frozenset({players[-1].player_id})
     counts = {Position.GK: 1, Position.DF: 4, Position.MF: 4, Position.FW: 2}
     choices = tuple(c for c in combinations(players, 11) if required <= {p.player_id for p in c})
+
     def objective(choice: tuple[SimPlayer, ...]) -> tuple[int, int, tuple[str, ...]]:
-        return (-sum(min(counts[pos], sum(p.position is pos for p in choice)) for pos in Position),
-                -sum(p.rating.value for p in choice), tuple(sorted(p.player_id.value for p in choice)))
+        return (
+            -sum(min(counts[pos], sum(p.position is pos for p in choice)) for pos in Position),
+            -sum(p.rating.value for p in choice),
+            tuple(sorted(p.player_id.value for p in choice)),
+        )
+
     baseline = min(choices, key=objective)
     regulars = {p.player_id for p in baseline}
     target = {Priority.HIGH: 0, Priority.NORMAL: 2, Priority.LOW: 4}[priority]
-    eligible = [c for c in choices if objective(c)[0] == objective(baseline)[0] and
-                len({p.player_id for p in c}-regulars) <= target]
-    rotation = max(len({p.player_id for p in c}-regulars) for c in eligible)
-    expected = min((c for c in eligible if len({p.player_id for p in c}-regulars) == rotation), key=objective)
+    eligible = [
+        c
+        for c in choices
+        if objective(c)[0] == objective(baseline)[0]
+        and len({p.player_id for p in c} - regulars) <= target
+    ]
+    rotation = max(len({p.player_id for p in c} - regulars) for c in eligible)
+    expected = min(
+        (c for c in eligible if len({p.player_id for p in c} - regulars) == rotation), key=objective
+    )
     actual = select_lineup(players, TACTIC, priority=priority, required=required)
     assert {p.player.player_id for p in actual.starters} == {p.player_id for p in expected}
     assert actual.rotated == rotation
