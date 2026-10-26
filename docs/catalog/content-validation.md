@@ -21,8 +21,9 @@ validator = YamlContentValidator(Path("content"))
 report = ValidateContent(validator).execute(release=False)
 ```
 
-El ejemplo representa la composición explícita del componente. El cableado
-compartido del proyecto llegará en una CR posterior.
+El ejemplo representa la composición explícita del componente. La
+[CR de cableado](../changes/CR-T2.20-content-wiring.md) conecta esta validación
+con `mister content validate`, `make validate-content` y la CI.
 
 ## Informes y errores
 
@@ -76,14 +77,14 @@ y limpieza. La comprobación local de entrega comprende los tests focales y
 completas coordinadas por el orquestador; estas no se dan por ejecutadas en
 esta rama sin disponer de sus resultados.
 
-## Trabajo pendiente de T2.20
+## Estado de T2.20
 
-T2.20a es un componente revisable del catálogo. T2.20 permanece abierta:
+T2.20a es el componente de validación. El proveedor YAML y `NamePolicy` de
+T2.20b están integrados. La CR de cableado activa los comandos y el workflow.
+El contenido real sigue pendiente:
 
-- La fase b añadirá `YamlSeasonContentProvider`, el mapeo del catálogo y
-  `NamePolicy`, después de estabilizar los contratos de competiciones.
-- Una CR de cableado explícita conectará composición, CLI, Makefile y CI.
-- `make validate-content` deberá ejecutar la validación real antes de cerrar
-  la aceptación global de T2.20.
+- `content/` aún no contiene una temporada jugable; por contrato, un árbol
+  vacío puede ser válido y el comando indica explícitamente cero temporadas.
+- La persistencia y la carga SQL pertenecen a T2.21.
 
 🤖 Generated with Codex

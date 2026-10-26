@@ -34,6 +34,17 @@ def test_empty_root_is_valid_but_not_described_as_playable(tmp_path: Path) -> No
     assert "catálogo vacío" in result.output
 
 
+def test_command_uses_content_in_the_current_directory(
+    root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(root.parent)
+
+    result = runner.invoke(app, ["content", "validate"])
+
+    assert result.exit_code == 0, result.output
+    assert "1 temporada jugable" in result.output
+
+
 def test_draft_text_only_fails_release_validation(root: Path) -> None:
     path = root / "seasons" / "test-fc-2000-01" / "texts.yaml"
     path.write_text(path.read_text().replace("status: reviewed", "status: draft", 1))
