@@ -480,14 +480,61 @@ def test_independent_branches_may_overlap_rounds_when_each_feeder_finishes_first
 def test_group_assignments_cannot_skip_an_unaccredited_first_knockout_stage(root: Path) -> None:
     def add_stage(data: dict[str, Any]) -> None:
         stages = data["competitions"][3]["stages"]
-        stages.insert(1, {"id": "semifinal", "name": "Synthetic semifinal", "round": "semi_final", "legs": 1, "away_goals_rule": False, "extra_time": False, "penalties": False})
+        stages.insert(
+            1,
+            {
+                "id": "semifinal",
+                "name": "Synthetic semifinal",
+                "round": "semi_final",
+                "legs": 1,
+                "away_goals_rule": False,
+                "extra_time": False,
+                "penalties": False,
+            },
+        )
+
     def add_history(data: dict[str, Any]) -> None:
         pairs = [(OWN, "abroad-athletic-2000-01"), ("overseas-fc-2000-01", "faraway-city-2000-01")]
         for index, (home, away) in enumerate(pairs):
-            data["ties"].append({"competition": "copa-continental-test", "stage": "semifinal", "clubs": [home, away], "winner": home, "sources": [SOURCE], "verify": "ok"})
-            data["knockout_calendar"][2]["slots"].append({"fixture_id": f"continental-semi-{index}", "stage_id": "semifinal", "date": date(2001, 2, 15), "home": home, "away": away, "venue": "home", "leg": None, "sources": [SOURCE], "verify": "ok"})
+            data["ties"].append(
+                {
+                    "competition": "copa-continental-test",
+                    "stage": "semifinal",
+                    "clubs": [home, away],
+                    "winner": home,
+                    "sources": [SOURCE],
+                    "verify": "ok",
+                }
+            )
+            data["knockout_calendar"][2]["slots"].append(
+                {
+                    "fixture_id": f"continental-semi-{index}",
+                    "stage_id": "semifinal",
+                    "date": date(2001, 2, 15),
+                    "home": home,
+                    "away": away,
+                    "venue": "home",
+                    "leg": None,
+                    "sources": [SOURCE],
+                    "verify": "ok",
+                }
+            )
+
     def add_managed(data: dict[str, Any]) -> None:
-        data["fixtures"].append({"id": "continental-semi-0", "date": date(2001, 2, 15), "competition": "copa-continental-test", "stage": "semifinal", "opponent": "abroad-athletic-2000-01", "venue": "home", "result": {"goals_for": 1, "goals_against": 0}, "sources": [SOURCE], "verify": "ok"})
+        data["fixtures"].append(
+            {
+                "id": "continental-semi-0",
+                "date": date(2001, 2, 15),
+                "competition": "copa-continental-test",
+                "stage": "semifinal",
+                "opponent": "abroad-athletic-2000-01",
+                "venue": "home",
+                "result": {"goals_for": 1, "goals_against": 0},
+                "sources": [SOURCE],
+                "verify": "ok",
+            }
+        )
+
     edit(root, f"{SEASON}/season.yaml", add_stage)
     edit(root, STANDINGS, add_history)
     edit(root, f"{SEASON}/fixtures.yaml", add_managed)

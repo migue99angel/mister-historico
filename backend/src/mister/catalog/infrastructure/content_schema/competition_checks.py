@@ -335,8 +335,11 @@ def _check_entry_target_occupants(ctx: SeasonContext, assignments: GroupEntryAss
     targets = {entry.target_stage_id for entry in assignments.entries or ()}
     competition = ctx.competitions.get(assignments.competition)
     if competition is not None and not isinstance(competition, LeagueCompetition):
-        targets.update(target.id for source, target in pairwise(competition.stages)
-                       if source.is_group_stage and not target.is_group_stage)
+        targets.update(
+            target.id
+            for source, target in pairwise(competition.stages)
+            if source.is_group_stage and not target.is_group_stage
+        )
     for target in targets:
         representatives = {
             entry.historical_representative
