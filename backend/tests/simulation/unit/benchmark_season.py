@@ -50,7 +50,7 @@ def _stage(value: dict[str, Any]) -> api.StageInput:
     )
 
 
-def test_fc_request() -> api.BlockSimRequest:
+def build_test_fc_request() -> api.BlockSimRequest:
     season = _load(_ROOT / "seasons" / "test-fc-2000-01" / "season.yaml")
     tables = _load(_ROOT / "seasons" / "test-fc-2000-01" / "standings.yaml")
     calendar = _load(_ROOT / "seasons" / "test-fc-2000-01" / "fixtures.yaml")
@@ -103,14 +103,14 @@ def test_fc_request() -> api.BlockSimRequest:
                 tuple(
                     api.RealTieInput(
                         t["stage"],
-                        tuple(ClubSeasonId(c) for c in t["clubs"]),
+                        (ClubSeasonId(t["clubs"][0]), ClubSeasonId(t["clubs"][1])),
                         ClubSeasonId(t["winner"]) if t.get("winner") else None,
                     )
                     for t in tables["ties"]
                     if t["competition"] == competition["id"]
                 ),
             )
-        )  # type: ignore[arg-type]
+        )
     fixtures = []
     for fixture in calendar["fixtures"]:
         opponent = ClubSeasonId(fixture["opponent"])
@@ -170,7 +170,7 @@ def test_fc_request() -> api.BlockSimRequest:
             e.get("group"),
         )
         for e in tables["head_to_head"]
-    )  # type: ignore[arg-type]
+    )
     slots = tuple(
         api.KnockoutCalendarInput(
             CompetitionId(c["competition"]),
@@ -264,7 +264,7 @@ def test_fc_request() -> api.BlockSimRequest:
 
 
 def main() -> None:
-    value = test_fc_request()
+    value = build_test_fc_request()
     service = api.SimulationService()
 
     def run() -> api.BlockSummaryDTO:

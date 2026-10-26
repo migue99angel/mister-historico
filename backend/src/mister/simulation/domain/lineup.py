@@ -64,7 +64,6 @@ def _choices(
     baseline: frozenset[PlayerId],
     rotations: int,
     required: frozenset[PlayerId] = frozenset(),
-    native_target: int | None = None,
 ) -> dict[int, _Choice]:
     """Optimize four positional groups, retaining the best result per size/rotation count.
 
@@ -73,23 +72,39 @@ def _choices(
     Rotation never takes precedence over the native coverage of the strongest eleven.
     """
     states = {(0, 0): _Choice()}
+    native_target = sum(
+        min(slots[pos], sum(p.position is pos and p.player_id in baseline for p in players))
+        for pos in Position
+    )
     ratings = {p.player_id: effective_rating(p) for p in players}
     for position in Position:
         native_players = tuple(p for p in players if p.position is position)
-        regulars = sorted((p for p in native_players if p.player_id in baseline),
-            key=lambda p: (p.player_id not in required, _rank(p)))
-        reserves = sorted((p for p in native_players if p.player_id not in baseline),
-            key=lambda p: (p.player_id not in required, _rank(p)))
+        regulars = sorted(
+            (p for p in native_players if p.player_id in baseline),
+            key=lambda p: (p.player_id not in required, _rank(p)),
+        )
+        reserves = sorted(
+            (p for p in native_players if p.player_id not in baseline),
+            key=lambda p: (p.player_id not in required, _rank(p)),
+        )
         needed = {p.player_id for p in native_players} & required
         options = []
-        for kept in range(min(len(regulars), _STARTERS)+1):
-            for added in range(min(len(reserves), rotations, _STARTERS-kept)+1):
+        for kept in range(min(len(regulars), _STARTERS) + 1):
+            for added in range(min(len(reserves), rotations, _STARTERS - kept) + 1):
                 selected = (*regulars[:kept], *reserves[:added])
                 if native_target == _STARTERS and len(selected) != slots[position]:
                     continue
                 if needed <= {p.player_id for p in selected}:
-                    options.append((added, _Choice(selected, min(len(selected), slots[position]),
-                        sum(ratings[p.player_id] for p in selected))))
+                    options.append(
+                        (
+                            added,
+                            _Choice(
+                                selected,
+                                min(len(selected), slots[position]),
+                                sum(ratings[p.player_id] for p in selected),
+                            ),
+                        )
+                    )
         next_states: dict[tuple[int, int], _Choice] = {}
         for (size, rotated), previous in states.items():
             for added, option in options:
@@ -109,7 +124,9 @@ def _choices(
 
 
 def _strongest(
-    players: tuple[SimPlayer, ...], slots: dict[Position, int], required: frozenset[PlayerId],
+    players: tuple[SimPlayer, ...],
+    slots: dict[Position, int],
+    required: frozenset[PlayerId],
 ) -> _Choice:
     """Reserve forced starters, then maximize native coverage before filling surplus slots.
 
@@ -122,17 +139,29 @@ def _strongest(
     useful = []
     for position in Position:
         remaining = max(0, slots[position] - sum(p.position is position for p in selected))
-        ranked = sorted((p for p in players if p.position is position and p.player_id not in required),
-                        key=_rank)
+        ranked = sorted(
+            (p for p in players if p.position is position and p.player_id not in required),
+            key=_rank,
+        )
         useful.extend(ranked[:remaining])
-    selected.extend(sorted(useful, key=_rank)[:_STARTERS-len(selected)])
+    selected.extend(sorted(useful, key=_rank)[: _STARTERS - len(selected)])
     used = {p.player_id for p in selected}
-    selected.extend(sorted((p for p in players if p.player_id not in used), key=_rank)
-                    [:_STARTERS-len(selected)])
-    ordered = tuple(p for position in Position for p in sorted(
-        (p for p in selected if p.position is position),
-        key=lambda p: (p.player_id not in required, _rank(p))))
-    native = sum(min(slots[position], sum(p.position is position for p in ordered)) for position in Position)
+    selected.extend(
+        sorted((p for p in players if p.player_id not in used), key=_rank)[
+            : _STARTERS - len(selected)
+        ]
+    )
+    ordered = tuple(
+        p
+        for position in Position
+        for p in sorted(
+            (p for p in selected if p.position is position),
+            key=lambda p: (p.player_id not in required, _rank(p)),
+        )
+    )
+    native = sum(
+        min(slots[position], sum(p.position is position for p in ordered)) for position in Position
+    )
     rating = 0.0
     for position in Position:
         rating += sum(effective_rating(p) for p in ordered if p.position is position)
@@ -187,8 +216,11 @@ def select_lineup(
     if target == 0:
         return _assign(best, slots, 0)
     candidates = _choices(
-        healthy, slots, frozenset(p.player_id for p in best.players), target, required,
-        best.native,
+        healthy,
+        slots,
+        frozenset(p.player_id for p in best.players),
+        target,
+        required,
     )
     feasible = max(count for count, choice in candidates.items() if choice.native == best.native)
     return _assign(candidates[feasible], slots, feasible)

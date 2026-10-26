@@ -4,6 +4,7 @@ from dataclasses import replace
 from datetime import date
 
 import pytest
+from tests.simulation.unit.benchmark_season import build_test_fc_request
 
 from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.ids import BlockId, ClubSeasonId, CompetitionId, FixtureId, PlayerId
@@ -16,6 +17,8 @@ from mister.simulation.application.api import (
     CompetitionInput,
     FixtureInput,
     ForcedInjuryDTO,
+    MatchResultDTO,
+    PositionName,
     RealResultInput,
     SeasonSimInput,
     SimulationService,
@@ -25,6 +28,7 @@ from mister.simulation.application.api import (
     StandingsDTO,
     TacticDTO,
 )
+from mister.simulation.application.simulate_block import _simulate
 from mister.simulation.domain.model import MatchResult, MatchSetup, Score
 
 ME = ClubSeasonId("test-fc-2000-01")
@@ -35,7 +39,7 @@ END = date(2000, 9, 3)
 
 
 def team() -> SquadTeamInput:
-    positions = ("GK", "GK", *("DF",) * 6, *("MF",) * 6, *("FW",) * 4)
+    positions: tuple[PositionName, ...] = ("GK", "GK", *("DF",) * 6, *("MF",) * 6, *("FW",) * 4)
     return SquadTeamInput(
         ME,
         tuple(
@@ -43,7 +47,7 @@ def team() -> SquadTeamInput:
             for i, position in enumerate(positions)
         ),
         TacticDTO("balanced", "4-4-2"),
-    )  # type: ignore[arg-type]
+    )
 
 
 def request() -> BlockSimRequest:
@@ -97,8 +101,8 @@ def request() -> BlockSimRequest:
 class FixedMatches:
     """Fake strategy retaining setups to observe physical and tactical inputs."""
 
-    def __init__(self, score: Score = Score(1, 0)) -> None:
-        self.score = score
+    def __init__(self, score: Score | None = None) -> None:
+        self.score = Score(1, 0) if score is None else score
         self.setups: list[MatchSetup] = []
 
     def simulate(self, setup: MatchSetup, rng: object, *, decisive: bool = False) -> MatchResult:
@@ -113,8 +117,6 @@ class FixedMatches:
 
 
 def play(value: BlockSimRequest, fake: FixedMatches | None = None) -> BlockSummaryDTO:
-    from mister.simulation.application.simulate_block import _simulate
-
     return _simulate(value, StdlibRandomSource(Seed(1)), fake or FixedMatches())
 
 
@@ -247,7 +249,7 @@ def test_invalid_block_inputs_are_rejected(change: dict[str, object]) -> None:
 
 
 def test_a_missing_fixture_in_a_continuation_gap_is_rejected() -> None:
-    with pytest.raises(InvalidValueError, match="prior|missing|gap"):
+    with pytest.raises(InvalidValueError, match=r"prior|missing|gap"):
         play(replace(request(), start=date(2000, 9, 2)))
 
 
@@ -264,7 +266,7 @@ def test_future_prior_results_are_rejected() -> None:
         play(replace(value, prior_results=play(value).results))
 
 
-@pytest.mark.parametrize("field,bad", [("morale", 101), ("fitness", -1), ("rating", 100)])
+@pytest.mark.parametrize(("field", "bad"), [("morale", 101), ("fitness", -1), ("rating", 100)])
 @pytest.mark.parametrize("source", ["reference", "override"])
 def test_neutral_rival_inputs_are_validated_before_state_is_normalized(
     field: str,
@@ -273,7 +275,13 @@ def test_neutral_rival_inputs_are_validated_before_state_is_normalized(
 ) -> None:
     value = request()
     rival = replace(team(), club_season_id=RIVAL)
-    bad_player = replace(rival.players[0], **{field: bad})
+    bad_player = (
+        replace(rival.players[0], morale=bad)
+        if field == "morale"
+        else replace(rival.players[0], fitness=bad)
+        if field == "fitness"
+        else replace(rival.players[0], rating=bad)
+    )
     rival = replace(rival, players=(bad_player, *rival.players[1:]))
     if source == "reference":
         value = replace(value, season=replace(value.season, teams=(team(), rival)))
@@ -337,9 +345,7 @@ def test_team_override_is_measured_against_the_original_strength_reference() -> 
 
 
 def test_full_test_fc_season_matches_five_continuations_including_injuries_and_events() -> None:
-    from tests.simulation.unit.benchmark_season import test_fc_request
-
-    value = test_fc_request()
+    value = build_test_fc_request()
     whole = SimulationService().simulate_block(value, StdlibRandomSource(Seed(20261026)))
     periods = (
         (date(2000, 8, 1), date(2000, 9, 30)),
@@ -349,7 +355,7 @@ def test_full_test_fc_season_matches_five_continuations_including_injuries_and_e
         (date(2001, 4, 1), date(2001, 5, 31)),
     )
     summaries = []
-    prior = ()
+    prior: tuple[MatchResultDTO, ...] = ()
     managed = value.managed_team
     cursor = None
     for start, end in periods:

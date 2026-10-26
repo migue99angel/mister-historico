@@ -2,6 +2,7 @@
 
 from dataclasses import replace
 from datetime import date
+from typing import Literal, cast
 
 import pytest
 from tests.simulation.unit.test_simulate_block import (
@@ -45,7 +46,7 @@ SOURCES = ("https://example.org/test-fc/competition",)
 FINAL_DAY = date(2000, 9, 7)
 
 
-def cup_request(*, legs: int = 2, deciding: bool = True) -> BlockSimRequest:
+def cup_request(*, legs: Literal[1, 2] = 2, deciding: bool = True) -> BlockSimRequest:
     value = request()
     stages = (
         StageInput("semi", "semi_final", legs, False, deciding, deciding),
@@ -102,7 +103,7 @@ def cup_request(*, legs: int = 2, deciding: bool = True) -> BlockSimRequest:
             OTHER if leg == 1 else FOURTH,
             FOURTH if leg == 1 else OTHER,
             "home",
-            leg,
+            cast("Literal[1, 2]", leg),
             SOURCES,
             "ok",
         )
