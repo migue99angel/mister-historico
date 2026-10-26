@@ -325,3 +325,35 @@ def test_team_override_is_measured_against_the_original_strength_reference() -> 
     assert old.setups[0].home == better.setups[0].home
     assert old.setups[0].away.attack < better.setups[0].away.attack
     assert old.setups[0].away.defense > better.setups[0].away.defense
+
+
+def test_full_test_fc_season_matches_five_continuations_including_injuries_and_events() -> None:
+    from tests.simulation.unit.benchmark_season import test_fc_request
+
+    value = test_fc_request()
+    whole = SimulationService().simulate_block(value, StdlibRandomSource(Seed(20261026)))
+    periods = ((date(2000, 8, 1), date(2000, 9, 30)),
+               (date(2000, 10, 1), date(2000, 11, 30)),
+               (date(2000, 12, 1), date(2001, 1, 31)),
+               (date(2001, 2, 1), date(2001, 3, 31)),
+               (date(2001, 4, 1), date(2001, 5, 31)))
+    summaries = []
+    prior = ()
+    managed = value.managed_team
+    cursor = None
+    for start, end in periods:
+        summary = SimulationService().simulate_block(replace(value, start=start, end=end,
+            managed_team=managed, state_as_of=cursor, prior_results=prior),
+            StdlibRandomSource(Seed(20261026)))
+        summaries.append(summary)
+        prior = (*prior, *summary.results)
+        states = {p.player_id: p for p in summary.player_states}
+        managed = replace(managed, players=tuple(replace(p, fitness=states[p.player_id].fitness,
+            injured_until=states[p.player_id].injured_until) for p in managed.players))
+        cursor = end
+    assert prior == whole.results
+    assert tuple(e for s in summaries for e in s.events) == whole.events
+    assert tuple(i for s in summaries for i in s.injuries) == whole.injuries
+    assert summaries[-1].standings == whole.standings
+    assert tuple((p.player_id, p.fitness, p.injured_until) for p in summaries[-1].player_states) == tuple(
+        (p.player_id, p.fitness, p.injured_until) for p in whole.player_states)
