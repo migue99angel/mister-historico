@@ -1,7 +1,7 @@
 # Míster Histórico: Plan de implementación
 
 > Fecha: 2026-10-22 · Parte de [`PRODUCT_BRIEF.md`](./PRODUCT_BRIEF.md) · Las tareas están en [`TASKS.md`](./TASKS.md).
-> Estado comprobado el **2026-10-27**, `main` `8be8244`: F0 y F1 cerradas; T2.1-T2.6, T2.20 y T2.21 integradas, junto con las CR UEFA #47 y #48. F2 histórica sigue abierta; #45, #46 y #49 son borradores parciales. Game tiene puertos y fakes, sin agregado ni casos de uso; la web muestra la presentación. La revisión de planificación de §3.4-3.6 y §5 prioriza una partida sintética conectada antes de terminar el contenido histórico. **Es planificación, no funcionalidad implementada.** Las decisiones previas de lanzamiento de §1 se conservan; la beta con un equipo requiere la aprobación indicada en §5.4.
+> Estado comprobado el **2026-10-27**, código integrado hasta `af3e3e8`: motor y catálogo, T3.1a (estado privado), CR-T3.0 (entradas recuperables) y T4.2 (shell/adaptador web), precedida de CR-T4.0, integradas tras revisión Sol y CI. Siguen pendientes los casos de uso/API de partida, persistencia SQL de runs y pantallas del bucle; F2 histórica permanece abierta. No hay todavía una primera partida completa ni beta. El lanzamiento V1 de 3-5 equipos se mantiene y las decisiones de beta siguen en §5.4.
 
 ---
 
@@ -133,12 +133,12 @@ sencillo, compras y ventas entre pocas opciones, tácticas, vestuario y objetivo
 de directiva. Se admitirá algo más de duración; no se pretende una gestión del
 nivel de Football Manager. No se implementa ahora.
 
-Auditoría sobre el código de `8be8244` y los ADR-003, 007 y 015:
+Auditoría iniciada sobre `8be8244` y actualizada tras la primera tanda de A, conforme a ADR-003, 007 y 015:
 
 | Pieza | Qué permite hoy y qué limita la evolución | Acción antes del MVP / aplazamiento |
 |---|---|---|
 | `ClubSeason` / `PlayableSeason` | Separa plantillas de escenario y evita duplicar un rival jugable. `PlayableSeasonDTO` exige manager, dilemas con opción histórica, tablas y desenlaces reales; no representa todavía una temporada sin historia terminada. | Conservar ADR-015 y traducir por ACL. Aplazar un esquema de temporada actual con `as_of`, calendario y reglas propias hasta D; no rellenar historia falsa ni volver todos los campos opcionales ahora. |
-| `SquadRegistry` | Es una decisión aceptada, aún por implementar en T3.1. Permite modificar pertenencias por partida sin mutar Catalog. | Implementar en F3 IDs, movimientos y unicidad de pertenencia para fichajes históricos ya requeridos. Precios, salarios, contratos, monedas y restricciones de ventanas esperan a D. |
+| `SquadRegistry` | La base privada de T3.1a está integrada (#53); conserva pertenencias y movimientos por fecha sin mutar Catalog. Su uso en el agregado y efectos sigue pendiente. | Implementar en F3 IDs, movimientos y unicidad de pertenencia para fichajes históricos ya requeridos. Precios, salarios, contratos, monedas y restricciones de ventanas esperan a D. |
 | Catalog / Game / Simulation | Catalog aporta referencias; Game conserva decisiones y estado; Simulation recibe plantillas efectivas y devuelve resultados. El motor no lee dilemas. | Mantener esta separación y la traducción por IDs. Resolver en CR-T3.0 los huecos reales de entrada/salida de F3, no crear `GameMode`, factorías ni jerarquías. |
 | `ExternalResultsPolicy` | Es una estrategia pura de acumulados **históricos**: petición con baseline y reemplazos; no recibe calendario global, plantillas ni RNG. `season.py` instancia `HistoricalExternalResults` para liga y grupos. | Mantener P2 para A/B/C. D necesitará CR de petición/coordinación, calendario completo y flujos derivados para resultados ajenos; añadir una clase no bastará. No anticipar inyección genérica ahora. |
 | Evaluation | Está separado de Game, pero su puerto actual es `HistoricalOutcomeProvider`; aún no existe el evaluador. | En T3.3/T5.1 mantener cálculo de objetivos separado de comparación histórica; Game puede terminar sin ejecutar esta última. En D decidir puntuación por objetivos y adaptar contratos por CR. No implementar un evaluador universal antes de B. |
@@ -154,12 +154,17 @@ precauciones son límites de responsabilidad en tareas ya necesarias.
 `SqlCatalogLoader.load` borra `catalog_seasons` y publica el árbol nuevo en una
 transacción (`catalog/infrastructure/sqlalchemy/catalog.py`). Su hash identifica
 la publicación actual, pero el proveedor busca solo por `season_id`.
-`RunRecord` conserva temporada, semilla, log y un `snapshot` de estado genérico;
-no exige guardar contenido inicial. Por tanto, actualizar una media, plantilla,
+En la auditoría de `8be8244`, `RunRecord` conservaba temporada, semilla, log y
+un `snapshot` genérico sin exigir contenido inicial recuperable. Por tanto, actualizar una media, plantilla,
 opción o calendario puede alterar una continuación o un replay. Un hash o un
 commit Git, sin sus datos recuperables, no resuelve el problema.
 
-**Mínimo propuesto para F3:** al iniciar, capturar una sola vez una copia
+**Implementación contractual integrada en PR #54:** captura, codec, entradas
+obligatorias inmutables y mapeo del motor están revisados y comprobados junto
+a T3.1a/T4.2. SQL, StartRun y ReplayRun siguen pendientes en T3.4/T3.5. No se declara
+un replay de partidas completo por disponer de estas piezas.
+
+**Solución acordada para F3:** al iniciar, capturar una sola vez una copia
 autocontenida del contenido de esa temporada, incluyendo todas sus plantillas y
 mercado, reglas y parámetros, bloques, calendarios/evidencia, dilemas/efectos,
 objetivos, historia y textos necesarios. Persistirla como **contenido inicial
@@ -170,29 +175,31 @@ No volver a consultar el catálogo publicado para decisiones, simulación,
 evaluación o presentación de esa partida. El resultado histórico se obtiene de
 la misma copia, sin leer la última historia de Catalog al terminar.
 
-La copia se guarda atómicamente con la creación del run, antes de devolverlo al
-cliente. El digest se calcula sobre el contenido efectivamente capturado; no se
+T3.4/T3.5 deberán guardar la copia atómicamente con la creación del run, antes
+de devolverlo al cliente. El digest se calcula sobre el contenido efectivamente capturado; no se
 lee primero un hash y después un contenido que podría pertenecer a otra carga.
 Las escrituras posteriores rechazan cambiar esa copia o su identidad; fakes y
-SQL cumplen la misma suite. Se conservan los bytes y su decodificador mientras
+SQL deberán cumplir la misma suite; el fake ya se ha ampliado. Se conservan los bytes y su decodificador mientras
 la partida siga disponible, aunque la temporada se retire del catálogo. La
 duplicación por partida es un coste deliberado del mínimo; deduplicar por hash
 o archivar todas las publicaciones de Catalog se pospone hasta medir volumen.
 
-Se tramita primero **CR-T3.0**, porque modifica los DTO/puertos de Game, fakes y
+**CR-T3.0 ya se integró primero**, modificando DTO/puertos de Game, fakes y
 contratos de repositorio/simulador. T3.4 implementa la persistencia y redacta
 ADR-009; T3.5 integra captura, continuación y replay; T5.1/T5.5 consumen esa misma
-historia fijada. No se modifica ahora `SqlCatalogLoader` ni ningún contrato.
-La prueba de aceptación crea una partida con A, publica B cambiando medias y
-dilemas (o elimina la temporada), reinicia proveedores y reconstruye la partida
-con exactamente A; otra partida nueva usa B. No basta comparar hashes.
+historia fijada. `SqlCatalogLoader` conserva su publicación por sustitución; la
+CR modificó solo contratos de Game y sus adaptadores/pruebas autorizados.
+La aceptación de T3.5 deberá crear una partida con A, publicar B cambiando
+medias/dilemas (o retirar la temporada) y reconstruir esa partida con A tras
+reiniciar proveedores; otra partida usará B. CR-T3.0 ya comprueba esa separación
+en la captura/restauración/mapeo del contenido, todavía sin casos de uso de run.
 
 El contenido es solo una entrada del determinismo: conservar también la semilla,
 estado inicial, log y configuración de reglas no incluida en el contenido.
 Identificar la revisión del motor/reglas y conservar su artefacto o revisión Git
 con lockfiles (ADR-005). La garantía de reproducción requiere ese ejecutable
-compatible: una versión incompatible se rechaza explícitamente. La CR fijará
-estos metadatos; no se construye ahora un cargador de múltiples motores.
+compatible: una versión incompatible se rechaza explícitamente. La CR ya fija
+estos metadatos; no se ha construido un cargador de múltiples motores.
 
 ### 3.6 IA y RAG después de validar el producto
 
@@ -321,9 +328,10 @@ para V1 sin inventariar las otras temporadas. Se mantiene la calidad acordada
 de rivales: acelerar A elimina una dependencia de calendario de trabajo,
 no autoriza recortar datos de B.
 
-**Tres siguientes tareas de ejecución:** (1) CR-T3.0, con copia recuperable y
+**Primera tanda de ejecución de este plan:** (1) CR-T3.0, con copia recuperable y
 mapeo del simulador; (2) T3.1a, estado privado y `SquadRegistry` mínimos; (3) T4.2,
-shell/rutas/adaptador sobre contrato y MSW. Son paralelas por propiedad; después
+shell/rutas/adaptador sobre contrato y MSW. Esta tanda ya está integrada y
+comprobada (HANDOFF §12). Eran paralelas por propiedad; a continuación
 T3.4, T3.1b/T3.2/T3.3 y T4.1/T4.3 alimentan el bucle. Oleadas de 2-3 agentes
 contando revisiones; no abrir todas las tareas de la tabla a la vez. F2 continúa
 por lotes sin consumir toda la capacidad reservada a A.

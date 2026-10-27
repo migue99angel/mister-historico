@@ -505,11 +505,14 @@ F3 puede comenzar con Test FC mientras F2 histórica permanece abierta. La
 consulta de contenido ya existe; el ACL de Game y los casos de uso aún no.
 
 ### CR-T3.0 · Entradas fijadas de partida y contrato de replay (antes de A)
-- **Estado:** propuesta de tarea; no implementada en esta revisión.
+- **Estado:** integrada por rebase-merge en [PR #54](https://github.com/migue99angel/mister-historico/pull/54), implementada por Luna y revisada por Sol sobre `d8170ac`, con CI y comprobación conjunta en verde. Los casos de uso y SQL siguen pendientes.
 - **Tamaño:** M · **Depende de:** T1.5/T1.6, T2.6 y T2.21, ya integradas.
 - **Propiedad:** `game/application/ports.py`, sus DTOs de entrada/persistencia,
   fakes de `game/infrastructure/in_memory/`, suites de contrato y mapeo de Game,
-  y `docs/changes/CR-T3.0-run-content-replay.md`. Si hace falta publicar una API
+  `game/application/{run_content,replay_inputs}.py`, los adaptadores privados
+  `game/infrastructure/{catalog_adapter,run_content_codec,simulation_mapping}.py`
+  y `docs/changes/CR-T3.0-run-content-replay.md`. La propiedad concreta de suites
+  y pruebas figura en ese documento. Si hace falta publicar una API
   entre contextos, enumerarla en la CR antes de editar `application/api.py`.
   No cambia el esquema histórico ni OpenAPI por el mero snapshot interno.
 - **Qué fijar:** copia inicial autocontenida de contenido por run, inmutable,
@@ -517,8 +520,8 @@ consulta de contenido ya existe; el ACL de Game y los casos de uso aún no.
   de motor/reglas; separada de `RunRecord.version` y del estado mutable. Es la
   solución mínima propuesta en PLAN §3.5; no depende de conservar el catálogo
   publicado ni de consultar su última versión al avanzar/evaluar.
-- **Mapeo necesario:** `BlockSimulationRequest` hoy identifica solo la temporada;
-  definir cómo el adaptador recibe las referencias capturadas. Alinear el cursor
+- **Mapeo resuelto:** `BlockSimulationRequest` antes identificaba solo la
+  temporada; la CR añade contenido capturado obligatorio y el cursor físico. Alinear el cursor
   físico `state_as_of` y la representación de empates no resueltos con la API de
   T2.6; no perderlos al traducir a los DTO antiguos de Game. Resolver únicamente
   huecos demostrados por los tests de mapeo, con tipos propios y sin importar
@@ -532,6 +535,10 @@ consulta de contenido ya existe; el ACL de Game y los casos de uso aún no.
   recuperables, ni selector genérico de modos o de motores.
 
 ### T3.1 · Agregado `Run` y máquina de estados
+- **Estado T3.1a:** integrada por rebase-merge en [PR #53](https://github.com/migue99angel/mister-historico/pull/53),
+  implementación Luna, revisión independiente Sol y CI en verde. 46 pruebas
+  dirigidas y cobertura del dominio Game al 100%. `T3.1b` sigue pendiente;
+  esta integración solo define estado privado y pertenencias/movimientos.
 - **Oleada:** F3-A · **Tamaño:** L · **Depende de:** F1 (los DTOs del catálogo están en `catalog/application/api.py`, de T1.5)
 - **Propiedad:** `game/domain/run.py`, `game/domain/events.py`, `game/domain/errors.py`,
   `game/domain/state.py`, `game/domain/squad_registry.py` y sus tests.
@@ -664,12 +671,27 @@ consulta de contenido ya existe; el ACL de Game y los casos de uso aún no.
   - Tests de componente: renderizado, estados (deshabilitado, seleccionado) y accesibilidad con `jest-axe`.
   - `GenericCrest` es determinista para los mismos colores.
 
+### CR-T4.0 · Dependencia y cableado web previo
+- **Estado:** integrada en [PR #52](https://github.com/migue99angel/mister-historico/pull/52),
+  Luna implementó y Sol revisó; CI en verde. Añade únicamente TanStack Query,
+  ya aprobada en ADR-011, worker MSW generado con opt-in en desarrollo y proxy
+  Vite que respeta el modo seleccionado. [Propiedad y decisiones](changes/CR-T4.0-web-wiring.md).
+- No implementa pantallas ni bucle de juego; desbloquea T4.2.
+
 ### T4.2 · Shell, rutas y adaptador de la API
+- **Estado:** implementada en [PR #55](https://github.com/migue99angel/mister-historico/pull/55),
+  integrada por rebase-merge tras revisión independiente Sol y CI en verde
+  sobre `f4f151e`. 100 tests frontend y bundle de 79,49 KB gzip. Las pantallas
+  T4.4-T4.6 siguen pendientes; las rutas actuales solo montan su estructura.
 - **Oleada:** F4-A · **Tamaño:** M · **Depende de:** T1.4
 - **Propiedad:** `frontend/src/{main.tsx,app/**}`, `frontend/src/infrastructure/**`
   (salvo `api/generated/**` y `api/mocks/**`, que pertenecen al contrato T1.4/CR)
   y `frontend/src/application/ports.ts`. Cambiar MSW o el cliente generado exige
   CR del contrato; no solapar esos archivos con otra tarea de frontend.
+  Extensión explícita de cableado documentada en
+  [CR-T4.2](changes/CR-T4.2-web-shell-wiring.md): comentarios de `.env.example`,
+  `docker-compose.yml` y `frontend/src/vite-env.d.ts` para aclarar la semántica de
+  URL, sin cambiar valores ni defaults de infraestructura.
 - **Qué hacer:**
   - Rutas `/`, `/equipo/:id`, `/partida/:id`, `/partida/:id/final` y `/r/:id`.
   - Puerto `GameApi` y su adaptador HTTP (sobre el cliente generado).
