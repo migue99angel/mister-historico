@@ -143,7 +143,7 @@ actuar.
 - **Clasificación T2.12:** [PR #49](https://github.com/migue99angel/mister-historico/pull/49)
   conserva en borrador las 20 filas finales de Liga del corte b5. La auditoría
   independiente cotejó todos los campos con la memoria oficial de LaLiga y su
-  JS enlazado: ninguna diferencia; 380 partidos y 1091 goles en total. El
+  JS enlazado: ninguna diferencia; 380 partidos y 1091 goles anotados. El
   30/06/2013 es el cierre editorial de b5, no la fecha de un partido.
 
 **Puertas pendientes:** las PR #45, #46 y #49 no se integran todavía porque
