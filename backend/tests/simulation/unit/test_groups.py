@@ -142,6 +142,27 @@ def test_mini_table_reapplication_is_an_explicit_synthetic_rule() -> None:
     assert tuple(r.club_season_id for r in with_reapply.rows)[:3] == CLUBS[:3]
 
 
+def test_reapplication_skips_a_remaining_three_club_tie() -> None:
+    # A/B/C draw including D, but their three-way mini-table has different goal totals.
+    matches = (
+        _match(0, 1, (3, 0)),
+        _match(1, 2, (2, 0)),
+        _match(2, 0, (1, 0)),
+        _match(0, 3, (1, 0)),
+        _match(1, 3, (2, 0)),
+        _match(2, 3, (3, 0)),
+    )
+    rows = tuple(_row(club, gf=(0, 1, 2, 0)[i]) for i, club in enumerate(CLUBS))
+    ranking = _table(
+        _rules("head_to_head_points", "head_to_head_goals_for", "goals_for", reapply=True),
+        rows=rows,
+        evidence=_evidence(*matches),
+    ).rank()
+    assert tuple(row.club_season_id for row in ranking.rows) == (
+        CLUBS[2], CLUBS[1], CLUBS[0], CLUBS[3]
+    )
+
+
 def test_group_rejects_evidence_for_another_group() -> None:
     match = _match(0, 1, (2, 0))
     wrong = replace(match, fixture=replace(match.fixture, group="b"))
