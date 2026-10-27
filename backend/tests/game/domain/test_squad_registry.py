@@ -135,6 +135,15 @@ def test_constructor_rejects_out_of_order_transfers_for_same_player() -> None:
         )
 
 
+def test_constructor_rejects_transfer_with_wrong_origin() -> None:
+    player = PlayerId("player-a")
+    with pytest.raises(InvalidValueError):
+        SquadRegistry(
+            (),
+            (SquadTransfer(player, ClubSeasonId("club-a"), None, date(2000, 1, 1)),),
+        )
+
+
 def test_squad_order_uses_player_id_values() -> None:
     club = ClubSeasonId("club-a")
     registry = SquadRegistry(
@@ -148,3 +157,60 @@ def test_squad_order_uses_player_id_values() -> None:
         PlayerId("player-a"),
         PlayerId("player-z"),
     )
+
+
+@pytest.mark.parametrize(
+    ("player_id", "club_season_id", "joined_on", "left_on"),
+    [
+        ("player-a", ClubSeasonId("club-a"), None, None),
+        (PlayerId("player-a"), "club-a", None, None),
+        (PlayerId("player-a"), ClubSeasonId("club-a"), "2000-01-01", None),
+        (PlayerId("player-a"), ClubSeasonId("club-a"), None, "2000-01-01"),
+    ],
+)
+def test_membership_rejects_invalid_id_and_date_types(
+    player_id: object,
+    club_season_id: object,
+    joined_on: object,
+    left_on: object,
+) -> None:
+    with pytest.raises(InvalidValueError):
+        Membership(player_id, club_season_id, joined_on, left_on)  # type: ignore[arg-type]
+
+
+def test_registry_requires_immutable_typed_collections() -> None:
+    with pytest.raises(InvalidValueError):
+        SquadRegistry([])  # type: ignore[arg-type]
+    with pytest.raises(InvalidValueError):
+        SquadRegistry((object(),))  # type: ignore[arg-type]
+    with pytest.raises(InvalidValueError):
+        SquadRegistry((), (object(),))  # type: ignore[arg-type]
+
+
+def test_transfer_rejects_invalid_ids_and_effective_date() -> None:
+    player = PlayerId("player-a")
+    club = ClubSeasonId("club-a")
+    with pytest.raises(InvalidValueError):
+        SquadTransfer("player-a", None, club, date(2000, 1, 1))  # type: ignore[arg-type]
+    with pytest.raises(InvalidValueError):
+        SquadTransfer(player, "club-a", None, date(2000, 1, 1))  # type: ignore[arg-type]
+    with pytest.raises(InvalidValueError):
+        SquadTransfer(player, None, "club-a", date(2000, 1, 1))  # type: ignore[arg-type]
+    with pytest.raises(InvalidValueError):
+        SquadTransfer(player, None, None, date(2000, 1, 1))
+    with pytest.raises(InvalidValueError):
+        SquadTransfer(player, club, club, date(2000, 1, 1))
+    with pytest.raises(InvalidValueError):
+        SquadTransfer(player, None, club, "2000-01-01")  # type: ignore[arg-type]
+
+
+def test_registry_queries_reject_invalid_id_and_date_arguments() -> None:
+    registry = SquadRegistry()
+    with pytest.raises(InvalidValueError):
+        registry.owner_on("player-a", date(2000, 1, 1))  # type: ignore[arg-type]
+    with pytest.raises(InvalidValueError):
+        registry.owner_on(PlayerId("player-a"), "2000-01-01")  # type: ignore[arg-type]
+    with pytest.raises(InvalidValueError):
+        registry.squad_on("club-a", date(2000, 1, 1))  # type: ignore[arg-type]
+    with pytest.raises(InvalidValueError):
+        registry.squad_on(ClubSeasonId("club-a"), "2000-01-01")  # type: ignore[arg-type]
