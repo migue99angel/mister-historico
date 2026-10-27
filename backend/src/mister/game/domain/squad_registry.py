@@ -59,10 +59,10 @@ class SquadTransfer:
             self.to_club_season_id, ClubSeasonId
         ):
             raise InvalidValueError("Transfer destination must be a club-season ID or None")
-        if self.from_club_season_id == self.to_club_season_id:
-            raise InvalidValueError("Transfer origin and destination must differ")
         if self.from_club_season_id is None and self.to_club_season_id is None:
             raise InvalidValueError("A transfer must have an origin or destination")
+        if self.from_club_season_id == self.to_club_season_id:
+            raise InvalidValueError("Transfer origin and destination must differ")
         if not _is_date(self.effective_on):
             raise InvalidValueError("effective_on must be a date")
 
