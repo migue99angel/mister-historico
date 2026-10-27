@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from './App';
+import { ErrorBoundary } from './ErrorBoundary';
 
 describe('<App/>', () => {
   beforeEach(() => {
@@ -71,5 +72,21 @@ describe('<App/>', () => {
 
     expect(await screen.findByRole('heading', { name: 'Míster Histórico' })).toBeInTheDocument();
     expect(startMocks).toHaveBeenCalledTimes(2);
+  });
+
+  it('catches an unexpected rendering error and keeps a user-visible fallback', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    function BrokenChild(): never {
+      throw new Error('render failed');
+    }
+
+    render(
+      <ErrorBoundary>
+        <BrokenChild />
+      </ErrorBoundary>,
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent('render failed');
+    consoleError.mockRestore();
   });
 });
