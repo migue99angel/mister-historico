@@ -171,15 +171,7 @@ class Stage(ContentModel):
                 "away_goals_in_extra_time true requires a two-legged knockout "
                 "with away goals and extra time"
             )
-        if not self.is_group_stage:
-            if self.reapply_head_to_head is not None:
-                raise ValueError("reapply_head_to_head only applies to group stages")
-            if self.coefficients is not None:
-                raise ValueError("coefficients only apply to group stages")
-        if self.coefficients is not None:
-            clubs = [value.club_season for value in self.coefficients]
-            if len(clubs) != len(set(clubs)):
-                raise ValueError("duplicate group coefficient club")
+        self._check_coefficient_rules()
         group_fields = {
             "groups": self.groups,
             "points_per_win": self.points_per_win,
@@ -199,6 +191,22 @@ class Stage(ContentModel):
         elif any(value is not None for value in group_fields.values()):
             raise ValueError("group fields (groups, points...) only apply to a group_stage")
         return self
+
+    def _check_coefficient_rules(self) -> None:
+        if not self.is_group_stage and self.reapply_head_to_head is not None:
+            raise ValueError("reapply_head_to_head only applies to group stages")
+        if not self.is_group_stage and self.coefficients is not None:
+            raise ValueError("coefficients only apply to group stages")
+        if self.coefficients is not None:
+            clubs = [value.club_season for value in self.coefficients]
+            if len(clubs) != len(set(clubs)):
+                raise ValueError("duplicate group coefficient club")
+        if (
+            self.tiebreakers
+            and Tiebreaker.CLUB_COEFFICIENT in self.tiebreakers
+            and (not self.is_group_stage or self.tiebreakers[-1] is not Tiebreaker.CLUB_COEFFICIENT)
+        ):
+            raise ValueError("club_coefficient must be the last group criterion")
 
 
 KnockoutStage = Stage
