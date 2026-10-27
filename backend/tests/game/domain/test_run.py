@@ -5,11 +5,11 @@ import pytest
 
 from mister.game.domain.run import (
     BlockDefinition,
+    BlockRecord,
     BlockResolution,
     ClosureOutcome,
     DecisionOption,
     DilemmaDefinition,
-    MatchRecord,
     Run,
     RunStatus,
 )
@@ -29,7 +29,6 @@ from mister.shared_kernel.ids import (
     ClubSeasonId,
     CompetitionId,
     DilemmaId,
-    FixtureId,
     OptionId,
     PlayableSeasonId,
     PlayerId,
@@ -242,12 +241,12 @@ def test_advance_rejects_cursor_regression() -> None:
     assert with_cursor.cursor == date(2000, 2, 1)
 
 
-def test_advance_retains_complete_opaque_match_payload_and_fixture_identity() -> None:
+def test_advance_retains_complete_opaque_block_payload() -> None:
     run, _ = make_run().take_decision(DILEMMA, OPTION, NOW)
     payload = b'{"away_goals":1,"extra_time":null,"penalties":null,"home_goals":1}'
-    result = MatchRecord(FixtureId("test-final"), payload)
+    record = BlockRecord(BLOCK_1, payload)
 
-    updated, _ = run.advance_block(BlockResolution(BLOCK_1, make_state(), results=(result,)), NOW)
+    updated, _ = run.advance_block(BlockResolution(BLOCK_1, make_state(), payload=payload), NOW)
 
-    assert updated.results == (result,)
-    assert updated.results[0].opaque_payload == payload
+    assert updated.block_records == (record,)
+    assert updated.block_records[0].payload == payload
