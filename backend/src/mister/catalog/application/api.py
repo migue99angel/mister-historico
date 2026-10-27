@@ -121,6 +121,7 @@ class Tiebreaker(StrEnum):
     GOAL_DIFFERENCE = "goal_difference"
     GOALS_FOR = "goals_for"
     WINS = "wins"
+    CLUB_COEFFICIENT = "club_coefficient"
 
 
 class ObjectiveKind(StrEnum):
@@ -200,6 +201,7 @@ class GroupStageDTO:
     tiebreakers: tuple[Tiebreaker, ...]
     advance_per_group: int
     reapply_head_to_head: bool | None = None
+    coefficients: tuple[tuple[ClubSeasonId, int], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

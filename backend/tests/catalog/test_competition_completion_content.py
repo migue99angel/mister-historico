@@ -12,6 +12,8 @@ from tests.catalog.test_content_tree import FIXTURE_ROOT, OWN, SEASON, assert_is
 
 from mister.catalog.infrastructure.content_schema import load_content_tree
 from mister.catalog.infrastructure.content_schema.competitions import KnockoutCalendar
+from mister.catalog.infrastructure.yaml_loader import YamlSeasonContentProvider
+from mister.shared_kernel.ids import PlayableSeasonId
 
 SOURCE = "https://example.org/test-content/competition-completion"
 STANDINGS = f"{SEASON}/standings.yaml"
@@ -92,9 +94,7 @@ def test_group_coefficient_criterion_requires_every_participant_value(root: Path
     edit(
         root,
         f"{SEASON}/season.yaml",
-        lambda d: d["competitions"][3]["stages"][0]["tiebreakers"].append(
-            "club_coefficient"
-        ),
+        lambda d: d["competitions"][3]["stages"][0]["tiebreakers"].append("club_coefficient"),
     )
     assert_issue(
         issues_of(root, release=True),
@@ -122,6 +122,11 @@ def test_complete_sourced_group_coefficients_can_ship(root: Path) -> None:
     edit(root, f"{SEASON}/season.yaml", add_coefficients)
     season = load_content_tree(root, release=True).seasons[OWN].season
     assert season.competitions[3].stages[0].coefficients is not None
+    published = YamlSeasonContentProvider(root).get_playable_season(PlayableSeasonId(OWN))
+    group_stage = published.competitions[3].stages[0].group_stage
+    assert group_stage is not None
+    assert len(group_stage.coefficients) == len(clubs := season.competitions[3].participants)
+    assert {str(club) for club, _ in group_stage.coefficients} == set(clubs)
 
 
 @pytest.mark.parametrize("field", ["date", "venue"])

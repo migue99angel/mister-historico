@@ -62,6 +62,7 @@ type TiebreakerName = Literal[
     "goal_difference",
     "goals_for",
     "wins",
+    "club_coefficient",
 ]
 
 # --------------------------------------------------------------------------- teams
@@ -141,6 +142,7 @@ class StageInput:
     advance_per_group: int | None = None
     away_goals_in_extra_time: bool | None = None
     reapply_head_to_head: bool | None = None
+    coefficients: tuple[tuple[ClubSeasonId, int], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
