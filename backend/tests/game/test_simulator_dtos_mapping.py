@@ -13,6 +13,7 @@ from dataclasses import fields
 import pytest
 
 from mister.game.application import ports
+from mister.simulation.application import api as simulation_api
 
 
 def _same(*names: str) -> dict[str, str | None]:
@@ -137,3 +138,13 @@ def test_the_only_engine_field_game_does_not_hold_is_the_season_reference() -> N
     }
 
     assert unmapped == {("BlockSimRequest", "season")}
+
+
+def test_the_correspondence_table_covers_the_published_simulation_api() -> None:
+    for engine_name, (game_cls, mapped_fields) in CORRESPONDENCE.items():
+        engine_cls = getattr(simulation_api, engine_name)
+        engine_fields = {field.name for field in fields(engine_cls)}
+        assert set(mapped_fields) == engine_fields
+        assert {target for target in mapped_fields.values() if target is not None} <= {
+            field.name for field in fields(game_cls)
+        }
