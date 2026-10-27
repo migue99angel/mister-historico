@@ -37,6 +37,7 @@ from mister.simulation.application.api import (
     StandingRowDTO,
     StandingsDTO,
 )
+from mister.simulation.application.simulate_block import _stages
 from mister.simulation.domain.model import MatchResult, MatchSetup, Score
 
 CUP = CompetitionId("copa-test")
@@ -346,6 +347,19 @@ def group_request() -> BlockSimRequest:
         group_entry_assignments=(GroupEntryAssignmentsInput(CUP, entries, SOURCES, "ok"),),
     )
     return replace(value, season=season, end=FINAL_DAY)
+
+
+def test_group_input_passes_exact_coefficients_to_domain_rules() -> None:
+    competition = group_request().season.competitions[0]
+    coefficients = ((ME, 101001), (RIVAL, 101004), (OTHER, 101003), (FOURTH, 101002))
+    group = replace(
+        competition.stages[0],
+        tiebreakers=("club_coefficient",),
+        coefficients=coefficients,
+    )
+    stages = _stages(replace(competition, stages=(group, *competition.stages[1:])))
+    assert stages[0].group_rules is not None
+    assert stages[0].group_rules.coefficients == coefficients
 
 
 class SwapGroupPositions(OwnWins):
