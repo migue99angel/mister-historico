@@ -167,6 +167,26 @@ def test_reapplication_skips_a_remaining_three_club_tie() -> None:
     )
 
 
+def test_group_uses_exact_club_coefficient_as_last_resort() -> None:
+    coefficients = tuple(zip(CLUBS, (123001, 123004, 123003, 123002), strict=True))
+    rules = GroupRules(3, 1, ("club_coefficient",), 2, False, coefficients)
+    ranking = _table(rules).rank()
+    assert tuple(row.club_season_id for row in ranking.rows) == (
+        CLUBS[1],
+        CLUBS[2],
+        CLUBS[3],
+        CLUBS[0],
+    )
+    assert not ranking.unresolved_ties
+
+
+def test_group_rejects_coefficient_criterion_without_all_participant_values() -> None:
+    coefficients = ((CLUBS[0], 123001),)
+    rules = GroupRules(3, 1, ("club_coefficient",), 2, False, coefficients)
+    with pytest.raises(InvalidValueError, match="coefficient"):
+        _table(rules)
+
+
 def test_group_rejects_evidence_for_another_group() -> None:
     match = _match(0, 1, (2, 0))
     wrong = replace(match, fixture=replace(match.fixture, group="b"))
