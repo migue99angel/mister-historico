@@ -415,13 +415,16 @@ def test_run_cannot_close_a_block_with_an_unanswered_dilemma() -> None:
 def test_run_cannot_contain_decisions_for_future_blocks() -> None:
     run = make_run()
     future_id = DilemmaId("future-dilemma")
-    future = BlockDefinition(BLOCK_2, (DilemmaDefinition(future_id, (DecisionOption(OPTION),)),))
+    future_option = OptionId("future-option")
+    future = BlockDefinition(
+        BLOCK_2, (DilemmaDefinition(future_id, (DecisionOption(future_option),)),)
+    )
 
     with pytest.raises(InvalidValueError):
         replace(
             run,
             blocks=(run.blocks[0], future),
-            decisions=(Decision(BLOCK_2, future_id, OPTION, 1),),
+            decisions=(Decision(BLOCK_2, future_id, future_option, 1),),
         )
 
 
