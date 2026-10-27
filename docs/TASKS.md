@@ -79,7 +79,7 @@
 - **Propiedad:** `.github/workflows/**`
 - **Qué hacer:**
   - Heredado de la revisión de F0: aplicar en la CI el umbral del 95 % de cobertura a `domain` + `application` (`coverage report --include=... --fail-under=95`), y fijar las imágenes de Docker (`postgres`, `python`, `node`) a versión menor o digest.
-  - Workflows `backend.yml` (lint, tipos, import-linter, tests con Postgres por testcontainers y cobertura), `frontend.yml` (lint, tipos, tests, build, size-limit, e2e) y `content.yml` (`mister content validate`, como placeholder hasta T2.20).
+  - Workflows `backend.yml` (lint, tipos, import-linter, tests con Postgres por testcontainers y cobertura), `frontend.yml` (lint, tipos, tests, build, size-limit, e2e) y `content.yml` (`mister content validate`; el placeholder inicial se sustituyó en T2.20).
   - `calibration.yml`: con *path filters* sobre `simulation/` y `content/`, y en un cron nocturno.
   - `nightly.yml`: mutmut.
   - `contracts.yml`: comprueba que no hay drift entre el OpenAPI y el cliente TS (se activa en T1.4).
@@ -201,7 +201,7 @@
 - **Qué hacer:**
   - VOs inmutables del dominio interno del motor: `Rating`, `TeamStrength(attack, defense)`, `Tactic(style, system)`, `Morale` y `Fitness` (los dos de 0 a 100), `Score`, `MatchResult` (incluye prórroga y penaltis), `FixtureSpec` y `SimTeam`.
   - Protocolos `GoalModel` y `MatchSimulator`.
-  - **API publicada del contexto** en `simulation/application/api.py`: DTOs de entrada y salida propios (`SeasonSimInput`, `BlockSimRequest`, `BlockSummaryDTO`…) y la firma de la fachada `SimulationService.simulate_block(...)`, que de momento lanza `NotImplementedError` y se implementa en T2.6. **Es lo único que pueden importar otros contextos** (regla 4 de PLAN §3.2). El adaptador de Game (T3.5) depende de esta API, nunca de `simulation.domain`.
+  - **API publicada del contexto** en `simulation/application/api.py`: DTOs de entrada y salida propios (`SeasonSimInput`, `BlockSimRequest`, `BlockSummaryDTO`…) y la firma de la fachada `SimulationService.simulate_block(...)`. En T1.6 lanzaba `NotImplementedError`; desde T2.6 delega en el simulador por bloques. **Es lo único que pueden importar otros contextos** (regla 4 de PLAN §3.2). El adaptador de Game (T3.5) depende de esta API, nunca de `simulation.domain`.
   - Añadir a `pyproject.toml`, como CR de T0.2, un contrato de import-linter que prohíba a cualquier `mister.<otro>.*` importar `mister.simulation.domain`.
   - Con esto, las tareas de la F2-A pueden trabajar en paralelo.
 - **Tests primero:**
