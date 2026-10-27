@@ -88,6 +88,42 @@ def test_both_sourced_reapplication_policies_can_ship(root: Path, value: bool) -
     load_content_tree(root, release=True)
 
 
+def test_group_coefficient_criterion_requires_every_participant_value(root: Path) -> None:
+    edit(
+        root,
+        f"{SEASON}/season.yaml",
+        lambda d: d["competitions"][3]["stages"][0]["tiebreakers"].append(
+            "club_coefficient"
+        ),
+    )
+    assert_issue(
+        issues_of(root, release=True),
+        f"{SEASON}/season.yaml",
+        "coefficients",
+        "coverage",
+    )
+
+
+def test_complete_sourced_group_coefficients_can_ship(root: Path) -> None:
+    def add_coefficients(data: dict[str, Any]) -> None:
+        stage = data["competitions"][3]["stages"][0]
+        stage["tiebreakers"].append("club_coefficient")
+        clubs = [club for group in stage["groups"] for club in group["participants"]]
+        stage["coefficients"] = [
+            {
+                "club_season": club,
+                "milli_points": index + 1000,
+                "sources": [SOURCE],
+                "verify": "ok",
+            }
+            for index, club in enumerate(clubs)
+        ]
+
+    edit(root, f"{SEASON}/season.yaml", add_coefficients)
+    season = load_content_tree(root, release=True).seasons[OWN].season
+    assert season.competitions[3].stages[0].coefficients is not None
+
+
 @pytest.mark.parametrize("field", ["date", "venue"])
 def test_missing_slot_date_or_venue_stays_null_and_pending(root: Path, field: str) -> None:
     edit(
