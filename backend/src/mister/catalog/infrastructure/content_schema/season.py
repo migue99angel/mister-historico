@@ -270,6 +270,14 @@ class _KnockoutBase(_CompetitionBase):
                     "(only qualifying may repeat)"
                 )
         for stage in self.stages:
+            group_clubs = {club for group in stage.groups or () for club in group.participants}
+            foreign_coefficients = {
+                entry.club_season for entry in stage.coefficients or ()
+            } - group_clubs
+            if foreign_coefficients:
+                raise ValueError(
+                    f"group coefficient has non-participant clubs: {sorted(foreign_coefficients)}"
+                )
             for group in stage.groups or ():
                 unknown = set(group.participants) - set(self.participants)
                 if unknown:
