@@ -1,6 +1,6 @@
 # Traspaso de la orquestación (2026-10-26)
 
-> Las secciones 1–11 conservan las comprobaciones de su fecha. La sección 12 recoge la primera tanda implementada hacia la partida interna: estado, entradas recuperables y shell web. F2 y el hito A continúan abiertos. Léelo junto con `CLAUDE.md`, `docs/PLAN.md` y `docs/TASKS.md`. Las instrucciones del autor prevalecen sobre estos documentos.
+> Las secciones 1–12 conservan las comprobaciones de su fecha. La sección 13 recoge la segunda tanda implementada hacia la partida interna: agregado y persistencia SQL. F2 y el hito A continúan abiertos. Léelo junto con `CLAUDE.md`, `docs/PLAN.md` y `docs/TASKS.md`. Las instrucciones del autor prevalecen sobre estos documentos.
 
 ## 1. Rol y forma de trabajo
 
@@ -268,3 +268,62 @@ Las PR históricas #45/#46/#49 siguen en borrador y sus tres worktrees se
 conservan. Las propuestas de beta B y modo actual mantienen las aprobaciones
 pendientes de PLAN §5.4. La API real sigue sin endpoints de partida y no existe
 una temporada completa jugable desde la web; esta tanda no cierra A, F2 ni F3.
+
+## 13. Segunda tanda hacia A: agregado y SQL (2026-10-27)
+
+**Planificación realizada:** un agente gpt-6.1-sol contrastó T3.1b/T3.2/T3.3,
+T3.4 y T4.1/T4.3 con el código y sus dependencias. Se eligieron únicamente
+T3.1b y T3.4: ambas estaban listas, tenían propiedad separada y desbloqueaban
+T3.5. T3.2/T3.3 y T4.3 están pendientes; T4.1 necesita resolver la dependencia
+de accesibilidad exigida por su tarea antes de tocar archivos compartidos.
+Esta planificación no declara implementadas esas cuatro tareas.
+
+**Implementación realizada e integrada:** dos agentes gpt-6-luna trabajaron
+en ramas y worktrees separados, con commits de pruebas rojas anteriores al
+código. Cada PR recibió revisión independiente gpt-6.1-sol y CI verde antes
+de integrarse por rebase-merge:
+
+- **T3.1b, [PR #58](https://github.com/migue99angel/mister-historico/pull/58):**
+  agregado `Run` inmutable, decisiones y transiciones por bloque, errores y
+  los cinco eventos de dominio. Recibe el estado calculado y la resolución de
+  cierre; no aplica efectos ni calcula confianza/moral. Conserva el payload
+  completo del cierre como bytes opacos y un cursor tipado. T3.5 deberá definir
+  su codec, mapear simulación y reconstruir el agregado; no guardar solamente
+  marcadores que pierdan prórroga, penaltis o empates sin resolver. Se corrigieron
+  dos P2 de Sol con regresiones: reutilización válida de opciones entre dilemas
+  y coherencia de snapshots para impedir saltar bloques pendientes. Sol comprobó
+  112 pruebas del dominio y un escenario independiente de tres bloques con
+  final normal y destitución en cada bloque. Aprobación final sobre `acff98a`,
+  incluido el ajuste de tipos de tests negativos sin alterar su ejecución.
+- **T3.4, [PR #57](https://github.com/migue99angel/mister-historico/pull/57):**
+  `SqlRunRepository`, `SqlUnitOfWork`, migración `0003_game_runs` y
+  [ADR-009](adr/009-persistencia-de-la-partida.md). Snapshot JSONB, log append-only,
+  respuestas idempotentes y versión optimista participan en la transacción.
+  Lectura de snapshot/log en una sola sentencia; bytes de contenido y metadatos
+  iniciales inmutables, sin FK al catálogo reemplazable. Las mismas suites del
+  fake pasan contra PostgreSQL: 42 pruebas dirigidas, incluida captura de Test
+  FC A, publicación de B, retirada de Catalog y restauración de A con proveedores
+  recreados. Sol aprobó `833895d`; ejecutó además 66 contratos fake por su cuenta.
+
+**Verificación conjunta:** `make test` con las dos tareas y `main`: **2326
+backend y 100 frontend**, incluido PostgreSQL real. Dominio/aplicación: **98,85%
+de líneas y 96,41% de ramas**. Se corrigieron el formato de un test SQL y el
+tipado de pruebas negativas del agregado detectados por CI; no se rebajaron
+umbrales ni se eliminaron pruebas. `make lint` completo está verde: Ruff,
+mypy, ocho contratos de capas backend, ESLint, TypeScript y reglas frontend.
+Los últimos cambios fueron solo formato y tipos de tests; las 66 pruebas
+dirigidas del agregado se volvieron a ejecutar en la combinación final.
+
+**Siguiente tanda propuesta, todavía sin ejecutar:** T3.2 y T3.3 pueden
+implementarse sobre el estado privado y el agregado integrados, manteniendo
+`effects.py` separado de `board.py`/`morale.py`. T3.2 necesita tipos privados de
+efectos en Game, sin importar DTOs de Catalog desde el dominio; la traducción
+corresponde a T3.5. T3.3 calcula la resolución de cierre, sin absorber casos
+de uso. T4.3 puede prepararse aparte con entradas estructurales puras, sin
+importar `application/ports.ts` ni el cliente generado desde `domain`.
+
+T3.5 sigue bloqueada por T3.2/T3.3. Después quedan T3.6, T3.7a y las pantallas
+T4.4/T4.5/T4.6a con T4.7a real; no existe aún una partida completa jugable ni
+replay por caso de uso. No se cierra A, F2 ni F3. Las PR #45/#46/#49 permanecen
+en borrador, con sus worktrees preservados. Las decisiones de beta B, el modo
+actual, mercado económico y RAG quedan fuera de esta tanda.
