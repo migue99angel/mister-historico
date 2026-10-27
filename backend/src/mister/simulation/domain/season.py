@@ -43,6 +43,7 @@ from mister.simulation.domain.model import (
 from mister.simulation.domain.strength import StrengthReference, calculate_strength
 
 _STARTERS = 11
+_TWO_CLUBS = 2
 
 if TYPE_CHECKING:
     from datetime import date
@@ -825,9 +826,15 @@ class SeasonSimulation:
                     for group in partitions
                     for part in _partition(group, criterion_values.__getitem__)
                 )
-            restart = table.rules.reapply_head_to_head and len(partitions) > 1
             for part in partitions:
-                resolve(part, index if restart else end)
+                resolve(
+                    part,
+                    index
+                    if table.rules.reapply_head_to_head
+                    and len(partitions) > 1
+                    and len(part) == _TWO_CLUBS
+                    else end,
+                )
 
         for members in _partition(table.participants, lambda club: rows[club].points):
             resolve(members, 0)

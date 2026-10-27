@@ -159,7 +159,10 @@ def test_reapplication_skips_a_remaining_three_club_tie() -> None:
         evidence=_evidence(*matches),
     ).rank()
     assert tuple(row.club_season_id for row in ranking.rows) == (
-        CLUBS[2], CLUBS[1], CLUBS[0], CLUBS[3]
+        CLUBS[2],
+        CLUBS[1],
+        CLUBS[0],
+        CLUBS[3],
     )
 
 
