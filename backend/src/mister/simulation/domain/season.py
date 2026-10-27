@@ -792,13 +792,14 @@ class SeasonSimulation:
         """
         rows = {row.club_season_id: row for row in table.rows}
         criteria = table.rules.tiebreakers
+        coefficients = dict(table.rules.coefficients)
 
         def resolve(members: tuple[ClubSeasonId, ...], index: int) -> None:
             if len(members) <= 1 or index == len(criteria):
                 return
             if not criteria[index].startswith("head_to_head_"):
                 for part in _partition(
-                    members, lambda club: _overall_value(rows[club], criteria[index])
+                    members, lambda club: _overall_value(rows[club], criteria[index], coefficients)
                 ):
                     resolve(part, index + 1)
                 return
