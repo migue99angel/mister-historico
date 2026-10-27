@@ -1,5 +1,11 @@
-from dataclasses import FrozenInstanceError
+from __future__ import annotations
+
+from dataclasses import FrozenInstanceError, replace
 from datetime import date
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 import pytest
 
@@ -51,63 +57,60 @@ def test_tactic_rejects_bool_as_line_value() -> None:
 
 
 @pytest.mark.parametrize(
-    "kwargs",
+    "change_player",
     [
-        {"rating": 0},
-        {"rating": 100},
-        {"age": -1},
-        {"morale": -1},
-        {"morale": 101},
-        {"fitness": -1},
-        {"fitness": 101},
-        {"minutes_played": -1},
-        {"rating": True},
-        {"morale": True},
-        {"age": True},
-        {"minutes_played": True},
+        pytest.param(lambda player: replace(player, rating=0), id="rating-low"),
+        pytest.param(lambda player: replace(player, rating=100), id="rating-high"),
+        pytest.param(lambda player: replace(player, age=-1), id="negative-age"),
+        pytest.param(lambda player: replace(player, morale=-1), id="morale-low"),
+        pytest.param(lambda player: replace(player, morale=101), id="morale-high"),
+        pytest.param(lambda player: replace(player, fitness=-1), id="fitness-low"),
+        pytest.param(lambda player: replace(player, fitness=101), id="fitness-high"),
+        pytest.param(lambda player: replace(player, minutes_played=-1), id="minutes-negative"),
     ],
 )
-def test_player_state_rejects_invalid_ranges_and_bool_integers(kwargs: dict[str, object]) -> None:
-    values: dict[str, object] = {
-        "player_id": PlayerId("player-a"),
-        "position": Position.MF,
-        "rating": 70,
-        "age": 20,
-        "morale": 50,
-        "fitness": 50,
-    }
-    values.update(kwargs)
+def test_player_state_rejects_out_of_range_values(
+    change_player: Callable[[PlayerState], PlayerState],
+) -> None:
+    player = PlayerState(PlayerId("player-a"), Position.MF, 70, 20, 50, 50)
     with pytest.raises(InvalidValueError):
-        PlayerState(**values)  # type: ignore[arg-type]
+        change_player(player)
+
+
+@pytest.mark.parametrize(
+    "change_player",
+    [
+        pytest.param(lambda player: replace(player, rating=cast("int", True)), id="rating"),
+        pytest.param(lambda player: replace(player, age=cast("int", True)), id="age"),
+        pytest.param(lambda player: replace(player, morale=cast("int", True)), id="morale"),
+        pytest.param(lambda player: replace(player, fitness=cast("int", True)), id="fitness"),
+        pytest.param(
+            lambda player: replace(player, minutes_played=cast("int", True)), id="minutes"
+        ),
+    ],
+)
+def test_player_state_rejects_bool_for_integer_fields(
+    change_player: Callable[[PlayerState], PlayerState],
+) -> None:
+    player = PlayerState(PlayerId("player-a"), Position.MF, 70, 20, 50, 50)
+    with pytest.raises(InvalidValueError):
+        change_player(player)
 
 
 def test_run_state_requires_known_unique_player_references_and_unique_priorities() -> None:
     p = PlayerId("player-a")
     competition = CompetitionId("league-test")
-    base = {
-        "managed_club_season_id": ClubSeasonId("test-fc-2000-01"),
-        "squad_registry": SquadRegistry(),
-        "players": (PlayerState(p, Position.DF, 60, None, 50, 50),),
-        "tactic": Tactic(TacticStyle.COUNTER, (4, 3, 3)),
-        "competition_priorities": (),
-        "team_morale": 50,
-        "board_confidence": 50,
-        "state_as_of": None,
-    }
+    base = _make_run_state(p)
     with pytest.raises(InvalidValueError):
-        RunState(**(base | {"players": (base["players"][0], base["players"][0])}))  # type: ignore[arg-type]
+        replace(base, players=(base.players[0], base.players[0]))
     with pytest.raises(InvalidValueError):
-        RunState(
-            **(
-                base
-                | {
-                    "competition_priorities": (
-                        CompetitionPriority(competition, Priority.HIGH),
-                        CompetitionPriority(competition, Priority.LOW),
-                    )
-                }
-            )
-        )  # type: ignore[arg-type]
+        replace(
+            base,
+            competition_priorities=(
+                CompetitionPriority(competition, Priority.HIGH),
+                CompetitionPriority(competition, Priority.LOW),
+            ),
+        )
 
 
 def test_injuries_require_known_players_and_positive_integer_days() -> None:
@@ -162,20 +165,11 @@ def test_run_state_rejects_transfer_history_for_player_outside_known_pool() -> N
 
 def test_run_state_rejects_non_tuple_collections_and_invalid_dates() -> None:
     player = PlayerId("player-a")
-    base = {
-        "managed_club_season_id": ClubSeasonId("test-fc-2000-01"),
-        "squad_registry": SquadRegistry(),
-        "players": (PlayerState(player, Position.GK, 70, None, 50, 50),),
-        "tactic": Tactic(TacticStyle.BALANCED, (2, 4, 4)),
-        "competition_priorities": (),
-        "team_morale": 50,
-        "board_confidence": 50,
-        "state_as_of": None,
-    }
+    base = _make_run_state(player)
     with pytest.raises(InvalidValueError):
-        RunState(**(base | {"players": [base["players"][0]]}))  # type: ignore[arg-type]
+        replace(base, players=cast("tuple[PlayerState, ...]", [base.players[0]]))
     with pytest.raises(InvalidValueError):
-        RunState(**(base | {"state_as_of": "2000-01-01"}))  # type: ignore[arg-type]
+        replace(base, state_as_of=cast("date", "2000-01-01"))
 
 
 def test_player_minutes_default_to_zero_without_changing_cursor() -> None:
@@ -231,26 +225,46 @@ def test_state_value_objects_reject_invalid_enum_types() -> None:
 def test_run_state_rejects_invalid_collection_and_reference_types() -> None:
     player = PlayerId("player-a")
     competition = CompetitionId("league-test")
-    base = {
-        "managed_club_season_id": ClubSeasonId("test-fc-2000-01"),
-        "squad_registry": SquadRegistry(),
-        "players": (PlayerState(player, Position.MF, 70, None, 50, 50),),
-        "tactic": Tactic(TacticStyle.BALANCED, (2, 4, 4)),
-        "competition_priorities": (),
-        "team_morale": 50,
-        "board_confidence": 50,
-        "state_as_of": None,
-    }
-    invalid_overrides = [
-        {"managed_club_season_id": "test-fc-2000-01"},
-        {"squad_registry": object()},
-        {"tactic": object()},
-        {"competition_priorities": [CompetitionPriority(competition, Priority.HIGH)]},
-        {"competition_priorities": (object(),)},
-        {"forced_injuries": [ForcedInjury(player, date(2000, 1, 1), 1)]},
-        {"forced_injuries": (object(),)},
-        {"forced_injuries": (ForcedInjury(PlayerId("other-player"), date(2000, 1, 1), 1),)},
-    ]
-    for override in invalid_overrides:
+    base = _make_run_state(player)
+    invalid_state_factories: tuple[Callable[[], RunState], ...] = (
+        lambda: replace(base, managed_club_season_id=cast("ClubSeasonId", "test-fc-2000-01")),
+        lambda: replace(base, squad_registry=cast("SquadRegistry", object())),
+        lambda: replace(base, tactic=cast("Tactic", object())),
+        lambda: replace(
+            base,
+            competition_priorities=cast(
+                "tuple[CompetitionPriority, ...]",
+                [CompetitionPriority(competition, Priority.HIGH)],
+            ),
+        ),
+        lambda: replace(
+            base, competition_priorities=cast("tuple[CompetitionPriority, ...]", (object(),))
+        ),
+        lambda: replace(
+            base,
+            forced_injuries=cast(
+                "tuple[ForcedInjury, ...]", [ForcedInjury(player, date(2000, 1, 1), 1)]
+            ),
+        ),
+        lambda: replace(base, forced_injuries=cast("tuple[ForcedInjury, ...]", (object(),))),
+        lambda: replace(
+            base,
+            forced_injuries=(ForcedInjury(PlayerId("other-player"), date(2000, 1, 1), 1),),
+        ),
+    )
+    for make_invalid_state in invalid_state_factories:
         with pytest.raises(InvalidValueError):
-            RunState(**(base | override))  # type: ignore[arg-type]
+            make_invalid_state()
+
+
+def _make_run_state(player_id: PlayerId) -> RunState:
+    return RunState(
+        ClubSeasonId("test-fc-2000-01"),
+        SquadRegistry(),
+        (PlayerState(player_id, Position.MF, 70, None, 50, 50),),
+        Tactic(TacticStyle.COUNTER, (4, 3, 3)),
+        (),
+        50,
+        50,
+        None,
+    )
