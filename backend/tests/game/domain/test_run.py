@@ -23,7 +23,7 @@ from mister.game.domain.state import (
     Tactic,
     TacticStyle,
 )
-from mister.shared_kernel.errors import DomainError
+from mister.shared_kernel.errors import DomainError, InvalidValueError
 from mister.shared_kernel.ids import (
     BlockId,
     ClubSeasonId,
@@ -197,6 +197,43 @@ def test_start_rejects_empty_or_repeated_blocks_without_creating_run() -> None:
             (BlockDefinition(BLOCK_1, ()), BlockDefinition(BLOCK_1, ())),
             NOW,
         )
+
+
+def test_dilemma_rejects_empty_options() -> None:
+    with pytest.raises(InvalidValueError):
+        DilemmaDefinition(DILEMMA, ())
+
+
+def test_dilemma_rejects_repeated_option_ids() -> None:
+    option = DecisionOption(OPTION)
+    with pytest.raises(InvalidValueError):
+        DilemmaDefinition(DILEMMA, (option, option))
+
+
+def test_block_rejects_repeated_dilemma_ids() -> None:
+    dilemma = DilemmaDefinition(DILEMMA, (DecisionOption(OPTION),))
+    with pytest.raises(InvalidValueError):
+        BlockDefinition(BLOCK_1, (dilemma, dilemma))
+
+
+def test_start_rejects_naive_event_time() -> None:
+    with pytest.raises(InvalidValueError):
+        Run.start(
+            RunId(UUID(int=3)),
+            PlayableSeasonId("test-fc-2000-01"),
+            Seed(7),
+            make_state(),
+            (BlockDefinition(BLOCK_1, ()),),
+            datetime(2000, 1, 1),
+        )
+
+
+def test_take_decision_rejects_naive_event_time() -> None:
+    run = make_run()
+    with pytest.raises(InvalidValueError):
+        run.take_decision(DILEMMA, OPTION, datetime(2000, 1, 1))
+
+    assert run.decisions == ()
 
 
 def test_take_decision_rejects_state_from_another_managed_club() -> None:
