@@ -144,10 +144,8 @@ def test_capture_reads_once_and_restore_survives_a_catalog_republication() -> No
 def test_format_one_codec_gate_rejects_catalog_schema_drift(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    import mister.game.infrastructure.run_content_codec as codec
-
     assert_format1_schema_supported()
-    monkeypatch.setattr(codec, "FORMAT1_SCHEMA_FINGERPRINT", "stale-fingerprint")
+    monkeypatch.setitem(PlayableSeasonDTO.__annotations__, "season", int)
 
     with pytest.raises(InvalidValueError, match="format 1 schema"):
         encode_playable_season(build_expected_test_fc_season())
@@ -232,12 +230,13 @@ def test_format_version_must_be_an_integer_not_an_equal_value(format_version: ob
     "content",
     [
         "[]",
-        '{"x":1}',
-        '{"$type":"PlayableSeasonDTO","fields":{},"fields":{}}',
-        '{"$type":"PlayableSeasonDTO","fields":{},"x":1}',
+        '{"x": 1}',
+        '{"x":1,"x":2}',
     ],
 )
-def test_snapshot_envelope_rejects_noncanonical_or_arbitrary_json(content: str) -> None:
+def test_snapshot_envelope_rejects_nonobjects_duplicates_and_noncanonical_json(
+    content: str,
+) -> None:
     with pytest.raises(InvalidValueError):
         RunContentSnapshot(
             1,
@@ -245,6 +244,19 @@ def test_snapshot_envelope_rejects_noncanonical_or_arbitrary_json(content: str) 
             hashlib.sha256(content.encode()).hexdigest(),
             PlayableSeasonId("test-fc-2000-01"),
         )
+
+
+def test_snapshot_envelope_stays_opaque_to_application_catalog_tags() -> None:
+    opaque_json = '{"other":"tag"}'
+    snapshot = RunContentSnapshot(
+        1,
+        opaque_json,
+        hashlib.sha256(opaque_json.encode()).hexdigest(),
+        PlayableSeasonId("test-fc-2000-01"),
+    )
+
+    with pytest.raises(InvalidValueError, match="unknown DTO tag"):
+        decode_playable_season(snapshot)
 
 
 @pytest.mark.parametrize("revision", [0, None, " "])
