@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 _GROUP_SIZE = 4
+_TWO_CLUBS = 2
 _HEAD_TO_HEAD = frozenset(
     {
         "head_to_head_points",
@@ -32,8 +33,8 @@ class GroupRules:
     """Content criterion vocabulary with an explicit mini-table reapplication switch.
 
     Consecutive H2H criteria form a block, evaluated against the same tied set. When
-    reapplication is enabled and that block splits the set, restart the entire block for
-    each remaining tied subset before proceeding to the following overall criterion.
+    reapplication is enabled and that block leaves exactly two clubs tied, restart
+    the entire block for those two before proceeding to the following overall criterion.
     This is a configurable game rule, not an assertion about any historical competition.
     """
 
@@ -253,9 +254,17 @@ class GroupTable:
                     for group in partitions
                     for part in _partition(group, criterion_values.__getitem__)
                 )
-            restart = self.rules.reapply_head_to_head and len(partitions) > 1
             return tuple(
-                club for part in partitions for club in resolve(part, index if restart else end)
+                club
+                for part in partitions
+                for club in resolve(
+                    part,
+                    index
+                    if self.rules.reapply_head_to_head
+                    and len(partitions) > 1
+                    and len(part) == _TWO_CLUBS
+                    else end,
+                )
             )
 
         ordered = tuple(
