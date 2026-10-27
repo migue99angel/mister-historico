@@ -2,7 +2,7 @@ from datetime import date
 
 import pytest
 
-from mister.game.domain.squad_registry import Membership, SquadRegistry
+from mister.game.domain.squad_registry import Membership, SquadRegistry, SquadTransfer
 from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.ids import ClubSeasonId, PlayerId
 
@@ -88,3 +88,65 @@ def test_transfer_rejects_unknown_player_and_two_moves_on_same_day() -> None:
     moved = registry.transfer(player, club, None, date(2000, 1, 5))
     with pytest.raises(InvalidValueError):
         moved.transfer(player, None, club, date(2000, 1, 5))
+
+
+def test_registry_pool_player_can_move_from_no_membership() -> None:
+    player = PlayerId("market-player")
+    club = ClubSeasonId("club-a")
+
+    moved = SquadRegistry().transfer(player, None, club, date(2000, 1, 5))
+
+    assert moved.owner_on(player, date(2000, 1, 4)) is None
+    assert moved.owner_on(player, date(2000, 1, 5)) == club
+
+
+def test_simulated_transfer_overrides_later_base_membership() -> None:
+    player = PlayerId("player-a")
+    future_club = ClubSeasonId("club-a")
+    destination = ClubSeasonId("club-b")
+    registry = SquadRegistry((Membership(player, future_club, date(2000, 1, 10), None),))
+
+    moved = registry.transfer(player, None, destination, date(2000, 1, 5))
+
+    assert moved.owner_on(player, date(2000, 1, 9)) == destination
+    assert moved.owner_on(player, date(2000, 1, 10)) == destination
+
+
+def test_transfers_must_be_appended_in_chronological_order() -> None:
+    player = PlayerId("player-a")
+    first = ClubSeasonId("club-a")
+    second = ClubSeasonId("club-b")
+    registry = SquadRegistry((Membership(player, first),))
+    later = registry.transfer(player, first, second, date(2000, 1, 10))
+
+    with pytest.raises(InvalidValueError):
+        later.transfer(player, second, None, date(2000, 1, 5))
+
+
+def test_constructor_rejects_out_of_order_transfers_for_same_player() -> None:
+    player = PlayerId("player-a")
+    first = ClubSeasonId("club-a")
+    second = ClubSeasonId("club-b")
+    with pytest.raises(InvalidValueError):
+        SquadRegistry(
+            (Membership(player, first, date(2000, 1, 1), date(2000, 1, 7)),),
+            (
+                SquadTransfer(player, None, second, date(2000, 1, 10)),
+                SquadTransfer(player, first, None, date(2000, 1, 5)),
+            ),
+        )
+
+
+def test_squad_order_uses_player_id_values() -> None:
+    club = ClubSeasonId("club-a")
+    registry = SquadRegistry(
+        (
+            Membership(PlayerId("player-z"), club),
+            Membership(PlayerId("player-a"), club),
+        )
+    )
+
+    assert registry.squad_on(club, date(2000, 1, 1)) == (
+        PlayerId("player-a"),
+        PlayerId("player-z"),
+    )

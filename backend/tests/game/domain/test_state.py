@@ -15,13 +15,13 @@ from mister.game.domain.state import (
     TacticStyle,
 )
 from mister.shared_kernel.errors import InvalidValueError
-from mister.shared_kernel.ids import CompetitionId, PlayableSeasonId, PlayerId
+from mister.shared_kernel.ids import ClubSeasonId, CompetitionId, PlayerId
 
 
 def test_run_state_keeps_explicit_caller_values_and_is_frozen() -> None:
     player = PlayerId("player-a")
     state = RunState(
-        PlayableSeasonId("test-fc-2000-01"),
+        ClubSeasonId("test-fc-2000-01"),
         SquadRegistry(),
         (PlayerState(player, Position.GK, 70, 20, 55, 60),),
         Tactic(TacticStyle.BALANCED, (2, 4, 4)),
@@ -85,7 +85,7 @@ def test_run_state_requires_known_unique_player_references_and_unique_priorities
     p = PlayerId("player-a")
     competition = CompetitionId("league-test")
     base = {
-        "managed_club_season_id": PlayableSeasonId("test-fc-2000-01"),
+        "managed_club_season_id": ClubSeasonId("test-fc-2000-01"),
         "squad_registry": SquadRegistry(),
         "players": (PlayerState(p, Position.DF, 60, None, 50, 50),),
         "tactic": Tactic(TacticStyle.COUNTER, (4, 3, 3)),
@@ -116,3 +116,59 @@ def test_injuries_require_known_players_and_positive_integer_days() -> None:
         ForcedInjury(player, date(2000, 1, 1), True)
     with pytest.raises(InvalidValueError):
         ForcedInjury(player, date(2000, 1, 1), 0)
+
+
+def test_run_state_pool_player_without_base_membership_can_be_transferred_in() -> None:
+    player = PlayerId("market-player")
+    state = RunState(
+        ClubSeasonId("test-fc-2000-01"),
+        SquadRegistry(),
+        (PlayerState(player, Position.FW, 70, None, 50, 50),),
+        Tactic(TacticStyle.BALANCED, (2, 4, 4)),
+        (),
+        50,
+        50,
+        None,
+    )
+
+    moved = state.squad_registry.transfer(
+        player, None, state.managed_club_season_id, date(2000, 1, 1)
+    )
+
+    assert moved.owner_on(player, date(2000, 1, 1)) == state.managed_club_season_id
+
+
+def test_run_state_rejects_non_tuple_collections_and_invalid_dates() -> None:
+    player = PlayerId("player-a")
+    base = {
+        "managed_club_season_id": ClubSeasonId("test-fc-2000-01"),
+        "squad_registry": SquadRegistry(),
+        "players": (PlayerState(player, Position.GK, 70, None, 50, 50),),
+        "tactic": Tactic(TacticStyle.BALANCED, (2, 4, 4)),
+        "competition_priorities": (),
+        "team_morale": 50,
+        "board_confidence": 50,
+        "state_as_of": None,
+    }
+    with pytest.raises(InvalidValueError):
+        RunState(**(base | {"players": [base["players"][0]]}))  # type: ignore[arg-type]
+    with pytest.raises(InvalidValueError):
+        RunState(**(base | {"state_as_of": "2000-01-01"}))  # type: ignore[arg-type]
+
+
+def test_player_minutes_default_to_zero_without_changing_cursor() -> None:
+    player = PlayerState(PlayerId("player-a"), Position.MF, 70, None, 50, 50)
+    state = RunState(
+        ClubSeasonId("test-fc-2000-01"),
+        SquadRegistry(),
+        (player,),
+        Tactic(TacticStyle.BALANCED, (2, 4, 4)),
+        (),
+        50,
+        50,
+        None,
+        (ForcedInjury(player.player_id, date(2000, 1, 1), 3),),
+    )
+
+    assert player.minutes_played == 0
+    assert state.state_as_of is None
