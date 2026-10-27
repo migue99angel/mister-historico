@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, date, datetime
 from uuid import UUID
 
@@ -8,6 +9,7 @@ from mister.game.domain.run import (
     BlockRecord,
     BlockResolution,
     ClosureOutcome,
+    Decision,
     DecisionOption,
     DilemmaDefinition,
     Run,
@@ -155,6 +157,7 @@ def test_advance_progresses_to_next_block_then_finishes_after_last() -> None:
 
     assert finished.status is RunStatus.FINISHED
     assert finished.current_block is None
+    assert finished.pending_dilemmas == ()
     assert [type(event).__name__ for event in events] == ["BlockSimulated", "RunFinished"]
 
 
@@ -257,6 +260,65 @@ def test_take_decision_rejects_naive_event_time() -> None:
 def test_private_block_types_reject_invalid_values(create: object) -> None:
     with pytest.raises(InvalidValueError):
         create()  # type: ignore[operator]
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("id", object()),
+        ("season_id", object()),
+        ("seed", object()),
+        ("status", "in_progress"),
+        ("blocks", ()),
+        ("block_index", True),
+        ("decisions", []),
+        ("block_records", []),
+        ("cursor", datetime(2000, 1, 1, tzinfo=UTC)),
+    ],
+)
+def test_run_snapshot_rejects_invalid_fields(field: str, value: object) -> None:
+    with pytest.raises(InvalidValueError):
+        replace(make_run(), **{field: value})
+
+
+def test_run_rejects_dilemma_ids_reused_in_another_block() -> None:
+    run = make_run()
+    second_block = BlockDefinition(
+        BLOCK_2,
+        (DilemmaDefinition(DILEMMA, (DecisionOption(OptionId("another-option")),)),),
+    )
+
+    with pytest.raises(InvalidValueError):
+        replace(run, blocks=(run.blocks[0], second_block))
+
+
+def test_run_rejects_option_ids_reused_by_another_dilemma() -> None:
+    run = make_run()
+    other = DilemmaDefinition(DilemmaId("other-dilemma"), (DecisionOption(OPTION),))
+    first = BlockDefinition(BLOCK_1, (run.blocks[0].dilemmas[0], other))
+
+    with pytest.raises(InvalidValueError):
+        replace(run, blocks=(first, run.blocks[1]))
+
+
+@pytest.mark.parametrize(
+    "decisions",
+    [
+        (Decision(BLOCK_1, DILEMMA, OPTION, 2),),
+        (Decision(BLOCK_1, DILEMMA, OPTION, 1), Decision(BLOCK_1, DILEMMA, OPTION, 2)),
+        (Decision(BLOCK_1, DILEMMA, OptionId("unknown-option"), 1),),
+    ],
+)
+def test_run_rejects_invalid_decision_history(decisions: tuple[Decision, ...]) -> None:
+    with pytest.raises(InvalidValueError):
+        replace(make_run(), decisions=decisions)
+
+
+def test_run_rejects_duplicate_block_records() -> None:
+    record = BlockRecord(BLOCK_1, b"payload")
+
+    with pytest.raises(InvalidValueError):
+        replace(make_run(), block_records=(record, record))
 
 
 def test_take_decision_rejects_dilemma_outside_current_block() -> None:
