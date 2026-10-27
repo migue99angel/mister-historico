@@ -236,6 +236,48 @@ def test_take_decision_rejects_naive_event_time() -> None:
     assert run.decisions == ()
 
 
+@pytest.mark.parametrize(
+    "create",
+    [
+        lambda: DecisionOption("option"),
+        lambda: DilemmaDefinition("dilemma", (DecisionOption(OPTION),)),
+        lambda: DilemmaDefinition(DILEMMA, (object(),)),
+        lambda: BlockDefinition("block", ()),
+        lambda: BlockDefinition(BLOCK_1, (object(),)),
+        lambda: BlockRecord("block", b"payload"),
+        lambda: BlockRecord(BLOCK_1, "payload"),
+        lambda: BlockResolution("block", make_state(), b"payload"),
+        lambda: BlockResolution(BLOCK_1, object(), b"payload"),
+        lambda: BlockResolution(BLOCK_1, make_state(), "payload"),
+        lambda: BlockResolution(
+            BLOCK_1, make_state(), b"payload", cursor=datetime(2000, 1, 1, tzinfo=UTC)
+        ),
+    ],
+)
+def test_private_block_types_reject_invalid_values(create: object) -> None:
+    with pytest.raises(InvalidValueError):
+        create()  # type: ignore[operator]
+
+
+def test_take_decision_rejects_dilemma_outside_current_block() -> None:
+    run = make_run()
+
+    with pytest.raises(DomainError):
+        run.take_decision(DilemmaId("unknown-dilemma"), OPTION, NOW)
+
+    assert run.decisions == ()
+
+
+def test_advance_rejects_naive_event_time() -> None:
+    run = make_run()
+    run, _ = run.take_decision(DILEMMA, OPTION, NOW)
+
+    with pytest.raises(InvalidValueError):
+        run.advance_block(make_resolution(BLOCK_1), datetime(2000, 1, 1))
+
+    assert run.current_block == BLOCK_1
+
+
 def test_take_decision_rejects_state_from_another_managed_club() -> None:
     run = make_run()
 
