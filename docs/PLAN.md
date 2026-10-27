@@ -1,7 +1,7 @@
 # Míster Histórico: Plan de implementación
 
 > Fecha: 2026-10-22 · Parte de [`PRODUCT_BRIEF.md`](./PRODUCT_BRIEF.md) · Las tareas están en [`TASKS.md`](./TASKS.md).
-> Estado: **plan aprobado** (2026-10-22). **F1 cerrada el 2026-10-23** tras integrar la PR #17 por rebase-merge, con calibración provisional y limitaciones aceptadas. [Registro de cierre y checks](HANDOFF.md#3-estado-comprobado-f1-cerrada). **F2 en curso: T2.1-T2.6, T2.20 y T2.21 integradas (hasta PR #41).** Faltan el contenido histórico del piloto y sus rivales, la verificación independiente y firma humana, y después la calibración y el benchmark de rendimiento. Todavía no hay una partida completa jugable desde la web. Las secciones §1 y §2 recogen las decisiones del autor.
+> Estado comprobado el **2026-10-27**, `main` `8be8244`: F0 y F1 cerradas; T2.1-T2.6, T2.20 y T2.21 integradas, junto con las CR UEFA #47 y #48. F2 histórica sigue abierta; #45, #46 y #49 son borradores parciales. Game tiene puertos y fakes, sin agregado ni casos de uso; la web muestra la presentación. La revisión de planificación de §3.4-3.6 y §5 prioriza una partida sintética conectada antes de terminar el contenido histórico. **Es planificación, no funcionalidad implementada.** Las decisiones previas de lanzamiento de §1 se conservan; la beta con un equipo requiere la aprobación indicada en §5.4.
 
 ---
 
@@ -10,7 +10,7 @@
 | # | Decisión | Resultado |
 |---|---|---|
 | 2 | Nombres de jugadores | **Reales, pero desactivables.** Cada jugador tiene `display_name` (el real) y `alias_name`. Una política de nombres (`NamePolicy`) en la capa de presentación decide cuál se muestra según un flag. El dominio solo trabaja con IDs. |
-| 3 | Equipos V1 | **Real Madrid 2012-13, FC Barcelona 2008-09, Atlético 2013-14, Valencia 2003-04 y Sevilla 2005-06.** Orden de producción: RM (es el piloto que valida el pipeline), Barça, Atleti, Valencia y Sevilla. Si falta tiempo, se lanza con los tres primeros. |
+| 3 | Equipos V1 | **Real Madrid 2012-13, FC Barcelona 2008-09, Atlético 2013-14, Valencia 2003-04 y Sevilla 2005-06.** Orden: RM, Barça, Atleti, Valencia y Sevilla; lanzamiento con los tres primeros si falta tiempo. Se propone una **beta anterior con solo RM** (§5), sin cambiar esta decisión sobre el lanzamiento V1. |
 | 4 | Medias | **Escala 1-99 con una fórmula propia como base**, a partir de estadísticas públicas de esa temporada (minutos, titularidades, goles, porterías a cero de los porteros, internacionalidades, premios y nivel del club), con fuente para cada dato. Las asistencias son informativas y no entran en el cálculo. Los jugadores clave (6-10 por plantilla) se **revisan siempre a mano** y pueden llevar una corrección con evidencia y fuentes (hasta ±12). La fórmula sola no capta bien a algunas estrellas: la revisión es parte esencial del procedimiento. El autor ha elegido el **cierre provisional de la calibración con sus limitaciones explícitas** (opción 1 del traspaso, 2026-10-23): el umbral de participación del 85 % y el tope manual de 94 sin premio mundial individual son parámetros provisionales, pendientes de validación con plantillas completas en F2. No se copian medias de juegos comerciales. |
 | — | Calibración | Banda del triplete del Barça 2008-09: **5-15 %**, sin excepciones a la regla general (mínimo 5 %). No hay `calibration_overrides` en el esquema. |
 | — | Jugadores de referencia de la rúbrica | **Elegidos por el orquestador por delegación del autor.** Las 24 anclas, sus posiciones reales y las bandas están en la [rúbrica, §9](content/rating-rubric.md#9-calibración-de-la-fórmula); los resultados y las limitaciones están en el [informe](calibration/anchors.md). Elección y revisión completadas; F1 cerrada con aceptación provisional tras integrar la PR #17 y superar sus comprobaciones. El hueco de posición declarado no se cubre con datos inventados. |
@@ -28,9 +28,9 @@ Todas las propuestas, de P2 a P6, están confirmadas. P1 se descartó.
 
 - ~~**P1. Rivales con fuerza agregada.**~~ **Descartada:** los rivales tienen plantilla (ver §1).
 - **P2. "La historia real es el rival", también en la simulación.** Los partidos que no te involucran no se simulan: se usan sus resultados históricos.
-  - *Liga:* puntos de un rival = puntos reales − los que sacó contra ti en la realidad + los que saca contra ti en la simulación. Solo hace falta la clasificación real en las fechas de corte de cada bloque y los resultados de tu equipo.
+  - *Liga:* puntos de un rival = puntos reales − los que sacó contra ti en la realidad + los que saca contra ti en la simulación. Además de tablas y resultados propios, los contratos integrados exigen evidencia suficiente de enfrentamientos directos para los desempates; los grupos y cuadros necesitan sus calendarios y plazas explícitas (ADR-007 y CR de T2.6).
   - *Eliminatorias:* se usa el cuadro real. Si llegas más lejos que en la realidad, te enfrentas al rival que de verdad ganó esa eliminatoria.
-  - *Cómo encaja con las plantillas rivales:* en la V1, fichar a un jugador de un rival solo debilita a ese rival en los partidos contra ti. La política va detrás del puerto `ExternalResultsPolicy`, con el adaptador `HistoricalExternalResults` en la V1. Más adelante, cuando haya un mercado completo, se añadirá `SimulatedExternalResults`, que simulará todos los partidos con las plantillas rivales. Esa opción necesitará el calendario completo de la liga.
+  - *Cómo encaja con las plantillas rivales:* en la V1, fichar a un jugador de un rival solo lo debilita en sus partidos contra ti. `ExternalResultsPolicy` y `HistoricalExternalResults` expresan esta política histórica. La simulación de todos los equipos es una evolución pendiente de CR y calendario completo; el puerto actual todavía no recibe plantillas efectivas ni azar y el coordinador instancia la política histórica (§3.4).
 - **P6. Medias de los rivales con un procedimiento ligero.** Las plantillas rivales solo incluyen a los jugadores con minutos relevantes esa temporada (entre 18 y 22 por equipo). Los jugadores clave (`key: true`) se revisan a mano y solo se corrigen con un `rating_override` justificado. La comprobación principal es de conjunto: la fuerza que resulta de la plantilla de cada rival tiene que corresponderse con sus goles a favor y en contra reales, dentro de una banda. Eso se comprueba en la calibración.
 - **P3. Código en inglés, interfaz en español.** Un glosario (`docs/glossary.md`) traduce el lenguaje ubicuo: Partida = `Run`, Míster = `Manager`, Bloque = `Block`, Dilema = `Dilemma`, Directiva = `Board`, etc.
 - **P4. Licencias.** MIT para el código y CC BY-NC 4.0 para los datos de contenido (las fuentes se citan).
@@ -113,15 +113,101 @@ app/             # composition root: rutas, providers y cableado de puertos con 
 | 006 | Medias 1-99 | La rúbrica está en `docs/content/rating-rubric.md`. La media de cada jugador se calcula a partir de sus `season_stats` (con `sources`). |
 | 007 | Contenido como datos | `content/clubs/<club>.yaml` (nombre y colores), `content/club-seasons/<club>-<temporada>/squad.yaml` (plantilla, un directorio por cada club y temporada, sea propio o rival) y `content/seasons/<slug>/` (lo jugable: temporada, calendario, clasificaciones, dilemas y textos, que referencian club-seasons). Esquema Pydantic que también se exporta como JSON Schema. `mister content validate` en CI. `mister content load` es idempotente y usa un hash de la versión de contenido. |
 | 008 | Nombres reales desactivables | `NamePolicy` en la presentación, controlada por un flag de entorno. |
-| 009 | Persistencia de la partida | Snapshot del `RunState` en JSONB más un log de decisiones. **Replay:** el estado se puede reconstruir a partir de la semilla y las decisiones, y se usa como test y como antitrampas. Bloqueo optimista por `version`. |
+| 009 | Persistencia de la partida | ADR pendiente de T3.4. Snapshot mutable de estado y log, más **copia inmutable recuperable del contenido inicial** (§3.5, CR-T3.0); semilla y decisiones. `version` es bloqueo optimista, no versión del contenido. |
 | 010 | Tarjeta OG | Se renderiza en el servidor con Pillow (1200×630), con URL inmutable `/og/<run_id>.png` cacheable en el CDN. `/r/<id>` es HTML renderizado en el servidor con las meta OG/Twitter, porque los crawlers no ejecutan la SPA. |
 | 011 | Frontend | TanStack Query para el estado de servidor, sin store global. Tailwind. Presupuesto: < 100 KB gz de JS inicial y Lighthouse móvil ≥ 90. |
 | 012 | Hosting | Se decide en F7. |
-| 013 | IA offline | `tools/content-gen` genera borradores con estado `draft`. Solo se cargan los textos con `reviewed_by`. El coste de cada ejecución queda registrado. Se usa una API key personal (§20 del brief). |
+| 013 | IA offline | ADR pendiente de T6.5. Borradores con revisión humana, procedencia y coste registrado, con API key personal. RAG offline se estudiará después de validar el producto (§3.6), fuera del camino crítico. |
 | 014 | Puntuación del míster | Fórmula de `MisterScore` (0-100): títulos con peso por competición, puntos en liga frente a los reales, moral y objetivos. Pesos configurables. Lo redacta T5.1. |
 | 015 | `ClubSeason` frente a `PlayableSeason` | La plantilla pertenece al `ClubSeason`, de modo que tu equipo y los rivales comparten modelo. En una partida, la plantilla efectiva es la del contenido más las diferencias guardadas en `SquadRegistry` (fichajes y ventas). Es la base del mercado de fichajes y permite que cualquier rival sea jugable más adelante. |
 
 ---
+
+### 3.4 Evolución: histórico primero, temporada actual después
+
+El MVP histórico mantiene temporadas reales, decisiones de fichajes, táctica,
+vestuario y acontecimientos de esa edición, comparación con la historia y
+partidas de 3-5 minutos. El **hito D**, posterior a validar el producto, podrá
+usar una plantilla de una temporada actual **congelada a una fecha**, presupuesto
+sencillo, compras y ventas entre pocas opciones, tácticas, vestuario y objetivos
+de directiva. Se admitirá algo más de duración; no se pretende una gestión del
+nivel de Football Manager. No se implementa ahora.
+
+Auditoría sobre el código de `8be8244` y los ADR-003, 007 y 015:
+
+| Pieza | Qué permite hoy y qué limita la evolución | Acción antes del MVP / aplazamiento |
+|---|---|---|
+| `ClubSeason` / `PlayableSeason` | Separa plantillas de escenario y evita duplicar un rival jugable. `PlayableSeasonDTO` exige manager, dilemas con opción histórica, tablas y desenlaces reales; no representa todavía una temporada sin historia terminada. | Conservar ADR-015 y traducir por ACL. Aplazar un esquema de temporada actual con `as_of`, calendario y reglas propias hasta D; no rellenar historia falsa ni volver todos los campos opcionales ahora. |
+| `SquadRegistry` | Es una decisión aceptada, aún por implementar en T3.1. Permite modificar pertenencias por partida sin mutar Catalog. | Implementar en F3 IDs, movimientos y unicidad de pertenencia para fichajes históricos ya requeridos. Precios, salarios, contratos, monedas y restricciones de ventanas esperan a D. |
+| Catalog / Game / Simulation | Catalog aporta referencias; Game conserva decisiones y estado; Simulation recibe plantillas efectivas y devuelve resultados. El motor no lee dilemas. | Mantener esta separación y la traducción por IDs. Resolver en CR-T3.0 los huecos reales de entrada/salida de F3, no crear `GameMode`, factorías ni jerarquías. |
+| `ExternalResultsPolicy` | Es una estrategia pura de acumulados **históricos**: petición con baseline y reemplazos; no recibe calendario global, plantillas ni RNG. `season.py` instancia `HistoricalExternalResults` para liga y grupos. | Mantener P2 para A/B/C. D necesitará CR de petición/coordinación, calendario completo y flujos derivados para resultados ajenos; añadir una clase no bastará. No anticipar inyección genérica ahora. |
+| Evaluation | Está separado de Game, pero su puerto actual es `HistoricalOutcomeProvider`; aún no existe el evaluador. | En T3.3/T5.1 mantener cálculo de objetivos separado de comparación histórica; Game puede terminar sin ejecutar esta última. En D decidir puntuación por objetivos y adaptar contratos por CR. No implementar un evaluador universal antes de B. |
+| Mercado económico | Los efectos actuales `sign_player` / `sell_player` cambian pertenencia, sin importes ni saldo. | Reutilizar esos movimientos y el log en D, añadiendo entonces saldo/precios y transacción atómica con CR del DSL, estado y API. No precargar un presupuesto inútil en el MVP. |
+
+El único cambio contractual anticipado obligatorio para A es fijar entradas
+recuperables de la partida y completar el mapeo Game→Simulation (§3.5).
+Para B se necesita otra CR acotada del resultado sin ranking (§5). Las demás
+precauciones son límites de responsabilidad en tareas ya necesarias.
+
+### 3.5 Contenido recuperable y replay: riesgo confirmado y solución propuesta
+
+`SqlCatalogLoader.load` borra `catalog_seasons` y publica el árbol nuevo en una
+transacción (`catalog/infrastructure/sqlalchemy/catalog.py`). Su hash identifica
+la publicación actual, pero el proveedor busca solo por `season_id`.
+`RunRecord` conserva temporada, semilla, log y un `snapshot` de estado genérico;
+no exige guardar contenido inicial. Por tanto, actualizar una media, plantilla,
+opción o calendario puede alterar una continuación o un replay. Un hash o un
+commit Git, sin sus datos recuperables, no resuelve el problema.
+
+**Mínimo propuesto para F3:** al iniciar, capturar una sola vez una copia
+autocontenida del contenido de esa temporada, incluyendo todas sus plantillas y
+mercado, reglas y parámetros, bloques, calendarios/evidencia, dilemas/efectos,
+objetivos, historia y textos necesarios. Persistirla como **contenido inicial
+inmutable de la partida**, separada del snapshot mutable de `RunState`, junto a
+digest de los bytes canónicos y versión del formato de serialización. La ACL
+produce una representación propia de Game; su dominio no importa DTOs de Catalog.
+No volver a consultar el catálogo publicado para decisiones, simulación,
+evaluación o presentación de esa partida. El resultado histórico se obtiene de
+la misma copia, sin leer la última historia de Catalog al terminar.
+
+La copia se guarda atómicamente con la creación del run, antes de devolverlo al
+cliente. El digest se calcula sobre el contenido efectivamente capturado; no se
+lee primero un hash y después un contenido que podría pertenecer a otra carga.
+Las escrituras posteriores rechazan cambiar esa copia o su identidad; fakes y
+SQL cumplen la misma suite. Se conservan los bytes y su decodificador mientras
+la partida siga disponible, aunque la temporada se retire del catálogo. La
+duplicación por partida es un coste deliberado del mínimo; deduplicar por hash
+o archivar todas las publicaciones de Catalog se pospone hasta medir volumen.
+
+Se tramita primero **CR-T3.0**, porque modifica los DTO/puertos de Game, fakes y
+contratos de repositorio/simulador. T3.4 implementa la persistencia y redacta
+ADR-009; T3.5 integra captura, continuación y replay; T5.1/T5.5 consumen esa misma
+historia fijada. No se modifica ahora `SqlCatalogLoader` ni ningún contrato.
+La prueba de aceptación crea una partida con A, publica B cambiando medias y
+dilemas (o elimina la temporada), reinicia proveedores y reconstruye la partida
+con exactamente A; otra partida nueva usa B. No basta comparar hashes.
+
+El contenido es solo una entrada del determinismo: conservar también la semilla,
+estado inicial, log y configuración de reglas no incluida en el contenido.
+Identificar la revisión del motor/reglas y conservar su artefacto o revisión Git
+con lockfiles (ADR-005). La garantía de reproducción requiere ese ejecutable
+compatible: una versión incompatible se rechaza explícitamente. La CR fijará
+estos metadatos; no se construye ahora un cargador de múltiples motores.
+
+### 3.6 IA y RAG después de validar el producto
+
+T6.5 conserva la generación offline de borradores con revisión humana. Como
+evolución opcional, RAG podrá recuperar documentos de una temporada, localizar
+pasajes y fuentes, proponer borradores estructurados y facilitar el contraste de
+datos. Cada propuesta conservará URL, fragmento recuperado y procedencia; recuperar
+un texto no acredita su veracidad ni sustituye al verificador independiente.
+Evaluar después de B con un conjunto de datos comprobados: fidelidad de citas,
+datos sin respaldo, cobertura, tiempo de revisión ahorrado y coste por temporada.
+ADR-013 recogerá el experimento si se prioriza. No se elige ahora una base
+vectorial, proveedor ni dependencia; RAG y generación no bloquean A/B ni se
+ejecutan durante las partidas. El portfolio puede mostrar primero el motor
+determinista, replay, contratos y evidencias de producto, y después este flujo
+de IA medido, sin inflar el camino crítico.
 
 ## 4. Estrategia de testing y TDD
 
@@ -165,46 +251,102 @@ Las PR se integran con **rebase-merge, no con squash**, para que la secuencia ro
 
 ---
 
-## 5. Fases
+## 5. Entregas verticales y fases
 
-Cada fase termina en una **puerta de calidad (gate)**: unos criterios que tienen que cumplirse antes de dar la fase por cerrada. Hay cuatro **tracks** que avanzan en paralelo (backend, contenido, frontend y plataforma), así que las fases se solapan. La que bloquea a las demás es la F1 (contratos).
+### 5.1 Hitos verificables
+
+F0-F7 se conservan como paquetes de trabajo y puertas de calidad. **No hay una
+barrera F2 completa → F3:** T3.1-T3.4 ya tenían dependencias de F1 y T3.5 necesita
+T2.6, integrado. F4.1-T4.3 también pueden empezar. El contenido real bloquea la
+beta histórica y su calibración, no la primera partida sintética.
+
+| Hito | Entrega y aceptación | Tareas y límites |
+|---|---|---|
+| **A · Primera partida interna** | Desde la web: elegir Test FC, empezar, tomar decisiones con efectos observables, avanzar todos los bloques con el motor real, recuperar tras recargar y ver estado terminal y resultados del último bloque mediante `RunView`. Backend, frontend y SQL conectados; token, idempotencia, concurrencia y rollback probados; replay con entradas fijadas. Probar al menos una temporada completa y una salida por destitución. | CR-T3.0; T3.1-T3.6 y T3.7a; T4.1-T4.5, T4.6a, T4.7a y accesibilidad básica de T4.8. Test FC del YAML sintético existente mediante composición local/test, sin publicarlo como contenido histórico ni importar tests en código de producción. MSW sirve al desarrollo, pero no acredita A. Sin puntuación/percentil ficticios ni dependencia de F2 histórica o F5. |
+| **B · Primera beta histórica (propuesta)** | RM 2012-13 y sus rivales completos, verificados y firmados; calibración y rendimiento del piloto; móvil, evaluación histórica y compartir con página/enlace recuperable. Medir duración de 3-5 minutos, finalización, puntos de abandono, comprensión de decisiones y feedback de diversión. | Cierre de F2; T3.7b; T4.6b/T4.7b/T4.8; T5.1/T5.3/T5.4 y T5.5a/T5.6a; CR-T5.B; T6.7 y partes operativas de F7 que requiera el entorno de beta. T7.8 puede adelantarse aquí; no espera cuatro equipos adicionales ni ranking. |
+| **C · Ampliación y V1** | Equipos históricos adicionales, ranking/percentiles, equilibrio y mejoras priorizadas con lo aprendido en A/B. | T5.2/T5.5b/T5.6b, T6.1-T6.4/T6.6 y endurecimiento/capacidad de F7 según uso. Se conserva la decisión de lanzar V1 con 3-5 equipos; B no se anuncia como ese lanzamiento. T6.5 es opcional, los textos pueden redactarse y verificarse sin generador. |
+| **D · Temporada actual** | Temporada congelada, presupuesto y mercado limitados, decisiones y objetivos, duración ajustada tras validar el producto. | Iniciativa futura de §3.4, sin implementación y sin bloquear A/B/C. Diseño y CR concretas tras validar el producto y priorizarlo; no exige terminar toda la ampliación C. |
+
+En A se miden el tiempo hasta la primera decisión, si se entiende el efecto de
+las opciones y si apetece repetir; las mejoras se abren como tareas concretas.
+No se condiciona esa prueba de diversión a Lighthouse final, la calibración
+histórica ni 300 RPS. Se conservan TDD, revisión independiente, reglas de capas,
+contratos y umbrales de cobertura. B sí mantiene los presupuestos de móvil y la
+calidad de datos; A no sirve para declararlos cumplidos.
 
 ```mermaid
-gantt
-  dateFormat X
-  axisFormat %s
-  section Plataforma
-  F0 Fundaciones           :f0, 0, 1
-  F7 Producción y lanzamiento :f7, 7, 9
-  section Backend
-  F1 Contratos             :f1, 1, 2
-  F2 Motor + Catálogo      :f2, 2, 4
-  F3 Partida + API         :f3, 4, 5
-  F5 Final y viralidad     :f5, 5, 7
-  section Contenido
-  F2 Real Madrid 2012-13 (piloto) :c1, 2, 4
-  F6 Resto de equipos + textos IA :c2, 4, 8
-  section Frontend
-  F4 Bucle completo (MSW → API real) :fe, 2, 6
+flowchart LR
+  Base[Motor y catálogo integrados] --> Run[CR-T3.0 y F3 sobre Test FC]
+  UI[F4 con contrato y MSW] --> A[Hito A: web y backend reales]
+  Run --> A
+  Data[F2: contenido y rivales RM] --> Sign[Verificación, firma y calibración]
+  A --> B[Hito B: beta RM]
+  Sign --> B
+  Final[Evaluación y compartir sin ranking] --> B
+  Ops[Operación mínima de beta aprobada] --> B
+  B --> C[Hito C: más equipos, ranking y equilibrio]
+  B -. Validación y priorización .-> D[Hito D: temporada actual]
 ```
 
-*(El eje está en "unidades de trabajo" relativas, no en semanas: el ritmo real lo marca tu tiempo de revisión.)*
+### 5.2 Puertas de los paquetes existentes
 
-| Fase | Objetivo | Gate de salida |
-|---|---|---|
-| **F0 Fundaciones** | Repo, tooling, CI, Docker de desarrollo, convenciones y ADR base. | La CI está en verde con el esqueleto, `import-linter` rechaza una violación de prueba y existe `CLAUDE.md` con las reglas. |
-| **F1 Contratos** | El shared kernel, el esquema de contenido, los puertos con sus fakes y suites de contrato, OpenAPI v0 y la rúbrica de medias. | Contratos **congelados**: a partir de aquí, los agentes de distintos tracks ya no se pisan. Rúbrica aprobada por el autor, con fórmula base y revisión manual de claves. El cierre provisional autorizado no equivale a superar las bandas de las anclas: exige datos corregidos, limitaciones publicadas, revisión independiente y comprobaciones en verde antes de integrar la PR #17. **Gate cumplido el 2026-10-23**; evidencia en [HANDOFF](HANDOFF.md#3-estado-comprobado-f1-cerrada). |
-| **F2 Motor + Catálogo + Piloto** | El motor completo y calibrado, el catálogo con carga a la base de datos, y el RM 2012-13 completo y verificado, **incluidas las plantillas de sus rivales**. | Calibración del RM en verde (también la fuerza de cada rival frente a sus goles reales) y contenido del RM firmado por el autor. |
-| **F3 Partida + API** | El agregado `Run`, los efectos, la directiva y la moral, la persistencia, los casos de uso y la API. | Una partida completa del RM se juega por HTTP en un test E2E, el replay es determinista y el golden test está en verde. |
-| **F4 Frontend** | El bucle completo en móvil (selección, bloques, decisiones y final). Empieza contra MSW. | El E2E de Playwright pasa contra el backend real. Lighthouse móvil ≥ 90 y JS < 100 KB gz. |
-| **F5 Final y viralidad** | Evaluación, veredicto, tarjeta OG, `/r/<id>`, ranking y percentil. | Una partida terminada genera puntuación, veredicto, una tarjeta válida (comprobada con un validador de meta tags) y una entrada en el ranking. |
-| **F6 Contenido completo** | Los cuatro equipos restantes, los textos con IA offline revisados, el equilibrio entre equipos y la auditoría legal. | Los 5 equipos están validados, calibrados y firmados. Una partida dura entre 3 y 5 minutos (medido en la beta interna). |
-| **F7 Producción y lanzamiento** | Hosting, observabilidad, analítica, endurecimiento, prueba de carga, despliegue, README de portfolio, beta y lanzamiento. | Se alcanza el objetivo de carga, hay backups probados, el README está publicado, se ha hecho la beta y se ha lanzado. |
+| Fase | Puerta que se conserva o se divide |
+|---|---|
+| **F0 / F1** | Cerradas; contratos integrados siguen siendo fuente de verdad. Cambiarlos requiere CR. |
+| **F2 Motor + Catálogo + Piloto** | No se declara cerrada hasta contenido RM y rivales firmado, calibración real y benchmark del piloto en verde. A usa el motor/catálogo ya integrados sin esperar ese cierre. |
+| **F3 Partida + API** | T3.7a prueba Test FC por HTTP con replay y golden para A; T3.7b conserva el golden RM firmado para B. F3 histórica no se da por cerrada con el sintético. |
+| **F4 Frontend** | A conecta el bucle y resumen terminal con API real; B añade final histórico, Lighthouse móvil ≥90, JS inicial <100 KB gz y pasada completa de accesibilidad. |
+| **F5 Final, compartir y ranking** | Evaluación/compartir se aceptan en B; ranking y percentil completan F5 en C. No hacer depender el cierre de Game de que exista ranking. |
+| **F6 Contenido y equilibrio** | Se conservan los cuatro equipos y sus firmas/calibraciones, equilibrio entre equipos y auditoría de marca/privacidad. La auditoría se adelanta a B; el generador IA es opcional y RAG posterior. |
+| **F7 Operación y lanzamiento** | B necesita su subconjunto operativo aprobado; C conserva la puerta de lanzamiento V1, backups restaurados, capacidad medida y portfolio. La prueba de 300 RPS no bloquea A ni la beta acotada. |
 
-**Camino crítico:** F0 → F1 → F2 (motor + catálogo + contenido del RM) → F3 → F5 → F7.
-**El riesgo principal está en los datos** (brief §13): el track de contenido empieza en cuanto cierra la F1 y no para hasta la F6.
+### 5.3 Camino crítico y paralelismo real
 
-Con las plantillas rivales, el volumen de datos es de unos 30 `ClubSeason` por cada temporada jugable: en total, unas 150 plantillas y entre 3 500 y 4 000 jugadores. Cada plantilla rival es un directorio independiente, así que hay mucho paralelismo posible: un agente por cada grupo de entre 3 y 5 clubes. El cuello de botella es tu revisión, no los agentes. Si hace falta recortar, la palanca es **lanzar con 3 equipos** (RM, Barça y Atleti), no quitar las plantillas rivales.
+**A:** CR-T3.0 → T3.4/T3.5 → T3.6 → T3.7a y T4.7a. En la otra rama,
+T3.1a → T3.1b/T3.2/T3.3 → T3.5; en paralelo T4.2 y T4.1/T4.3 →
+T4.4/T4.5 → T4.6a conectada (su diseño visual puede prepararse antes). El primer modelo privado de estado debe integrarse antes de
+repartir efectos, directiva y moral; comparten tipos, no deben escribirlos a la
+vez. La CR puede avanzar junto a T3.1a y T4.2 con propiedad separada.
+
+**B:** convergen A, contenido RM completo → T2.14 → T2.15 → T2.7/T2.8,
+y evaluación/compartir con CR-T5.B y operación mínima. T5.1 puede prepararse con
+Test FC tras los eventos de T3.1, T5.3 en paralelo; T5.4 funcional necesita la
+consulta de resultados y el renderizador. La política histórica de T2.7 reutiliza
+el intérprete T3.2 y los casos de uso; no se mantiene otro intérprete del DSL.
+
+El inventario real del piloto es de **60 club-seasons: 48 plantillas contando
+la propia y 12 agregados** (#44); la antigua estimación de 30 por temporada se
+quedó corta al incorporar todos los grupos/cuadros. No extrapolar 150 plantillas
+para V1 sin inventariar las otras temporadas. Se mantiene la calidad acordada
+de rivales: acelerar A elimina una dependencia de calendario de trabajo,
+no autoriza recortar datos de B.
+
+**Tres siguientes tareas de ejecución:** (1) CR-T3.0, con copia recuperable y
+mapeo del simulador; (2) T3.1a, estado privado y `SquadRegistry` mínimos; (3) T4.2,
+shell/rutas/adaptador sobre contrato y MSW. Son paralelas por propiedad; después
+T3.4, T3.1b/T3.2/T3.3 y T4.1/T4.3 alimentan el bucle. Oleadas de 2-3 agentes
+contando revisiones; no abrir todas las tareas de la tabla a la vez. F2 continúa
+por lotes sin consumir toda la capacidad reservada a A.
+
+### 5.4 Decisiones de producto pendientes de aprobación del autor
+
+- **Beta B con un único equipo y ranking/percentil en C:** permite feedback
+  antes, pero ofrece menos rejugabilidad y aún no permite comparar una posición
+  pública entre jugadores. Se propone para la beta; no cambia por sí sola el
+  lanzamiento V1 de 3-5 equipos ni la decisión de plantillas rivales reales.
+- **Beta privada o pública y presupuesto de hosting (T7.1):** determina cuándo
+  hay despliegue, límites y recuperación de datos. Antes de exponer B: T7.6,
+  privacidad/marca T6.7, logs/errores esenciales T7.2, métricas mínimas T7.3 y
+  límites básicos T7.4. Instrumentación avanzada, Redis y 300 RPS se pueden
+  completar en C; no se añade tecnología por anticipación.
+- Retención de partidas/contenido y fecha concreta de lanzamiento se fijan antes
+  de publicar B. Hasta entonces la propuesta de replay no elimina copias de
+  partidas accesibles. Fechas, presupuesto, reglas económicas y evaluación de D
+  se decidirán cuando se priorice ese hito; no bloquean A.
+
+Ninguna de estas aprobaciones es necesaria para empezar A y sus tareas de
+backend/frontend. Esta revisión documental no implementa las CR propuestas ni
+convierte una propuesta de beta en una decisión ya firmada.
 
 ---
 
@@ -212,7 +354,7 @@ Con las plantillas rivales, el volumen de datos es de unos 30 `ClubSeason` por c
 
 1. **Una tarea es un agente, un *git worktree* o rama (`task/T2.3-league`) y una PR.**
 2. **Propiedad de ficheros.** Cada tarea declara en `TASKS.md` los directorios que le pertenecen. Un agente no toca ficheros que no son suyos. Si necesita cambiar un contrato (puerto, esquema u OpenAPI), **para y abre una tarea de cambio de contrato (CR)**, que se integra primero.
-3. **Oleadas.** Dentro de cada fase, las tareas de la misma oleada (A, B, C…) no dependen entre sí y pueden ir a la vez. Lo recomendable es tener entre 3 y 5 agentes simultáneos, para que puedas revisar lo que producen.
+3. **Oleadas.** Las letras agrupan trabajo; las dependencias explícitas de cada tarea mandan. Solo ejecutar a la vez tareas sin dependencia pendiente ni archivos compartidos. Trabajar en oleadas de 2 o 3 agentes, contando la revisión, conforme al traspaso actual; la tabla describe trabajo posible, no una orden de lanzarlo todo.
 4. **Ficheros compartidos** (`pyproject.toml`, `package.json`, workflows de la CI y `bootstrap.py`): solo los modifica la tarea que los creó o una tarea CR. Si una tarea necesita una dependencia nueva, la pide en la descripción de la PR.
 5. **Revisión.** Cada PR pasa la CI y una revisión independiente (un agente revisor sin el contexto del autor, por ejemplo `/code-review`) antes de integrarse. Las tareas **[HUMANO]** las cierras tú.
 6. **Contenido histórico:**

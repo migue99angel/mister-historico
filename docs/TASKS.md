@@ -9,6 +9,29 @@
 
 ---
 
+## Prioridad de entrega (revisión de planificación 2026-10-27)
+
+Los hitos A/B/C/D y sus decisiones de producto están en [PLAN §5](PLAN.md#5-entregas-verticales-y-fases).
+Los IDs F0-F7 se conservan; las subtareas siguientes dividen aceptación y orden,
+sin eliminar funcionalidades. **No son código implementado:** a `8be8244` faltan
+F3 y el bucle F4; las PR #45/#46/#49 siguen como contenido parcial en borrador.
+GitHub no tiene issues abiertas; esta lista de tareas y las PR son el registro
+comprobado, no se presume que exista un backlog adicional en Projects.
+
+- **Ahora, A:** CR-T3.0, T3.1a y T4.2 pueden ejecutarse en paralelo. Tras la base
+  privada T3.1a, T3.1b/T3.2/T3.3; tras CR-T3.0, T3.4. Convergen en T3.5/T3.6,
+  T3.7a y el frontend conectado T4.7a. No requieren contenido real firmado.
+- **En paralelo, para B:** contenido F2, verificación y firma, después
+  calibración/rendimiento del piloto; evaluación/compartir y UX móvil. La beta
+  RM sin ranking es una propuesta de producto pendiente, no una reducción
+  aprobada de la V1 de 3-5 equipos.
+- **C:** ranking/percentiles, más equipos, equilibrio y mejoras según feedback.
+  **D:** iniciativa de temporada actual descrita en PLAN §3.4; sin implementación.
+- La tabla indica paralelismo posible por dependencias; limitar cada oleada a
+  2-3 agentes y reservar revisión independiente. Dos subtareas con la misma
+  propiedad de archivos se integran en secuencia. Ningún cambio de contrato se
+  cuela dentro de una tarea normal.
+
 ## Resumen de paralelismo
 
 | Fase | Oleada | Tareas (en paralelo dentro de la oleada) | Agentes |
@@ -22,15 +45,15 @@
 | F1 | D | T1.7 [HUMANO] → T1.7b | 1 |
 | F2 | A | T2.1 · T2.2 · T2.3 · T2.4 · T2.5 · T2.20 · T2.10 · T2.11 · T2.12 · T2.13 · T2.16 (entre 3 y 5 lotes de rivales) | 5 de backend + entre 6 y 9 de contenido |
 | F2 | B | T2.6 · T2.21 · T2.14 | 3 |
-| F2 | C | T2.7 · T2.8 · T2.15 [HUMANO] | 2 |
-| F3 | A | T3.1 · T3.2 · T3.3 · T3.4 | 4 |
+| F2 | C | T2.15 [HUMANO] → T2.7 · T2.8 (beta B) | 2 |
+| F3 | A | CR-T3.0 · T3.1a; después T3.1b · T3.2 · T3.3 y T3.4 (A) | 2–3 activos |
 | F3 | B | T3.5 → T3.6 (secuenciales entre sí) | 1-2 |
-| F3 | C | T3.7 | 1 |
+| F3 | C | T3.7a (A) · T3.7b (B, después de firma RM) | 1 |
 | F4 | A (en cuanto cierra F1) | T4.1 · T4.2 · T4.3 | 3 |
-| F4 | B | T4.4 · T4.5 · T4.6 | 3 |
-| F4 | C (después de F3) | T4.7 · T4.8 | 2 |
-| F5 | A | T5.1 · T5.2 · T5.3 · T5.4 | 4 |
-| F5 | B | T5.5 · T5.6 | 2 |
+| F4 | B | T4.4 · T4.5 · T4.6a (A); T4.6b (B) | 2–3 activos |
+| F4 | C | T4.7a (A) → T4.7b (B) · T4.8 por pantalla | 2 |
+| F5 | A | T5.1 · T5.3 → T5.4 (B); T5.2 (C) | 2–3 activos |
+| F5 | B | CR-T5.B → T5.5a · T5.6a (B); T5.5b/T5.6b (C) | 2 |
 | F6 | A (por equipo, en paralelo) | T6.1 Barça · T6.2 Atleti · T6.3 Valencia · T6.4 Sevilla · T6.5 | 5 (más sus verificadores) |
 | F6 | B | T6.6 · T6.7 | 2 |
 | F7 | A | T7.1 [HUMANO] · T7.2 · T7.3 · T7.4 · T7.5 · T7.10 | 5 |
@@ -358,10 +381,14 @@
 - **Aceptación:** simular una temporada completa de Test FC tarda menos de 20 ms.
 
 #### T2.7 · Arnés de calibración
-- **Oleada:** F2-C · **Tamaño:** L · **Depende de:** T2.6, T2.21, T2.15 (contenido del RM firmado)
+- **Oleada:** F2-C · **Tamaño:** L · **Depende de:** T2.6, T2.21, T2.15 (RM firmado) y T3.2/T3.5 para ejecutar decisiones históricas completas
 - **Propiedad:** `simulation/application/calibration/**`, `entrypoints/cli/calibrate.py`, `backend/tests/calibration/**` y `docs/calibration/`
 - **Qué hacer:**
-  - "Política histórica": en cada dilema se elige la `historical_option`.
+  - "Política histórica": en cada dilema se elige la `historical_option` y se
+    reutiliza T3.2/T3.5. La orquestación desde CLI llama a Game application;
+    `simulation/application/calibration` no importa Game ni reimplementa el DSL.
+    El arnés estadístico sintético puede prepararse antes de completar esos casos
+    de uso; la aceptación real de B espera firma y recorrido histórico completo.
   - Monte Carlo de N temporadas (10 000 por defecto) por equipo.
   - Métricas: distribución de la posición y los puntos en liga y probabilidad de cada título.
   - **Calibración de los rivales (P6):** para cada rival con plantilla, se simulan sus partidos contra una media de la liga y se comprueba que los goles a favor y en contra por partido caen dentro de la banda que fija T1.3. Si un rival queda fuera de la banda, se genera una lista de las medias que habría que revisar. El informe no las corrige automáticamente.
@@ -474,9 +501,46 @@
 
 ## F3 · Partida en el servidor (`backend/src/mister/game/`)
 
+F3 puede comenzar con Test FC mientras F2 histórica permanece abierta. La
+consulta de contenido ya existe; el ACL de Game y los casos de uso aún no.
+
+### CR-T3.0 · Entradas fijadas de partida y contrato de replay (antes de A)
+- **Estado:** propuesta de tarea; no implementada en esta revisión.
+- **Tamaño:** M · **Depende de:** T1.5/T1.6, T2.6 y T2.21, ya integradas.
+- **Propiedad:** `game/application/ports.py`, sus DTOs de entrada/persistencia,
+  fakes de `game/infrastructure/in_memory/`, suites de contrato y mapeo de Game,
+  y `docs/changes/CR-T3.0-run-content-replay.md`. Si hace falta publicar una API
+  entre contextos, enumerarla en la CR antes de editar `application/api.py`.
+  No cambia el esquema histórico ni OpenAPI por el mero snapshot interno.
+- **Qué fijar:** copia inicial autocontenida de contenido por run, inmutable,
+  serializable y recuperable; digest de la copia, versión del formato y revisión
+  de motor/reglas; separada de `RunRecord.version` y del estado mutable. Es la
+  solución mínima propuesta en PLAN §3.5; no depende de conservar el catálogo
+  publicado ni de consultar su última versión al avanzar/evaluar.
+- **Mapeo necesario:** `BlockSimulationRequest` hoy identifica solo la temporada;
+  definir cómo el adaptador recibe las referencias capturadas. Alinear el cursor
+  físico `state_as_of` y la representación de empates no resueltos con la API de
+  T2.6; no perderlos al traducir a los DTO antiguos de Game. Resolver únicamente
+  huecos demostrados por los tests de mapeo, con tipos propios y sin importar
+  dominios ajenos.
+- **Tests primero:** inmutabilidad de entradas en save; ida/vuelta del contenido
+  completo y compatibilidad del formato; copia interna sin revelar semilla,
+  efectos ni opción histórica en `RunView`; consulta simulada después de publicar
+  B sigue usando A; un formato/motor incompatible falla explícitamente. La suite
+  contractual se amplía antes de los adaptadores SQL y de simulación.
+- **Aceptación:** CR revisada e integrada antes de T3.4/T3.5; no hash sin datos
+  recuperables, ni selector genérico de modos o de motores.
+
 ### T3.1 · Agregado `Run` y máquina de estados
 - **Oleada:** F3-A · **Tamaño:** L · **Depende de:** F1 (los DTOs del catálogo están en `catalog/application/api.py`, de T1.5)
-- **Propiedad:** `game/domain/run.py`, `game/domain/events.py`, `game/domain/errors.py` y sus tests
+- **Propiedad:** `game/domain/run.py`, `game/domain/events.py`, `game/domain/errors.py`,
+  `game/domain/state.py`, `game/domain/squad_registry.py` y sus tests.
+- **Entrega T3.1a (A, primero):** tipos privados de `RunState` y `SquadRegistry`,
+  pertenencia única por jugador y fecha, referencias por ID, sin presupuesto ni
+  precio. Su pequeña PR permite a T3.2 y T3.3 leer una base estable sin editarla.
+- **Entrega T3.1b (A):** agregado, transiciones y eventos sobre esa base. Puede
+  avanzar junto a efectos/directiva después de T3.1a; cada tarea mantiene su
+  propiedad. Los puertos/APIs existentes solo cambian mediante CR.
 - **Qué hacer:**
   - El `Run` tiene estos datos: id, temporada, semilla, estado (`in_progress | finished | sacked`), bloque actual, decisiones pendientes y tomadas, y `RunState` (plantilla con moral, estado físico y lesiones, táctica, prioridades y confianza de la directiva).
   - **`SquadRegistry`** (ADR-015): las diferencias sobre el contenido en todas las plantillas (fichajes y ventas, tuyos y de los rivales). La plantilla efectiva de cualquier club-season es la del contenido más esas diferencias. Un jugador solo puede pertenecer a un club en cada momento.
@@ -491,7 +555,7 @@
 - **Aceptación:** ninguna dependencia de infraestructura.
 
 ### T3.2 · Intérprete de efectos
-- **Oleada:** F3-A · **Tamaño:** M · **Depende de:** T1.2 (DSL), T1.6
+- **Oleada:** F3-A · **Tamaño:** M · **Depende de:** T1.2 (DSL), T1.6 y T3.1a (estado privado integrado)
 - **Propiedad:** `game/domain/effects.py` y sus tests
 - **Qué hacer:** aplica cada tipo de efecto del DSL a `RunState`. Es una función pura `apply(effect, state) -> state`.
 - **Tests primero:**
@@ -504,12 +568,13 @@
 - **Aceptación:** el pattern matching sobre la unión de efectos es exhaustivo (lo comprueba mypy con `assert_never`).
 
 ### T3.3 · Directiva, moral y destitución
-- **Oleada:** F3-A · **Tamaño:** M · **Depende de:** T1.6
+- **Oleada:** F3-A · **Tamaño:** M · **Depende de:** T1.6 y T3.1a
 - **Propiedad:** `game/domain/board.py`, `game/domain/morale.py` y sus tests
 - **Qué hacer:**
   - La confianza de la directiva evoluciona en cada bloque según los resultados frente a los objetivos.
   - Si al cerrar un bloque la confianza está por debajo del umbral, el míster queda destituido (`sacked`, con el mes).
   - La moral reacciona a los resultados y a los jugadores con pocos minutos.
+  - El cálculo de objetivos y destitución usa resultados/objetivos, sin consultar al comparador histórico de Evaluation. No crear ahora una jerarquía de modos.
 - **Tests primero:**
   - Una racha de derrotas en un bloque baja la confianza.
   - Si se cumplen los objetivos, la confianza sube.
@@ -517,43 +582,72 @@
   - Un jugador estrella que no juega pierde moral.
 
 ### T3.4 · Persistencia de la partida
-- **Oleada:** F3-A · **Tamaño:** M · **Depende de:** T1.5, T0.5
+- **Oleada:** F3-A (A) · **Tamaño:** M · **Depende de:** T1.5, T0.5 y CR-T3.0
 - **Propiedad:** `game/infrastructure/sqlalchemy/**` y `backend/migrations/versions/*game*` y `docs/adr/009-persistencia-de-la-partida.md`
-- **Qué hacer:** tabla `runs` (con el snapshot en JSONB y la columna `version`) y tabla `run_decisions` (que funciona como log), con un `SqlRunRepository` y un `SqlUnitOfWork` (ADR-009).
+- **Qué hacer:** tabla `runs` (con el snapshot en JSONB y la columna `version`) y tabla `run_decisions` (que funciona como log), con un `SqlRunRepository` y un `SqlUnitOfWork` (ADR-009, aún por redactar).
+  Persistir también la copia inicial y metadatos acordados en CR-T3.0, de forma
+  atómica con el run, sin sobrescribirlos al guardar `RunState`. Conservarlos
+  mientras el run siga disponible. Eliminar/republicar Catalog no los borra.
+  Serialización propia en este adaptador, sin importar infraestructura de Catalog.
 - **Tests primero:**
   - La suite de contrato de `RunRepository` contra Postgres.
   - Dos escrituras concurrentes: una falla con `ConcurrencyError`.
+  - Tras actualizar/eliminar el catálogo y recrear los proveedores, se recuperan los bytes de contenido inicial de la partida y se rechaza su sustitución.
 - **Aceptación:** pasa la misma suite que el fake.
 
 ### T3.5 · Casos de uso y replay
-- **Oleada:** F3-B · **Tamaño:** L · **Depende de:** T3.1-T3.4, T2.6
-- **Propiedad:** `game/application/**` (salvo `ports.py`), `game/infrastructure/simulation_adapter.py` (solo importa `mister.simulation.application.api`) y `entrypoints/cli/replay.py`
+- **Oleada:** F3-B · **Tamaño:** L · **Depende de:** T3.1-T3.4, T2.6 y CR-T3.0; no T2.15
+- **Propiedad:** `game/application/**` (salvo contratos `ports.py` y `api.py`),
+  `game/infrastructure/catalog_adapter.py` (ACL, solo API publicada de Catalog),
+  `game/infrastructure/simulation_adapter.py` (solo API publicada de Simulation)
+  y `entrypoints/cli/replay.py`. Nuevos contratos públicos requieren CR explícita.
 - **Qué hacer:**
   - Casos de uso `StartRun` (genera la semilla en el servidor), `GetRun`, `TakeDecision` (idempotente) y `AdvanceBlock`, este último a través del puerto `SeasonSimulator` y su adaptador (ACL hacia simulation).
-  - `ReplayRun`: reconstruye la partida a partir de la semilla y las decisiones y comprueba que coincide con el snapshot. Es el antitrampas.
+  - `StartRun` captura el contenido inicial completo una vez y lo guarda con el
+    run; decisiones, continuación y `ReplayRun` usan esa copia, semilla, estado
+    inicial y log. Comprueba coincidencia con el snapshot de estado sin leer el
+    catálogo actual; aplica el alcance de motor compatible de PLAN §3.5.
+  - Reutilizar el intérprete T3.2 también para la política histórica de T2.7.
+    Tras cada bloque conservar cursor físico, resultados y empates sin resolver.
 - **Tests primero:**
   - Tests de aplicación con los fakes.
   - Repetir la misma `Idempotency-Key` no duplica la decisión.
-  - El replay de cualquier partida terminada coincide con el snapshot (con Hypothesis sobre secuencias de decisiones).
+  - El replay de una partida terminada coincide con el snapshot (Hypothesis); publicar B después de empezar con A cambia la siguiente partida, pero no la anterior ni su evaluación posterior.
   - Un error del simulador no deja la partida a medias (UoW).
 
 ### T3.6 · Adaptadores de la API
 - **Oleada:** F3-B (después de T3.5) · **Tamaño:** M · **Depende de:** T3.5, T1.4
-- **Propiedad:** `entrypoints/api/routers/{seasons,runs}.py`, `entrypoints/api/errors.py` y `bootstrap.py` (cableado del contexto game)
+- **Propiedad:** `entrypoints/api/routers/{seasons,runs}.py`, `entrypoints/api/errors.py`,
+  `entrypoints/api/app.py` (registro de routers) y `bootstrap.py` (cableado game).
 - **Qué hacer:**
   - Implementar los endpoints de la F3 del OpenAPI v0.
   - Mapear `DomainError` a problem+json: 404, 409 en conflictos o al avanzar con dilemas pendientes, 422.
   - `NamePolicy` en los presentadores.
 - **Tests primero:**
   - Un test de API por cada endpoint y error.
-  - El OpenAPI que genera FastAPI coincide con `contracts/openapi.yaml` (test de conformidad).
-- **Aceptación:** el job `contracts.yml` está en verde.
+  - Conformidad de operaciones/esquemas F3 implementados con OpenAPI v0. A no
+    espera los endpoints de F5: no devolver respuestas ficticias de ranking o
+    evaluación para fingir cobertura total. T5.5a/b completa las rutas restantes
+    y la conformidad del alcance B/C; el contrato no se cambia sin CR.
+- **Aceptación:** el job `contracts.yml` está en verde. Para A, los endpoints
+  de F3 sirven Test FC mediante configuración local/test y proveedor real; no se
+  importa código de tests en producción. Ya se puede poblar la BD local desde
+  `backend/` con `uv run mister content load --root tests/fixtures/content`;
+  T3.6 cableará el proveedor SQL existente. Si hace falta tocar `settings.py`,
+  Compose o Makefile, abrir CR de cableado; esta tarea no adquiere esos archivos
+  compartidos por cambiar la planificación.
 
-### T3.7 · E2E del backend y golden test
-- **Oleada:** F3-C · **Tamaño:** S · **Depende de:** T3.6, T2.15
-- **Propiedad:** `backend/tests/e2e/**` y `backend/tests/golden/**`
-- **Qué hacer:** jugar por HTTP una temporada completa del RM con la política histórica y una semilla fija, y guardar el resultado como fichero dorado.
-- **Aceptación:** el test es estable en 10 ejecuciones seguidas.
+### T3.7 · E2E del backend y golden test (dos entregas)
+- **Propiedad:** `backend/tests/e2e/**` y `backend/tests/golden/**`.
+- **T3.7a (A):** depende de T3.6 y CR-T3.0/T3.4/T3.5 integradas. Jugar Test FC
+  completo por HTTP con SQL y motor reales, comprobar token, decisiones,
+  idempotencia/409, recuperación tras recarga, estado terminal y replay. Golden
+  sintético estable con semilla fija. No depende de la firma del RM.
+- **T3.7b (B):** depende de T3.7a y T2.15. Conserva el E2E y golden de una
+  temporada completa RM con política histórica y semilla fija, sin sustituirlo
+  por el sintético. Datos reales solo en tests de contenido/calibración/E2E.
+- **Aceptación:** cada golden estable en 10 ejecuciones; pasar a B no vuelve a
+  implementar los casos de uso. T3.7a no cierra la aceptación histórica de F3.
 
 ---
 
@@ -572,12 +666,15 @@
 
 ### T4.2 · Shell, rutas y adaptador de la API
 - **Oleada:** F4-A · **Tamaño:** M · **Depende de:** T1.4
-- **Propiedad:** `frontend/src/{main.tsx,app/**}`, `frontend/src/infrastructure/**` (salvo `generated`) y `frontend/src/application/ports.ts`
+- **Propiedad:** `frontend/src/{main.tsx,app/**}`, `frontend/src/infrastructure/**`
+  (salvo `api/generated/**` y `api/mocks/**`, que pertenecen al contrato T1.4/CR)
+  y `frontend/src/application/ports.ts`. Cambiar MSW o el cliente generado exige
+  CR del contrato; no solapar esos archivos con otra tarea de frontend.
 - **Qué hacer:**
   - Rutas `/`, `/equipo/:id`, `/partida/:id`, `/partida/:id/final` y `/r/:id`.
   - Puerto `GameApi` y su adaptador HTTP (sobre el cliente generado).
   - TanStack Query, *error boundary* y estados de carga.
-  - Modo MSW en desarrollo.
+  - Modo MSW en desarrollo. Es el primer trabajo frontend recomendado para A, en paralelo con CR-T3.0 y T3.1a; no necesita esperar F2 histórica. La composición podrá cambiar al backend real sin cambiar las pantallas.
 - **Tests primero:**
   - El adaptador traduce un error problem+json a un `ApiError` tipado.
   - Una ruta desconocida muestra una página 404.
@@ -602,19 +699,32 @@
   - Un doble toque no envía la decisión dos veces (la `Idempotency-Key` es estable).
   - Un 409 muestra un mensaje y recarga el estado.
 
-### T4.6 · Pantalla final (solo la interfaz)
-- **Oleada:** F4-B · **Tamaño:** M · **Depende de:** T4.1-T4.3
-- **Propiedad:** `frontend/src/ui/screens/RunResult/**`
-- **Qué hacer:** títulos frente a la historia ("Tú: Liga + Champions. Mourinho: Supercopa"), puntuación, veredicto y percentil, con los datos de MSW. La conexión con los datos reales se hace en T5.6.
+### T4.6 · Pantalla final (dos entregas en el mismo directorio)
+- **Propiedad:** `frontend/src/ui/screens/RunResult/**`.
+- **T4.6a (A):** depende de T4.1-T4.3 y del hook `useRun` integrado de T4.5
+  para conexión/aceptación; la preparación visual con props puede avanzar antes.
+  Pantalla terminal con `GetRun`/`RunView`,
+  resumen del último bloque, estado final y opción de empezar otra partida.
+  Usa los hooks de T4.5; no necesita `/result`, puntuación ni percentil de F5.
+  Primero MSW; aceptación de A contra backend/motor reales en T4.7a.
+- **T4.6b (B):** conserva el final histórico del diseño original: títulos frente
+  a la historia, puntuación y veredicto. Se prepara sobre el contrato de resultado
+  que integre CR-T5.B; conexión real en T5.6a. El percentil espera C y su contrato;
+  no se representa con un valor inventado. Ambas entregas editan en secuencia.
 
-### T4.7 · E2E contra el backend real y presupuesto de rendimiento
-- **Oleada:** F4-C · **Tamaño:** M · **Depende de:** T4.4-T4.6, T3.6
-- **Propiedad:** `frontend/e2e/**`, `lighthouserc.json` y la configuración de `size-limit`
-- **Qué hacer:** un E2E de Playwright que juega la partida completa contra el `docker compose` y Lighthouse CI en un perfil móvil.
-- **Aceptación:** Lighthouse ≥ 90 en rendimiento y accesibilidad, y JS inicial < 100 KB gz.
+### T4.7 · E2E real y rendimiento móvil (dos entregas)
+- **Propiedad:** `frontend/e2e/**`, `lighthouserc.json` y configuración de `size-limit`.
+- **T4.7a (A):** depende de T4.4/T4.5/T4.6a y T3.6/T3.7a. Playwright juega
+  Test FC de principio a fin contra backend, motor y SQL reales; recarga la
+  página y conserva la partida. Incluye ruta de destitución y vista móvil sin
+  scroll horizontal. No sustituir el backend por MSW en esta aceptación.
+- **T4.7b (B):** depende de T4.7a, T3.7b y T5.6a. Conserva E2E RM real,
+  evaluación, compartir/abrir enlace y presupuestos: Lighthouse ≥90 en
+  rendimiento/accesibilidad, JS inicial <100 KB gz. Primero A permite medir
+  diversión sin declarar todavía cumplida esta puerta móvil.
 
 ### T4.8 · Pasada de accesibilidad y UX en móvil
-- **Oleada:** F4-C · **Tamaño:** S · **Depende de:** T4.4-T4.6
+- **Oleada:** F4-C · **Tamaño:** S · **Depende de:** cada pantalla de T4.4-T4.6 disponible; pasada completa antes de B
 - **Propiedad:** solo correcciones en `frontend/src/ui/**`, coordinadas con quien sea dueño de cada pantalla
 - **Qué hacer:** axe en los E2E, navegación con teclado, contraste y comprobación de que no hay scroll horizontal a 360 px.
 
@@ -623,11 +733,19 @@
 ## F5 · Final, viralidad y ranking
 
 ### T5.1 · Contexto de evaluación
-- **Oleada:** F5-A · **Tamaño:** M · **Depende de:** T3.1 (eventos), T2.20
-- **Propiedad:** `backend/src/mister/evaluation/**` y `docs/adr/014-puntuacion-del-mister.md`
+- **Oleada:** F5-A (B, preparable con sintéticos) · **Tamaño:** M · **Depende de:**
+  eventos T3.1b, T2.20 y CR-T3.0 para recibir la historia fijada de la partida.
+  Su publicación entre contextos y la persistencia del resultado requieren CR
+  explícita si cambian `application/api.py`/`ports.py`; no son edición libre.
+- **Propiedad:** `backend/src/mister/evaluation/**`,
+  `backend/migrations/versions/*evaluation*` y `docs/adr/014-puntuacion-del-mister.md`.
+  T5.1 implementa persistencia y consulta del resultado tras integrar sus puertos
+  en CR-T5.B; T5.5a solo cablea esos casos de uso. Primero se especifica el dominio
+  con Test FC, después la CR publica el contrato y después se completa el adaptador,
+  sin dependencia circular entre implementación y CR.
 - **Qué hacer:**
   - `MisterScore` de 0 a 100: títulos con un peso por competición, puntos en liga respecto a los reales, evolución de la moral y objetivos cumplidos. Los pesos son configurables y quedan documentados en el ADR.
-  - `HistoricalComparison`.
+  - `HistoricalComparison`, usando el contenido capturado de la partida, incluso si Catalog ya publicó otra revisión. Separar evaluación de objetivos y comparación histórica, sin crear ahora una jerarquía de evaluadores.
   - `Verdict`: "Superaste a <míster>", "Igualaste la historia", "Te quedaste por debajo" y "La directiva te destituyó en <mes>".
 - **Tests primero:**
   - Tablas de casos para cada veredicto.
@@ -637,6 +755,7 @@
 - **Aceptación:** mutmut ≥ 80 % en `evaluation/domain`.
 
 ### T5.2 · Contexto de ranking
+- **Prioridad:** C; se propone fuera de la beta B, pendiente de aprobación de producto.
 - **Oleada:** F5-A · **Tamaño:** M · **Depende de:** T1.5
 - **Propiedad:** `backend/src/mister/leaderboard/**` y `backend/migrations/versions/*leaderboard*`
 - **Qué hacer:**
@@ -651,6 +770,7 @@
   - La suite de contrato contra Postgres.
 
 ### T5.3 · Renderizador de la tarjeta para compartir
+- **Prioridad:** B, puede prepararse con entradas sintéticas en paralelo a T5.1.
 - **Oleada:** F5-A · **Tamaño:** M · **Depende de:** T1.5
 - **Propiedad:** `backend/src/mister/sharing/infrastructure/pillow_renderer.py`, `backend/src/mister/sharing/assets/**` (fuentes OFL) y sus tests
 - **Qué hacer:** un PNG de 1200×630 con el escudo genérico, los títulos tuyos frente a los de la historia, el veredicto, la puntuación y la URL. No lleva logos reales.
@@ -661,7 +781,9 @@
 - **Aceptación:** el render tarda menos de 150 ms.
 
 ### T5.4 · Página pública `/r/<id>` y `/og/<id>.png`
-- **Oleada:** F5-A · **Tamaño:** M · **Depende de:** T1.4
+- **Oleada:** F5-A (B) · **Tamaño:** M · **Depende de:** T1.4, consulta/persistencia
+  de resultado T5.1/T5.5a y renderizador T5.3. La plantilla puede prepararse antes
+  con fakes, su aceptación funcional necesita el recorrido integrado.
 - **Propiedad:** `entrypoints/api/routers/public.py` y `entrypoints/api/templates/result.html` y `docs/adr/010-tarjeta-og.md`
 - **Qué hacer:**
   - HTML renderizado en el servidor con `og:*` y `twitter:card=summary_large_image`, que carga la SPA en `/r/:id`.
@@ -671,37 +793,64 @@
   - Para una partida que no existe se devuelve un 404 con meta tags genéricas.
   - La cabecera de caché es la correcta.
 
-### T5.5 · Cableado del final de partida
-- **Oleada:** F5-B · **Tamaño:** M · **Depende de:** T5.1-T5.4, T3.6
-- **Propiedad:** `bootstrap.py` (la sección de eventos), `entrypoints/api/routers/{results,leaderboards}.py` y la CR de OpenAPI si hace falta
-- **Qué hacer:** `RunFinished` lanza la evaluación, el resultado se persiste, la partida queda elegible para el ranking y se registra la analítica. Endpoints `result`, `alias` y `leaderboards`.
-- **Tests primero:** un test de aplicación en el que terminar una partida produce un `RunEvaluated`, la puntuación y la entrada en el ranking cuando se envía el alias.
+### CR-T5.B · Resultado de beta sin ranking (propuesta, antes de B)
+- **Depende de:** aprobación del alcance de B y especificación de T5.1.
+- **Propiedad futura:** `contracts/openapi.yaml`, cliente generado y MSW, puertos/
+  APIs de Evaluation y Sharing afectados y suites contractuales. Enumerar los
+  archivos en la PR antes de implementar; esta revisión solo crea la tarea.
+- **Problema concreto:** `RunResult.percentile` es un número requerido y
+  T5.5/T5.6 estaban ligados al ranking. B no puede fabricar un percentil cero ni
+  devolver un contrato incompleto para ocultar que no hay población de ranking.
+- **Qué decidir:** ausencia explícita de percentil/ranking hasta C, consulta de
+  resultado histórico recuperable y flujo de compartir independiente de alias.
+  Mantener la forma de A mediante `RunView`, sin cambiarla para esta necesidad.
+- **Aceptación:** OpenAPI, generados y MSW coherentes; UI B oculta datos aún no
+  disponibles, tests de contrato y compatibilidad. El contrato actual manda
+  hasta que esta CR se integre; no implementar el recorte incidentalmente.
 
-### T5.6 · Frontend del final, compartir y ranking
-- **Oleada:** F5-B · **Tamaño:** M · **Depende de:** T4.6, T5.5
-- **Propiedad:** `frontend/src/ui/screens/{RunResult,Leaderboard,SharedResult}/**` y `frontend/src/application/{useResult,useShare,useLeaderboard}.ts`
-- **Qué hacer:**
-  - Conectar la pantalla final con los datos reales.
-  - Compartir: Web Share API, con copiar enlace y el *intent* de Twitter como alternativas.
-  - Alias, ranking y una página de aterrizaje en `/r/:id` con "¿Lo mejoras?" y un botón para jugar ese mismo equipo.
-- **Tests primero:**
-  - Sin Web Share API, se usa copiar enlace.
-  - Un alias rechazado muestra el error.
-  - El E2E completo pasa por elegir equipo, jugar, ver el final, compartir y abrir `/r/`.
+### T5.5 · Cableado del final de partida (separado de ranking)
+- **Propiedad:** `bootstrap.py` (eventos), `entrypoints/api/routers/{results,leaderboards}.py`.
+  Los contratos afectados se integran primero mediante CR; acceso solo a APIs
+  publicadas de los contextos.
+- **T5.5a (B):** depende de T5.1, T3.6 y CR-T5.B. `RunFinished` produce una
+  evaluación persistida y consultable con el contenido fijado; habilita compartir
+  con T5.3/T5.4. Un fallo/reintento no duplica resultados ni deja un run terminal
+  sin vía de recuperar su resultado; probar transacción o reintento acordado.
+  No depende de T5.2. Coordinar el orden con T5.4 para evitar una dependencia
+  circular: primero consulta de resultado y después página pública/renderizado.
+- **T5.5b (C):** depende de T5.5a y T5.2; conserva elegibilidad, alias,
+  `leaderboards` y percentiles del alcance original. Mismos archivos compartidos,
+  implementación posterior en otra PR; no hay dos escritores simultáneos.
+- **Tests primero:** cerrar/consultar/reintentar resultado en B; publicar alias
+  y entrar en ranking al completar C. Analítica usa su puerto sin bloquear Game.
+
+### T5.6 · Frontend del final, compartir y ranking (dos entregas)
+- **Propiedad:** `frontend/src/ui/screens/{RunResult,Leaderboard,SharedResult}/**`
+  y `frontend/src/application/{useResult,useShare,useLeaderboard}.ts`.
+- **T5.6a (B):** depende de T4.6b, T5.5a/T5.3/T5.4 y CR-T5.B. Conecta evaluación
+  real, compartir mediante Web Share, copia de enlace e intent de Twitter como
+  alternativas, y aterrizaje `/r/:id` con
+  opción de jugar la temporada. Requiere resultado persistido, sin alias/ranking.
+- **T5.6b (C):** depende de T5.6a y T5.5b. Conserva alias, ranking, percentil y
+  errores de alias del alcance original. Se edita después de T5.6a.
+- **Tests primero:** sin Web Share se copia el enlace; E2E B elegir/jugar/final/
+  compartir/abrir `/r/`; C añade alias rechazado y ranking real.
 
 ---
 
 ## F6 · Contenido completo, textos y equilibrio
 
 ### T6.1-T6.4 · Un equipo por tarea: Barça 2008-09, Atleti 2013-14, Valencia 2003-04 y Sevilla 2005-06
-- **Oleada:** F6-A (los cuatro en paralelo) · **Tamaño:** L cada uno · **Depende de:** T2.15 (el pipeline validado con el RM)
+- **Oleada:** F6-A (los cuatro en paralelo) · **Tamaño:** L cada uno · **Depende de:** T2.15 (pipeline RM); prioridad C tras recoger feedback de B
 - **Propiedad:** `content/seasons/<slug>/**` y los `content/club-seasons/<club>-<temporada>/**` de esa temporada
 - **Qué hacer:** repetir T2.10 → T2.16 → T2.15 para cada equipo, con subtareas `a` (temporada), `b` (plantilla propia), `c` (calendario, clasificaciones y lista de rivales), `d` (dilemas y textos), `r1`-`r5` (lotes de plantillas rivales, como en T2.16), `e` (verificación independiente), `f` [HUMANO] (firma) y `g` (calibración en verde con `make calibrate SEASON=<slug>`, incluida la de los rivales).
-- **Volumen:** unos 30 club-seasons por equipo. Con 4 equipos a la vez y 5 lotes por equipo, en la oleada A puede haber hasta 20 agentes de contenido. Lo recomendable es tener 2 equipos a la vez, para que la firma (T6.xf) no se acumule.
+- **Volumen:** inventariar cada temporada antes de estimar. El RM exige 60 club-seasons (48 plantillas contando la propia y 12 agregados), por todos los participantes de grupos/cuadros; la estimación anterior de 30 era insuficiente. Mantener lotes revisables y oleadas de 2-3 agentes, sin abrir 20 investigadores que saturen la firma humana.
 - **Reutilización:** los `content/clubs/<club>.yaml` se comparten entre temporadas. Si una plantilla rival ya existe porque coincide la temporada, se reutiliza.
 - **Nota:** el Barça 2008-09 es el reto difícil. Las bandas de T1.3 tienen que permitir que el triplete sea posible pero poco probable.
 
 ### T6.5 · Herramienta de contenido con IA offline
+- **Prioridad:** opcional después de B; no bloquea los textos revisados del piloto
+  ni la primera partida. ADR-013 está pendiente de esta tarea, no existe aún.
 - **Oleada:** F6-A · **Tamaño:** M · **Depende de:** T1.2
 - **Propiedad:** `tools/content-gen/**` y `docs/adr/013-ia-offline.md`
 - **Qué hacer:**
@@ -715,14 +864,25 @@
   - Si se supera el presupuesto, la ejecución se aborta.
 - **Aceptación:** el prompt prohíbe inventar datos históricos y el texto solo puede usar los datos que se le pasan.
 
+### T6.5R · Experimento RAG offline (evolución, sin iniciar)
+- **Depende de:** producto validado en B y priorización posterior; fuera del camino crítico.
+- **Propiedad futura:** `tools/content-gen/**` y ADR-013, coordinada después de
+  T6.5; ninguna nueva dependencia elegida en esta revisión.
+- **Qué estudiar:** recuperación de fuentes por temporada, pasajes/procedencia,
+  borradores estructurados y asistencia a verificaciones. No durante partidas.
+- **Aceptación del experimento:** corpus comprobado y evaluación de citas,
+  datos sin respaldo, cobertura, coste y tiempo de revisión ahorrado frente al
+  procedimiento manual. Revisión humana e independiente sigue siendo obligatoria.
+
 ### T6.6 · Equilibrio entre equipos y duración de la partida
 - **Oleada:** F6-B · **Tamaño:** M · **Depende de:** T6.1-T6.4
 - **Propiedad:** `docs/calibration/balance.md` y ajustes de contenido mediante CR a cada equipo
+- **Prioridad:** C para equilibrio entre equipos; la duración y diversión se miden ya en A/B mediante T7.8.
 - **Qué hacer:** comparar la distribución de `MisterScore` por equipo con políticas aleatorias e históricas (ningún equipo debe ser trivial), y medir el número de decisiones (de 8 a 12) y de pantallas por partida.
 - **Aceptación:** el informe está publicado y el autor da su visto bueno.
 
 ### T6.7 · Auditoría legal y de marca
-- **Oleada:** F6-B · **Tamaño:** S · **Depende de:** F5
+- **Oleada:** antes de publicar B · **Tamaño:** S · **Depende de:** interfaz y compartir de B (no ranking de C)
 - **Propiedad:** `frontend/src/ui/legal/**` y `docs/legal.md`
 - **Qué hacer:**
   - Aviso de "proyecto fan, sin afiliación".
@@ -734,12 +894,19 @@
 
 ## F7 · Producción y lanzamiento
 
+F7 se conserva. Para una beta B expuesta, T7.1 decide entorno y presupuesto;
+T7.6 despliega y prueba restauración/rollback, T7.2 cubre logs/errores básicos,
+T7.3 recoge las métricas de feedback y T7.4 los límites/CORS/cabeceras necesarios.
+El detalle operativo se acuerda antes de publicar; no bloquear A local con
+hosting, Redis, observabilidad avanzada o el objetivo de carga de T7.5. Si la
+beta es privada o pública lo decide el autor (PLAN §5.4).
+
 ### T7.1 · Decisión de hosting (ADR-012) [HUMANO]
 - **Oleada:** F7-A · **Tamaño:** S · **Propiedad:** `docs/adr/012-hosting.md`
 - **Qué hacer:** un agente compara un VPS con Docker Compose y Cloudflare, un PaaS (Fly o Render) y un enfoque híbrido, con coste mensual estimado en reposo y en un pico, operación y backups. **El autor decide** y fija el presupuesto mensual.
 
 ### T7.2 · Observabilidad
-- **Oleada:** F7-A · **Tamaño:** M · **Depende de:** F3
+- **Oleada:** básico para B; resto C · **Tamaño:** M · **Depende de:** API de T3.6
 - **Propiedad:** `backend/src/mister/entrypoints/api/middleware/**` y `backend/src/mister/observability/**`
 - **Qué hacer:** logs JSON con structlog y `request_id`, métricas de Prometheus en `/metrics` (latencia por ruta, partidas por estado, tiempo de simulación) y seguimiento de errores (GlitchTip o Sentry en su plan gratuito).
 - **Tests primero:** cada log de petición incluye el `request_id`, y la métrica se incrementa al terminar una partida.
@@ -754,7 +921,7 @@
 - **Tests primero:** un evento desconocido se rechaza, y nunca se persiste ninguna IP.
 
 ### T7.4 · Endurecimiento y Redis
-- **Oleada:** F7-A · **Tamaño:** M · **Depende de:** F5
+- **Oleada:** F7-A · **Tamaño:** M · **Depende de:** integración B para límites básicos; F5 completo para caché de ranking en C
 - **Propiedad:** `backend/src/mister/*/infrastructure/redis/**`, `infra/` (el servicio de Redis) y `entrypoints/api/middleware/security.py`
 - **Qué hacer:** límite de peticiones por IP en `POST /runs`, `alias` y `events` (con un puerto `RateLimiter` y sus adaptadores Redis y en memoria), caché del ranking, CORS, cabeceras de seguridad y límites de tamaño en las peticiones.
 - **Tests primero:** la suite de contrato de `RateLimiter` contra Redis (testcontainers), y la petición N+1 recibe un 429.
@@ -763,6 +930,7 @@
 - **Oleada:** F7-A · **Tamaño:** M · **Depende de:** F5
 - **Propiedad:** `infra/load/**` y `docs/performance.md`
 - **Qué hacer:** escenarios de k6 (partida completa, ráfaga en `/r/<id>`, ráfaga en `/og`), perfilado con py-spy y correcciones.
+- **Prioridad:** C para la prueba de capacidad completa; B mantiene una comprobación acotada al entorno y usuarios previstos.
 - **Objetivo propuesto:** 300 peticiones por segundo sostenidas, con p95 < 200 ms en los endpoints de partida y error < 0,1 %.
 - **Aceptación:** informe con los resultados (es material para el portfolio).
 
@@ -776,8 +944,13 @@
 - **Propiedad:** `README.md` y `docs/blog/launch.md`
 - **Qué hacer:** diagramas (mapa de contextos y hexágono), decisiones con enlaces a los ADR, estrategia de testing, informe de calibración, resultados de la prueba de carga, control de coste de la IA y cómo ejecutarlo en local.
 
-### T7.8 · Beta cerrada [HUMANO]
-- **Oleada:** F7-C · **Qué hacer:** beta con amigos, recogida de feedback y apertura de tareas de corrección (como tareas nuevas). Medir la duración real de una partida, que tiene que estar entre 3 y 5 minutos.
+### T7.8 · Pruebas de diversión y beta cerrada [HUMANO]
+- **T7.8a (A):** sesión interna con Test FC conectado; observar comprensión,
+  decisiones con efecto, duración y deseo de repetir. Abrir correcciones concretas.
+- **T7.8b (B):** beta RM según audiencia/entorno aprobados, feedback real y
+  métricas de finalización/abandono. Medir duración de 3-5 minutos, recopilar
+  problemas móviles y priorizar C. No espera T6.1-T6.4 ni ranking; no cierra V1.
+
 
 ### T7.9 · Lanzamiento [HUMANO]
 - **Oleada:** F7-C · **Qué hacer:** hilo en X con los mejores dilemas, contacto con creadores de contenido y elección de una fecha con algún aniversario o partido relevante (brief §18).
