@@ -10,6 +10,8 @@ No se modifican Catalog, Simulation, OpenAPI, bootstrap, SQL ni `game/domain`. L
 
 Game conserva una copia autocontenida del `PlayableSeasonDTO` completo al iniciar una partida. La copia usa JSON canónico UTF-8 (claves ordenadas, separadores compactos, Unicode sin escape y `allow_nan=False`), formato inicial 1 y SHA-256 de los bytes exactos. El snapshot es inmutable y opaco para Game Application/Domain. Su codec de infraestructura usa etiquetas estables, esquema estricto y una allowlist explícita de DTO públicos de `catalog.application.api` y tipos de `shared_kernel`; no importa infraestructura ni dominios de Catalog, ni usa importación dinámica o pickle.
 
+Las partidas existentes requieren conservar el esquema admitido y su decoder de formato 1. El codec fija un fingerprint de campos y tipos de los DTO/IDs/enums permitidos y falla si la API viva deja de coincidir. Un cambio de campos o tipos exige una revisión explícita del codec y del formato antes de actualizar ese fingerprint; no se permite que `dataclasses.fields` o `get_type_hints` amplíen silenciosamente el contrato histórico.
+
 La captura realiza una sola lectura del proveedor. El codec preserva todos los campos del contenido, IDs, enums, fechas, tuplas, `None` y las diez variantes de efectos. Restaurar desde el snapshot no consulta Catalog y reconstruye el DTO público solo dentro de la ACL.
 
 `ReplayInputs` fija snapshot, estado inicial canónico, configuración canónica y revisiones no vacías de motor y reglas. JSON desconocido/corrupto, formato no compatible o revisión no soportada se rechazan explícitamente. La compatibilidad se valida contra revisiones soportadas suministradas; esta CR no carga varios motores.
