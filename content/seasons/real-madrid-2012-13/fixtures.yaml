@@ -795,6 +795,7 @@ fixtures:
     extra_time: true
   sources:
   - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  - https://rfef.es/es/noticias/internacionales-espanoles-del-atletico-madrid-se-coronan-copa-sm-rey
   verify: ok
 - id: rm-liga-37
   date: 2013-05-26
