@@ -24,8 +24,8 @@ from mister.shared_kernel.errors import DomainError, InvalidValueError
 from mister.shared_kernel.ids import PlayableSeasonId, RunId
 from mister.shared_kernel.seed import Seed
 from tests.contracts.suites.game_samples import (
-    T0,
     REPLAY_INPUTS,
+    T0,
     make_decision,
     make_idempotency_record,
     make_run_record,
@@ -297,8 +297,13 @@ class RunRepositoryContract:
             {
                 "playable_season_id": PlayableSeasonId("other-1999-00"),
                 "replay_inputs": type(REPLAY_INPUTS)(
-                    replace(REPLAY_INPUTS.content, playable_season_id=PlayableSeasonId("other-1999-00")),
-                    "{}", "{}", "engine-1", "rules-1",
+                    replace(
+                        REPLAY_INPUTS.content, playable_season_id=PlayableSeasonId("other-1999-00")
+                    ),
+                    "{}",
+                    "{}",
+                    "engine-1",
+                    "rules-1",
                 ),
             },
             {"replay_inputs": replace(REPLAY_INPUTS, engine_revision="engine-2")},

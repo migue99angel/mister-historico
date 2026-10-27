@@ -27,9 +27,9 @@ from mister.game.infrastructure.simulation_mapping import (
 from mister.shared_kernel.ids import ClubSeasonId, CompetitionId, FixtureId
 from mister.shared_kernel.randomness import StdlibRandomSource
 from mister.shared_kernel.seed import Seed
-from mister.simulation.application.api import SimulationService
 from mister.simulation.application.api import (
     BlockSummaryDTO,
+    SimulationService,
     StandingRowDTO,
     StandingsDTO,
     UnresolvedKnockoutTieDTO,
@@ -106,7 +106,9 @@ def test_mapped_test_fc_request_runs_through_the_real_simulation_service() -> No
         (),
     ],
 )
-def test_result_mapping_preserves_none_and_empty_knockout_ties(unresolved: tuple | None) -> None:
+def test_result_mapping_preserves_none_and_empty_knockout_ties(
+    unresolved: tuple[()] | None,
+) -> None:
     result = make_simulation_result()
     mapped = from_simulation_result(
         BlockSummaryDTO(result.block_id, unresolved_knockout_ties=unresolved)
