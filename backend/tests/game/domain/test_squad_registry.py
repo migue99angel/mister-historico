@@ -79,12 +79,10 @@ def test_market_moves_support_entry_exit_and_return() -> None:
     assert returned.owner_on(player, date(2000, 1, 8)) == club
 
 
-def test_transfer_rejects_unknown_player_and_two_moves_on_same_day() -> None:
+def test_transfer_rejects_two_moves_on_same_day() -> None:
     player = PlayerId("player-a")
     club = ClubSeasonId("club-a")
     registry = SquadRegistry((Membership(player, club),))
-    with pytest.raises(InvalidValueError):
-        registry.transfer(PlayerId("player-b"), None, club, date(2000, 1, 5))
     moved = registry.transfer(player, club, None, date(2000, 1, 5))
     with pytest.raises(InvalidValueError):
         moved.transfer(player, None, club, date(2000, 1, 5))

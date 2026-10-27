@@ -138,6 +138,28 @@ def test_run_state_pool_player_without_base_membership_can_be_transferred_in() -
     assert moved.owner_on(player, date(2000, 1, 1)) == state.managed_club_season_id
 
 
+def test_run_state_rejects_transfer_history_for_player_outside_known_pool() -> None:
+    unknown_player = PlayerId("unknown-player")
+    registry = SquadRegistry().transfer(
+        unknown_player,
+        None,
+        ClubSeasonId("test-fc-2000-01"),
+        date(2000, 1, 1),
+    )
+
+    with pytest.raises(InvalidValueError):
+        RunState(
+            ClubSeasonId("test-fc-2000-01"),
+            registry,
+            (),
+            Tactic(TacticStyle.BALANCED, (2, 4, 4)),
+            (),
+            50,
+            50,
+            None,
+        )
+
+
 def test_run_state_rejects_non_tuple_collections_and_invalid_dates() -> None:
     player = PlayerId("player-a")
     base = {

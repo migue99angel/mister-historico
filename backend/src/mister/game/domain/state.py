@@ -6,7 +6,7 @@ from enum import StrEnum
 
 from mister.game.domain.squad_registry import SquadRegistry
 from mister.shared_kernel.errors import InvalidValueError
-from mister.shared_kernel.ids import CompetitionId, PlayableSeasonId, PlayerId
+from mister.shared_kernel.ids import ClubSeasonId, CompetitionId, PlayerId
 
 _FORMATION_MIN_LINES = 3
 _FORMATION_MAX_LINES = 5
@@ -128,7 +128,7 @@ class ForcedInjury:
 class RunState:
     """Private immutable snapshot of the state at a point in a run."""
 
-    managed_club_season_id: PlayableSeasonId
+    managed_club_season_id: ClubSeasonId
     squad_registry: SquadRegistry
     players: tuple[PlayerState, ...]
     tactic: Tactic
@@ -139,8 +139,8 @@ class RunState:
     forced_injuries: tuple[ForcedInjury, ...] = ()
 
     def __post_init__(self) -> None:
-        if not isinstance(self.managed_club_season_id, PlayableSeasonId):
-            raise InvalidValueError("managed_club_season_id must be a PlayableSeasonId")
+        if not isinstance(self.managed_club_season_id, ClubSeasonId):
+            raise InvalidValueError("managed_club_season_id must be a ClubSeasonId")
         if not isinstance(self.squad_registry, SquadRegistry) or not isinstance(
             self.tactic, Tactic
         ):
