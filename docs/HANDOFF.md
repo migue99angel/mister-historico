@@ -1,11 +1,11 @@
 # Traspaso de la orquestación (2026-10-26)
 
-> Las secciones 1–10 conservan las comprobaciones de su fecha. La sección 11 recoge la revisión de planificación orientada a una primera partida jugable; sus tareas y CR aún no están implementadas. F2 continúa abierta. Léelo junto con `CLAUDE.md`, `docs/PLAN.md` y `docs/TASKS.md`. Las instrucciones del autor prevalecen sobre estos documentos.
+> Las secciones 1–11 conservan las comprobaciones de su fecha. La sección 12 recoge la primera tanda implementada hacia la partida interna: estado, entradas recuperables y shell web. F2 y el hito A continúan abiertos. Léelo junto con `CLAUDE.md`, `docs/PLAN.md` y `docs/TASKS.md`. Las instrucciones del autor prevalecen sobre estos documentos.
 
 ## 1. Rol y forma de trabajo
 
 - Actúas como **orquestador**: planificas, encargas la implementación y la revisión independiente, verificas e integras. El autor decide el criterio de producto y de datos.
-- **Modelos elegidos por el autor:** **Astra** para planificación; **Sol** para implementar y para las revisiones independientes, mediante agentes distintos. Se puede usar **Luna** para tareas acotadas que lo justifiquen. Sustituye la preferencia anterior de modelos.
+- **Modelos de la última tanda por instrucción del autor (2026-10-27): Sol planifica, Luna implementa y otro Sol revisa.** La preferencia anterior de Astra para planificación y Sol para implementación queda como registro histórico. Mantener la asignación explícita del autor y agentes distintos para implementación/revisión.
 - **Cada PR pasa por un revisor independiente antes de integrarse.** El revisor recibe el código y la especificación, sin las conclusiones del implementador. Las correcciones vuelven al mismo agente si sigue disponible. Antes de integrar, el orquestador comprueba la combinación con `main`.
 - **Integración: rebase-merge, nunca squash.** El historial conserva los commits de tests y de implementación separados. El autor ha autorizado integrar tras revisión y checks. **Un force-push sigue necesitando autorización explícita.**
 - **Ritmo:** oleadas de 2 o 3 agentes. Si uno se corta por el límite, reanúdalo en lugar de sustituirlo.
@@ -214,3 +214,57 @@ audiencia privada/pública y presupuesto operativo, retención y fecha de salida
 La V1 aprobada de 3-5 históricos y la calidad de las plantillas rivales se
 conservan. Estas decisiones no impiden comenzar A. Consultar PLAN §5.4 antes de
 anunciar una beta o modificar el alcance del lanzamiento.
+
+
+## 12. Primera tanda implementada hacia A (2026-10-27)
+
+El autor pidió planificación Sol, implementación mediante subagentes Luna y
+revisión Sol independiente. Se completó esa tanda y su dependencia web previa;
+no se comenzaron las tareas posteriores de la partida. Código comprobado en
+`main` hasta `af3e3e86213be8654b9a9403387c22be5a20f1be`, limpio tras integrar:
+
+- **CR-T4.0, [PR #52](https://github.com/migue99angel/mister-historico/pull/52):**
+  TanStack Query, ya elegida en ADR-011, MSW de navegador con opt-in de desarrollo,
+  worker generado y proxy Vite por modo. Sol aprobó `f5c2284` y los tres checks
+  de CI pasaron. No se añadió librería de router.
+- **T3.1a, [PR #53](https://github.com/migue99angel/mister-historico/pull/53):**
+  estado privado y `SquadRegistry` con pertenencias inclusivas, movimientos
+  cronológicos, mercado sin club inicial y conservación de la historia anterior.
+  Usa `ClubSeasonId`, no identidad de escenario. Sol aprobó `eafc8a7`, incluidos
+  los ajustes de tipos en tests; 46 pruebas dirigidas, cobertura del dominio
+  Game al 100% y ambos checks de CI en verde. Agregado y efectos aún no existen.
+- **CR-T3.0, [PR #54](https://github.com/migue99angel/mister-historico/pull/54):**
+  copia opaca completa y canónica, digest/formato/ID, `ReplayInputs` obligatorio
+  e inmutable en el repositorio, captura única y codec propio de Game. Un
+  fingerprint fija el esquema del formato 1 y exige revisión ante cambios del
+  lenguaje publicado. El mapeo real conserva cursor, lados neutrales y empates;
+  A sigue restaurándose/simulándose con A tras publicar B y retirar el proveedor.
+  Sol aprobó `d8170ac`, 172 pruebas dirigidas y tres checks CI en verde. No es
+  todavía persistencia SQL ni un caso de uso de replay de una partida.
+- **T4.2, [PR #55](https://github.com/migue99angel/mister-historico/pull/55):**
+  seis operaciones de `GameApi`, DTOs propios contrastados con OpenAPI, adaptador
+  HTTP tipado y shell con Query, carga/error/reintento, cinco rutas y 404.
+  En DEV el navegador usa `/api`; el proxy decide el upstream. Sol aprobó
+  `f4f151e`, 100 tests frontend, smoke móvil 2/2 normal y 2/2 con MSW activado,
+  y tres checks CI en verde. Bundle inicial: **79,49 KB gzip**, menor de 100 KB.
+  Las rutas son puntos de montaje; no implementan las pantallas T4.4-T4.6.
+
+**Comprobación conjunta:** se combinaron las tres tareas con `main` en un
+worktree temporal. `make test` completo: **2218 backend y 100 frontend**;
+`make lint` completo en verde, ocho contratos de capas conservados. Cobertura
+de dominio/aplicación: **98,85% líneas y 96,37% ramas**, ambas sobre 95%.
+El código, tests, contratos, contenido y configuración integrados coinciden
+con el árbol comprobado. Se preservaron commits rojos/verdes y rebase-merge.
+Los worktrees terminados se limpiaron; se conserva un entorno backend y otro
+frontend compartidos, con el paquete backend apuntando otra vez a `main`.
+
+**Siguiente trabajo de A:** T3.1b/T3.2/T3.3 pueden apoyarse ya en el estado
+privado; T3.4 debe implementar SQL y redactar ADR-009 usando el contrato fijado;
+T4.1/T4.3 preparan componentes/view models para T4.4/T4.5. Después convergen
+T3.5/T3.6 y los E2E completos T3.7a/T4.7a. No repetir las CR ni ampliar T4.2
+para implementar las pantallas de otra tarea.
+
+Las PR históricas #45/#46/#49 siguen en borrador y sus tres worktrees se
+conservan. Las propuestas de beta B y modo actual mantienen las aprobaciones
+pendientes de PLAN §5.4. La API real sigue sin endpoints de partida y no existe
+una temporada completa jugable desde la web; esta tanda no cierra A, F2 ni F3.
