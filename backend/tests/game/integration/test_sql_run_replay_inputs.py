@@ -70,9 +70,7 @@ def test_replay_bytes_survive_catalog_replacement_and_removal(
     player["rating_override"]["value"] = 75
     squad_path.write_text(yaml.safe_dump(squad, sort_keys=False, allow_unicode=True))
     SqlCatalogLoader(engine).load(changed_root)
-    captured_b = CatalogRunContentAdapter(SqlSeasonContentProvider(engine)).capture(
-        TEST_FC_SEASON
-    )
+    captured_b = CatalogRunContentAdapter(SqlSeasonContentProvider(engine)).capture(TEST_FC_SEASON)
     assert captured_b.digest != snapshot_a.digest
 
     # Removing the current publication still leaves each run's original inputs intact.
@@ -90,7 +88,8 @@ def test_replay_bytes_survive_catalog_replacement_and_removal(
     )
     restored_a = CatalogRunContentAdapter.restore(stored.replay_inputs.content)
     player_a = next(
-        player for player in restored_a.own_club_season.squad or ()
+        player
+        for player in restored_a.own_club_season.squad or ()
         if player.player_id.value == "tfc-03"
     )
     assert player_a.rating == 76
