@@ -297,6 +297,23 @@ def test_domestic_league_cannot_use_club_coefficient() -> None:
         SeasonFile.model_validate(data)
 
 
+def test_group_coefficient_rejects_a_club_outside_the_stage() -> None:
+    data = season()
+    stage = _group_stage()
+    stage["coefficients"] = [
+        {
+            "club_season": "stranger-fc-2000-01",
+            "milli_points": 1000,
+            "sources": _SRC,
+            "verify": "ok",
+        }
+    ]
+    data["competitions"][1]["stages"] = [stage, _stage("final", "final", 1)]
+
+    with pytest.raises(ValidationError, match="coefficient.*non-participant"):
+        SeasonFile.model_validate(data)
+
+
 def test_a_knockout_stage_cannot_have_groups() -> None:
     data = season()
     data["competitions"][1]["stages"][0]["groups"] = [{"id": "a", "participants": [_OWN, _RIVAL]}]
