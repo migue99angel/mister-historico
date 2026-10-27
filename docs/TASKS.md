@@ -502,7 +502,8 @@ comprobado, no se presume que exista un backlog adicional en Projects.
 ## F3 · Partida en el servidor (`backend/src/mister/game/`)
 
 F3 puede comenzar con Test FC mientras F2 histórica permanece abierta. La
-consulta de contenido ya existe; el ACL de Game y los casos de uso aún no.
+consulta de contenido y su captura/restauración mediante el ACL de Game ya
+existen; los casos de uso de partida siguen pendientes.
 
 ### CR-T3.0 · Entradas fijadas de partida y contrato de replay (antes de A)
 - **Estado:** integrada por rebase-merge en [PR #54](https://github.com/migue99angel/mister-historico/pull/54), implementada por Luna y revisada por Sol sobre `d8170ac`, con CI y comprobación conjunta en verde. Los casos de uso y SQL siguen pendientes.
