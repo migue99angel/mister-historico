@@ -13,13 +13,14 @@
 
 Los hitos A/B/C/D y sus decisiones de producto están en [PLAN §5](PLAN.md#5-entregas-verticales-y-fases).
 Los IDs F0-F7 se conservan; las subtareas siguientes dividen aceptación y orden,
-sin eliminar funcionalidades. **No son código implementado:** a `8be8244` faltan
-F3 y el bucle F4; las PR #45/#46/#49 siguen como contenido parcial en borrador.
+sin eliminar funcionalidades. La planificación no equivale a implementación:
+HANDOFF §12–13 registra las dos tandas integradas; siguen pendientes los casos
+de uso/API y el bucle F4. Las PR #45/#46/#49 conservan contenido parcial en borrador.
 GitHub no tiene issues abiertas; esta lista de tareas y las PR son el registro
 comprobado, no se presume que exista un backlog adicional en Projects.
 
-- **Ahora, A:** CR-T3.0, T3.1a y T4.2 pueden ejecutarse en paralelo. Tras la base
-  privada T3.1a, T3.1b/T3.2/T3.3; tras CR-T3.0, T3.4. Convergen en T3.5/T3.6,
+- **Ahora, A:** CR-T3.0, T3.1a/T3.1b, T3.4 y T4.2 están integradas.
+  Siguen pendientes T3.2/T3.3 y T4.1/T4.3. Convergen en T3.5/T3.6,
   T3.7a y el frontend conectado T4.7a. No requieren contenido real firmado.
 - **En paralelo, para B:** contenido F2, verificación y firma, después
   calibración/rendimiento del piloto; evaluación/compartir y UX móvil. La beta
@@ -538,8 +539,15 @@ existen; los casos de uso de partida siguen pendientes.
 ### T3.1 · Agregado `Run` y máquina de estados
 - **Estado T3.1a:** integrada por rebase-merge en [PR #53](https://github.com/migue99angel/mister-historico/pull/53),
   implementación Luna, revisión independiente Sol y CI en verde. 46 pruebas
-  dirigidas y cobertura del dominio Game al 100%. `T3.1b` sigue pendiente;
+  dirigidas y cobertura del dominio Game al 100% en esa entrega;
   esta integración solo define estado privado y pertenencias/movimientos.
+- **Estado T3.1b:** integrada por rebase-merge en [PR #58](https://github.com/migue99angel/mister-historico/pull/58),
+  implementación Luna y revisión independiente Sol. Agregado inmutable,
+  transiciones, eventos y cierres completos opacos por bloque. No implementa
+  efectos, fórmulas de directiva ni casos de uso. Dos P2 corregidos con
+  regresiones: opciones reutilizadas entre dilemas y coherencia de snapshots.
+  Sol aprueba la punta final `acff98a`; CI verde y comprobación conjunta en
+  HANDOFF §13.
 - **Oleada:** F3-A · **Tamaño:** L · **Depende de:** F1 (los DTOs del catálogo están en `catalog/application/api.py`, de T1.5)
 - **Propiedad:** `game/domain/run.py`, `game/domain/events.py`, `game/domain/errors.py`,
   `game/domain/state.py`, `game/domain/squad_registry.py` y sus tests.
@@ -590,9 +598,13 @@ existen; los casos de uso de partida siguen pendientes.
   - Un jugador estrella que no juega pierde moral.
 
 ### T3.4 · Persistencia de la partida
+- **Estado:** integrada por rebase-merge en [PR #57](https://github.com/migue99angel/mister-historico/pull/57),
+  implementación Luna y revisión independiente Sol sobre `833895d`. SQL y
+  ADR-009 completos; 42 pruebas PostgreSQL, suites comunes y conservación de A
+  tras publicar B y retirar Catalog. El cableado productivo sigue en T3.6.
 - **Oleada:** F3-A (A) · **Tamaño:** M · **Depende de:** T1.5, T0.5 y CR-T3.0
-- **Propiedad:** `game/infrastructure/sqlalchemy/**` y `backend/migrations/versions/*game*` y `docs/adr/009-persistencia-de-la-partida.md`
-- **Qué hacer:** tabla `runs` (con el snapshot en JSONB y la columna `version`) y tabla `run_decisions` (que funciona como log), con un `SqlRunRepository` y un `SqlUnitOfWork` (ADR-009, aún por redactar).
+- **Propiedad:** `game/infrastructure/sqlalchemy/**`, `backend/migrations/versions/*game*`, `docs/adr/009-persistencia-de-la-partida.md` y sus nuevos tests `backend/tests/contracts/test_sql_{run_repository,unit_of_work}.py` y `backend/tests/game/integration/**`. Las suites compartidas no cambian.
+- **Qué hacer:** tabla `runs` (con el snapshot en JSONB y la columna `version`) y tabla `run_decisions` (que funciona como log), con un `SqlRunRepository` y un `SqlUnitOfWork` ([ADR-009](adr/009-persistencia-de-la-partida.md)).
   Persistir también la copia inicial y metadatos acordados en CR-T3.0, de forma
   atómica con el run, sin sobrescribirlos al guardar `RunState`. Conservarlos
   mientras el run siga disponible. Eliminar/republicar Catalog no los borra.

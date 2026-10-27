@@ -1,7 +1,7 @@
 # Míster Histórico: Plan de implementación
 
 > Fecha: 2026-10-22 · Parte de [`PRODUCT_BRIEF.md`](./PRODUCT_BRIEF.md) · Las tareas están en [`TASKS.md`](./TASKS.md).
-> Estado comprobado el **2026-10-27**, código integrado hasta `af3e3e8`: motor y catálogo, T3.1a (estado privado), CR-T3.0 (entradas recuperables) y T4.2 (shell/adaptador web), precedida de CR-T4.0, integradas tras revisión Sol y CI. Siguen pendientes los casos de uso/API de partida, persistencia SQL de runs y pantallas del bucle; F2 histórica permanece abierta. No hay todavía una primera partida completa ni beta. El lanzamiento V1 de 3-5 equipos se mantiene y las decisiones de beta siguen en §5.4.
+> Estado comprobado el **2026-10-27**, tras las PR #57/#58: motor y catálogo, estado y agregado Game, captura recuperable, persistencia SQL de runs y shell/adaptador web integrados con revisión Sol y CI. Siguen pendientes efectos/directiva, casos de uso/API de partida y pantallas del bucle; F2 histórica permanece abierta. No hay todavía una primera partida completa ni beta. El lanzamiento V1 de 3-5 equipos se mantiene y las decisiones de beta siguen en §5.4.
 
 ---
 
@@ -113,7 +113,7 @@ app/             # composition root: rutas, providers y cableado de puertos con 
 | 006 | Medias 1-99 | La rúbrica está en `docs/content/rating-rubric.md`. La media de cada jugador se calcula a partir de sus `season_stats` (con `sources`). |
 | 007 | Contenido como datos | `content/clubs/<club>.yaml` (nombre y colores), `content/club-seasons/<club>-<temporada>/squad.yaml` (plantilla, un directorio por cada club y temporada, sea propio o rival) y `content/seasons/<slug>/` (lo jugable: temporada, calendario, clasificaciones, dilemas y textos, que referencian club-seasons). Esquema Pydantic que también se exporta como JSON Schema. `mister content validate` en CI. `mister content load` es idempotente y usa un hash de la versión de contenido. |
 | 008 | Nombres reales desactivables | `NamePolicy` en la presentación, controlada por un flag de entorno. |
-| 009 | Persistencia de la partida | ADR pendiente de T3.4. Snapshot mutable de estado y log, más **copia inmutable recuperable del contenido inicial** (§3.5, CR-T3.0); semilla y decisiones. `version` es bloqueo optimista, no versión del contenido. |
+| 009 | Persistencia de la partida | [ADR aceptada](adr/009-persistencia-de-la-partida.md), integrada en T3.4 (#57). Snapshot mutable y log, más **copia inmutable recuperable del contenido inicial** (§3.5, CR-T3.0); semilla y decisiones. `version` es bloqueo optimista, no versión del contenido. |
 | 010 | Tarjeta OG | Se renderiza en el servidor con Pillow (1200×630), con URL inmutable `/og/<run_id>.png` cacheable en el CDN. `/r/<id>` es HTML renderizado en el servidor con las meta OG/Twitter, porque los crawlers no ejecutan la SPA. |
 | 011 | Frontend | TanStack Query para el estado de servidor, sin store global. Tailwind. Presupuesto: < 100 KB gz de JS inicial y Lighthouse móvil ≥ 90. |
 | 012 | Hosting | Se decide en F7. |
@@ -138,7 +138,7 @@ Auditoría iniciada sobre `8be8244` y actualizada tras la primera tanda de A, co
 | Pieza | Qué permite hoy y qué limita la evolución | Acción antes del MVP / aplazamiento |
 |---|---|---|
 | `ClubSeason` / `PlayableSeason` | Separa plantillas de escenario y evita duplicar un rival jugable. `PlayableSeasonDTO` exige manager, dilemas con opción histórica, tablas y desenlaces reales; no representa todavía una temporada sin historia terminada. | Conservar ADR-015 y traducir por ACL. Aplazar un esquema de temporada actual con `as_of`, calendario y reglas propias hasta D; no rellenar historia falsa ni volver todos los campos opcionales ahora. |
-| `SquadRegistry` | La base privada de T3.1a está integrada (#53); conserva pertenencias y movimientos por fecha sin mutar Catalog. Su uso en el agregado y efectos sigue pendiente. | Implementar en F3 IDs, movimientos y unicidad de pertenencia para fichajes históricos ya requeridos. Precios, salarios, contratos, monedas y restricciones de ventanas esperan a D. |
+| `SquadRegistry` | La base privada de T3.1a está integrada (#53); conserva pertenencias y movimientos por fecha sin mutar Catalog. T3.1b (#58) incorpora ese estado al agregado; su modificación por efectos sigue pendiente. | Conectar movimientos y unicidad de pertenencia con los efectos históricos en T3.2/T3.5. Precios, salarios, contratos, monedas y restricciones de ventanas esperan a D. |
 | Catalog / Game / Simulation | Catalog aporta referencias; Game conserva decisiones y estado; Simulation recibe plantillas efectivas y devuelve resultados. El motor no lee dilemas. | Mantener esta separación y la traducción por IDs. Resolver en CR-T3.0 los huecos reales de entrada/salida de F3, no crear `GameMode`, factorías ni jerarquías. |
 | `ExternalResultsPolicy` | Es una estrategia pura de acumulados **históricos**: petición con baseline y reemplazos; no recibe calendario global, plantillas ni RNG. `season.py` instancia `HistoricalExternalResults` para liga y grupos. | Mantener P2 para A/B/C. D necesitará CR de petición/coordinación, calendario completo y flujos derivados para resultados ajenos; añadir una clase no bastará. No anticipar inyección genérica ahora. |
 | Evaluation | Está separado de Game, pero su puerto actual es `HistoricalOutcomeProvider`; aún no existe el evaluador. | En T3.3/T5.1 mantener cálculo de objetivos separado de comparación histórica; Game puede terminar sin ejecutar esta última. En D decidir puntuación por objetivos y adaptar contratos por CR. No implementar un evaluador universal antes de B. |
@@ -161,7 +161,7 @@ commit Git, sin sus datos recuperables, no resuelve el problema.
 
 **Implementación contractual integrada en PR #54:** captura, codec, entradas
 obligatorias inmutables y mapeo del motor están revisados y comprobados junto
-a T3.1a/T4.2. SQL, StartRun y ReplayRun siguen pendientes en T3.4/T3.5. No se declara
+a T3.1a/T4.2. SQL ya está integrado en T3.4 (#57); StartRun y ReplayRun siguen pendientes en T3.5. No se declara
 un replay de partidas completo por disponer de estas piezas.
 
 **Solución acordada para F3:** al iniciar, capturar una sola vez una copia
@@ -175,24 +175,24 @@ No volver a consultar el catálogo publicado para decisiones, simulación,
 evaluación o presentación de esa partida. El resultado histórico se obtiene de
 la misma copia, sin leer la última historia de Catalog al terminar.
 
-T3.4/T3.5 deberán guardar la copia atómicamente con la creación del run, antes
+T3.4 ya guarda la copia atómicamente con el registro del run; T3.5 conectará esa escritura al caso de uso, antes
 de devolverlo al cliente. El digest se calcula sobre el contenido efectivamente capturado; no se
 lee primero un hash y después un contenido que podría pertenecer a otra carga.
 Las escrituras posteriores rechazan cambiar esa copia o su identidad; fakes y
-SQL deberán cumplir la misma suite; el fake ya se ha ampliado. Se conservan los bytes y su decodificador mientras
+SQL cumplen la misma suite. Se conservan los bytes y su decodificador mientras
 la partida siga disponible, aunque la temporada se retire del catálogo. La
 duplicación por partida es un coste deliberado del mínimo; deduplicar por hash
 o archivar todas las publicaciones de Catalog se pospone hasta medir volumen.
 
 **CR-T3.0 ya se integró primero**, modificando DTO/puertos de Game, fakes y
-contratos de repositorio/simulador. T3.4 implementa la persistencia y redacta
-ADR-009; T3.5 integra captura, continuación y replay; T5.1/T5.5 consumen esa misma
+contratos de repositorio/simulador. T3.4 ya implementa la persistencia y
+ADR-009; T3.5 integrará captura, continuación y replay; T5.1/T5.5 consumirán esa misma
 historia fijada. `SqlCatalogLoader` conserva su publicación por sustitución; la
 CR modificó solo contratos de Game y sus adaptadores/pruebas autorizados.
 La aceptación de T3.5 deberá crear una partida con A, publicar B cambiando
 medias/dilemas (o retirar la temporada) y reconstruir esa partida con A tras
 reiniciar proveedores; otra partida usará B. CR-T3.0 ya comprueba esa separación
-en la captura/restauración/mapeo del contenido, todavía sin casos de uso de run.
+en la captura/restauración/mapeo del contenido y T3.4 en SQL, todavía sin casos de uso de run.
 
 El contenido es solo una entrada del determinismo: conservar también la semilla,
 estado inicial, log y configuración de reglas no incluida en el contenido.
@@ -331,8 +331,9 @@ no autoriza recortar datos de B.
 **Primera tanda de ejecución de este plan:** (1) CR-T3.0, con copia recuperable y
 mapeo del simulador; (2) T3.1a, estado privado y `SquadRegistry` mínimos; (3) T4.2,
 shell/rutas/adaptador sobre contrato y MSW. Esta tanda ya está integrada y
-comprobada (HANDOFF §12). Eran paralelas por propiedad; a continuación
-T3.4, T3.1b/T3.2/T3.3 y T4.1/T4.3 alimentan el bucle. Oleadas de 2-3 agentes
+comprobada (HANDOFF §12). La segunda tanda integra T3.1b y T3.4 (HANDOFF §13),
+sin absorber efectos/directiva ni casos de uso. Siguen pendientes T3.2/T3.3 y
+T4.1/T4.3, que alimentan el bucle. Oleadas de 2-3 agentes
 contando revisiones; no abrir todas las tareas de la tabla a la vez. F2 continúa
 por lotes sin consumir toda la capacidad reservada a A.
 
