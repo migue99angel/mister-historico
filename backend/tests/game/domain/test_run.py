@@ -1,5 +1,7 @@
+from collections.abc import Callable
 from dataclasses import replace
 from datetime import UTC, date, datetime
+from typing import cast
 from uuid import UUID
 
 import pytest
@@ -98,6 +100,29 @@ def make_resolution(
     return BlockResolution(
         block_id, state or make_state(), b"synthetic-block-output", outcome, cursor
     )
+
+
+def replace_run_field_with_invalid_value(run: Run, field: str) -> Run:
+    """Keep malformed runtime values explicit while satisfying static constructor types."""
+    replacements: dict[str, Callable[[Run], Run]] = {
+        "id": lambda value: replace(value, id=cast("RunId", object())),
+        "season_id": lambda value: replace(value, season_id=cast("PlayableSeasonId", object())),
+        "seed": lambda value: replace(value, seed=cast("Seed", object())),
+        "status": lambda value: replace(value, status=cast("RunStatus", "in_progress")),
+        "blocks": lambda value: replace(value, blocks=()),
+        "block_index": lambda value: replace(value, block_index=cast("int", True)),
+        "decisions": lambda value: replace(value, decisions=cast("tuple[Decision, ...]", [])),
+        "block_records": lambda value: replace(
+            value, block_records=cast("tuple[BlockRecord, ...]", [])
+        ),
+        "cursor": lambda value: replace(
+            value, cursor=cast("date", datetime(2000, 1, 1, tzinfo=UTC))
+        ),
+    }
+    try:
+        return replacements[field](run)
+    except KeyError as error:
+        raise AssertionError(f"unsupported invalid run field: {field}") from error
 
 
 def test_start_creates_first_in_progress_block_and_emits_started() -> None:
@@ -242,44 +267,46 @@ def test_take_decision_rejects_naive_event_time() -> None:
 @pytest.mark.parametrize(
     "create",
     [
-        lambda: DecisionOption("option"),
-        lambda: DilemmaDefinition("dilemma", (DecisionOption(OPTION),)),
-        lambda: DilemmaDefinition(DILEMMA, (object(),)),
-        lambda: BlockDefinition("block", ()),
-        lambda: BlockDefinition(BLOCK_1, (object(),)),
-        lambda: BlockRecord("block", b"payload"),
-        lambda: BlockRecord(BLOCK_1, "payload"),
-        lambda: BlockResolution("block", make_state(), b"payload"),
-        lambda: BlockResolution(BLOCK_1, object(), b"payload"),
-        lambda: BlockResolution(BLOCK_1, make_state(), "payload"),
-        lambda: BlockResolution(BLOCK_1, make_state(), b"payload", "continue"),
+        lambda: DecisionOption(cast("OptionId", "option")),
+        lambda: DilemmaDefinition(cast("DilemmaId", "dilemma"), (DecisionOption(OPTION),)),
+        lambda: DilemmaDefinition(DILEMMA, cast("tuple[DecisionOption, ...]", (object(),))),
+        lambda: BlockDefinition(cast("BlockId", "block"), ()),
+        lambda: BlockDefinition(BLOCK_1, cast("tuple[DilemmaDefinition, ...]", (object(),))),
+        lambda: BlockRecord(cast("BlockId", "block"), b"payload"),
+        lambda: BlockRecord(BLOCK_1, cast("bytes", "payload")),
+        lambda: BlockResolution(cast("BlockId", "block"), make_state(), b"payload"),
+        lambda: BlockResolution(BLOCK_1, cast("RunState", object()), b"payload"),
+        lambda: BlockResolution(BLOCK_1, make_state(), cast("bytes", "payload")),
+        lambda: BlockResolution(
+            BLOCK_1, make_state(), b"payload", cast("ClosureOutcome", "continue")
+        ),
         lambda: BlockResolution(
             BLOCK_1, make_state(), b"payload", cursor=datetime(2000, 1, 1, tzinfo=UTC)
         ),
     ],
 )
-def test_private_block_types_reject_invalid_values(create: object) -> None:
+def test_private_block_types_reject_invalid_values(create: Callable[[], object]) -> None:
     with pytest.raises(InvalidValueError):
-        create()  # type: ignore[operator]
+        create()
 
 
 @pytest.mark.parametrize(
-    ("field", "value"),
+    "field",
     [
-        ("id", object()),
-        ("season_id", object()),
-        ("seed", object()),
-        ("status", "in_progress"),
-        ("blocks", ()),
-        ("block_index", True),
-        ("decisions", []),
-        ("block_records", []),
-        ("cursor", datetime(2000, 1, 1, tzinfo=UTC)),
+        "id",
+        "season_id",
+        "seed",
+        "status",
+        "blocks",
+        "block_index",
+        "decisions",
+        "block_records",
+        "cursor",
     ],
 )
-def test_run_snapshot_rejects_invalid_fields(field: str, value: object) -> None:
+def test_run_snapshot_rejects_invalid_fields(field: str) -> None:
     with pytest.raises(InvalidValueError):
-        replace(make_run(), **{field: value})
+        replace_run_field_with_invalid_value(make_run(), field)
 
 
 def test_run_rejects_dilemma_ids_reused_in_another_block() -> None:
@@ -360,7 +387,7 @@ def test_take_decision_rejects_non_run_state() -> None:
     run = make_run()
 
     with pytest.raises(InvalidValueError):
-        run.take_decision(DILEMMA, OPTION, NOW, object())
+        run.take_decision(DILEMMA, OPTION, NOW, cast("RunState", object()))
 
     assert run.decisions == ()
 
