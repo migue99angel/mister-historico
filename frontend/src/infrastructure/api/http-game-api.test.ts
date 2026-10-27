@@ -87,6 +87,34 @@ describe('createHttpGameApi', () => {
     });
   });
 
+  it('preserves the occurrence URI when a problem response includes one', async () => {
+    const api = createHttpGameApi({ baseUrl: 'http://localhost/api' });
+    server.use(
+      http.get('*/api/seasons/:seasonId', () =>
+        HttpResponse.json(
+          {
+            type: 'https://example.test/problems/invalid-season',
+            title: 'Invalid season',
+            status: 400,
+            code: 'validation_error',
+            detail: 'The season identifier is malformed.',
+            instance: '/api/seasons/not-valid',
+          },
+          { status: 400, headers: { 'Content-Type': 'application/problem+json' } },
+        ),
+      ),
+    );
+
+    await expect(api.getSeason('not-valid')).rejects.toMatchObject({
+      kind: 'problem',
+      status: 400,
+      code: 'validation_error',
+      title: 'Invalid season',
+      detail: 'The season identifier is malformed.',
+      instance: '/api/seasons/not-valid',
+    });
+  });
+
   it('marks a valid-status response with the wrong body as unexpected', async () => {
     const api = createHttpGameApi({ baseUrl: 'http://localhost/api' });
     server.use(http.get('*/api/seasons', () => HttpResponse.text('not-json', { status: 200 })));
