@@ -6,7 +6,13 @@ from enum import StrEnum
 
 from mister.game.domain.squad_registry import SquadRegistry
 from mister.shared_kernel.errors import InvalidValueError
-from mister.shared_kernel.ids import CompetitionId, PlayerId, PlayableSeasonId
+from mister.shared_kernel.ids import CompetitionId, PlayableSeasonId, PlayerId
+
+_FORMATION_MIN_LINES = 3
+_FORMATION_MAX_LINES = 5
+_FORMATION_MIN_PER_LINE = 1
+_FORMATION_MAX_PER_LINE = 6
+_FORMATION_OUTFIELD_PLAYERS = 10
 
 
 class Position(StrEnum):
@@ -45,9 +51,19 @@ class Tactic:
     def __post_init__(self) -> None:
         if not isinstance(self.style, TacticStyle):
             raise InvalidValueError("style must be a TacticStyle")
-        if not isinstance(self.system, tuple) or not 3 <= len(self.system) <= 5:
+        if (
+            not isinstance(self.system, tuple)
+            or not _FORMATION_MIN_LINES <= len(self.system) <= _FORMATION_MAX_LINES
+        ):
             raise InvalidValueError("system must contain three to five lines")
-        if any(type(line) is not int or not 1 <= line <= 6 for line in self.system) or sum(self.system) != 10:
+        if (
+            any(
+                type(line) is not int
+                or not _FORMATION_MIN_PER_LINE <= line <= _FORMATION_MAX_PER_LINE
+                for line in self.system
+            )
+            or sum(self.system) != _FORMATION_OUTFIELD_PLAYERS
+        ):
             raise InvalidValueError("system lines must be integers from one to six and sum to ten")
 
 
@@ -88,7 +104,9 @@ class CompetitionPriority:
     priority: Priority
 
     def __post_init__(self) -> None:
-        if not isinstance(self.competition_id, CompetitionId) or not isinstance(self.priority, Priority):
+        if not isinstance(self.competition_id, CompetitionId) or not isinstance(
+            self.priority, Priority
+        ):
             raise InvalidValueError("CompetitionPriority requires a competition ID and Priority")
 
 
@@ -123,9 +141,13 @@ class RunState:
     def __post_init__(self) -> None:
         if not isinstance(self.managed_club_season_id, PlayableSeasonId):
             raise InvalidValueError("managed_club_season_id must be a PlayableSeasonId")
-        if not isinstance(self.squad_registry, SquadRegistry) or not isinstance(self.tactic, Tactic):
+        if not isinstance(self.squad_registry, SquadRegistry) or not isinstance(
+            self.tactic, Tactic
+        ):
             raise InvalidValueError("RunState requires a SquadRegistry and Tactic")
-        if not isinstance(self.players, tuple) or any(not isinstance(item, PlayerState) for item in self.players):
+        if not isinstance(self.players, tuple) or any(
+            not isinstance(item, PlayerState) for item in self.players
+        ):
             raise InvalidValueError("players must be a tuple of PlayerState values")
         if len({item.player_id for item in self.players}) != len(self.players):
             raise InvalidValueError("RunState player IDs must be unique")
@@ -134,7 +156,9 @@ class RunState:
         if not isinstance(self.competition_priorities, tuple) or any(
             not isinstance(item, CompetitionPriority) for item in self.competition_priorities
         ):
-            raise InvalidValueError("competition_priorities must be a tuple of CompetitionPriority values")
+            raise InvalidValueError(
+                "competition_priorities must be a tuple of CompetitionPriority values"
+            )
         competition_ids = [item.competition_id for item in self.competition_priorities]
         if len(set(competition_ids)) != len(competition_ids):
             raise InvalidValueError("Competition priorities must have unique competition IDs")

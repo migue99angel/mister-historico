@@ -8,7 +8,13 @@ from mister.shared_kernel.ids import ClubSeasonId, PlayerId
 
 
 def test_base_membership_is_inclusive_on_both_dates() -> None:
-    registry = SquadRegistry((Membership(PlayerId("player-a"), ClubSeasonId("club-a"), date(2000, 1, 2), date(2000, 1, 4)),))
+    registry = SquadRegistry(
+        (
+            Membership(
+                PlayerId("player-a"), ClubSeasonId("club-a"), date(2000, 1, 2), date(2000, 1, 4)
+            ),
+        )
+    )
 
     assert registry.owner_on(PlayerId("player-a"), date(2000, 1, 1)) is None
     assert registry.owner_on(PlayerId("player-a"), date(2000, 1, 2)) == ClubSeasonId("club-a")
@@ -20,7 +26,12 @@ def test_overlapping_base_memberships_are_rejected_including_same_club() -> None
     player = PlayerId("player-a")
     club = ClubSeasonId("club-a")
     with pytest.raises(InvalidValueError):
-        SquadRegistry((Membership(player, club, date(2000, 1, 1), date(2000, 1, 3)), Membership(player, club, date(2000, 1, 3), None)))
+        SquadRegistry(
+            (
+                Membership(player, club, date(2000, 1, 1), date(2000, 1, 3)),
+                Membership(player, club, date(2000, 1, 3), None),
+            )
+        )
 
 
 def test_membership_with_reversed_dates_is_rejected() -> None:
