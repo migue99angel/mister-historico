@@ -11,7 +11,7 @@ from testcontainers.community.postgres import PostgresContainer
 
 from mister.game.application.ports import RunRepository
 from mister.game.infrastructure.sqlalchemy.runs import SqlRunRepository
-from tests.contracts.suites.run_repository import RunRepositoryContract
+from tests.contracts.suites.run_repository import RepoFactory, RunRepositoryContract
 
 pytestmark = pytest.mark.integration
 ALEMBIC_INI = Path(__file__).resolve().parents[2] / "alembic.ini"
@@ -33,7 +33,10 @@ def engine() -> Iterator[sa.Engine]:
 
 class TestSqlRunRepository(RunRepositoryContract):
     @pytest.fixture
-    def make_repo(self, engine: sa.Engine):
+    def make_repo(self, engine: sa.Engine) -> RepoFactory:
+        with engine.begin() as connection:
+            connection.execute(sa.text("DELETE FROM runs"))
+
         def factory() -> RunRepository:
             return SqlRunRepository(engine)
 

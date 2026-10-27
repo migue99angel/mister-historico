@@ -11,7 +11,7 @@ from testcontainers.community.postgres import PostgresContainer
 
 from mister.game.application.ports import UnitOfWork
 from mister.game.infrastructure.sqlalchemy.uow import SqlUnitOfWork
-from tests.contracts.suites.unit_of_work import UnitOfWorkContract
+from tests.contracts.suites.unit_of_work import UnitOfWorkContract, UowPairFactory
 
 pytestmark = pytest.mark.integration
 ALEMBIC_INI = Path(__file__).resolve().parents[2] / "alembic.ini"
@@ -33,7 +33,10 @@ def engine() -> Iterator[sa.Engine]:
 
 class TestSqlUnitOfWork(UnitOfWorkContract):
     @pytest.fixture
-    def make_uows(self, engine: sa.Engine):
+    def make_uows(self, engine: sa.Engine) -> UowPairFactory:
+        with engine.begin() as connection:
+            connection.execute(sa.text("DELETE FROM runs"))
+
         def factory() -> tuple[UnitOfWork, UnitOfWork]:
             return SqlUnitOfWork(engine), SqlUnitOfWork(engine)
 
