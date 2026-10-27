@@ -25,7 +25,7 @@ _HEAD_TO_HEAD = frozenset(
         "head_to_head_away_goals",
     }
 )
-_CRITERIA = _HEAD_TO_HEAD | {"goal_difference", "goals_for", "wins"}
+_CRITERIA = _HEAD_TO_HEAD | {"goal_difference", "goals_for", "wins", "club_coefficient"}
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,6 +43,7 @@ class GroupRules:
     tiebreakers: tuple[str, ...]
     advance_per_group: int
     reapply_head_to_head: bool
+    coefficients: tuple[tuple[ClubSeasonId, int], ...] = ()
 
     def __post_init__(self) -> None:
         if any(
@@ -63,6 +64,21 @@ class GroupRules:
             or len(set(self.tiebreakers)) != len(self.tiebreakers)
         ):
             raise InvalidValueError("group tiebreakers must be distinct supported criterion names")
+        if (
+            not isinstance(self.coefficients, tuple)
+            or any(
+                not isinstance(entry, tuple)
+                or len(entry) != _TWO_CLUBS
+                or not isinstance(entry[0], ClubSeasonId)
+                or type(entry[1]) is not int
+                or entry[1] < 0
+                for entry in self.coefficients
+            )
+            or len({club for club, _ in self.coefficients}) != len(self.coefficients)
+        ):
+            raise InvalidValueError(
+                "group coefficients need distinct clubs and non-negative integers"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -208,6 +224,10 @@ class GroupTable:
             for row in self.rows
         ):
             raise InvalidValueError("group row points do not follow the configured rules")
+        if "club_coefficient" in self.rules.tiebreakers and not set(self.participants) <= {
+            club for club, _ in self.rules.coefficients
+        }:
+            raise InvalidValueError("group coefficient coverage is incomplete")
         if self.evidence is not None:
             self._validate_evidence()
 
@@ -227,6 +247,7 @@ class GroupTable:
     def rank(self) -> GroupRanking:
         """Points first, configured criteria next, stable IDs only for presentation."""
         rows = {row.club_season_id: row for row in self.rows}
+        coefficients = dict(self.rules.coefficients)
         unresolved: list[tuple[ClubSeasonId, ...]] = []
 
         def resolve(members: tuple[ClubSeasonId, ...], index: int) -> tuple[ClubSeasonId, ...]:
@@ -238,7 +259,9 @@ class GroupTable:
                 return stable
             criterion = self.rules.tiebreakers[index]
             if criterion not in _HEAD_TO_HEAD:
-                partitions = _partition(members, lambda club: _overall_value(rows[club], criterion))
+                partitions = _partition(
+                    members, lambda club: _overall_value(rows[club], criterion, coefficients)
+                )
                 return tuple(club for part in partitions for club in resolve(part, index + 1))
             end = index
             while (
@@ -308,7 +331,13 @@ def _partition(
     return tuple(tuple(group) for _, group in groupby(ordered, key=value))
 
 
-def _overall_value(row: LeagueRow, criterion: str) -> int:
+def _overall_value(
+    row: LeagueRow, criterion: str, coefficients: dict[ClubSeasonId, int] | None = None
+) -> int:
+    if criterion == "club_coefficient":
+        if coefficients is None or row.club_season_id not in coefficients:
+            raise InvalidValueError("group coefficient is missing")
+        return coefficients[row.club_season_id]
     if criterion == "goal_difference":
         return row.goals_for - row.goals_against
     return row.goals_for if criterion == "goals_for" else row.won
