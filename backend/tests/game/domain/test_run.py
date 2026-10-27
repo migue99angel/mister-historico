@@ -293,13 +293,18 @@ def test_run_rejects_dilemma_ids_reused_in_another_block() -> None:
         replace(run, blocks=(run.blocks[0], second_block))
 
 
-def test_run_rejects_option_ids_reused_by_another_dilemma() -> None:
+def test_different_dilemmas_may_reuse_option_ids_and_accept_decisions() -> None:
     run = make_run()
-    other = DilemmaDefinition(DilemmaId("other-dilemma"), (DecisionOption(OPTION),))
+    other_id = DilemmaId("other-dilemma")
+    other = DilemmaDefinition(other_id, (DecisionOption(OPTION),))
     first = BlockDefinition(BLOCK_1, (run.blocks[0].dilemmas[0], other))
+    run = replace(run, blocks=(first, run.blocks[1]))
 
-    with pytest.raises(InvalidValueError):
-        replace(run, blocks=(first, run.blocks[1]))
+    run, _ = run.take_decision(DILEMMA, OPTION, NOW)
+    run, events = run.take_decision(other_id, OPTION, NOW)
+
+    assert tuple(decision.option_id for decision in run.decisions) == (OPTION, OPTION)
+    assert events[0].dilemma_id == other_id
 
 
 @pytest.mark.parametrize(
@@ -381,22 +386,48 @@ def test_advance_rejects_state_from_another_managed_club() -> None:
 
 def test_advance_rejects_cursor_regression() -> None:
     run, _ = make_run().take_decision(DILEMMA, OPTION, NOW)
-    with_cursor = Run(
-        run.id,
-        run.season_id,
-        run.seed,
-        run.status,
-        run.run_state,
-        run.blocks,
-        run.block_index,
-        run.decisions,
-        cursor=date(2000, 2, 1),
-    )
+    with_cursor, _ = run.advance_block(make_resolution(BLOCK_1, cursor=date(2000, 2, 1)), NOW)
 
     with pytest.raises(DomainError):
-        with_cursor.advance_block(make_resolution(BLOCK_1, cursor=date(2000, 1, 1)), NOW)
+        with_cursor.advance_block(make_resolution(BLOCK_2, cursor=date(2000, 1, 1)), NOW)
 
     assert with_cursor.cursor == date(2000, 2, 1)
+
+
+def test_run_cannot_skip_an_unclosed_block() -> None:
+    with pytest.raises(InvalidValueError):
+        replace(make_run(), block_index=1)
+
+
+def test_run_records_must_be_exact_prefix_of_closed_blocks() -> None:
+    with pytest.raises(InvalidValueError):
+        replace(make_run(), block_records=(BlockRecord(BLOCK_2, b"foreign"),))
+
+
+def test_run_cannot_close_a_block_with_an_unanswered_dilemma() -> None:
+    opened, _ = make_run().take_decision(DILEMMA, OPTION, NOW)
+    first_closed, _ = opened.advance_block(make_resolution(BLOCK_1), NOW)
+
+    with pytest.raises(InvalidValueError):
+        replace(first_closed, decisions=())
+
+
+def test_run_cannot_contain_decisions_for_future_blocks() -> None:
+    run = make_run()
+    future_id = DilemmaId("future-dilemma")
+    future = BlockDefinition(BLOCK_2, (DilemmaDefinition(future_id, (DecisionOption(OPTION),)),))
+
+    with pytest.raises(InvalidValueError):
+        replace(
+            run,
+            blocks=(run.blocks[0], future),
+            decisions=(Decision(BLOCK_2, future_id, OPTION, 1),),
+        )
+
+
+def test_run_cursor_requires_a_closed_block_record() -> None:
+    with pytest.raises(InvalidValueError):
+        replace(make_run(), cursor=date(2000, 1, 1))
 
 
 def test_advance_retains_complete_opaque_block_payload() -> None:
