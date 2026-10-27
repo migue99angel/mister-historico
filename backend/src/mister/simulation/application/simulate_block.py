@@ -190,6 +190,7 @@ def _stages(value: dto.CompetitionInput) -> tuple[Stage, ...]:
                 stage.tiebreakers,
                 stage.advance_per_group,
                 stage.reapply_head_to_head if stage.reapply_head_to_head is not None else False,
+                stage.coefficients,
             )
             groups = tuple((g.group_id, g.participants) for g in stage.groups)
             _unique(tuple(g[0] for g in groups), "group IDs")

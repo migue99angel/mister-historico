@@ -167,6 +167,10 @@ def _stage(stage: sn.Stage) -> StageDTO:
             reapply_head_to_head=None
             if stage.reapply_head_to_head is None
             else stage.reapply_head_to_head.value,
+            coefficients=tuple(
+                (ClubSeasonId(value.club_season), _require(value.milli_points, "coefficient"))
+                for value in stage.coefficients or ()
+            ),
         )
     return StageDTO(
         stage.id,

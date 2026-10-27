@@ -72,6 +72,7 @@ class Tiebreaker(StrEnum):
     GOAL_DIFFERENCE = "goal_difference"
     GOALS_FOR = "goals_for"
     WINS = "wins"
+    CLUB_COEFFICIENT = "club_coefficient"
 
 
 Tiebreakers = Annotated[
@@ -108,6 +109,15 @@ class Group(ContentModel):
     participants: Annotated[tuple[ClubSeasonSlug, ...], Field(min_length=2)]
 
 
+class GroupCoefficient(SourcedModel):
+    """A pre-season club coefficient in exact thousandths of a point."""
+
+    nullable_when_pending = ("milli_points",)
+
+    club_season: ClubSeasonSlug
+    milli_points: Annotated[int, Field(ge=0)] | None
+
+
 class AwayGoalsExtraTime(SourcedModel):
     """Historical extra-time variant; unknown never means disabled."""
 
@@ -136,6 +146,7 @@ class Stage(ContentModel):
     advance_per_group: Annotated[int, Field(ge=1)] | None = None
     away_goals_in_extra_time: AwayGoalsExtraTime | None = None
     reapply_head_to_head: HistoricalBooleanRule | None = None
+    coefficients: tuple[GroupCoefficient, ...] | None = None
 
     @property
     def is_group_stage(self) -> bool:
@@ -160,8 +171,15 @@ class Stage(ContentModel):
                 "away_goals_in_extra_time true requires a two-legged knockout "
                 "with away goals and extra time"
             )
-        if self.reapply_head_to_head is not None and not self.is_group_stage:
-            raise ValueError("reapply_head_to_head only applies to group stages")
+        if not self.is_group_stage:
+            if self.reapply_head_to_head is not None:
+                raise ValueError("reapply_head_to_head only applies to group stages")
+            if self.coefficients is not None:
+                raise ValueError("coefficients only apply to group stages")
+        if self.coefficients is not None:
+            clubs = [value.club_season for value in self.coefficients]
+            if len(clubs) != len(set(clubs)):
+                raise ValueError("duplicate group coefficient club")
         group_fields = {
             "groups": self.groups,
             "points_per_win": self.points_per_win,
@@ -216,6 +234,8 @@ class LeagueCompetition(_CompetitionBase):
 
     @model_validator(mode="after")
     def _check_stats(self) -> Self:
+        if Tiebreaker.CLUB_COEFFICIENT in self.tiebreakers:
+            raise ValueError("club_coefficient only applies to group stages")
         matches = self.league_stats.matches
         if matches is not None and matches != self.total_matches:
             raise ValueError(

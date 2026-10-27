@@ -229,6 +229,7 @@ def _check_entries(ctx: SeasonContext, field: str, declaration: GroupEntryAssign
 def check_release_completion(ctx: SeasonContext) -> None:
     """Require explicit calendars and all qualifying positions for reachable knockout paths."""
     _check_reapplication(ctx)
+    _check_coefficients(ctx)
     calendars = {d.competition: d for d in ctx.content.standings.knockout_calendar or ()}
     for competition in ctx.content.season.competitions:
         if isinstance(competition, LeagueCompetition):
@@ -292,6 +293,29 @@ def _check_reapplication(ctx: SeasonContext) -> None:
                     "season",
                     f"competitions.{ci}.stages.{si}.reapply_head_to_head",
                     "an explicit verified reapplication policy is required",
+                )
+
+
+def _check_coefficients(ctx: SeasonContext) -> None:
+    for ci, competition in enumerate(ctx.content.season.competitions):
+        if isinstance(competition, LeagueCompetition):
+            continue
+        for si, stage in enumerate(competition.stages):
+            if not stage.is_group_stage or not any(
+                criterion.value == "club_coefficient" for criterion in stage.tiebreakers or ()
+            ):
+                continue
+            participants = {club for group in stage.groups or () for club in group.participants}
+            verified = {
+                item.club_season
+                for item in stage.coefficients or ()
+                if item.verify == "ok" and item.milli_points is not None
+            }
+            if participants != verified:
+                ctx.add(
+                    "season",
+                    f"competitions.{ci}.stages.{si}.coefficients",
+                    "verified coefficient coverage must match all group participants",
                 )
 
 
