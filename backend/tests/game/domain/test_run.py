@@ -433,6 +433,21 @@ def test_run_cursor_requires_a_closed_block_record() -> None:
         replace(make_run(), cursor=date(2000, 1, 1))
 
 
+@pytest.mark.parametrize(
+    ("status", "block_index", "records"),
+    [
+        (RunStatus.FINISHED, 1, ()),
+        (RunStatus.SACKED, 0, ()),
+        (RunStatus.IN_PROGRESS, 0, (BlockRecord(BlockId("unknown-block"), b"foreign"),)),
+    ],
+)
+def test_run_terminal_status_and_records_must_match_closure(
+    status: RunStatus, block_index: int, records: tuple[BlockRecord, ...]
+) -> None:
+    with pytest.raises(InvalidValueError):
+        replace(make_run(), status=status, block_index=block_index, block_records=records)
+
+
 def test_advance_retains_complete_opaque_block_payload() -> None:
     run, _ = make_run().take_decision(DILEMMA, OPTION, NOW)
     payload = b'{"away_goals":1,"extra_time":null,"penalties":null,"home_goals":1}'
