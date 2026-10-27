@@ -64,16 +64,17 @@ function problemFromResponse(response: Response, error: unknown): ApiError | und
 
   const title = stringField(body, 'title');
   const detail = stringField(body, 'detail');
+  const fields: ApiErrorFields = {
+    status: typeof body.status === 'number' ? body.status : response.status,
+    code: stringField(body, 'code'),
+    title,
+    detail,
+    instance: stringField(body, 'instance'),
+  };
   return new ApiError(
     'problem',
     detail ?? title ?? `La API respondió ${String(response.status)}.`,
-    {
-      status: typeof body.status === 'number' ? body.status : response.status,
-      code: stringField(body, 'code'),
-      title,
-      detail,
-      instance: stringField(body, 'instance'),
-    },
+    fields,
   );
 }
 
