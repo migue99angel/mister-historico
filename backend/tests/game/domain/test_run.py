@@ -252,6 +252,7 @@ def test_take_decision_rejects_naive_event_time() -> None:
         lambda: BlockResolution("block", make_state(), b"payload"),
         lambda: BlockResolution(BLOCK_1, object(), b"payload"),
         lambda: BlockResolution(BLOCK_1, make_state(), "payload"),
+        lambda: BlockResolution(BLOCK_1, make_state(), b"payload", "continue"),
         lambda: BlockResolution(
             BLOCK_1, make_state(), b"payload", cursor=datetime(2000, 1, 1, tzinfo=UTC)
         ),
@@ -345,6 +346,15 @@ def test_take_decision_rejects_state_from_another_managed_club() -> None:
 
     with pytest.raises(DomainError):
         run.take_decision(DILEMMA, OPTION, NOW, make_state_for(ClubSeasonId("other-fc-2000-01")))
+
+    assert run.decisions == ()
+
+
+def test_take_decision_rejects_non_run_state() -> None:
+    run = make_run()
+
+    with pytest.raises(InvalidValueError):
+        run.take_decision(DILEMMA, OPTION, NOW, object())
 
     assert run.decisions == ()
 
