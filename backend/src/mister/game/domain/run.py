@@ -160,7 +160,7 @@ class Run:
     block_records: tuple[BlockRecord, ...] = ()
     cursor: date | None = None
 
-    def __post_init__(self) -> None:  # noqa: PLR0912 - validate the aggregate snapshot in one place
+    def __post_init__(self) -> None:  # noqa: PLR0912, PLR0915 - validate aggregate invariants
         if not isinstance(self.id, RunId) or not isinstance(self.season_id, PlayableSeasonId):
             raise InvalidValueError("run requires a RunId and PlayableSeasonId")
         if not isinstance(self.seed, Seed) or not isinstance(self.run_state, RunState):
@@ -178,20 +178,14 @@ class Run:
         all_dilemmas = [dilemma.id for block in self.blocks for dilemma in block.dilemmas]
         if len(set(all_dilemmas)) != len(all_dilemmas):
             raise InvalidValueError("dilemma IDs must be unique in a run")
-        all_options = [
-            option.id
-            for block in self.blocks
-            for dilemma in block.dilemmas
-            for option in dilemma.options
-        ]
-        if len(set(all_options)) != len(all_options):
-            raise InvalidValueError("option IDs must be unique in a run")
         if type(self.block_index) is not int or not 0 <= self.block_index < len(self.blocks):
             raise InvalidValueError("block_index must identify a run block")
         if not isinstance(self.decisions, tuple) or any(
             not isinstance(decision, Decision) for decision in self.decisions
         ):
             raise InvalidValueError("decisions must be an immutable tuple")
+        if any(type(decision.sequence) is not int for decision in self.decisions):
+            raise InvalidValueError("decision sequence values must be integers")
         if [decision.sequence for decision in self.decisions] != list(
             range(1, len(self.decisions) + 1)
         ):
@@ -209,12 +203,40 @@ class Run:
             for decision in self.decisions
         ):
             raise InvalidValueError("decisions must reference a defined dilemma option")
+        block_indexes = {block.id: index for index, block in enumerate(self.blocks)}
+        decision_block_indexes = [block_indexes[decision.block_id] for decision in self.decisions]
+        if decision_block_indexes != sorted(decision_block_indexes):
+            raise InvalidValueError("decisions must follow block order")
+        if any(index > self.block_index for index in decision_block_indexes):
+            raise InvalidValueError("decisions cannot belong to a future block")
         if not isinstance(self.block_records, tuple) or any(
             not isinstance(record, BlockRecord) for record in self.block_records
         ):
             raise InvalidValueError("block_records must be an immutable tuple")
         if len({record.block_id for record in self.block_records}) != len(self.block_records):
             raise InvalidValueError("a block closure record can only be stored once")
+        closed_count = len(self.block_records)
+        if self.status is RunStatus.IN_PROGRESS and closed_count != self.block_index:
+            raise InvalidValueError("in-progress runs need a record for every prior block")
+        if self.status is RunStatus.FINISHED and (
+            self.block_index != len(self.blocks) - 1 or closed_count != len(self.blocks)
+        ):
+            raise InvalidValueError("finished runs must close every block")
+        if self.status is RunStatus.SACKED and closed_count != self.block_index + 1:
+            raise InvalidValueError("sacked runs must close the dismissal block")
+        if any(
+            record.block_id != self.blocks[index].id
+            for index, record in enumerate(self.block_records)
+        ):
+            raise InvalidValueError("block records must be the exact prefix of closed blocks")
+        closed_dilemmas = {
+            dilemma.id for block in self.blocks[:closed_count] for dilemma in block.dilemmas
+        }
+        decided_dilemmas = {decision.dilemma_id for decision in self.decisions}
+        if not closed_dilemmas <= decided_dilemmas:
+            raise InvalidValueError("every closed block dilemma must have a decision")
+        if self.cursor is not None and closed_count == 0:
+            raise InvalidValueError("run cursor requires a closed block record")
         if self.cursor is not None and (
             not isinstance(self.cursor, date) or isinstance(self.cursor, datetime)
         ):
