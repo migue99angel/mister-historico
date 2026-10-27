@@ -31,6 +31,8 @@ from mister.game.application.ports import (
     TeamVenue,
     UserResult,
 )
+from mister.game.application.replay_inputs import ReplayInputs
+from mister.game.infrastructure.run_content_codec import encode_playable_season
 from mister.shared_kernel.ids import (
     BlockId,
     ClubSeasonId,
@@ -43,8 +45,16 @@ from mister.shared_kernel.ids import (
     RunId,
 )
 from mister.shared_kernel.seed import Seed
+from tests.contracts.suites.expected_test_fc import build_expected_test_fc_season
 
 T0 = datetime(2026, 10, 22, 10, 0, tzinfo=UTC)
+REPLAY_INPUTS = ReplayInputs(
+    encode_playable_season(build_expected_test_fc_season()),
+    "{}",
+    "{}",
+    "engine-1",
+    "rules-1",
+)
 
 
 def make_decision(sequence: int = 1, *, option: str = "a") -> DecisionRecord:
@@ -72,6 +82,7 @@ def make_run_record(
         decisions=tuple(make_decision(n) for n in range(1, decisions + 1)),
         created_at=T0,
         updated_at=T0 + timedelta(seconds=version),
+        replay_inputs=REPLAY_INPUTS,
     )
 
 
@@ -111,6 +122,7 @@ def make_simulation_request(block: str = "b1") -> BlockSimulationRequest:
     tactic = TacticSetup(TacticStyle.BALANCED, TacticSystem("4-4-2"))
     return BlockSimulationRequest(
         playable_season_id=PlayableSeasonId("test-fc-2000-01"),
+        captured_content=REPLAY_INPUTS.content,
         seed=Seed(7),
         block_id=BlockId(block),
         start=BLOCK_START,
@@ -146,6 +158,7 @@ def make_simulation_request(block: str = "b1") -> BlockSimulationRequest:
         },
         forced_injuries_from_effects=(ForcedInjury(PlayerId("tfc-01"), date(2000, 9, 20), 10),),
         prior_results=(),
+        state_as_of=None,
     )
 
 
