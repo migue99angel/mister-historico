@@ -9,16 +9,18 @@ describe('<App/>', () => {
     window.history.replaceState(null, '', '/');
   });
 
-  it('shows the game title as the main heading', () => {
+  it('shows the game title as the main heading', async () => {
     render(<App />);
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Míster Histórico' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Míster Histórico' }),
+    ).toBeInTheDocument();
   });
 
-  it('shows the tagline', () => {
+  it('shows the tagline', async () => {
     render(<App />);
 
-    expect(screen.getByText('¿Lo habrías hecho mejor que el míster?')).toBeInTheDocument();
+    expect(await screen.findByText('¿Lo habrías hecho mejor que el míster?')).toBeInTheDocument();
   });
 
   it.each([
@@ -40,7 +42,9 @@ describe('<App/>', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: 'Página no encontrada' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Página no encontrada' }),
+    ).toBeInTheDocument();
   });
 
   it('navigates with History API links and follows browser back events', async () => {

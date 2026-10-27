@@ -3,25 +3,16 @@ import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import { describe, expect, it } from 'vitest';
 
 import type { GameApi } from '../application/ports';
-import { AppRuntime, useGameApi } from './AppRuntime';
+import { AppRuntime } from './AppRuntime';
+import { useGameApi } from './useGameApi';
 
 const unusedApi: GameApi = {
-  listSeasons: async () => ({ items: [] }),
-  getSeason: async () => {
-    throw new Error('Not used in this test.');
-  },
-  startRun: async () => {
-    throw new Error('Not used in this test.');
-  },
-  getRun: async () => {
-    throw new Error('Not used in this test.');
-  },
-  takeDecision: async () => {
-    throw new Error('Not used in this test.');
-  },
-  advanceBlock: async () => {
-    throw new Error('Not used in this test.');
-  },
+  listSeasons: () => Promise.resolve({ items: [] }),
+  getSeason: () => Promise.reject(new Error('Not used in this test.')),
+  startRun: () => Promise.reject(new Error('Not used in this test.')),
+  getRun: () => Promise.reject(new Error('Not used in this test.')),
+  takeDecision: () => Promise.reject(new Error('Not used in this test.')),
+  advanceBlock: () => Promise.reject(new Error('Not used in this test.')),
 };
 
 function RuntimeProbe() {
