@@ -6,6 +6,10 @@ La CR prepara la infraestructura para T4.2 sin montar todavía la aplicación: a
 TanStack Query, un arranque explícito de MSW en navegador, y un proxy de desarrollo
 para las rutas `/api`. No añade un router ni cambia el contrato OpenAPI o los handlers.
 
+La propiedad se amplió con autorización del coordinador a `frontend/vitest.config.ts`
+para invocar la configuración Vite dinámica durante los tests, y a
+`frontend/.prettierignore` para excluir únicamente el worker generado sin reformatearlo.
+
 ## Decisiones
 
 - Se fija `@tanstack/react-query` en la familia `^5.105.0`, la versión estable
@@ -23,11 +27,13 @@ para las rutas `/api`. No añade un router ni cambia el contrato OpenAPI o los h
   del proxy es independiente. Se conserva el prefijo `/api` que requiere OpenAPI. El backend
   actual publica `/health`; el proxy prepara las rutas API futuras, no altera ese
   endpoint ni pretende que exista ya una ruta `/api` funcional.
+- Vite resuelve las variables con el `mode` que se le pasa (`development`, `staging`,
+  etc.), de modo que cada `.env.<mode>` puede cambiar el destino local del proxy.
 - `VITE_API_MOCKING=disabled` se entrega al frontend de Compose por defecto. Al activarlo
   expresamente desde `.env`, el worker MSW toma las solicitudes API de desarrollo. En
   ejecución local, Vite lee la misma variable de su entorno o archivo `.env`.
 - El worker estático se genera mediante el CLI de la versión MSW instalada. No se
-  escribe ni modifica a mano.
+  escribe ni modifica a mano y queda excluido de Prettier para preservar el artefacto.
 - TanStack Query: [guía oficial de instalación](https://tanstack.com/query/latest/docs/framework/react/installation)
   y [versión publicada en npm](https://www.npmjs.com/package/@tanstack/react-query).
 
