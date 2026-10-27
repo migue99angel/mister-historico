@@ -194,3 +194,63 @@ def test_player_minutes_default_to_zero_without_changing_cursor() -> None:
 
     assert player.minutes_played == 0
     assert state.state_as_of is None
+
+
+def test_state_value_objects_reject_invalid_enum_types() -> None:
+    player = PlayerId("player-a")
+    with pytest.raises(InvalidValueError):
+        Tactic("balanced", (2, 4, 4))  # type: ignore[arg-type]
+    with pytest.raises(InvalidValueError):
+        Tactic(TacticStyle.BALANCED, [2, 4, 4])  # type: ignore[arg-type]
+    with pytest.raises(InvalidValueError):
+        PlayerState(player, "MF", 70, None, 50, 50)  # type: ignore[arg-type]
+    with pytest.raises(InvalidValueError):
+        PlayerState("player-a", Position.MF, 70, None, 50, 50)  # type: ignore[arg-type]
+    with pytest.raises(InvalidValueError):
+        PlayerState(player, Position.MF, 70, None, 50, 50, youth_minutes=1)  # type: ignore[arg-type]
+    with pytest.raises(InvalidValueError):
+        PlayerState(
+            player,
+            Position.MF,
+            70,
+            None,
+            50,
+            50,
+            injured_until="2000-01-01",  # type: ignore[arg-type]
+        )
+    with pytest.raises(InvalidValueError):
+        CompetitionPriority("league-test", Priority.HIGH)  # type: ignore[arg-type]
+    with pytest.raises(InvalidValueError):
+        CompetitionPriority(CompetitionId("league-test"), "high")  # type: ignore[arg-type]
+    with pytest.raises(InvalidValueError):
+        ForcedInjury(player, date(2000, 1, 1), True)
+    with pytest.raises(InvalidValueError):
+        ForcedInjury(player, "2000-01-01", 3)  # type: ignore[arg-type]
+
+
+def test_run_state_rejects_invalid_collection_and_reference_types() -> None:
+    player = PlayerId("player-a")
+    competition = CompetitionId("league-test")
+    base = {
+        "managed_club_season_id": ClubSeasonId("test-fc-2000-01"),
+        "squad_registry": SquadRegistry(),
+        "players": (PlayerState(player, Position.MF, 70, None, 50, 50),),
+        "tactic": Tactic(TacticStyle.BALANCED, (2, 4, 4)),
+        "competition_priorities": (),
+        "team_morale": 50,
+        "board_confidence": 50,
+        "state_as_of": None,
+    }
+    invalid_overrides = [
+        {"managed_club_season_id": "test-fc-2000-01"},
+        {"squad_registry": object()},
+        {"tactic": object()},
+        {"competition_priorities": [CompetitionPriority(competition, Priority.HIGH)]},
+        {"competition_priorities": (object(),)},
+        {"forced_injuries": [ForcedInjury(player, date(2000, 1, 1), 1)]},
+        {"forced_injuries": (object(),)},
+        {"forced_injuries": (ForcedInjury(PlayerId("other-player"), date(2000, 1, 1), 1),)},
+    ]
+    for override in invalid_overrides:
+        with pytest.raises(InvalidValueError):
+            RunState(**(base | override))  # type: ignore[arg-type]
