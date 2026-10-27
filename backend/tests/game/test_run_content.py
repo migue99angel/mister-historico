@@ -7,7 +7,7 @@ from dataclasses import FrozenInstanceError, replace
 import pytest
 from tests.contracts.suites.expected_test_fc import build_expected_test_fc_season
 
-from mister.catalog.application.api import PlayableSeasonDTO
+from mister.catalog.application.api import MoraleEffectDTO, PlayableSeasonDTO
 from mister.game.application.replay_inputs import ReplayInputs
 from mister.game.application.run_content import RunContentSnapshot
 from mister.game.infrastructure.catalog_adapter import CatalogRunContentAdapter
@@ -82,6 +82,11 @@ def test_replay_json_must_be_canonical_objects_and_revisions_nonempty() -> None:
         ReplayInputs(snapshot, '{"b":2, "a":1}', "{}", "engine-1", "rules-1")
     with pytest.raises(InvalidValueError):
         ReplayInputs(snapshot, "[]", "{}", "engine-1", "rules-1")
+    for invalid_json in ("{", '{"value":NaN}', '{"a":1,"a":2}'):
+        with pytest.raises(InvalidValueError):
+            ReplayInputs(snapshot, invalid_json, "{}", "engine-1", "rules-1")
+    with pytest.raises(InvalidValueError):
+        ReplayInputs(snapshot, "{}", "[]", "engine-1", "rules-1")
     with pytest.raises(InvalidValueError, match="revision"):
         ReplayInputs(snapshot, "{}", "{}", " ", "rules-1")
 
@@ -115,7 +120,9 @@ def test_capture_reads_once_and_restore_survives_a_catalog_republication() -> No
     )
     dilemma = season_a.dilemmas[0]
     option = dilemma.options[1]
-    changed_effects = (*option.effects[:-1], replace(option.effects[-1], delta=-1))
+    effect = option.effects[-1]
+    assert isinstance(effect, MoraleEffectDTO)
+    changed_effects = (*option.effects[:-1], replace(effect, delta=-1))
     changed_option = replace(option, effects=changed_effects)
     changed_dilemma = replace(
         dilemma,
@@ -137,7 +144,9 @@ def test_capture_reads_once_and_restore_survives_a_catalog_republication() -> No
     assert restored_b.manager.display_name == "Updated manager"
     assert restored_b.own_club_season.squad is not None
     assert restored_b.own_club_season.squad[0].rating == own_a.squad[0].rating + 1
-    assert restored_b.dilemmas[0].options[1].effects[-1].delta == -1
+    restored_effect = restored_b.dilemmas[0].options[1].effects[-1]
+    assert isinstance(restored_effect, MoraleEffectDTO)
+    assert restored_effect.delta == -1
     assert snapshot_a.content_json != snapshot_b.content_json
 
 
@@ -216,6 +225,8 @@ def test_supported_replay_revisions_are_explicit() -> None:
     replay.ensure_compatible(engine_revisions={"engine-1"}, rules_revisions={"rules-1"})
     with pytest.raises(InvalidValueError, match="not supported"):
         replay.ensure_compatible(engine_revisions={"engine-2"}, rules_revisions={"rules-1"})
+    with pytest.raises(InvalidValueError, match="not supported"):
+        replay.ensure_compatible(engine_revisions={"engine-1"}, rules_revisions={"rules-2"})
 
 
 @pytest.mark.parametrize("format_version", [True, 1.0, "1"])
@@ -259,9 +270,24 @@ def test_snapshot_envelope_stays_opaque_to_application_catalog_tags() -> None:
         decode_playable_season(snapshot)
 
 
+def test_snapshot_envelope_requires_typed_identity_and_matching_digest() -> None:
+    snapshot = encode_playable_season(build_expected_test_fc_season())
+    with pytest.raises(InvalidValueError, match="identity"):
+        replace(snapshot, playable_season_id="test-fc-2000-01")  # type: ignore[arg-type]
+    with pytest.raises(InvalidValueError, match="digest"):
+        replace(snapshot, digest="0" * 64)
+    with pytest.raises(InvalidValueError, match="content_json"):
+        replace(snapshot, content_json=1)  # type: ignore[arg-type]
+
+
 @pytest.mark.parametrize("revision", [0, None, " "])
 def test_replay_revisions_must_be_nonempty_strings(revision: object) -> None:
     snapshot = encode_playable_season(build_expected_test_fc_season())
 
     with pytest.raises(InvalidValueError, match="revision"):
         ReplayInputs(snapshot, "{}", "{}", revision, "rules-1")  # type: ignore[arg-type]
+
+
+def test_replay_inputs_require_a_run_content_snapshot() -> None:
+    with pytest.raises(InvalidValueError, match="snapshot"):
+        ReplayInputs(None, "{}", "{}", "engine-1", "rules-1")  # type: ignore[arg-type]
