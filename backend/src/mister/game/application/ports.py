@@ -39,6 +39,8 @@ from enum import StrEnum
 from types import TracebackType
 from typing import Protocol, Self
 
+from mister.game.application.replay_inputs import ReplayInputs
+from mister.game.application.run_content import RunContentSnapshot
 from mister.shared_kernel.errors import DomainError, InvalidValueError
 from mister.shared_kernel.ids import (
     BlockId,
@@ -187,12 +189,15 @@ class RunRecord:
     decisions: tuple[DecisionRecord, ...]
     created_at: datetime
     updated_at: datetime
+    replay_inputs: ReplayInputs
 
     def __post_init__(self) -> None:
         if self.version < 0:
             raise InvalidValueError(f"version starts at 0, got {self.version}")
         if not self.run_token_hash.strip():
             raise InvalidValueError("run_token_hash must not be blank")
+        if self.replay_inputs.content.playable_season_id != self.playable_season_id:
+            raise InvalidValueError("replay content identity must match playable_season_id")
         object.__setattr__(self, "snapshot", _as_json("snapshot", self.snapshot))
         _require_aware("created_at", self.created_at)
         _require_aware("updated_at", self.updated_at)
@@ -521,6 +526,35 @@ class Standings:
     rows: tuple[StandingRow, ...]
     stage_id: str | None = None
     group_id: str | None = None
+    unresolved_ties: tuple[tuple[ClubSeasonId, ...], ...] | None = None
+
+    def __post_init__(self) -> None:
+        if self.unresolved_ties is None:
+            return
+        if not isinstance(self.unresolved_ties, tuple):
+            raise InvalidValueError("unresolved ties must be an immutable tuple or None")
+        row_ids = {row.club_season_id for row in self.rows}
+        occupied: set[ClubSeasonId] = set()
+        for group in self.unresolved_ties:
+            if not isinstance(group, tuple) or len(group) < 2 or not set(group) <= row_ids:
+                raise InvalidValueError("unresolved tie groups must contain row participants")
+            if occupied.intersection(group):
+                raise InvalidValueError("unresolved tie groups must be disjoint")
+            occupied.update(group)
+
+
+@dataclass(frozen=True, slots=True)
+class UnresolvedKnockoutTie:
+    competition_id: CompetitionId
+    stage_id: str
+    clubs: tuple[ClubSeasonId, ...]
+    fixture_ids: tuple[FixtureId, ...]
+
+    def __post_init__(self) -> None:
+        if not self.stage_id.strip() or len(self.clubs) != 2 or len(set(self.clubs)) != 2:
+            raise InvalidValueError("an unresolved knockout tie needs a stage and two clubs")
+        if not 1 <= len(self.fixture_ids) <= 2 or len(set(self.fixture_ids)) != len(self.fixture_ids):
+            raise InvalidValueError("an unresolved tie needs one or two distinct fixture IDs")
 
 
 @dataclass(frozen=True, slots=True)
@@ -539,6 +573,7 @@ class BlockSimulationRequest:
     """
 
     playable_season_id: PlayableSeasonId
+    captured_content: RunContentSnapshot
     seed: Seed
     block_id: BlockId
     start: date
@@ -549,6 +584,11 @@ class BlockSimulationRequest:
     competition_priorities: Mapping[CompetitionId, Priority]
     forced_injuries_from_effects: tuple[ForcedInjury, ...]
     prior_results: tuple[MatchOutcome, ...]
+    state_as_of: date | None = None
+
+    def __post_init__(self) -> None:
+        if self.captured_content.playable_season_id != self.playable_season_id:
+            raise InvalidValueError("captured content identity must match playable_season_id")
 
 
 @dataclass(frozen=True, slots=True)
@@ -568,6 +608,7 @@ class BlockSimulationResult:
     events: tuple[BlockEvent, ...]
     injuries: tuple[InjuryOutcome, ...]
     player_states: tuple[PlayerOutcome, ...]
+    unresolved_knockout_ties: tuple[UnresolvedKnockoutTie, ...] | None = None
 
 
 class SeasonSimulator(Protocol):

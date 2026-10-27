@@ -80,7 +80,7 @@ class InMemoryRunRepository:
             raise InvalidValueError(
                 f"saved version must be {expected_version + 1}, got {record.version}"
             )
-        for name in ("seed", "run_token_hash", "playable_season_id", "created_at"):
+        for name in ("seed", "run_token_hash", "playable_season_id", "created_at", "replay_inputs"):
             if getattr(record, name) != getattr(stored, name):
                 raise InvalidValueError(f"{name} is immutable")
         if record.decisions[: len(stored.decisions)] != stored.decisions:
