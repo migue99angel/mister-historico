@@ -109,7 +109,15 @@ CORRESPONDENCE: dict[str, tuple[type, dict[str, str | None]]] = {
         ports.BlockSimulationResult,
         {
             "results": "matches",
-            **_same("block_id", "key_matches", "standings", "events", "injuries", "player_states", "unresolved_knockout_ties"),
+            **_same(
+                "block_id",
+                "key_matches",
+                "standings",
+                "events",
+                "injuries",
+                "player_states",
+                "unresolved_knockout_ties",
+            ),
         },
     ),
 }
