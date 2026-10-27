@@ -23,7 +23,7 @@ def test_run_state_keeps_explicit_caller_values_and_is_frozen() -> None:
         state.team_morale = 1  # type: ignore[misc]
 
 
-@pytest.mark.parametrize("system", [(0, 4, 6), (2, 2, 2, 2, 2), (1, 9)])
+@pytest.mark.parametrize("system", [(0, 4, 6), (1, 1, 1, 1, 1), (1, 9)])
 def test_tactic_requires_three_to_five_lines_each_from_one_to_six_summing_to_ten(system: tuple[int, ...]) -> None:
     with pytest.raises(InvalidValueError):
         Tactic(TacticStyle.POSSESSION, system)
