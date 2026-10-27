@@ -9,6 +9,7 @@ from mister.game.domain.run import (
     ClosureOutcome,
     DecisionOption,
     DilemmaDefinition,
+    MatchRecord,
     Run,
     RunStatus,
 )
@@ -28,6 +29,7 @@ from mister.shared_kernel.ids import (
     ClubSeasonId,
     CompetitionId,
     DilemmaId,
+    FixtureId,
     OptionId,
     PlayableSeasonId,
     PlayerId,
@@ -238,3 +240,14 @@ def test_advance_rejects_cursor_regression() -> None:
         )
 
     assert with_cursor.cursor == date(2000, 2, 1)
+
+
+def test_advance_retains_complete_opaque_match_payload_and_fixture_identity() -> None:
+    run, _ = make_run().take_decision(DILEMMA, OPTION, NOW)
+    payload = b'{"away_goals":1,"extra_time":null,"penalties":null,"home_goals":1}'
+    result = MatchRecord(FixtureId("test-final"), payload)
+
+    updated, _ = run.advance_block(BlockResolution(BLOCK_1, make_state(), results=(result,)), NOW)
+
+    assert updated.results == (result,)
+    assert updated.results[0].opaque_payload == payload
