@@ -20,6 +20,7 @@ from mister.game.application.ports import (
     UnresolvedKnockoutTie,
 )
 from mister.game.infrastructure.run_content_codec import decode_playable_season
+from mister.game.infrastructure.catalog_adapter import CatalogRunContentAdapter
 from mister.game.infrastructure.simulation_mapping import (
     from_simulation_result,
     to_simulation_request,
@@ -97,6 +98,81 @@ def test_mapped_test_fc_request_runs_through_the_real_simulation_service() -> No
     )
 
     assert summary.block_id == block.id
+
+
+def test_a_captured_a_maps_and_runs_after_b_is_published_and_b_uses_its_new_squad() -> None:
+    request = make_simulation_request()
+    season_a = decode_playable_season(request.captured_content)
+
+    class Provider:
+        season = season_a
+        available = True
+
+        def get_playable_season(self, season_id):
+            if not self.available:
+                raise AssertionError("mapper consulted the live catalog")
+            assert season_id == self.season.id
+            return self.season
+
+    provider = Provider()
+    adapter = CatalogRunContentAdapter(provider)  # type: ignore[arg-type]
+    snapshot_a = adapter.capture(season_a.id)
+    own = season_a.own_club_season
+    assert own.squad is not None
+    changed_squad = (replace(own.squad[0], rating=own.squad[0].rating + 2), *own.squad[1:])
+    changed_clubs = tuple(
+        replace(club, squad=changed_squad) if club.id == own.id else club
+        for club in season_a.club_seasons
+    )
+    provider.season = replace(season_a, club_seasons=changed_clubs)
+    snapshot_b = adapter.capture(season_a.id)
+    provider.available = False
+
+    def game_request(snapshot):
+        captured = decode_playable_season(snapshot)
+        own_club = captured.own_club_season
+        assert own_club.squad is not None
+        block = captured.blocks[0]
+        return BlockSimulationRequest(
+            playable_season_id=request.playable_season_id,
+            captured_content=snapshot,
+            seed=Seed(101),
+            block_id=block.id,
+            start=block.start,
+            end=block.end,
+            managed_team=TeamSquad(
+                own_club.id,
+                tuple(
+                    SquadPlayerState(
+                        p.player_id, Position(p.position.value), p.rating, p.age, 50, 100
+                    )
+                    for p in own_club.squad
+                ),
+                TacticSetup(
+                    TacticStyle(own_club.default_tactic.style.value),
+                    TacticSystem(own_club.default_tactic.system),
+                ),
+            ),
+            team_morale=50,
+            team_overrides=(),
+            competition_priorities={},
+            forced_injuries_from_effects=(),
+            prior_results=(),
+        )
+
+    mapped_a = to_simulation_request(game_request(snapshot_a))
+    mapped_b = to_simulation_request(game_request(snapshot_b))
+    reference_a = next(team for team in mapped_a.season.teams if team.club_season_id == own.id)
+    reference_b = next(team for team in mapped_b.season.teams if team.club_season_id == own.id)
+    assert reference_a.players[0].rating == own.squad[0].rating  # type: ignore[union-attr]
+    assert reference_b.players[0].rating == own.squad[0].rating + 2  # type: ignore[union-attr]
+    league_a = next(
+        item for item in mapped_a.season.competitions if item.competition_id.value == "liga-test"
+    )
+    assert league_a.base_goals == pytest.approx(67 / 60)
+    assert league_a.home_advantage == pytest.approx((40 / 27) ** 0.5)
+    result_a = SimulationService().simulate_block(mapped_a, StdlibRandomSource(Seed(101)))
+    assert result_a.block_id == mapped_a.block_id
 
 
 @pytest.mark.parametrize(

@@ -12,6 +12,7 @@ from mister.game.application.replay_inputs import ReplayInputs
 from mister.game.application.run_content import RunContentSnapshot
 from mister.game.infrastructure.catalog_adapter import CatalogRunContentAdapter
 from mister.game.infrastructure.run_content_codec import (
+    assert_format1_schema_supported,
     decode_playable_season,
     encode_playable_season,
 )
@@ -105,8 +106,26 @@ def test_capture_reads_once_and_restore_survives_a_catalog_republication() -> No
     snapshot_a = adapter.capture(season_a.id)
     assert provider.calls == 1
 
+    own_a = season_a.own_club_season
+    assert own_a.squad is not None
+    changed_squad = (replace(own_a.squad[0], rating=own_a.squad[0].rating + 1), *own_a.squad[1:])
+    changed_clubs = tuple(
+        replace(club, squad=changed_squad) if club.id == own_a.id else club
+        for club in season_a.club_seasons
+    )
+    dilemma = season_a.dilemmas[0]
+    option = dilemma.options[1]
+    changed_effects = (*option.effects[:-1], replace(option.effects[-1], delta=-1))
+    changed_option = replace(option, effects=changed_effects)
+    changed_dilemma = replace(
+        dilemma,
+        options=tuple(changed_option if item.id == option.id else item for item in dilemma.options),
+    )
     provider.season = replace(
-        season_a, manager=replace(season_a.manager, display_name="Updated manager")
+        season_a,
+        manager=replace(season_a.manager, display_name="Updated manager"),
+        club_seasons=changed_clubs,
+        dilemmas=(changed_dilemma, *season_a.dilemmas[1:]),
     )
     snapshot_b = adapter.capture(season_a.id)
     provider.available = False
@@ -114,8 +133,24 @@ def test_capture_reads_once_and_restore_survives_a_catalog_republication() -> No
 
     assert provider.calls == 2
     assert restored_a == season_a
-    assert adapter.restore(snapshot_b).manager.display_name == "Updated manager"
+    restored_b = adapter.restore(snapshot_b)
+    assert restored_b.manager.display_name == "Updated manager"
+    assert restored_b.own_club_season.squad is not None
+    assert restored_b.own_club_season.squad[0].rating == own_a.squad[0].rating + 1
+    assert restored_b.dilemmas[0].options[1].effects[-1].delta == -1
     assert snapshot_a.content_json != snapshot_b.content_json
+
+
+def test_format_one_codec_gate_rejects_catalog_schema_drift(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import mister.game.infrastructure.run_content_codec as codec
+
+    assert_format1_schema_supported()
+    monkeypatch.setattr(codec, "FORMAT1_SCHEMA_FINGERPRINT", "stale-fingerprint")
+
+    with pytest.raises(InvalidValueError, match="format 1 schema"):
+        encode_playable_season(build_expected_test_fc_season())
 
 
 def test_unknown_codec_tags_and_fields_are_rejected() -> None:
@@ -145,6 +180,36 @@ def test_unknown_codec_tags_and_fields_are_rejected() -> None:
                 digest=hashlib.sha256(fields_json.encode()).hexdigest(),
             )
         )
+
+
+@pytest.mark.parametrize("literal", [True, 1.0])
+def test_format_one_literal_integer_fields_reject_equal_values_with_wrong_types(
+    literal: object,
+) -> None:
+    snapshot = encode_playable_season(build_expected_test_fc_season())
+    raw = json.loads(snapshot.content_json)
+
+    def replace_knockout_leg(value: object) -> bool:
+        if isinstance(value, dict):
+            if value.get("$type") == "KnockoutSlotDTO":
+                value["fields"]["leg"] = value["fields"].get("leg") or 1
+                value["fields"]["leg"] = literal
+                return True
+            return any(replace_knockout_leg(child) for child in value.values())
+        if isinstance(value, list):
+            return any(replace_knockout_leg(child) for child in value)
+        return False
+
+    assert replace_knockout_leg(raw)
+    content_json = json.dumps(raw, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    forged = replace(
+        snapshot,
+        content_json=content_json,
+        digest=hashlib.sha256(content_json.encode()).hexdigest(),
+    )
+
+    with pytest.raises(InvalidValueError, match="literal"):
+        decode_playable_season(forged)
 
 
 def test_supported_replay_revisions_are_explicit() -> None:
