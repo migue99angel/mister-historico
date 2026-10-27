@@ -279,6 +279,24 @@ def test_a_group_stage_needs_its_group_configuration() -> None:
         SeasonFile.model_validate(data)
 
 
+def test_club_coefficient_is_the_last_group_criterion() -> None:
+    data = season()
+    stage = _group_stage()
+    stage["tiebreakers"] = ["club_coefficient", "goal_difference"]
+    data["competitions"][1]["stages"] = [stage, _stage("final", "final", 1)]
+
+    with pytest.raises(ValidationError, match="last"):
+        SeasonFile.model_validate(data)
+
+
+def test_domestic_league_cannot_use_club_coefficient() -> None:
+    data = season()
+    data["competitions"][0]["tiebreakers"].append("club_coefficient")
+
+    with pytest.raises(ValidationError, match="group stages"):
+        SeasonFile.model_validate(data)
+
+
 def test_a_knockout_stage_cannot_have_groups() -> None:
     data = season()
     data["competitions"][1]["stages"][0]["groups"] = [{"id": "a", "participants": [_OWN, _RIVAL]}]
