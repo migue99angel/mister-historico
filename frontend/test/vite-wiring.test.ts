@@ -11,8 +11,14 @@ describe('Vite development API proxy', () => {
   afterEach(async () => {
     await viteServer?.close();
     await new Promise<void>((resolve, reject) => {
-      if (!backend?.listening) return resolve();
-      backend.close((error) => (error ? reject(error) : resolve()));
+      if (!backend?.listening) {
+        resolve();
+        return;
+      }
+      backend.close((error) => {
+        if (error) reject(error);
+        else resolve();
+      });
     });
     if (previousTarget === undefined) delete process.env.API_PROXY_TARGET;
     else process.env.API_PROXY_TARGET = previousTarget;
@@ -56,9 +62,7 @@ describe('Vite development API proxy', () => {
       throw new Error('The Vite dev server did not bind to a TCP port.');
     }
 
-    const response = await fetch(
-      `http://127.0.0.1:${String(viteAddress.port)}/api/probe?mode=dev`,
-    );
+    const response = await fetch(`http://127.0.0.1:${String(viteAddress.port)}/api/probe?mode=dev`);
 
     expect(await response.text()).toBe('/api/probe?mode=dev');
   });

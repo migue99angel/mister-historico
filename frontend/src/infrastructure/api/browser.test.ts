@@ -51,7 +51,7 @@ describe('startBrowserMocks', () => {
     await Promise.all([startBrowserMocks(), startBrowserMocks()]);
 
     expect(startWorker).toHaveBeenCalledTimes(1);
-    expect(startWorker).toHaveBeenCalledWith({ onUnhandledRequest: 'bypass' });
+    expect(startWorker).toHaveBeenCalledWith({ onUnhandledFrame: 'bypass' });
   });
 
   it('propagates startup errors and allows a later retry', async () => {
