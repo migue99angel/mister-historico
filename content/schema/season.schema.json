@@ -467,6 +467,57 @@
       "title": "Group",
       "type": "object"
     },
+    "GroupCoefficient": {
+      "additionalProperties": false,
+      "description": "A pre-season club coefficient in exact thousandths of a point.",
+      "properties": {
+        "club_season": {
+          "maxLength": 64,
+          "pattern": "^_?[a-z0-9]+(-[a-z0-9]+)*-\\d{4}-\\d{2}$",
+          "title": "Club Season",
+          "type": "string"
+        },
+        "milli_points": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Milli Points"
+        },
+        "sources": {
+          "description": "URLs backing the datum.",
+          "items": {
+            "format": "uri",
+            "maxLength": 2083,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "verify": {
+          "enum": [
+            "ok",
+            "pending"
+          ],
+          "title": "Verify",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sources",
+        "verify",
+        "club_season",
+        "milli_points"
+      ],
+      "title": "GroupCoefficient",
+      "type": "object"
+    },
     "HistoricalBooleanRule": {
       "additionalProperties": false,
       "description": "An explicitly verified historical switch; None remains unknown.",
@@ -724,6 +775,21 @@
           "title": "Away Goals Rule",
           "type": "boolean"
         },
+        "coefficients": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/GroupCoefficient"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Coefficients"
+        },
         "extra_time": {
           "title": "Extra Time",
           "type": "boolean"
@@ -955,7 +1021,8 @@
         "head_to_head_away_goals",
         "goal_difference",
         "goals_for",
-        "wins"
+        "wins",
+        "club_coefficient"
       ],
       "title": "Tiebreaker",
       "type": "string"
