@@ -144,6 +144,7 @@ def test_mini_table_reapplication_is_an_explicit_synthetic_rule() -> None:
 
 def test_reapplication_skips_a_remaining_three_club_tie() -> None:
     # A/B/C draw including D, but their three-way mini-table has different goal totals.
+    # Synthetic rows isolate ranking; they are not a complete table of these matches.
     matches = (
         _match(0, 1, (3, 0)),
         _match(1, 2, (2, 0)),
