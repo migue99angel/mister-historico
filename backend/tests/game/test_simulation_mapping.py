@@ -6,6 +6,7 @@ from datetime import date
 import pytest
 from tests.contracts.suites.game_samples import make_simulation_request, make_simulation_result
 
+from mister.catalog.application.api import PlayableSeasonDTO
 from mister.game.application.ports import (
     BlockSimulationRequest,
     BlockSimulationResult,
@@ -19,18 +20,20 @@ from mister.game.application.ports import (
     TeamSquad,
     UnresolvedKnockoutTie,
 )
-from mister.game.infrastructure.run_content_codec import decode_playable_season
+from mister.game.application.run_content import RunContentSnapshot
 from mister.game.infrastructure.catalog_adapter import CatalogRunContentAdapter
+from mister.game.infrastructure.run_content_codec import decode_playable_season
 from mister.game.infrastructure.simulation_mapping import (
     from_simulation_result,
     to_simulation_request,
 )
-from mister.shared_kernel.ids import ClubSeasonId, CompetitionId, FixtureId
+from mister.shared_kernel.ids import ClubSeasonId, CompetitionId, FixtureId, PlayableSeasonId
 from mister.shared_kernel.randomness import StdlibRandomSource
 from mister.shared_kernel.seed import Seed
 from mister.simulation.application.api import (
     BlockSummaryDTO,
     SimulationService,
+    SquadTeamInput,
     StandingRowDTO,
     StandingsDTO,
     UnresolvedKnockoutTieDTO,
@@ -105,10 +108,10 @@ def test_a_captured_a_maps_and_runs_after_b_is_published_and_b_uses_its_new_squa
     season_a = decode_playable_season(request.captured_content)
 
     class Provider:
-        season = season_a
+        season: PlayableSeasonDTO = season_a
         available = True
 
-        def get_playable_season(self, season_id):
+        def get_playable_season(self, season_id: PlayableSeasonId) -> PlayableSeasonDTO:
             if not self.available:
                 raise AssertionError("mapper consulted the live catalog")
             assert season_id == self.season.id
@@ -128,7 +131,7 @@ def test_a_captured_a_maps_and_runs_after_b_is_published_and_b_uses_its_new_squa
     snapshot_b = adapter.capture(season_a.id)
     provider.available = False
 
-    def game_request(snapshot):
+    def game_request(snapshot: RunContentSnapshot) -> BlockSimulationRequest:
         captured = decode_playable_season(snapshot)
         own_club = captured.own_club_season
         assert own_club.squad is not None
@@ -164,8 +167,10 @@ def test_a_captured_a_maps_and_runs_after_b_is_published_and_b_uses_its_new_squa
     mapped_b = to_simulation_request(game_request(snapshot_b))
     reference_a = next(team for team in mapped_a.season.teams if team.club_season_id == own.id)
     reference_b = next(team for team in mapped_b.season.teams if team.club_season_id == own.id)
-    assert reference_a.players[0].rating == own.squad[0].rating  # type: ignore[union-attr]
-    assert reference_b.players[0].rating == own.squad[0].rating + 2  # type: ignore[union-attr]
+    assert isinstance(reference_a, SquadTeamInput)
+    assert isinstance(reference_b, SquadTeamInput)
+    assert reference_a.players[0].rating == own.squad[0].rating
+    assert reference_b.players[0].rating == own.squad[0].rating + 2
     league_a = next(
         item for item in mapped_a.season.competitions if item.competition_id.value == "liga-test"
     )
