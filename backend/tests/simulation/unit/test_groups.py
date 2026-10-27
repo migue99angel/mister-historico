@@ -152,7 +152,7 @@ def test_reapplication_skips_a_remaining_three_club_tie() -> None:
         _match(1, 3, (2, 0)),
         _match(2, 3, (3, 0)),
     )
-    rows = tuple(_row(club, gf=(0, 1, 2, 0)[i]) for i, club in enumerate(CLUBS))
+    rows = tuple(_row(club, gf=(6, 7, 8, 0)[i]) for i, club in enumerate(CLUBS))
     ranking = _table(
         _rules("head_to_head_points", "head_to_head_goals_for", "goals_for", reapply=True),
         rows=rows,
