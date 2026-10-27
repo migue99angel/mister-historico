@@ -25,6 +25,7 @@ from mister.shared_kernel.ids import PlayableSeasonId, RunId
 from mister.shared_kernel.seed import Seed
 from tests.contracts.suites.game_samples import (
     T0,
+    REPLAY_INPUTS,
     make_decision,
     make_idempotency_record,
     make_run_record,
@@ -293,10 +294,17 @@ class RunRepositoryContract:
         [
             {"seed": Seed(999)},
             {"run_token_hash": "another-hash"},
-            {"playable_season_id": PlayableSeasonId("other-1999-00")},
+            {
+                "playable_season_id": PlayableSeasonId("other-1999-00"),
+                "replay_inputs": type(REPLAY_INPUTS)(
+                    replace(REPLAY_INPUTS.content, playable_season_id=PlayableSeasonId("other-1999-00")),
+                    "{}", "{}", "engine-1", "rules-1",
+                ),
+            },
+            {"replay_inputs": replace(REPLAY_INPUTS, engine_revision="engine-2")},
             {"created_at": T0 + timedelta(days=1), "updated_at": T0 + timedelta(days=2)},
         ],
-        ids=["seed", "run_token_hash", "playable_season_id", "created_at"],
+        ids=["seed", "run_token_hash", "playable_season_id", "replay_inputs", "created_at"],
     )
     def test_save_cannot_change_what_identifies_the_run(
         self, make_repo: RepoFactory, change: dict[str, object]

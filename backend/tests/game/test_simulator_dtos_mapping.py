@@ -42,6 +42,7 @@ CORRESPONDENCE: dict[str, tuple[type, dict[str, str | None]]] = {
         ports.BlockSimulationRequest,
         {
             "season": None,  # SeasonSimInput: completed from SeasonContentProvider
+            "state_as_of": "state_as_of",
             **_same(
                 "block_id",
                 "start",
@@ -102,21 +103,19 @@ CORRESPONDENCE: dict[str, tuple[type, dict[str, str | None]]] = {
     ),
     "StandingsDTO": (
         ports.Standings,
-        _same("competition_id", "as_of", "rows", "stage_id", "group_id"),
+        _same("competition_id", "as_of", "rows", "stage_id", "group_id", "unresolved_ties"),
     ),
     "BlockSummaryDTO": (
         ports.BlockSimulationResult,
         {
             "results": "matches",
-            **_same("block_id", "key_matches", "standings", "events", "injuries", "player_states"),
+            **_same("block_id", "key_matches", "standings", "events", "injuries", "player_states", "unresolved_knockout_ties"),
         },
     ),
 }
 
 # Game fields with no engine field: the adapter uses them to build the engine call.
-GAME_ONLY = {
-    "BlockSimRequest": {"playable_season_id", "seed"},  # complete `season`; seed -> RandomSource
-}
+GAME_ONLY = {"BlockSimRequest": {"playable_season_id", "captured_content", "seed"}}
 
 
 @pytest.mark.parametrize("engine_dto", sorted(CORRESPONDENCE))
