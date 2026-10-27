@@ -107,3 +107,50 @@ Esta sección sustituye **solo como estado actual** las indicaciones anteriores 
 - **Próximo trabajo de F2:** T2.10–T2.13 y T2.16 preparan la temporada real del Real Madrid 2012-13 y sus rivales; T2.14 contrasta los datos sin las notas de investigación y T2.15 requiere la firma del autor. T2.7 depende de esa firma. T2.8 necesita medir el bloque del RM real; puede prepararse sobre Test FC, pero el criterio de aceptación exige el piloto. No presentar F2 como cerrada hasta completar esas puertas.
 
 Para los datos históricos, aplicar la regla del proyecto: fuente por dato; si falta evidencia, `null` con `verify: pending`, sin deducciones. Antes de continuar, comprobar `git status`, `git log`, `git worktree list` y las PR abiertas: el estado real prevalece sobre esta foto.
+
+## 10. Contenido inicial del piloto y desempates UEFA (2026-10-27)
+
+Esta sección es la foto de trabajo posterior a la sección 9; conserva sus
+comprobaciones históricas. Verificar siempre el repositorio y las PR antes de
+actuar.
+
+- **Inventario:** [CR #43](https://github.com/migue99angel/mister-historico/pull/43)
+  fijó `docs/content/` como ubicación del primer entregable de T2.12; [PR #44](https://github.com/migue99angel/mister-historico/pull/44)
+  integró la [lista de 60 club-seasons](content/real-madrid-2012-13-participants.md),
+  revisada de forma independiente. Son 20 clubes de Primera, 12 adicionales
+  de Copa y 28 adicionales de Champions; todavía no están creadas sus plantillas.
+- **Reglamento:** [CR #47](https://github.com/migue99angel/mister-historico/pull/47)
+  corrigió la reaplicación de criterios directos UEFA para exactamente dos
+  clubes (art. 7.06.e). [CR #48](https://github.com/migue99angel/mister-historico/pull/48)
+  añadió el coeficiente como último desempate (art. 7.06.h), con milésimas
+  exactas, fuente por club y cobertura completa exigida en release. Ambas se
+  integraron por rebase-merge tras revisión independiente y CI en verde. La
+  punta de `main` comprobada tras #48 es `79ad3a18e21b9f2259ade6cd3f22a9f5b496f05f`.
+- **Temporada T2.10:** [PR #45](https://github.com/migue99angel/mister-historico/pull/45)
+  sigue en borrador. `season.yaml` define cinco bloques y cuatro competiciones;
+  contiene los 32 coeficientes UEFA oficiales. Una auditoría independiente los
+  cotejó uno por uno con la [tabla de UEFA de 2012](https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/)
+  sin discrepancias. El fichero aislado valida con el esquema de `main`. La
+  base liguera de 641 goles locales y 450 visitantes procede de dos fuentes
+  estadísticas concordantes, pero no tiene aún una fuente primaria para ese
+  desglose. Los marcadores decisivos están en el borrador de fixtures, no en
+  `historical_outcome`, que solo expresa rondas.
+- **Calendario T2.12:** [PR #46](https://github.com/migue99angel/mister-historico/pull/46)
+  conserva en borrador los 61 partidos oficiales del Real Madrid: 38 Liga,
+  12 Champions, 9 Copa y 2 Supercopa. La auditoría independiente no halló
+  diferencias con la memoria anual del club y RFEF. Los resultados ligueros
+  suman 103-42 y 85 puntos. La prórroga de la final de Copa cita también RFEF.
+- **Clasificación T2.12:** [PR #49](https://github.com/migue99angel/mister-historico/pull/49)
+  conserva en borrador las 20 filas finales de Liga del corte b5. La auditoría
+  independiente cotejó todos los campos con la memoria oficial de LaLiga y su
+  JS enlazado: ninguna diferencia; 380 partidos y 1091 goles en total. El
+  30/06/2013 es el cierre editorial de b5, no la fecha de un partido.
+
+**Puertas pendientes:** las PR #45, #46 y #49 no se integran todavía porque
+sus YAML por separado no forman una temporada release. T2.12 necesita los
+cortes b1-b4, las tablas de grupos, los cuadros y la evidencia de partidos
+entre rivales; T2.11 y T2.16, plantillas y agregados; T2.13, dilemas y textos
+históricos revisados. Después vienen T2.14 (verificación independiente
+completa), T2.15 (firma humana), T2.7 (calibración real) y T2.8 (rendimiento
+medido con el piloto). Mantener los tres worktrees de contenido y la condición
+de borrador; no afirmar que el piloto o F2 están terminados.
