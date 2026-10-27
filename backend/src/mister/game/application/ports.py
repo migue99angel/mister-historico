@@ -17,7 +17,7 @@ Decisions recorded here:
   expected_version)` succeeds only if the stored version equals `expected_version`, and
   `record.version` must be `expected_version + 1`. The caller bumps the version; the repository
   only checks it, so the stored record equals the saved one. `seed`, `run_token_hash`,
-  `playable_season_id` and `created_at` never change after `add`.
+  `playable_season_id`, `created_at` and the full `replay_inputs` never change after `add`.
 - **JSON.** `snapshot` and the idempotent `response` are normalised as JSON on construction
   (tuples become lists, keys become strings), so a record equals what a JSONB column returns.
 - **Idempotency.** The reply to a command is stored per `(run_id, key)` together with a hash of
@@ -59,6 +59,9 @@ MIN_IDEMPOTENCY_KEY_LENGTH = 8
 MAX_IDEMPOTENCY_KEY_LENGTH = 128
 _SYSTEM_PATTERN = re.compile(r"[1-9](-[1-9]){2,4}")
 _OUTFIELD_PLAYERS = 10
+_MIN_UNRESOLVED_TIE_SIZE = 2
+_KNOCKOUT_CLUB_COUNT = 2
+_MAX_TIE_FIXTURES = 2
 
 # ----------------------------------------------------------------------------- errors
 
@@ -177,7 +180,7 @@ class DecisionRecord:
 
 @dataclass(frozen=True, slots=True)
 class RunRecord:
-    """A run as persisted: JSON snapshot, decision log and the version for optimistic locking."""
+    """Persisted run state plus mandatory immutable inputs required for replay."""
 
     run_id: RunId
     playable_season_id: PlayableSeasonId
@@ -196,6 +199,8 @@ class RunRecord:
             raise InvalidValueError(f"version starts at 0, got {self.version}")
         if not self.run_token_hash.strip():
             raise InvalidValueError("run_token_hash must not be blank")
+        if not isinstance(self.replay_inputs, ReplayInputs):
+            raise InvalidValueError("run record needs complete replay inputs")
         if self.replay_inputs.content.playable_season_id != self.playable_season_id:
             raise InvalidValueError("replay content identity must match playable_season_id")
         object.__setattr__(self, "snapshot", _as_json("snapshot", self.snapshot))
@@ -248,9 +253,9 @@ class RunRepository(Protocol):
 
         Raises `RunNotFoundError` if unknown, `ConcurrencyError` if the stored version is not
         `expected_version`, `InvalidValueError` if `record.version` is not
-        `expected_version + 1` or if `seed`, `run_token_hash`, `playable_season_id` or
-        `created_at` differ from the stored ones ("immutable"), and `DecisionLogRewrittenError`
-        if the stored decisions are not a prefix of `record.decisions`.
+        `expected_version + 1` or if `seed`, `run_token_hash`, `playable_season_id`,
+        `created_at` or `replay_inputs` differ from the stored ones ("immutable"), and
+        `DecisionLogRewrittenError` if the stored decisions are not a prefix of `record.decisions`.
         """
         ...
 
@@ -533,13 +538,24 @@ class Standings:
             return
         if not isinstance(self.unresolved_ties, tuple):
             raise InvalidValueError("unresolved ties must be an immutable tuple or None")
-        row_ids = {row.club_season_id for row in self.rows}
+        order = [row.club_season_id for row in self.rows]
+        if len(set(order)) != len(order):
+            raise InvalidValueError("unresolved standings need distinct row participants")
         occupied: set[ClubSeasonId] = set()
         for group in self.unresolved_ties:
-            if not isinstance(group, tuple) or len(group) < 2 or not set(group) <= row_ids:
+            if (
+                not isinstance(group, tuple)
+                or len(group) < _MIN_UNRESOLVED_TIE_SIZE
+                or not all(isinstance(club, ClubSeasonId) for club in group)
+                or len(set(group)) != len(group)
+                or not set(group) <= set(order)
+            ):
                 raise InvalidValueError("unresolved tie groups must contain row participants")
             if occupied.intersection(group):
                 raise InvalidValueError("unresolved tie groups must be disjoint")
+            indices = sorted(order.index(club) for club in group)
+            if indices != list(range(indices[0], indices[-1] + 1)):
+                raise InvalidValueError("unresolved tie groups must occupy contiguous rows")
             occupied.update(group)
 
 
@@ -551,9 +567,22 @@ class UnresolvedKnockoutTie:
     fixture_ids: tuple[FixtureId, ...]
 
     def __post_init__(self) -> None:
-        if not self.stage_id.strip() or len(self.clubs) != 2 or len(set(self.clubs)) != 2:
+        if (
+            not isinstance(self.competition_id, CompetitionId)
+            or not isinstance(self.stage_id, str)
+            or not self.stage_id.strip()
+            or not isinstance(self.clubs, tuple)
+            or len(self.clubs) != _KNOCKOUT_CLUB_COUNT
+            or not all(isinstance(club, ClubSeasonId) for club in self.clubs)
+            or len(set(self.clubs)) != _KNOCKOUT_CLUB_COUNT
+        ):
             raise InvalidValueError("an unresolved knockout tie needs a stage and two clubs")
-        if not 1 <= len(self.fixture_ids) <= 2 or len(set(self.fixture_ids)) != len(self.fixture_ids):
+        if (
+            not isinstance(self.fixture_ids, tuple)
+            or not 1 <= len(self.fixture_ids) <= _MAX_TIE_FIXTURES
+            or not all(isinstance(fixture, FixtureId) for fixture in self.fixture_ids)
+            or len(set(self.fixture_ids)) != len(self.fixture_ids)
+        ):
             raise InvalidValueError("an unresolved tie needs one or two distinct fixture IDs")
 
 
@@ -587,8 +616,12 @@ class BlockSimulationRequest:
     state_as_of: date | None = None
 
     def __post_init__(self) -> None:
+        if not isinstance(self.captured_content, RunContentSnapshot):
+            raise InvalidValueError("simulation request needs captured content")
         if self.captured_content.playable_season_id != self.playable_season_id:
             raise InvalidValueError("captured content identity must match playable_season_id")
+        if self.state_as_of is not None and not isinstance(self.state_as_of, date):
+            raise InvalidValueError("state_as_of must be a date or None")
 
 
 @dataclass(frozen=True, slots=True)
@@ -609,6 +642,31 @@ class BlockSimulationResult:
     injuries: tuple[InjuryOutcome, ...]
     player_states: tuple[PlayerOutcome, ...]
     unresolved_knockout_ties: tuple[UnresolvedKnockoutTie, ...] | None = None
+
+    def __post_init__(self) -> None:
+        if self.unresolved_knockout_ties is None:
+            return
+        if not isinstance(self.unresolved_knockout_ties, tuple):
+            raise InvalidValueError("unresolved knockout ties must be an immutable tuple or None")
+        used_fixtures: set[FixtureId] = set()
+        occupied: set[tuple[CompetitionId, str, ClubSeasonId]] = set()
+        for tie in self.unresolved_knockout_ties:
+            if not isinstance(tie, UnresolvedKnockoutTie):
+                raise InvalidValueError("unresolved knockout entries must be typed values")
+            keys = {(tie.competition_id, tie.stage_id, club) for club in tie.clubs}
+            if used_fixtures.intersection(tie.fixture_ids) or occupied.intersection(keys):
+                raise InvalidValueError(
+                    "unresolved ties cannot repeat fixtures or stage participants"
+                )
+            used_fixtures.update(tie.fixture_ids)
+            occupied.update(keys)
+            for match in self.matches:
+                if match.fixture_id in tie.fixture_ids and (
+                    match.competition_id != tie.competition_id
+                    or match.stage_id != tie.stage_id
+                    or {match.home, match.away} != set(tie.clubs)
+                ):
+                    raise InvalidValueError("a played result contradicts unresolved tie identity")
 
 
 class SeasonSimulator(Protocol):

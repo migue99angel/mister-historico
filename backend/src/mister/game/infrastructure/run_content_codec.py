@@ -1,38 +1,86 @@
 """Strict, versioned codec for the public Catalog DTO graph captured by Game."""
 
+import hashlib
+import json
 from dataclasses import fields, is_dataclass
 from datetime import date
 from enum import Enum
-import hashlib
-import json
 from types import UnionType
 from typing import Any, Literal, Union, get_args, get_origin, get_type_hints
 
 from mister.catalog.application import api as catalog
 from mister.game.application.run_content import RunContentSnapshot
-from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel import ids
+from mister.shared_kernel.errors import InvalidValueError
 
 _DTO_NAMES = (
-    "TacticDTO", "BlockDTO", "ManagerDTO", "GoalStatsDTO", "LeagueRulesDTO", "GroupDTO",
-    "GroupStageDTO", "StageDTO", "CompetitionDTO", "BoardObjectiveDTO",
-    "InjuryForcedEventDTO", "HistoricalOutcomeDTO", "PlayerDTO", "AggregateStrengthDTO",
-    "RealLeagueDTO", "ClubSeasonDTO", "RealResultDTO", "FixtureDTO", "KnockoutSlotDTO",
-    "KnockoutCalendarDTO", "GroupEntryAssignmentDTO", "GroupEntryAssignmentsDTO",
-    "HeadToHeadFixtureDTO", "HeadToHeadResultDTO", "HeadToHeadEvidenceDTO", "StandingRowDTO",
-    "StandingsCutoffDTO", "RealTieDTO", "MoraleEffectDTO", "PlayerMoraleEffectDTO",
-    "SignPlayerEffectDTO", "SellPlayerEffectDTO", "SetTacticEffectDTO",
-    "CompetitionPriorityEffectDTO", "BoardConfidenceEffectDTO", "YouthMinutesEffectDTO",
-    "InjuryEffectDTO", "FitnessEffectDTO", "DilemmaOptionDTO", "DilemmaDTO", "TextDTO",
-    "PlayableSeasonSummaryDTO", "PlayableSeasonDTO",
+    "TacticDTO",
+    "BlockDTO",
+    "ManagerDTO",
+    "GoalStatsDTO",
+    "LeagueRulesDTO",
+    "GroupDTO",
+    "GroupStageDTO",
+    "StageDTO",
+    "CompetitionDTO",
+    "BoardObjectiveDTO",
+    "InjuryForcedEventDTO",
+    "HistoricalOutcomeDTO",
+    "PlayerDTO",
+    "AggregateStrengthDTO",
+    "RealLeagueDTO",
+    "ClubSeasonDTO",
+    "RealResultDTO",
+    "FixtureDTO",
+    "KnockoutSlotDTO",
+    "KnockoutCalendarDTO",
+    "GroupEntryAssignmentDTO",
+    "GroupEntryAssignmentsDTO",
+    "HeadToHeadFixtureDTO",
+    "HeadToHeadResultDTO",
+    "HeadToHeadEvidenceDTO",
+    "StandingRowDTO",
+    "StandingsCutoffDTO",
+    "RealTieDTO",
+    "MoraleEffectDTO",
+    "PlayerMoraleEffectDTO",
+    "SignPlayerEffectDTO",
+    "SellPlayerEffectDTO",
+    "SetTacticEffectDTO",
+    "CompetitionPriorityEffectDTO",
+    "BoardConfidenceEffectDTO",
+    "YouthMinutesEffectDTO",
+    "InjuryEffectDTO",
+    "FitnessEffectDTO",
+    "DilemmaOptionDTO",
+    "DilemmaDTO",
+    "TextDTO",
+    "PlayableSeasonSummaryDTO",
+    "PlayableSeasonDTO",
 )
 _ENUM_NAMES = (
-    "TacticStyle", "Priority", "Position", "Subrole", "Venue", "CompetitionKind",
-    "CompetitionTier", "Round", "Tiebreaker", "ObjectiveKind", "TextKind",
+    "TacticStyle",
+    "Priority",
+    "Position",
+    "Subrole",
+    "Venue",
+    "CompetitionKind",
+    "CompetitionTier",
+    "Round",
+    "Tiebreaker",
+    "ObjectiveKind",
+    "TextKind",
 )
 _ID_NAMES = (
-    "BlockId", "ClubId", "ClubSeasonId", "CompetitionId", "DilemmaId", "FixtureId",
-    "OptionId", "PlayableSeasonId", "PlayerId",
+    "BlockId",
+    "ClubId",
+    "ClubSeasonId",
+    "CompetitionId",
+    "DilemmaId",
+    "FixtureId",
+    "OptionId",
+    "PlayableSeasonId",
+    "PlayerId",
 )
 _DTOS = {name: getattr(catalog, name) for name in _DTO_NAMES}
 _ENUMS = {name: getattr(catalog, name) for name in _ENUM_NAMES}
@@ -48,7 +96,10 @@ def _encode(value: Any) -> Any:
     if type(value) in _ENUM_TAGS:
         return {"$enum": _ENUM_TAGS[type(value)], "value": value.value}
     if type(value) in _TAGS and is_dataclass(value):
-        return {"$type": _TAGS[type(value)], "fields": {f.name: _encode(getattr(value, f.name)) for f in fields(value)}}
+        return {
+            "$type": _TAGS[type(value)],
+            "fields": {f.name: _encode(getattr(value, f.name)) for f in fields(value)},
+        }
     if isinstance(value, Enum):
         raise InvalidValueError(f"unsupported run content enum type {type(value).__name__}")
     if value is None or isinstance(value, (str, int, float, bool)):
@@ -60,7 +111,7 @@ def _encode(value: Any) -> Any:
     raise InvalidValueError(f"unsupported run content value type {type(value).__name__}")
 
 
-def _decode(value: Any, expected: Any) -> Any:
+def _decode(value: Any, expected: Any) -> Any:  # noqa: PLR0911, PLR0912
     origin = get_origin(expected)
     args = get_args(expected)
     if origin is Literal:
@@ -94,16 +145,28 @@ def _decode(value: Any, expected: Any) -> Any:
         except (TypeError, ValueError) as error:
             raise InvalidValueError("invalid ISO date") from error
     if expected in _IDS.values():
-        if not isinstance(value, dict) or set(value) != {"$id", "value"} or value["$id"] != _ID_TAGS[expected]:
+        if (
+            not isinstance(value, dict)
+            or set(value) != {"$id", "value"}
+            or value["$id"] != _ID_TAGS[expected]
+        ):
             raise InvalidValueError("invalid or unknown ID tag")
         return expected(value["value"])
     if expected in _ENUMS.values():
-        if not isinstance(value, dict) or set(value) != {"$enum", "value"} or value["$enum"] != _ENUM_TAGS[expected]:
+        if (
+            not isinstance(value, dict)
+            or set(value) != {"$enum", "value"}
+            or value["$enum"] != _ENUM_TAGS[expected]
+        ):
             raise InvalidValueError("invalid or unknown enum tag")
         return expected(value["value"])
     if expected in _DTOS.values():
         tag = _TAGS[expected]
-        if not isinstance(value, dict) or set(value) != {"$type", "fields"} or value["$type"] != tag:
+        if (
+            not isinstance(value, dict)
+            or set(value) != {"$type", "fields"}
+            or value["$type"] != tag
+        ):
             raise InvalidValueError(f"invalid or unknown DTO tag for {tag}")
         raw = value["fields"]
         names = {field.name for field in fields(expected)}
@@ -116,14 +179,20 @@ def _decode(value: Any, expected: Any) -> Any:
             raise InvalidValueError(f"invalid fields for {tag}: {error}") from error
     if expected is Any:
         raise InvalidValueError("untyped values are not permitted in run content")
+    if expected in (str, int, float, bool) and type(value) is not expected:
+        raise InvalidValueError(f"expected {expected.__name__}, got {type(value).__name__}")
     if not isinstance(value, expected):
         raise InvalidValueError(f"expected {expected}, got {type(value).__name__}")
     return value
 
 
 def encode_playable_season(season: catalog.PlayableSeasonDTO) -> RunContentSnapshot:
-    content_json = json.dumps(_encode(season), sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
-    return RunContentSnapshot(1, content_json, hashlib.sha256(content_json.encode("utf-8")).hexdigest(), season.id)
+    content_json = json.dumps(
+        _encode(season), sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
+    )
+    return RunContentSnapshot(
+        1, content_json, hashlib.sha256(content_json.encode("utf-8")).hexdigest(), season.id
+    )
 
 
 def decode_playable_season(snapshot: RunContentSnapshot) -> catalog.PlayableSeasonDTO:
@@ -132,8 +201,14 @@ def decode_playable_season(snapshot: RunContentSnapshot) -> catalog.PlayableSeas
     if hashlib.sha256(snapshot.content_json.encode("utf-8")).hexdigest() != snapshot.digest:
         raise InvalidValueError("run content digest mismatch")
     try:
-        raw = json.loads(snapshot.content_json, parse_constant=lambda token: (_ for _ in ()).throw(ValueError(token)))
-        season = _decode(raw, catalog.PlayableSeasonDTO)
+        raw = json.loads(
+            snapshot.content_json,
+            parse_constant=lambda token: (_ for _ in ()).throw(ValueError(token)),
+        )
+        decoded = _decode(raw, catalog.PlayableSeasonDTO)
+        if not isinstance(decoded, catalog.PlayableSeasonDTO):
+            raise InvalidValueError("run content root is not a playable season DTO")
+        season = decoded
     except (json.JSONDecodeError, ValueError) as error:
         raise InvalidValueError(f"corrupt run content JSON: {error}") from error
     if season.id != snapshot.playable_season_id:
