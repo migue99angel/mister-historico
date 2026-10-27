@@ -1,12 +1,14 @@
 import { createServer, loadConfigFromFile } from 'vite';
 import { createServer as createHttpServer, type Server } from 'node:http';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { server as mockServer } from '../src/infrastructure/api/mocks/node';
 
 describe('Vite development API proxy', () => {
   let viteServer: Awaited<ReturnType<typeof createServer>> | undefined;
   let backend: Server | undefined;
-  const previousTarget = process.env.API_PROXY_TARGET;
 
   afterEach(async () => {
     await viteServer?.close();
@@ -20,12 +22,10 @@ describe('Vite development API proxy', () => {
         else resolve();
       });
     });
-    if (previousTarget === undefined) delete process.env.API_PROXY_TARGET;
-    else process.env.API_PROXY_TARGET = previousTarget;
     mockServer.listen({ onUnhandledFrame: 'error' });
   });
 
-  it('forwards API paths and query strings to the server-only target', async () => {
+  it('loads the API target from the Vite mode env while forwarding API paths unchanged', async () => {
     mockServer.close();
     backend = createHttpServer((request, response) => {
       response.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -39,11 +39,31 @@ describe('Vite development API proxy', () => {
       throw new Error('The local API backend did not bind to a TCP port.');
     }
 
-    process.env.API_PROXY_TARGET = `http://127.0.0.1:${String(backendAddress.port)}`;
-    const loaded = await loadConfigFromFile(
-      { command: 'serve', mode: 'development' },
-      'vite.config.ts',
-    );
+    const originalCwd = process.cwd();
+    const originalTarget = process.env.API_PROXY_TARGET;
+    const originalBaseUrl = process.env.VITE_API_BASE_URL;
+    const modeDirectory = await mkdtemp(join(tmpdir(), 'mister-vite-mode-'));
+    let loaded: Awaited<ReturnType<typeof loadConfigFromFile>>;
+    try {
+      await writeFile(
+        join(modeDirectory, '.env.staging'),
+        `VITE_API_BASE_URL=http://127.0.0.1:${String(backendAddress.port)}\n`,
+      );
+      delete process.env.API_PROXY_TARGET;
+      delete process.env.VITE_API_BASE_URL;
+      process.chdir(modeDirectory);
+      loaded = await loadConfigFromFile(
+        { command: 'serve', mode: 'staging' },
+        resolve(originalCwd, 'vite.config.ts'),
+      );
+    } finally {
+      process.chdir(originalCwd);
+      if (originalTarget === undefined) delete process.env.API_PROXY_TARGET;
+      else process.env.API_PROXY_TARGET = originalTarget;
+      if (originalBaseUrl === undefined) delete process.env.VITE_API_BASE_URL;
+      else process.env.VITE_API_BASE_URL = originalBaseUrl;
+      await rm(modeDirectory, { recursive: true, force: true });
+    }
     if (!loaded) throw new Error('The Vite configuration could not be loaded.');
 
     viteServer = await createServer({
