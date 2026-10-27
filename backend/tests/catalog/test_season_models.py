@@ -310,7 +310,7 @@ def test_group_coefficient_rejects_a_club_outside_the_stage() -> None:
     ]
     data["competitions"][1]["stages"] = [stage, _stage("final", "final", 1)]
 
-    with pytest.raises(ValidationError, match="coefficient.*non-participant"):
+    with pytest.raises(ValidationError, match=r"coefficient.*non-participant"):
         SeasonFile.model_validate(data)
 
 
