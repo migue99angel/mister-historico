@@ -1,6 +1,6 @@
 # Traspaso de la orquestación (2026-10-26)
 
-> Las secciones 1–8 conservan las comprobaciones de su fecha. La sección 9 recoge el estado más reciente, tras la PR #41. F2 continúa abierta. Léelo junto con `CLAUDE.md`, `docs/PLAN.md` y `docs/TASKS.md`. Las instrucciones del autor prevalecen sobre estos documentos.
+> Las secciones 1–10 conservan las comprobaciones de su fecha. La sección 11 recoge la revisión de planificación orientada a una primera partida jugable; sus tareas y CR aún no están implementadas. F2 continúa abierta. Léelo junto con `CLAUDE.md`, `docs/PLAN.md` y `docs/TASKS.md`. Las instrucciones del autor prevalecen sobre estos documentos.
 
 ## 1. Rol y forma de trabajo
 
@@ -154,3 +154,63 @@ históricos revisados. Después vienen T2.14 (verificación independiente
 completa), T2.15 (firma humana), T2.7 (calibración real) y T2.8 (rendimiento
 medido con el piloto). Mantener los tres worktrees de contenido y la condición
 de borrador; no afirmar que el piloto o F2 están terminados.
+
+
+## 11. Revisión de planificación: primera partida antes del contenido completo
+
+Revisión documental del **2026-10-27**, solicitada por el autor. La base
+comprobada es `main` `8be82448cf0f9eada4878883b5295b3fa2cd9c50`, con PR #45,
+#46 y #49 abiertas en borrador y tres worktrees de contenido limpios; GitHub no
+mostraba issues abiertas. El código sigue con motor/catálogo integrados, Game
+con puertos/fakes y frontend de presentación; no existe una partida web completa.
+Los ADR-009 y ADR-013 están planificados en T3.4/T6.5, aún sin redactar.
+
+**Cambio de orden, no implementación:** [PLAN §5](PLAN.md#5-entregas-verticales-y-fases)
+y [TASKS](TASKS.md) separan cuatro hitos. A construye Test FC de principio a fin
+con frontend, backend, motor y SQL reales; B propone beta histórica de RM
+verificado, móvil, evaluación y compartir; C añade históricos/ranking/equilibrio;
+D describe temporada actual congelada con presupuesto/mercado sencillos. El
+contenido real no bloquea A. F2 no se declara cerrada, ni sus PR se integran
+incompletas, por haber cambiado la prioridad de desarrollo.
+
+**Replay, riesgo confirmado:** `SqlCatalogLoader` reemplaza el catálogo anterior;
+`RunRecord.version` es concurrencia y no fija contenido recuperable. La solución
+mínima propuesta es copiar al crear el run todo el contenido inicial requerido,
+inmutable y separado del estado mutable, con digest, versión de serialización
+y revisión compatible del motor/reglas. Continuación, evaluación y replay leen
+esa copia, aunque Catalog publique otra o retire la temporada. No basta guardar
+un hash. CR-T3.0 debe integrar contratos/fakes/suites primero; T3.4 implementará
+persistencia y ADR-009, T3.5 captura y replay. No se ha cambiado código ni contrato
+en esta revisión. El mapeo Game→Simulation también debe conservar cursor físico
+y empates no resueltos; son huecos actuales, no abstracciones para el modo futuro.
+
+**Próximas tres tareas, en paralelo por propiedad:**
+
+1. **CR-T3.0:** entradas recuperables de la partida y ajustes demostrados del
+   contrato de mapeo del simulador; antes de T3.4/T3.5.
+2. **T3.1a:** `RunState`/`SquadRegistry` privados mínimos; después T3.1b,
+   efectos T3.2 y directiva/moral T3.3 pueden repartirse sin editar esos tipos.
+3. **T4.2:** shell, rutas y adaptador sobre OpenAPI/MSW. T4.1/T4.3 preparan
+   pantallas; A se acepta con backend real, no con la máquina de estados de MSW.
+
+Oleadas de 2-3 agentes contando revisión independiente. T3.7a/T4.7a aceptan A
+con sintéticos; T3.7b conserva el golden histórico de B. T4.6a muestra el estado
+terminal y último bloque sin esperar evaluación/ranking. T5.5/T5.6 se dividen en
+entregas de evaluación/compartir (B) y ranking (C). CR-T5.B resolverá el percentil
+numérico obligatorio del contrato actual: hasta integrarla no se omite ni se
+inventa ese dato en respuestas implementadas.
+
+**Evolución aplazada:** ADR-015 y las ACL permiten reutilizar plantillas y
+movimientos por partida. Los contratos de escenario, comparación y resultados
+externos siguen siendo históricos; `ExternalResultsPolicy` no es hoy un enchufe
+listo para simular todos los clubes. Calendario global, datos a fecha de corte,
+mercado económico y evaluación por objetivos del modo actual requieren diseño
+concreto y CR en D. No crear modos genéricos ni nuevas tecnologías ahora.
+RAG queda como experimento offline posterior a B (T6.5R), con fuentes, revisión
+humana, evaluación de citas y coste; no forma parte de la ejecución de partidas.
+
+**Aprobaciones de producto pendientes:** beta B con un equipo y sin ranking,
+audiencia privada/pública y presupuesto operativo, retención y fecha de salida.
+La V1 aprobada de 3-5 históricos y la calidad de las plantillas rivales se
+conservan. Estas decisiones no impiden comenzar A. Consultar PLAN §5.4 antes de
+anunciar una beta o modificar el alcance del lanzamiento.
