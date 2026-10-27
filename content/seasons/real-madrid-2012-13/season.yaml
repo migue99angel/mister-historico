@@ -296,11 +296,173 @@ competitions:
     - head_to_head_away_goals
     - goal_difference
     - goals_for
+    - club_coefficient
     advance_per_group: 2
     reapply_head_to_head:
       value: true
       sources:
       - https://www.eurocups.ru/docs/cl-12_13-rules.pdf
+      verify: ok
+    coefficients:
+    - club_season: porto-2012-13
+      milli_points: 98069
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: dynamo-kyiv-2012-13
+      milli_points: 62026
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: paris-saint-germain-2012-13
+      milli_points: 45835
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: dinamo-zagreb-2012-13
+      milli_points: 24774
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: arsenal-2012-13
+      milli_points: 113882
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: schalke-04-2012-13
+      milli_points: 78037
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: olympiacos-2012-13
+      milli_points: 61420
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: montpellier-2012-13
+      milli_points: 11835
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: ac-milan-2012-13
+      milli_points: 89996
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: zenit-2012-13
+      milli_points: 79066
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: anderlecht-2012-13
+      milli_points: 48480
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: malaga-2012-13
+      milli_points: 16837
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: real-madrid-2012-13
+      milli_points: 121837
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: manchester-city-2012-13
+      milli_points: 63882
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: ajax-2012-13
+      milli_points: 58103
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: borussia-dortmund-2012-13
+      milli_points: 31037
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: chelsea-2012-13
+      milli_points: 135882
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: shakhtar-donetsk-2012-13
+      milli_points: 84026
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: juventus-2012-13
+      milli_points: 46996
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: nordsjaelland-2012-13
+      milli_points: 8005
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: bayern-munich-2012-13
+      milli_points: 133037
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: valencia-2012-13
+      milli_points: 89837
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: lille-2012-13
+      milli_points: 38835
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: bate-borisov-2012-13
+      milli_points: 29641
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: barcelona-2012-13
+      milli_points: 157837
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: benfica-2012-13
+      milli_points: 87069
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: spartak-moscow-2012-13
+      milli_points: 46066
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: celtic-2012-13
+      milli_points: 32728
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: manchester-united-2012-13
+      milli_points: 141882
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: braga-2012-13
+      milli_points: 63069
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: galatasaray-2012-13
+      milli_points: 38310
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: cfr-cluj-2012-13
+      milli_points: 18764
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
       verify: ok
   - id: round-of-16
     name: Octavos
