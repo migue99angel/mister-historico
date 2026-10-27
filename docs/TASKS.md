@@ -430,10 +430,10 @@
 - **Aceptación:** validación en verde y medias justificadas.
 
 #### T2.12 · Calendario, resultados y clasificaciones
-- **Oleada:** F2-A · **Tamaño:** L · **Depende de:** T1.2 · **Propiedad:** `fixtures.yaml` y `standings.yaml`, más una lista de participantes en `participants.md` que sirve de entrada a T2.16
+- **Oleada:** F2-A · **Tamaño:** L · **Depende de:** T1.2 · **Propiedad:** `fixtures.yaml` y `standings.yaml`, más la lista de participantes en `docs/content/real-madrid-2012-13-participants.md` que sirve de entrada a T2.16. La ubicación de la lista se fijó en [CR-T2.12](changes/CR-T2.12-participants-location.md).
 - **Qué hacer:**
   - Todos los partidos oficiales del RM con su fecha y resultado real, la clasificación de liga en cada fecha de corte y los cuadros de las copas [P2].
-  - **Primer entregable, en las primeras horas:** la lista de todos los rivales de la temporada, con su slug de club-season y si van con plantilla o agregados. Así T2.16 puede empezar en paralelo.
+  - **Primer entregable, en las primeras horas:** la lista de todos los rivales de la temporada, con su slug de club-season y si van con plantilla o agregados. Se publica en `docs/content/` para que T2.16 pueda empezar en paralelo sin que una temporada YAML incompleta rompa la validación release.
 - **Aceptación:** el número de partidos de liga coincide con el número de jornadas y los puntos que suman los resultados coinciden con la clasificación final real (lo comprueba el validador).
 
 #### T2.13 · Dilemas y textos
