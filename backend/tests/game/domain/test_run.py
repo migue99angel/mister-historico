@@ -87,6 +87,17 @@ def make_run() -> Run:
     )[0]
 
 
+def make_resolution(
+    block_id: BlockId,
+    state: RunState | None = None,
+    outcome: ClosureOutcome = ClosureOutcome.CONTINUE,
+    cursor: date | None = None,
+) -> BlockResolution:
+    return BlockResolution(
+        block_id, state or make_state(), b"synthetic-block-output", outcome, cursor
+    )
+
+
 def test_start_creates_first_in_progress_block_and_emits_started() -> None:
     run, events = Run.start(
         RunId(UUID(int=1)),
@@ -128,19 +139,19 @@ def test_cannot_take_decision_twice_or_choose_option_from_another_dilemma() -> N
 def test_advance_requires_all_dilemmas_resolved_and_does_not_mutate_on_error() -> None:
     run = make_run()
     with pytest.raises(DomainError):
-        run.advance_block(BlockResolution(BLOCK_1, make_state()), NOW)
+        run.advance_block(make_resolution(BLOCK_1), NOW)
     assert run.current_block == BLOCK_1
 
 
 def test_advance_progresses_to_next_block_then_finishes_after_last() -> None:
     run, _ = make_run().take_decision(DILEMMA, OPTION, NOW)
-    second_block, first_events = run.advance_block(BlockResolution(BLOCK_1, make_state()), NOW)
+    second_block, first_events = run.advance_block(make_resolution(BLOCK_1), NOW)
 
     assert second_block.status is RunStatus.IN_PROGRESS
     assert second_block.current_block == BLOCK_2
     assert [type(event).__name__ for event in first_events] == ["BlockSimulated"]
 
-    finished, events = second_block.advance_block(BlockResolution(BLOCK_2, make_state()), NOW)
+    finished, events = second_block.advance_block(make_resolution(BLOCK_2), NOW)
 
     assert finished.status is RunStatus.FINISHED
     assert finished.current_block is None
@@ -150,28 +161,26 @@ def test_advance_progresses_to_next_block_then_finishes_after_last() -> None:
 def test_sacked_run_emits_manager_sacked_and_rejects_further_commands() -> None:
     run = make_run()
     run, _ = run.take_decision(DILEMMA, OPTION, NOW)
-    sacked, events = run.advance_block(
-        BlockResolution(BLOCK_1, make_state(), ClosureOutcome.SACKED), NOW
-    )
+    sacked, events = run.advance_block(make_resolution(BLOCK_1, outcome=ClosureOutcome.SACKED), NOW)
 
     assert sacked.status is RunStatus.SACKED
     assert [type(event).__name__ for event in events] == ["BlockSimulated", "ManagerSacked"]
     with pytest.raises(DomainError):
         sacked.take_decision(DILEMMA, OPTION, NOW)
     with pytest.raises(DomainError):
-        sacked.advance_block(BlockResolution(BLOCK_1, make_state()), NOW)
+        sacked.advance_block(make_resolution(BLOCK_1), NOW)
 
 
 def test_finished_run_rejects_commands() -> None:
     run = make_run()
     run, _ = run.take_decision(DILEMMA, OPTION, NOW)
-    after_first, _ = run.advance_block(BlockResolution(BLOCK_1, make_state()), NOW)
-    finished, _ = after_first.advance_block(BlockResolution(BLOCK_2, make_state()), NOW)
+    after_first, _ = run.advance_block(make_resolution(BLOCK_1), NOW)
+    finished, _ = after_first.advance_block(make_resolution(BLOCK_2), NOW)
 
     with pytest.raises(DomainError):
         finished.take_decision(DILEMMA, OPTION, NOW)
     with pytest.raises(DomainError):
-        finished.advance_block(BlockResolution(BLOCK_2, make_state()), NOW)
+        finished.advance_block(make_resolution(BLOCK_2), NOW)
 
 
 def test_start_rejects_empty_or_repeated_blocks_without_creating_run() -> None:
@@ -203,7 +212,7 @@ def test_advance_rejects_foreign_block_resolution_without_changing_run() -> None
     run, _ = make_run().take_decision(DILEMMA, OPTION, NOW)
 
     with pytest.raises(DomainError):
-        run.advance_block(BlockResolution(BLOCK_2, make_state()), NOW)
+        run.advance_block(make_resolution(BLOCK_2), NOW)
 
     assert run.current_block == BLOCK_1
 
@@ -213,7 +222,7 @@ def test_advance_rejects_state_from_another_managed_club() -> None:
 
     with pytest.raises(DomainError):
         run.advance_block(
-            BlockResolution(BLOCK_1, make_state_for(ClubSeasonId("other-fc-2000-01"))), NOW
+            make_resolution(BLOCK_1, make_state_for(ClubSeasonId("other-fc-2000-01"))), NOW
         )
 
     assert run.current_block == BLOCK_1
@@ -234,9 +243,7 @@ def test_advance_rejects_cursor_regression() -> None:
     )
 
     with pytest.raises(DomainError):
-        with_cursor.advance_block(
-            BlockResolution(BLOCK_1, make_state(), cursor=date(2000, 1, 1)), NOW
-        )
+        with_cursor.advance_block(make_resolution(BLOCK_1, cursor=date(2000, 1, 1)), NOW)
 
     assert with_cursor.cursor == date(2000, 2, 1)
 
