@@ -1,21 +1,22 @@
 """Contracts for immutable, recoverable run inputs."""
 
-from dataclasses import FrozenInstanceError, replace
 import hashlib
 import json
+from dataclasses import FrozenInstanceError, replace
 
 import pytest
+from tests.contracts.suites.expected_test_fc import build_expected_test_fc_season
 
-from mister.game.application.run_content import RunContentSnapshot
+from mister.catalog.application.api import PlayableSeasonDTO
 from mister.game.application.replay_inputs import ReplayInputs
+from mister.game.application.run_content import RunContentSnapshot
+from mister.game.infrastructure.catalog_adapter import CatalogRunContentAdapter
 from mister.game.infrastructure.run_content_codec import (
     decode_playable_season,
     encode_playable_season,
 )
-from mister.game.infrastructure.catalog_adapter import CatalogRunContentAdapter
 from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.ids import PlayableSeasonId
-from tests.contracts.suites.expected_test_fc import build_expected_test_fc_season
 
 
 def _inputs(snapshot: RunContentSnapshot) -> ReplayInputs:
@@ -35,6 +36,23 @@ def test_codec_round_trips_the_complete_test_fc_dto() -> None:
 
     assert decode_playable_season(snapshot) == season
     assert snapshot.playable_season_id == season.id
+    assert {
+        type(effect).__name__
+        for dilemma in season.dilemmas
+        for option in dilemma.options
+        for effect in option.effects
+    } == {
+        "BoardConfidenceEffectDTO",
+        "CompetitionPriorityEffectDTO",
+        "FitnessEffectDTO",
+        "InjuryEffectDTO",
+        "MoraleEffectDTO",
+        "PlayerMoraleEffectDTO",
+        "SellPlayerEffectDTO",
+        "SetTacticEffectDTO",
+        "SignPlayerEffectDTO",
+        "YouthMinutesEffectDTO",
+    }
 
 
 def test_snapshot_digest_covers_exact_canonical_content_bytes() -> None:
@@ -75,7 +93,7 @@ def test_capture_reads_once_and_restore_survives_a_catalog_republication() -> No
         calls = 0
         available = True
 
-        def get_playable_season(self, season_id: PlayableSeasonId):
+        def get_playable_season(self, season_id: PlayableSeasonId) -> PlayableSeasonDTO:
             self.calls += 1
             if not self.available:
                 raise AssertionError("restoration consulted the live catalog")
@@ -87,7 +105,9 @@ def test_capture_reads_once_and_restore_survives_a_catalog_republication() -> No
     snapshot_a = adapter.capture(season_a.id)
     assert provider.calls == 1
 
-    provider.season = replace(season_a, manager=replace(season_a.manager, display_name="Updated manager"))
+    provider.season = replace(
+        season_a, manager=replace(season_a.manager, display_name="Updated manager")
+    )
     snapshot_b = adapter.capture(season_a.id)
     provider.available = False
     restored_a = adapter.restore(snapshot_a)
@@ -100,17 +120,31 @@ def test_capture_reads_once_and_restore_survives_a_catalog_republication() -> No
 
 def test_unknown_codec_tags_and_fields_are_rejected() -> None:
     snapshot = encode_playable_season(build_expected_test_fc_season())
-    unknown_tag_json = snapshot.content_json.replace('"$type":"TacticDTO"', '"$type":"FutureTacticDTO"', 1)
-    unknown_tag = replace(snapshot, content_json=unknown_tag_json, digest=hashlib.sha256(unknown_tag_json.encode()).hexdigest())
+    unknown_tag_json = snapshot.content_json.replace(
+        '"$type":"TacticDTO"', '"$type":"FutureTacticDTO"', 1
+    )
+    unknown_tag = replace(
+        snapshot,
+        content_json=unknown_tag_json,
+        digest=hashlib.sha256(unknown_tag_json.encode()).hexdigest(),
+    )
 
     with pytest.raises(InvalidValueError, match="unknown DTO tag"):
         decode_playable_season(unknown_tag)
 
     raw = json.loads(snapshot.content_json)
     raw["fields"]["future_field"] = True
-    fields_json = json.dumps(raw, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
+    fields_json = json.dumps(
+        raw, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
+    )
     with pytest.raises(InvalidValueError, match="fields do not match"):
-        decode_playable_season(replace(snapshot, content_json=fields_json, digest=hashlib.sha256(fields_json.encode()).hexdigest()))
+        decode_playable_season(
+            replace(
+                snapshot,
+                content_json=fields_json,
+                digest=hashlib.sha256(fields_json.encode()).hexdigest(),
+            )
+        )
 
 
 def test_supported_replay_revisions_are_explicit() -> None:
@@ -129,10 +163,23 @@ def test_format_version_must_be_an_integer_not_an_equal_value(format_version: ob
         replace(snapshot, format_version=format_version)  # type: ignore[arg-type]
 
 
-@pytest.mark.parametrize("content", ["[]", "{\"x\":1}", "{\"$type\":\"PlayableSeasonDTO\",\"fields\":{},\"fields\":{}}", "{\"$type\":\"PlayableSeasonDTO\",\"fields\":{},\"x\":1}"])
+@pytest.mark.parametrize(
+    "content",
+    [
+        "[]",
+        '{"x":1}',
+        '{"$type":"PlayableSeasonDTO","fields":{},"fields":{}}',
+        '{"$type":"PlayableSeasonDTO","fields":{},"x":1}',
+    ],
+)
 def test_snapshot_envelope_rejects_noncanonical_or_arbitrary_json(content: str) -> None:
     with pytest.raises(InvalidValueError):
-        RunContentSnapshot(1, content, hashlib.sha256(content.encode()).hexdigest(), PlayableSeasonId("test-fc-2000-01"))
+        RunContentSnapshot(
+            1,
+            content,
+            hashlib.sha256(content.encode()).hexdigest(),
+            PlayableSeasonId("test-fc-2000-01"),
+        )
 
 
 @pytest.mark.parametrize("revision", [0, None, " "])
@@ -141,4 +188,3 @@ def test_replay_revisions_must_be_nonempty_strings(revision: object) -> None:
 
     with pytest.raises(InvalidValueError, match="revision"):
         ReplayInputs(snapshot, "{}", "{}", revision, "rules-1")  # type: ignore[arg-type]
-
