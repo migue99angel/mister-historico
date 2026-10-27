@@ -85,15 +85,17 @@ class SquadRegistry:
             for other in self.base_memberships[index + 1 :]:
                 if membership.player_id == other.player_id and _overlap(membership, other):
                     raise InvalidValueError("A player cannot have overlapping base memberships")
-        ordered = sorted(self.transfers, key=lambda transfer: transfer.effective_on)
         last_date: dict[PlayerId, date] = {}
-        for transfer in ordered:
+        previous_transfers: list[SquadTransfer] = []
+        for transfer in self.transfers:
             previous_date = last_date.get(transfer.player_id)
-            if previous_date == transfer.effective_on:
-                raise InvalidValueError("A player cannot have two transfers on the same date")
+            if previous_date is not None and transfer.effective_on <= previous_date:
+                raise InvalidValueError(
+                    "Transfers for each player must be appended in chronological order"
+                )
             actual_owner = _owner_on(
                 self.base_memberships,
-                tuple(item for item in ordered if item.effective_on < transfer.effective_on),
+                tuple(previous_transfers),
                 transfer.player_id,
                 transfer.effective_on,
             )
@@ -102,6 +104,7 @@ class SquadRegistry:
                     "Transfer origin does not own the player on its effective date"
                 )
             last_date[transfer.player_id] = transfer.effective_on
+            previous_transfers.append(transfer)
 
     @property
     def player_ids(self) -> frozenset[PlayerId]:
@@ -120,13 +123,14 @@ class SquadRegistry:
     ) -> SquadRegistry:
         """Return a registry with one validated movement appended."""
         movement = SquadTransfer(player_id, from_club_season_id, to_club_season_id, effective_on)
-        if player_id not in self.player_ids:
-            raise InvalidValueError("Transfer player is not known to this registry")
-        if any(
-            item.player_id == player_id and item.effective_on == effective_on
-            for item in self.transfers
-        ):
-            raise InvalidValueError("A player cannot have two transfers on the same date")
+        last_movement_date = max(
+            (item.effective_on for item in self.transfers if item.player_id == player_id),
+            default=None,
+        )
+        if last_movement_date is not None and effective_on <= last_movement_date:
+            raise InvalidValueError(
+                "Transfers for each player must be appended in chronological order"
+            )
         if self.owner_on(player_id, effective_on) != from_club_season_id:
             raise InvalidValueError("Transfer origin does not own the player on its effective date")
         return SquadRegistry(self.base_memberships, (*self.transfers, movement))
