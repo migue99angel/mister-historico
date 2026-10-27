@@ -311,6 +311,7 @@ def test_different_dilemmas_may_reuse_option_ids_and_accept_decisions() -> None:
     "decisions",
     [
         (Decision(BLOCK_1, DILEMMA, OPTION, 2),),
+        (Decision(BLOCK_1, DILEMMA, OPTION, True),),
         (Decision(BLOCK_1, DILEMMA, OPTION, 1), Decision(BLOCK_1, DILEMMA, OPTION, 2)),
         (Decision(BLOCK_1, DILEMMA, OptionId("unknown-option"), 1),),
     ],
