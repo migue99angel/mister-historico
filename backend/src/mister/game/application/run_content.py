@@ -35,13 +35,8 @@ class RunContentSnapshot:
             )
         except (json.JSONDecodeError, TypeError, ValueError) as error:
             raise InvalidValueError("run content must be finite canonical JSON") from error
-        if (
-            not isinstance(root, dict)
-            or set(root) != {"$type", "fields"}
-            or root["$type"] != "PlayableSeasonDTO"
-            or not isinstance(root["fields"], dict)
-        ):
-            raise InvalidValueError("run content must contain a tagged playable-season object")
+        if not isinstance(root, dict):
+            raise InvalidValueError("run content must be a canonical JSON object")
         if canonical != self.content_json:
             raise InvalidValueError("run content JSON must use canonical encoding")
         expected = hashlib.sha256(self.content_json.encode("utf-8")).hexdigest()

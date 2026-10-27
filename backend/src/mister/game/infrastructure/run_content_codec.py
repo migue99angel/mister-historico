@@ -88,6 +88,51 @@ _IDS = {name: getattr(ids, name) for name in _ID_NAMES}
 _TAGS = {value: key for key, value in _DTOS.items()}
 _ENUM_TAGS = {value: key for key, value in _ENUMS.items()}
 _ID_TAGS = {value: key for key, value in _IDS.items()}
+FORMAT1_SCHEMA_FINGERPRINT = "bda2f411387a97fd66eb2114545c68ad61bee82b8b586f8d4f2893c4a96c1da9"
+
+
+def _type_manifest(value: Any) -> Any:
+    origin = get_origin(value)
+    args = get_args(value)
+    if origin is Literal:
+        return ["literal", [[type(item).__name__, item] for item in args]]
+    if origin is not None:
+        return [f"{origin.__module__}.{origin.__qualname__}", [_type_manifest(arg) for arg in args]]
+    if isinstance(value, type):
+        return f"{value.__module__}.{value.__qualname__}"
+    return repr(value)
+
+
+def _schema_manifest() -> dict[str, Any]:
+    admitted: dict[str, Any] = {}
+    for name, cls in _DTOS.items():
+        hints = get_type_hints(cls)
+        admitted[f"catalog.{name}"] = [
+            [field.name, _type_manifest(hints[field.name])] for field in fields(cls)
+        ]
+    for name, cls in _IDS.items():
+        hints = get_type_hints(cls)
+        admitted[f"shared_kernel.{name}"] = [
+            [field.name, _type_manifest(hints[field.name])] for field in fields(cls)
+        ]
+    for name, enum in _ENUMS.items():
+        admitted[f"catalog.{name}"] = [member.value for member in enum]
+    return admitted
+
+
+def _current_schema_fingerprint() -> str:
+    payload = json.dumps(
+        _schema_manifest(), sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def assert_format1_schema_supported() -> None:
+    """Stop using format 1 if any admitted API type changes without a codec review."""
+    if _current_schema_fingerprint() != FORMAT1_SCHEMA_FINGERPRINT:
+        raise InvalidValueError(
+            "Catalog or shared-kernel API no longer matches the frozen format 1 schema"
+        )
 
 
 def _encode(value: Any) -> Any:
@@ -115,7 +160,7 @@ def _decode(value: Any, expected: Any) -> Any:  # noqa: PLR0911, PLR0912
     origin = get_origin(expected)
     args = get_args(expected)
     if origin is Literal:
-        if value not in args:
+        if not any(type(value) is type(literal) and value == literal for literal in args):
             raise InvalidValueError("value is outside the declared literal set")
         return value
     if origin in (UnionType, Union):
@@ -187,6 +232,7 @@ def _decode(value: Any, expected: Any) -> Any:  # noqa: PLR0911, PLR0912
 
 
 def encode_playable_season(season: catalog.PlayableSeasonDTO) -> RunContentSnapshot:
+    assert_format1_schema_supported()
     content_json = json.dumps(
         _encode(season), sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
     )
@@ -196,6 +242,7 @@ def encode_playable_season(season: catalog.PlayableSeasonDTO) -> RunContentSnaps
 
 
 def decode_playable_season(snapshot: RunContentSnapshot) -> catalog.PlayableSeasonDTO:
+    assert_format1_schema_supported()
     if snapshot.format_version != 1:
         raise InvalidValueError(f"unsupported run content format {snapshot.format_version}")
     if hashlib.sha256(snapshot.content_json.encode("utf-8")).hexdigest() != snapshot.digest:
