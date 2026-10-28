@@ -728,6 +728,45 @@ def test_preexisting_transfer_overrides_later_base_join_date() -> None:
     assert entry.eligible is True
 
 
+def test_membership_join_at_date_min_does_not_underflow_previous_day_check() -> None:
+    captured, snapshot = _captured()
+    block = replace(captured.blocks[0], start=date.min)
+    managed = snapshot.run.run_state.managed_club_season_id
+    player = replace(snapshot.run.run_state.players[0], rating=90)
+    players = tuple(
+        player if item.player_id == player.player_id else item
+        for item in snapshot.run.run_state.players
+    )
+    registry = SquadRegistry((Membership(player.player_id, managed, date.min, None),))
+    state = replace(snapshot.run.run_state, players=players, squad_registry=registry)
+    changed = replace(snapshot, run=replace(snapshot.run, run_state=state))
+    result = BlockSimulationResult(
+        block.id,
+        (),
+        (),
+        (),
+        (),
+        (),
+        tuple(
+            PlayerOutcome(item.player_id, item.fitness, item.injured_until, 0) for item in players
+        ),
+    )
+    base_rules = RulesConfiguration.a_profile()
+    rules = replace(
+        base_rules,
+        eligibility=replace(base_rules.eligibility, minimum_team_fixtures=0),
+    )
+
+    entry = next(
+        item
+        for item in _player_minutes(changed, captured, block, result, rules)
+        if item.player_id == player.player_id
+    )
+
+    assert entry.star
+    assert entry.eligible is False
+
+
 @pytest.mark.parametrize("result_kind", ["wrong_block", "duplicate_player", "missing_player"])
 def test_closure_rejects_invalid_simulator_result_without_closing(result_kind: str) -> None:
     captured, snapshot = _captured()
