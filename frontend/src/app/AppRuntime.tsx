@@ -36,7 +36,8 @@ export function AppRuntime({ children, gameApi, runTokenStore, queryClient }: Ap
       }),
     [gameApi],
   );
-  const tokens = useMemo(() => runTokenStore ?? createLocalStorageRunTokenStore(), [runTokenStore]);
+  // Created once, like the query client: tokens saved earlier must stay reachable.
+  const [tokens] = useState(() => runTokenStore ?? createLocalStorageRunTokenStore());
 
   return (
     <ApplicationProviders gameApi={api} runTokenStore={tokens} queryClient={client}>
