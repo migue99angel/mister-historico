@@ -111,6 +111,11 @@ def _validate_record_snapshot(
     actual_goals = tuple(item.goal_id for item in snapshot.goals)
     if actual_goals != expected_goals:
         raise InvalidValueError("run snapshot goal progress does not match captured objectives")
+    if (
+        run.blocks != captured.run_blocks
+        or run.run_state.managed_club_season_id != captured.managed_club_season_id
+    ):
+        raise InvalidValueError("run snapshot blocks or managed club differ from captured content")
     try:
         initial_data = json.loads(record.replay_inputs.initial_state_json)
         initial = RunSnapshot.decode(initial_data)
