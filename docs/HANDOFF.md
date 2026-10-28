@@ -587,3 +587,52 @@ menos de JS inicial). Siguiente: T4.7a, E2E real con Playwright contra backend, 
 cuando estén T3.6 y T3.7a; necesita permiso explícito para ejecutar Playwright.
 Worktrees y ramas locales de la tanda eliminados tras comprobar con
 `git log --cherry-pick --right-only` que no quedaba nada fuera de `main`.
+
+## 17. Presentación capturada y frontera HTTP de T3.6
+
+La [CR de presentación](changes/CR-T3.6-presentation.md), #106/#108, publica
+`GameApi`, `Presented` y `Started`. El `RunView` privado de T3.5 conserva dominio
+y sigue siendo interno. La fachada presenta la vista original devuelta por cada
+caso de uso con la captura inmutable del registro; una respuesta idempotente no
+se reconstruye desde el snapshot mutable actual. La ACL restaura el DTO completo
+de Catalog desde esa captura, incluidos nombres, colores, textos y etiquetas.
+Retirar o sustituir Catalog solo afecta a las consultas del selector y a nuevas
+partidas. El helper publicado de Catalog aplica `NamePolicy`; `real_names`
+configura la presentación sin cambiar identidades ni datos guardados.
+
+La plantilla de una partida en curso se presenta al inicio del bloque, fecha
+efectiva de fichajes y ventas. En un terminal se usa el cierre conservado. Los
+días de lesión se calculan desde el estado físico persistido (`state_as_of`):
+elegir una decisión no adelanta la recuperación. El resumen usa resultados
+simulados conservados, marcadores de 90 minutos, prórroga y penaltis separados,
+clasificaciones previas por competición/grupo y etiquetas de la captura.
+
+Los seis endpoints F3 se montan bajo `/api`, compatible con el proxy Vite y
+`resolveApiBaseUrl` existentes. El adaptador valida el UUID, exige Bearer y
+comprueba existencia/token antes de leer JSON. Después valida cuerpo/clave y
+delega idempotencia, versión y negocio en los casos de uso. FastAPI recibe el
+request crudo para conservar ese orden; las validaciones de entrada son 400.
+Los modelos Pydantic de respuesta reflejan el alcance F3 congelado y sus campos
+anidados. Los tests comparan esquemas y payloads con el YAML autoritativo; el
+OpenAPI generado solo corrige metadatos automáticos de FastAPI y tipos de error.
+
+`bootstrap.py` comparte un engine y crea una fachada y `SqlUnitOfWork` por
+petición. Las operaciones síncronas se ejecutan en el thread pool; la UoW no se
+comparte entre peticiones. El lifespan libera el engine también si hay una
+excepción. El composition root obtiene el motor mediante el módulo ACL existente
+de Game, que ya expone su dependencia `SimulationService`, respetando R7. Se
+reutilizan proveedor SQL de Catalog, repositorios/UoW, adaptador de Simulation,
+reloj y tokens existentes; semilla y token nacen en el servidor.
+
+La comprobación SQL de esta entrega carga únicamente contenido sintético en una
+BD aislada, simula un bloque y verifica recuperación, rollback, precedencia y
+carreras HTTP. Producción no importa tests ni publica Test FC por defecto. Para
+preparar un entorno local se puede cargar desde `backend/` con
+`UV_NO_SYNC=1 uv run mister content load --root tests/fixtures/content`.
+
+**Límites y siguiente trabajo:** no se implementan evaluación/resultados finales,
+alias, ranking, endpoints de replay ni pantallas. Se conservan entradas de replay
+y el perfil provisional A. T3.7a debe acreditar temporada completa y golden por
+HTTP; T4.7a debe conectar la aceptación web real, sin MSW. A y F3 siguen abiertos,
+al igual que F2 histórica. El estado, revisión y evidencia de integración se
+consultan en #81 y su PR, conforme a ADR-016.
