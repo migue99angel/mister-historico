@@ -1,8 +1,13 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useMemo } from 'react';
 
-import { HomeScreen } from '../ui/screens/HomeScreen';
-import { NativeRouter, RouterLink } from './nativeRouter';
-import { useCurrentRoute } from './routerHooks';
+import { NativeRouter } from './nativeRouter';
+import { createRouteNavigation } from './routeNavigation';
+import { useCurrentRoute, useNavigate } from './routerHooks';
+import { HomeRoute } from './routes/HomeRoute';
+import { MinimalRoute } from './routes/MinimalRoute';
+import { RunFinalRoute } from './routes/RunFinalRoute';
+import { RunRoute } from './routes/RunRoute';
+import { SeasonRoute } from './routes/SeasonRoute';
 
 // Statically false in production builds, so the showcase chunk is never emitted there.
 const DesignShowcase = import.meta.env.DEV
@@ -14,23 +19,32 @@ const DesignShowcase = import.meta.env.DEV
 export function AppRoutes() {
   return (
     <NativeRouter>
-      <RouteContent />
+      {/* Screens may be lazy() chunks (initial JS budget); this covers them all. */}
+      <Suspense fallback={<RouteFallback />}>
+        <RouteContent />
+      </Suspense>
     </NativeRouter>
   );
 }
 
+/**
+ * One case per route. Screens get route params and navigation callbacks as props and never
+ * import the router; each screen task edits only its own file under ./routes/.
+ */
 function RouteContent() {
   const route = useCurrentRoute();
+  const navigate = useNavigate();
+  const navigation = useMemo(() => createRouteNavigation(navigate), [navigate]);
 
   switch (route.kind) {
     case 'home':
-      return <HomeScreen />;
+      return <HomeRoute onSeasonChosen={navigation.onSeasonChosen} />;
     case 'season':
-      return <MinimalRoute title="Contexto del equipo" identifier={route.seasonId} />;
+      return <SeasonRoute seasonId={route.seasonId} onRunStarted={navigation.onRunStarted} />;
     case 'run':
-      return <MinimalRoute title="Partida" identifier={route.runId} />;
+      return <RunRoute runId={route.runId} onRunEnded={navigation.onRunEnded} />;
     case 'run-final':
-      return <MinimalRoute title="Resultado de la partida" identifier={route.runId} />;
+      return <RunFinalRoute runId={route.runId} onPlayAgain={navigation.onPlayAgain} />;
     case 'shared-run':
       return <MinimalRoute title="Partida compartida" identifier={route.runId} />;
     case 'design-showcase':
@@ -46,14 +60,10 @@ function RouteContent() {
   }
 }
 
-function MinimalRoute({ title, identifier }: { title: string; identifier?: string }) {
+function RouteFallback() {
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center gap-4 px-6 py-12 text-center">
-      <h1 className="text-3xl font-bold">{title}</h1>
-      {identifier && <p>Identificador: {identifier}</p>}
-      <nav aria-label="Navegación principal">
-        <RouterLink to="/">Inicio</RouterLink>
-      </nav>
+    <main className="flex min-h-dvh items-center justify-center px-6 py-12 text-center">
+      <p role="status">Cargando…</p>
     </main>
   );
 }
