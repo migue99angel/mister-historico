@@ -168,6 +168,43 @@ def test_future_forced_injury_for_a_rival_player_survives_until_he_joins() -> No
     assert state.injured_until == date(2000, 9, 7)
 
 
+def test_pool_injury_remains_unavailable_when_the_player_faces_the_managed_team() -> None:
+    value = request()
+    rival_id = ClubSeasonId("sample-united-2000-01")
+    rival = SquadTeamInput(
+        rival_id,
+        tuple(
+            replace(item, player_id=PlayerId(f"rival-{index:02}"))
+            for index, item in enumerate(value.managed_team.players)
+        ),
+        TacticDTO("balanced", "4-4-2"),
+    )
+    memberships = (
+        *(SquadMembershipInput(player.player_id, ME) for player in value.managed_team.players),
+        *(SquadMembershipInput(player.player_id, rival_id) for player in rival.players),
+    )
+    pool = (*value.managed_team.players, *rival.players)
+    dated = replace(
+        value,
+        season=replace(value.season, teams=(value.season.teams[0], rival)),
+        squad_memberships=memberships,
+        player_pool=pool,
+    )
+    healthy, injured = FixedMatches(), FixedMatches()
+    forced = tuple(ForcedInjuryDTO(player.player_id, START, 10) for player in rival.players)
+
+    play(dated, healthy)
+    summary = play(replace(dated, forced_injuries_from_effects=forced), injured)
+
+    assert injured.setups[0].away.attack < healthy.setups[0].away.attack
+    assert injured.setups[0].away.defense != healthy.setups[0].away.defense
+    assert all(
+        state.injured_until is not None
+        for state in summary.player_states
+        if state.player_id in {player.player_id for player in rival.players}
+    )
+
+
 def test_youth_player_transferred_into_managed_squad_gets_a_later_opportunity() -> None:
     value = request()
     youth = value.managed_team.players[0]
