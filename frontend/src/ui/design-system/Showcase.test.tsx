@@ -99,9 +99,9 @@ describe('Showcase', () => {
     render(<Showcase />);
 
     const standings = within(section('MiniStandings'));
-    expect(standings.getByText(/^Sube/)).toBeInTheDocument();
-    expect(standings.getByText(/^Baja/)).toBeInTheDocument();
-    expect(standings.getByText('Mantiene el puesto')).toBeInTheDocument();
+    for (const change of [/^Sube/, /^Baja/, 'Mantiene el puesto']) {
+      expect(standings.getAllByText(change).length).toBeGreaterThan(0);
+    }
   });
 
   it('shows the season in progress, finished and with the manager sacked', () => {
@@ -110,7 +110,7 @@ describe('Showcase', () => {
     const progress = within(section('BlockProgress'));
     expect(progress.getByText('Bloque 1 de 5')).toBeInTheDocument();
     expect(progress.getByText('Temporada terminada')).toBeInTheDocument();
-    expect(progress.getByText(/^Destituido/)).toBeInTheDocument();
+    expect(progress.getByText('Destituido en el bloque 3 de 5')).toBeInTheDocument();
   });
 
   it('shows the four verdicts', () => {
