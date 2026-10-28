@@ -16,7 +16,8 @@
 
 - `NamePolicy` se aplica al presentar jugadores y entrenador; los IDs y los datos guardados no cambian.
 - Presentar una partida siempre usa su contenido capturado, incluso tras sustituir o retirar la publicación actual de Catalog.
-- No se exponen semilla, hash del token, efectos de opciones ni opción histórica. Resultados, evaluación, ranking, alias y analítica quedan fuera de esta fachada CR.
+- La plantilla activa de un bloque en curso se resuelve a la fecha de inicio del bloque, donde tienen efecto las decisiones; en una partida terminal se resuelve a la fecha de cierre conservada. Las lesiones mantienen los días restantes calculados desde `RunState.state_as_of`, sin adelantar el estado físico al elegir una decisión.
+- No se exponen semilla, hash del token, efectos de opciones ni opción histórica. El endpoint de resultado y evaluación final, ranking, alias y analítica quedan fuera de esta fachada CR; `lastBlockSummary` sí presenta el último bloque cerrado.
 - El adaptador de presentación es una ACL de infraestructura y solo importa la API publicada de Catalog. Los DTOs HTTP y las rutas concretas pertenecen al cableado T3.6 posterior.
 
 ## Verificación

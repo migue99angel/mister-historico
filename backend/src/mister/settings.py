@@ -10,3 +10,4 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(frozen=True)
 
     database_url: str = "postgresql+psycopg://mister:mister@localhost:5432/mister"
+    real_names: bool = True
