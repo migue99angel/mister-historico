@@ -10,6 +10,7 @@ from mister.catalog.application.api import (
     present_person_name,
 )
 from mister.game.application import ports
+from mister.game.application.api import SeasonQueries
 from mister.game.application.block_codec import BlockSimulationCodec
 from mister.game.application.presentation import GamePresentation
 from mister.game.application.presentation_types import Presented
@@ -22,7 +23,7 @@ from mister.settings import Settings
 from mister.shared_kernel.ids import ClubSeasonId, CompetitionId, PlayableSeasonId, PlayerId
 
 
-class CatalogPresentationAdapter(GamePresentation):
+class CatalogPresentationAdapter(GamePresentation, SeasonQueries):
     """Translate Catalog DTOs and private Game state into safe presentation values."""
 
     def __init__(self, provider: SeasonContentProvider, settings: Settings) -> None:
@@ -30,9 +31,8 @@ class CatalogPresentationAdapter(GamePresentation):
         self._real_names = settings.real_names
 
     def list_seasons(self) -> tuple[Presented, ...]:
-        return tuple(
-            self._season_summary(item.id) for item in self._provider.list_playable_seasons()
-        )
+        summaries = sorted(self._provider.list_playable_seasons(), key=lambda item: item.id.value)
+        return tuple(self._season_summary(item.id) for item in summaries)
 
     def get_season(self, season_id: PlayableSeasonId) -> Presented:
         season = self._provider.get_playable_season(season_id)

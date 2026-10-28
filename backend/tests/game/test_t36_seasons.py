@@ -2,23 +2,22 @@
 
 from collections.abc import Sequence
 from dataclasses import replace
-from typing import cast
 
 import pytest
+from tests.contracts.suites.expected_test_fc import build_expected_test_fc_season
+from tests.game.test_t36_facade import _api
 
 from mister.catalog.application.api import (
     PlayableSeasonDTO,
     PlayableSeasonNotFoundError,
     PlayableSeasonSummaryDTO,
 )
-from mister.game.application.api import GameApi, SeasonNotFoundError, SeasonQueries
+from mister.game.application.api import SeasonNotFoundError, SeasonQueries
 from mister.game.application.presentation_types import Presented
 from mister.game.infrastructure.presentation_adapter import CatalogPresentationAdapter
 from mister.settings import Settings
 from mister.shared_kernel.errors import DomainError
 from mister.shared_kernel.ids import PlayableSeasonId
-from tests.contracts.suites.expected_test_fc import build_expected_test_fc_season
-from tests.game.test_t36_facade import _api
 
 
 class _CatalogProvider:
