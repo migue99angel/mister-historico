@@ -21,7 +21,8 @@ comprobado, no se presume que exista un backlog adicional en Projects.
 
 - **Ahora, A:** CR-T3.0, T3.1a/T3.1b, T3.4 y T4.2 están integradas.
   T3.2/T3.3 están integradas con revisión Sol y CI verde.
-  T4.1/T4.3 siguen su vía independiente. Convergen en T3.5/T3.6,
+  F4-A cerrada: T4.1, T4.2 y T4.3 integradas, con CR-T4.1a y CR-T4.1b.
+  Siguen T4.4/T4.5/T4.6a con MSW; convergen en T3.5/T3.6,
   T3.7a y el frontend conectado T4.7a. No requieren contenido real firmado.
 - **En paralelo, para B:** contenido F2, verificación y firma, después
   calibración/rendimiento del piloto; evaluación/compartir y UX móvil. La beta
@@ -695,6 +696,16 @@ existen; los casos de uso de partida siguen pendientes.
 ## F4 · Frontend (`frontend/`): la oleada A empieza en cuanto cierra la F1
 
 ### T4.1 · Sistema de diseño móvil primero
+- **Estado:** integrada en [PR #65](https://github.com/migue99angel/mister-historico/pull/65)
+  por rebase-merge, con revisión independiente (aprobar con matices; corregidos
+  negrita y nombres largos de `MiniStandings`, foco de `Button` al cargar, «tu equipo»
+  en `MatchLine` y coherencia de los datos de muestra) y CI en verde. 307 tests
+  frontend; `ui/design-system` al 100 % de líneas; JS inicial 79,49 KB gzip.
+  Tokens en `theme.css`/`tokens.ts` (contraste AA comprobado), nueve componentes
+  presentacionales con props compatibles con los view models de T4.3
+  (`viewModels.test.ts`) y página de muestra `Showcase` con maquetas del bucle y del
+  final. Capturas en Pixel 7 en [PR #66](https://github.com/migue99angel/mister-historico/pull/66)
+  (rama `assets/T4.1-screenshots`, que no se integra).
 - **Oleada:** F4-A · **Tamaño:** M · **Depende de:** T0.3
 - **Propiedad:** `frontend/src/ui/design-system/**`
 - **Qué hacer:**
@@ -706,11 +717,23 @@ existen; los casos de uso de partida siguen pendientes.
   - `GenericCrest` es determinista para los mismos colores.
 
 ### CR-T4.1a · Dependencia de accesibilidad (jest-axe)
-- **Estado:** en revisión en [PR #63](https://github.com/migue99angel/mister-historico/pull/63).
+- **Estado:** integrada en [PR #63](https://github.com/migue99angel/mister-historico/pull/63)
+  por rebase-merge, con revisión independiente y CI en verde.
   Añade `jest-axe` y `axe-core` como dependencias de desarrollo, registra
   `toHaveNoViolations` en `frontend/test/setup.ts` y declara los tipos en
   `frontend/test/jest-axe.d.ts`. [Propiedad y decisiones](changes/CR-T4.1a-a11y.md).
 - Se integra antes que T4.1, que usa `jest-axe` en sus tests de componente.
+- `axe()` se espera siempre con `await` y nunca en `it.concurrent` («Axe is already running»).
+
+### CR-T4.1b · Ruta de desarrollo `/diseno`
+- **Estado:** integrada en [PR #66](https://github.com/migue99angel/mister-historico/pull/66)
+  por rebase-merge, con revisión independiente (aprobar con matices) y CI en verde.
+  309 tests frontend; JS inicial 79,5 KB gzip. [Propiedad y decisiones](changes/CR-T4.1b-design-route.md).
+- Extensión autorizada de `frontend/src/app/**` (propiedad de T4.2): `/diseno` carga
+  `Showcase` con `lazy()` solo con `import.meta.env.DEV`; en producción es 404 y no se
+  emite su código. `app/index.css` importa `ui/design-system/theme.css`.
+- Uso: `cd frontend && npm run dev` y abrir `http://localhost:5173/diseno`
+  (`npm run dev -- --host` para el móvil en la misma red).
 
 ### CR-T4.0 · Dependencia y cableado web previo
 - **Estado:** integrada en [PR #52](https://github.com/migue99angel/mister-historico/pull/52),
@@ -743,6 +766,9 @@ existen; los casos de uso de partida siguen pendientes.
   - Una ruta desconocida muestra una página 404.
 
 ### T4.3 · Dominio del frontend (view models)
+- **Estado:** integrada en [PR #60](https://github.com/migue99angel/mister-historico/pull/60)
+  por rebase-merge, con revisión independiente y CI en verde. Incluye la preferencia
+  por la tabla de liga en `findUserStanding` y «tras la prórroga, 4-3 en los penaltis».
 - **Oleada:** F4-A · **Tamaño:** S · **Depende de:** T1.4
 - **Propiedad:** `frontend/src/domain/**`
 - **Qué hacer:** funciones puras que pasan de `RunView` a un view model: narrativa del bloque, cambios de posición en la clasificación, formato de los resultados (con prórroga y penaltis) y progreso de la temporada.
@@ -752,6 +778,10 @@ existen; los casos de uso de partida siguen pendientes.
 - **Oleada:** F4-B · **Tamaño:** M · **Depende de:** T4.1-T4.3
 - **Propiedad:** `frontend/src/ui/screens/{SeasonPicker,SeasonIntro}/**` y `frontend/src/application/useSeasons.ts`, `useStartRun.ts`
 - **Tests primero:** con MSW, se listan las temporadas, se elige una, se ve el contexto con los objetivos de la directiva y se pulsa "Empezar", que navega a `/partida/:id`.
+- **Notas de T4.1:** usar `ui/design-system` (`Card`, `Button`, `GenericCrest` con
+  `TeamColors` del contrato) y sus tokens; no crear estilos ni componentes base paralelos.
+  Si falta un componente genérico, se pide en la PR y se añade en una tarea del
+  sistema de diseño, no dentro de `screens/`.
 
 ### T4.5 · Pantalla del bucle de bloques
 - **Oleada:** F4-B · **Tamaño:** L · **Depende de:** T4.1-T4.3
@@ -761,6 +791,17 @@ existen; los casos de uso de partida siguen pendientes.
   - "Avanzar" está deshabilitado mientras haya dilemas pendientes.
   - Un doble toque no envía la decisión dos veces (la `Idempotency-Key` es estable).
   - Un 409 muestra un mensaje y recarga el estado.
+- **Notas de T4.1 (revisión de #65):**
+  - La maqueta «Bucle de bloques» de `/diseno` es la referencia visual:
+    `BlockProgress`, `MatchLine`, `MiniStandings`, `DilemmaCard` y `Button`.
+    Pasar los view models de T4.3 tal cual.
+  - `Button loading` usa `aria-disabled` y conserva el foco; tras simular, devolver el
+    foco a un elemento útil (resumen o primer dilema) si el botón queda deshabilitado.
+  - Pasar `status` a `BlockProgress` siempre: sin `status="sacked"` una destitución se
+    pinta como temporada terminada.
+  - Las opciones de `DilemmaCard` son botones de alternancia (`aria-pressed`). Si la
+    pantalla necesita elección única con flechas, valorar `radiogroup` en el sistema de
+    diseño, con su ciclo TDD.
 
 ### T4.6 · Pantalla final (dos entregas en el mismo directorio)
 - **Propiedad:** `frontend/src/ui/screens/RunResult/**`.
@@ -774,6 +815,10 @@ existen; los casos de uso de partida siguen pendientes.
   a la historia, puntuación y veredicto. Se prepara sobre el contrato de resultado
   que integre CR-T5.B; conexión real en T5.6a. El percentil espera C y su contrato;
   no se representa con un valor inventado. Ambas entregas editan en secuencia.
+- **Notas de T4.1:** la maqueta «Pantalla final» de `/diseno` usa `VerdictBanner`
+  (cuatro veredictos del glosario; `score` opcional, que T4.6a no muestra),
+  `BlockProgress` con `status`, `MiniStandings` y `Button`. T4.6a puede maquetarse con
+  props antes de que exista `useRun`, sin inventar puntuación ni percentil.
 
 ### T4.7 · E2E real y rendimiento móvil (dos entregas)
 - **Propiedad:** `frontend/e2e/**`, `lighthouserc.json` y configuración de `size-limit`.
