@@ -4,10 +4,13 @@ export type AppRoute =
   | { kind: 'run'; runId: string }
   | { kind: 'run-final'; runId: string }
   | { kind: 'shared-run'; runId: string }
+  | { kind: 'design-showcase' }
   | { kind: 'not-found' };
 
 export function matchRoute(pathname: string): AppRoute {
   if (pathname === '/') return { kind: 'home' };
+  // Development-only page of the design system (CR-T4.1b); unknown in production.
+  if (import.meta.env.DEV && pathname === '/diseno') return { kind: 'design-showcase' };
 
   const patterns: [RegExp, AppRoute['kind']][] = [
     [/^\/equipo\/([^/]+)$/, 'season'],

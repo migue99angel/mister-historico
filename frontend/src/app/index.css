@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import '../ui/design-system/theme.css';
 
 @layer base {
   html {
