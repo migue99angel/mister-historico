@@ -1,4 +1,11 @@
-import { BlockProgress, Button, Card, MatchLine, MiniStandings } from '../../design-system';
+import {
+  BlockProgress,
+  Button,
+  Card,
+  GenericCrest,
+  MatchLine,
+  MiniStandings,
+} from '../../design-system';
 import { describeRunResult, type TerminalRunView } from './runResultView';
 
 export type { TerminalRunView } from './runResultView';
@@ -15,7 +22,17 @@ export function RunResult({ run, onPlayAgain }: RunResultProps) {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-4 px-gutter py-6">
-      <h1 className="font-display text-headline font-extrabold text-ink">Final de la partida</h1>
+      <header className="flex flex-col gap-3">
+        {view.club && (
+          <div className="flex items-center gap-3">
+            <GenericCrest colors={view.club.colors} size={36} />
+            <p className="font-display text-title leading-tight font-bold text-ink">
+              {view.club.name}
+            </p>
+          </div>
+        )}
+        <h1 className="font-display text-headline font-extrabold text-ink">Final de la partida</h1>
+      </header>
       <BlockProgress progress={view.progress} status={view.status} />
       <p className="text-body text-ink">{view.outcomeText}</p>
 
