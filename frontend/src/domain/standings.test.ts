@@ -79,6 +79,26 @@ describe('findUserStanding', () => {
     });
   });
 
+  it('prefers the league table over a group table that also contains the user', () => {
+    const group: StandingsInput = {
+      competitionName: 'Copa Test',
+      stageId: 'group-stage',
+      rows: [row(1, null, true), row(2, null)],
+    };
+
+    expect(findUserStanding([group, league])?.competitionName).toBe('Liga Test');
+  });
+
+  it('falls back to a group table when the user has no league table', () => {
+    const group: StandingsInput = {
+      competitionName: 'Copa Test',
+      stageId: 'group-stage',
+      rows: [row(1, null, true)],
+    };
+
+    expect(findUserStanding([group])?.competitionName).toBe('Copa Test');
+  });
+
   it('returns null when no table contains the user', () => {
     expect(findUserStanding([{ competitionName: 'Liga Test', rows: [row(1, 1)] }])).toBeNull();
   });
