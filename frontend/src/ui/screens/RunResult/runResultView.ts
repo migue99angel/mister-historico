@@ -28,7 +28,7 @@ export interface ResultMatchView {
   match: MatchResultViewModel;
   competitionName: string;
   keyMatchLabel: string | null;
-  userSide: 'home' | 'away';
+  userSide: 'home' | 'away' | undefined;
 }
 
 export interface ResultStandingRowView {
@@ -60,9 +60,10 @@ function outcomeText(run: TerminalRunView): string {
   return `La directiva te destituyó en ${monthName(run.sackedMonth)}.`;
 }
 
-/** Every result in a block summary is a match of the user's team. */
-function userSide(match: MatchReportDto): 'home' | 'away' {
-  return match.home.isUser ? 'home' : 'away';
+function userSide(match: MatchReportDto): 'home' | 'away' | undefined {
+  if (match.home.isUser) return 'home';
+  if (match.away.isUser) return 'away';
+  return undefined;
 }
 
 /** The user's league table wins over a group-stage table, as in `findUserStanding`. */
