@@ -1,11 +1,106 @@
-import type { RunStatusDto, RunViewDto } from '../../../application/ports';
+import type {
+  MatchReportDto,
+  RunStatusDto,
+  RunViewDto,
+  StandingsDto,
+} from '../../../application/ports';
+import { describeBlock } from '../../../domain/blockNarrative';
+import { formatMatchResult, type MatchResultViewModel } from '../../../domain/matchResult';
+import {
+  describeSeasonProgress,
+  type SeasonProgressViewModel,
+} from '../../../domain/seasonProgress';
+import { describePositionChange, type PositionChangeViewModel } from '../../../domain/standings';
+
+export type TerminalStatus = Exclude<RunStatusDto, 'in_progress'>;
 
 /** A run the final screen can show: it has ended, finished or with the manager sacked. */
-export type TerminalRunView = RunViewDto & { status: Exclude<RunStatusDto, 'in_progress'> };
+export type TerminalRunView = RunViewDto & { status: TerminalStatus };
 
-// Placeholder so the tests fail on behaviour, not on a missing module.
 export function isTerminalRun<T extends { status: RunStatusDto }>(
   run: T,
-): run is T & { status: TerminalRunView['status'] } {
-  return run.status === 'in_progress' && false;
+): run is T & { status: TerminalStatus } {
+  return run.status !== 'in_progress';
+}
+
+export interface ResultMatchView {
+  key: string;
+  match: MatchResultViewModel;
+  competitionName: string;
+  keyMatchLabel: string | null;
+  userSide: 'home' | 'away';
+}
+
+export interface ResultStandingRowView {
+  position: number;
+  teamName: string;
+  played: number;
+  points: number;
+  isUser: boolean;
+  change: PositionChangeViewModel;
+}
+
+export interface RunResultView {
+  status: TerminalStatus;
+  progress: SeasonProgressViewModel;
+  outcomeText: string;
+  lastBlock: { eyebrow: string; matches: ResultMatchView[] } | null;
+  standings: { title: string; competitionName: string; rows: ResultStandingRowView[] } | null;
+}
+
+const MONTH_FORMAT = new Intl.DateTimeFormat('es', { month: 'long', timeZone: 'UTC' });
+
+function monthName(month: number): string {
+  return MONTH_FORMAT.format(new Date(Date.UTC(2000, month - 1, 1)));
+}
+
+function outcomeText(run: TerminalRunView): string {
+  if (run.status === 'finished') return 'Has llegado al final de la temporada.';
+  if (run.sackedMonth === null) return 'La directiva te destituyó.';
+  return `La directiva te destituyó en ${monthName(run.sackedMonth)}.`;
+}
+
+/** Every result in a block summary is a match of the user's team. */
+function userSide(match: MatchReportDto): 'home' | 'away' {
+  return match.home.isUser ? 'home' : 'away';
+}
+
+/** The user's league table wins over a group-stage table, as in `findUserStanding`. */
+function userTable(tables: StandingsDto[]): StandingsDto | null {
+  const withUser = tables.filter((table) => table.rows.some((row) => row.team.isUser));
+  return withUser.find((table) => table.stageId === undefined) ?? withUser[0] ?? null;
+}
+
+/** Decides what the final screen shows for an ended run, from the run view alone. */
+export function describeRunResult(run: TerminalRunView): RunResultView {
+  const summary = run.lastBlockSummary;
+  const table = summary ? userTable(summary.standings) : null;
+
+  return {
+    status: run.status,
+    progress: describeSeasonProgress(run),
+    outcomeText: outcomeText(run),
+    lastBlock: summary && {
+      eyebrow: `${summary.label} · ${describeBlock(summary).recordText}`,
+      matches: summary.results.map((report) => ({
+        key: report.fixtureId,
+        match: formatMatchResult(report),
+        competitionName: report.competitionName,
+        keyMatchLabel: report.keyMatchLabel,
+        userSide: userSide(report),
+      })),
+    },
+    standings: table && {
+      title: run.status === 'finished' ? 'Clasificación final' : 'Clasificación al ser destituido',
+      competitionName: table.competitionName,
+      rows: table.rows.map((row) => ({
+        position: row.position,
+        teamName: row.team.name,
+        played: row.played,
+        points: row.points,
+        isUser: row.team.isUser,
+        change: describePositionChange(row),
+      })),
+    },
+  };
 }
