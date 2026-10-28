@@ -5,8 +5,10 @@ export interface StandingRowInput {
   team: { isUser: boolean };
 }
 
+/** Structural subset of a standings table; only group-stage tables carry `stageId`. */
 export interface StandingsInput {
   competitionName: string;
+  stageId?: string;
   rows: StandingRowInput[];
 }
 
@@ -57,12 +59,18 @@ export function describePositionChange(row: StandingRowInput): PositionChangeVie
   return { position, direction: 'same', places: 0, symbol: '=', text: 'Mantiene el puesto' };
 }
 
+/** The user's league table wins over any group-stage table that also lists the user. */
 export function findUserStanding(tables: StandingsInput[]): UserStandingViewModel | null {
+  let fallback: UserStandingViewModel | null = null;
   for (const table of tables) {
     const userRow = table.rows.find((row) => row.team.isUser);
-    if (userRow) {
-      return { competitionName: table.competitionName, change: describePositionChange(userRow) };
-    }
+    if (!userRow) continue;
+    const standing = {
+      competitionName: table.competitionName,
+      change: describePositionChange(userRow),
+    };
+    if (table.stageId === undefined) return standing;
+    fallback ??= standing;
   }
-  return null;
+  return fallback;
 }
