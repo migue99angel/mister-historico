@@ -35,6 +35,10 @@ function SaveTokenProbe() {
   return <p>{runTokenStore.read('run-1')}</p>;
 }
 
+function ReadTokenProbe() {
+  return <p>{useRunTokenStore().read('run-1')}</p>;
+}
+
 describe('AppRuntime', () => {
   beforeEach(() => {
     window.localStorage.clear();
@@ -71,5 +75,25 @@ describe('AppRuntime', () => {
     );
 
     expect(window.localStorage.getItem(`${RUN_TOKEN_KEY_PREFIX}run-1`)).toBe('token-1');
+  });
+
+  it('keeps the RunTokenStore it started with across re-renders', () => {
+    const firstStore = createInMemoryRunTokenStore();
+    firstStore.save('run-1', 'first-token');
+    const otherStore = createInMemoryRunTokenStore();
+    otherStore.save('run-1', 'other-token');
+
+    const { rerender } = render(
+      <AppRuntime gameApi={unusedApi} runTokenStore={firstStore}>
+        <ReadTokenProbe />
+      </AppRuntime>,
+    );
+    rerender(
+      <AppRuntime gameApi={unusedApi} runTokenStore={otherStore}>
+        <ReadTokenProbe />
+      </AppRuntime>,
+    );
+
+    expect(screen.getByText('first-token')).toBeInTheDocument();
   });
 });
