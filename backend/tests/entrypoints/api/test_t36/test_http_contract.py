@@ -236,6 +236,10 @@ class _GameApi:
         return _Presented(value)
 
     def advance_block(self, *args):
+        if args[-1] == 77:
+            raise _PublicError("pending_dilemmas")
+        if args[-1] == 88:
+            raise _PublicError("run_already_finished")
         value = _run_json()
         value["version"] = 1
         return _Presented(value)
@@ -420,6 +424,21 @@ async def test_decision_domain_errors_keep_their_public_codes(client, option_id,
         headers={"Authorization": "Bearer fixture", "Idempotency-Key": "decision-123"},
     )
     assert response.status_code == status
+    assert response.json()["code"] == code
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("version", "code"), [(77, "pending_dilemmas"), (88, "run_already_finished")]
+)
+async def test_advance_business_errors_keep_conflict_status(client, version, code):
+    run = "0b6f3a52-6c0e-4d3e-8d0a-3f1f6e2b9c11"
+    response = await client.post(
+        f"/api/runs/{run}/advance",
+        json={"expectedVersion": version},
+        headers={"Authorization": "Bearer fixture", "Idempotency-Key": "advance-123"},
+    )
+    assert response.status_code == 409
     assert response.json()["code"] == code
 
 
