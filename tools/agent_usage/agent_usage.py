@@ -507,6 +507,13 @@ def github_data(sizes: dict) -> tuple[list[dict], dict[str, str]]:
     return out, board
 
 
+def _sum_by(calls: list[tuple]) -> dict[str, int]:
+    out: Counter = Counter()
+    for _, _, role, total, _ in calls:
+        out[role] += total
+    return dict(out)
+
+
 def collect(out_dir: Path, cutoff: datetime, use_ccusage: bool = True, use_github: bool = True) -> dict:
     home = Path.home()
     claude_dirs = sorted(p for p in (home / ".claude/projects").glob("*mister-historico*") if p.is_dir())
@@ -522,7 +529,7 @@ def collect(out_dir: Path, cutoff: datetime, use_ccusage: bool = True, use_githu
     overrides = json.loads(overrides_path.read_text()) if overrides_path.exists() else {}
     cc_claude, cc_codex = ccusage_rows(claude, claude_dirs) if use_ccusage else ({}, {})
 
-    rows, snapshots = [], []
+    rows, snapshots, calls = [], [], []
     for s in claude + codex:
         if not s.calls:
             continue
@@ -538,6 +545,7 @@ def collect(out_dir: Path, cutoff: datetime, use_ccusage: bool = True, use_githu
             "ccusage_total": cc.get("totalTokens") if cc else None, **cost_fields(cc),
         })
         snapshots += s.quota
+        calls += [(c.ts.isoformat(), rows[-1]["tool"], a["role"], c.total, c.wait) for c in s.calls]
     prs, board = github_data(sizes) if use_github else ([], {})
     tasks = aggregate_tasks(rows, prs, {k: v for k, v in sizes.items() if v}, board)
     windows = quota_windows(snapshots)
@@ -554,6 +562,13 @@ def collect(out_dir: Path, cutoff: datetime, use_ccusage: bool = True, use_githu
         w["prs_opened"] = sum(1 for p in prs if p["tool"] == tool and inside(p["created"]))
         w["prs_merged"] = sum(1 for p in prs if p["tool"] == tool and inside(p.get("merged")))
         w["prs_merged_all_tools"] = sum(1 for p in prs if inside(p.get("merged")))
+        mine = [c for c in calls if c[1] == tool and w["start"] <= c[0] < w["resets_at"]]
+        w["calls"] = len(mine)
+        w["wait_calls"] = sum(c[4] for c in mine)
+        w["tokens"] = sum(c[3] for c in mine)
+        w["tokens_by_role"] = _sum_by(mine)
+        w["minutes_at_limit"] = (round((parse_ts(w["resets_at"]) - parse_ts(w["first_at_limit"])).total_seconds() / 60)
+                                 if w["first_at_limit"] else 0)
 
     validation = {}
     for tool, cc in (("Claude Code", cc_claude), ("Codex", cc_codex)):
