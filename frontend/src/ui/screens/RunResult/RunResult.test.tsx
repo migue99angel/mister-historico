@@ -159,6 +159,14 @@ describe('RunResult', () => {
     expect(within(lastBlock).getAllByText('(tu equipo)')).toHaveLength(2);
   });
 
+  it('marks no team as the user team in a result where neither side is the user', () => {
+    const otherMatch = match({ home: RIVAL, away: ATLETICO });
+    renderResult(run({ lastBlockSummary: summary({ results: [otherMatch] }) }));
+
+    const lastBlock = screen.getByRole('region', { name: 'Último bloque' });
+    expect(within(lastBlock).queryByText('(tu equipo)')).not.toBeInTheDocument();
+  });
+
   it('shows the final league table of a finished run with the user team highlighted', () => {
     renderResult(run());
 
