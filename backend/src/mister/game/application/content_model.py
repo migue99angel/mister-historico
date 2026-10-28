@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from mister.game.application.run_content import RunContentSnapshot
     from mister.game.domain.board import GoalDefinition
     from mister.game.domain.effects import Effect
-    from mister.game.domain.state import PlayerState, RunState
+    from mister.game.domain.state import PlayerState, RunState, Tactic
     from mister.shared_kernel.ids import (
         BlockId,
         ClubSeasonId,
@@ -49,6 +49,13 @@ class CapturedBlock:
     start: date
     end: date
     dilemmas: tuple[CapturedDilemma, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class CapturedClub:
+    id: ClubSeasonId
+    default_tactic: Tactic
+    has_squad: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -135,6 +142,7 @@ class CapturedSeason:
     managed_club_season_id: ClubSeasonId
     season_label: str
     initial_state: RunState
+    clubs: tuple[CapturedClub, ...]
     blocks: tuple[CapturedBlock, ...]
     competitions: tuple[CompetitionMetadata, ...]
     goals: tuple[GoalDefinition, ...]

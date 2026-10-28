@@ -7,6 +7,7 @@ from mister.catalog.application import api as c
 from mister.catalog.application.api import PlayableSeasonDTO, SeasonContentProvider
 from mister.game.application.content_model import (
     CapturedBlock,
+    CapturedClub,
     CapturedDilemma,
     CapturedOption,
     CapturedRealResult,
@@ -138,6 +139,17 @@ class CatalogRunContentAdapter:
             )
             for item in season.blocks
         )
+        clubs = tuple(
+            CapturedClub(
+                club.id,
+                Tactic(
+                    TacticStyle(club.default_tactic.style.value),
+                    tuple(int(value) for value in club.default_tactic.system.split("-")),
+                ),
+                club.squad is not None,
+            )
+            for club in season.club_seasons
+        )
         goals = tuple(
             GoalDefinition(
                 item.id,
@@ -235,6 +247,7 @@ class CatalogRunContentAdapter:
             season.club_season_id,
             season.season,
             initial,
+            clubs,
             blocks,
             competitions,
             goals,
