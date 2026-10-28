@@ -73,3 +73,14 @@ export function requireRunToken(runToken: string | null): string {
   }
   return runToken;
 }
+
+export type RunCommandFailure =
+  | { kind: 'conflict'; code: string | undefined }
+  | { kind: 'unavailable' }
+  | { kind: 'failed'; error: Error };
+
+export interface RunCommand<Variables> {
+  send: (variables: Variables) => Promise<RunViewDto | null>;
+  isPending: boolean;
+  failure: RunCommandFailure | null;
+}
