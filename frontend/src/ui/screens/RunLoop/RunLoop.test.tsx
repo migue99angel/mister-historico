@@ -90,6 +90,47 @@ function spyOnCommand(command: 'decisions' | 'advance'): (string | null)[] {
   return keys;
 }
 
+/** Decides through the API, as another tab or device of the same player would. */
+async function decideInAnotherTab(
+  { runtime, runId, runToken }: SeededRun,
+  dilemmaId: string,
+  optionId: string,
+  expectedVersion?: number,
+) {
+  const version = expectedVersion ?? (await runtime.gameApi.getRun(runId, runToken)).version;
+  return runtime.gameApi.takeDecision({
+    runId,
+    runToken,
+    idempotencyKey: `another-tab-${dilemmaId}`,
+    dilemmaId,
+    optionId,
+    expectedVersion: version,
+  });
+}
+
+/** Holds every GET of the run until released; the original handler then answers it. */
+function holdRunReloads(): () => void {
+  let release: () => void = () => undefined;
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  mockServer.use(
+    http.get('*/api/runs/:runId', async () => {
+      await held;
+    }),
+  );
+  return () => {
+    release();
+  };
+}
+
+function problem(status: number, code: string) {
+  return HttpResponse.json(
+    { type: 'about:blank', title: code, status, code },
+    { status, headers: { 'Content-Type': 'application/problem+json' } },
+  );
+}
+
 describe('RunLoop', () => {
   it('shows the dilemmas of the block and keeps Simular bloque disabled while any is pending', async () => {
     renderRunLoop(await startRun());
@@ -201,12 +242,135 @@ describe('RunLoop', () => {
     decide('Summer striker', 'Sign the veteran striker');
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'La partida ha cambiado en otra pestaña o dispositivo. Hemos recargado su estado.',
+      'La partida ya había cambiado. Hemos recargado su estado.',
     );
     await waitFor(() => {
       expect(screen.queryByRole('region', { name: 'Board meeting' })).not.toBeInTheDocument();
     });
     expect(screen.getByRole('region', { name: 'Summer striker' })).toBeInTheDocument();
+  });
+
+  it('keeps the commands disabled while the run reloads after a 409', async () => {
+    const seeded = await startRun();
+    renderRunLoop(seeded);
+    await screen.findByRole('heading', { name: 'Board meeting' });
+    await decideInAnotherTab(seeded, 'board-meeting', 'support-the-board', 0);
+    const releaseReload = holdRunReloads();
+
+    decide('Summer striker', 'Sign the veteran striker');
+
+    await screen.findByRole('alert');
+    const confirm = screen.getByRole('button', { name: 'Confirmar decisión: Summer striker' });
+    expect(confirm).toBeDisabled();
+    releaseReload();
+    await waitFor(() => {
+      expect(confirm).toBeEnabled();
+    });
+  });
+
+  it('moves the focus to the dilemmas when a 409 reload removes the dilemma being decided', async () => {
+    const seeded = await startRun();
+    renderRunLoop(seeded);
+    await screen.findByRole('heading', { name: 'Board meeting' });
+    await decideInAnotherTab(seeded, 'board-meeting', 'support-the-board', 0);
+
+    decide('Board meeting', 'Back the board in public');
+
+    await waitFor(() => {
+      expect(screen.queryByRole('region', { name: 'Board meeting' })).not.toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Decisiones del bloque' })).toHaveFocus();
+    });
+  });
+
+  it('shows its own message and reloads the run when the API rejects a decision (422)', async () => {
+    mockServer.use(
+      http.post('*/api/runs/:runId/decisions', () => problem(422, 'invalid_option'), {
+        once: true,
+      }),
+    );
+    renderRunLoop(await startRun());
+    await screen.findByRole('heading', { name: 'Board meeting' });
+
+    decide('Board meeting', 'Back the board in public');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Esa opción ya no es válida. Hemos recargado la partida.',
+    );
+  });
+
+  it('shows a message and reloads the run when Simular bloque answers 409', async () => {
+    const seeded = await startRun();
+    renderRunLoop(seeded);
+    await screen.findByRole('heading', { name: 'Board meeting' });
+    await decideAndWait('Board meeting', 'Back the board in public');
+    await decideAndWait('Summer striker', 'Sign the veteran striker');
+    // Another tab simulates the block first.
+    await seeded.runtime.gameApi.advanceBlock({
+      runId: seeded.runId,
+      runToken: seeded.runToken,
+      idempotencyKey: 'another-tab-advance',
+      expectedVersion: 2,
+    });
+
+    fireEvent.click(screen.getByRole('button', SIMULATE));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'La partida ya había cambiado. Hemos recargado su estado.',
+    );
+    expect(await screen.findByRole('heading', { name: 'Captain complaint' })).toBeInTheDocument();
+  });
+
+  it('ends the run when Simular bloque finds it already finished', async () => {
+    const seeded = await startRun();
+    await playBlocks(seeded.runtime.gameApi, seeded.runId, seeded.runToken, 4);
+    const lastBlock = await decideInAnotherTab(seeded, 'final-rotation', 'rotate-the-squad');
+    const { onRunEnded } = renderRunLoop(seeded);
+    await screen.findByRole('heading', { name: 'Decisiones del bloque' });
+    // Another tab simulates the last block; this one then hears run_already_finished.
+    await seeded.runtime.gameApi.advanceBlock({
+      runId: seeded.runId,
+      runToken: seeded.runToken,
+      idempotencyKey: 'another-tab-advance',
+      expectedVersion: lastBlock.version,
+    });
+    mockServer.use(
+      http.post('*/api/runs/:runId/advance', () => problem(409, 'run_already_finished'), {
+        once: true,
+      }),
+    );
+
+    fireEvent.click(screen.getByRole('button', SIMULATE));
+
+    await waitFor(() => {
+      expect(onRunEnded).toHaveBeenCalledWith(seeded.runId);
+    });
+  });
+
+  it('says the run is not available when the API rejects the token of a command (403)', async () => {
+    const seeded = await startRun();
+    renderRunLoop(seeded);
+    await screen.findByRole('heading', { name: 'Board meeting' });
+    seeded.runtime.runTokenStore.save(seeded.runId, 'a-token-from-another-run');
+
+    decide('Board meeting', 'Back the board in public');
+
+    expect(
+      await screen.findByText('Esta partida no está disponible en este dispositivo.'),
+    ).toBeInTheDocument();
+    expect(seeded.runtime.runTokenStore.read(seeded.runId)).toBeNull();
+  });
+
+  it("shows the crest and name of the player's club once a block has been played", async () => {
+    const seeded = await startRun();
+    await playBlocks(seeded.runtime.gameApi, seeded.runId, seeded.runToken, 1);
+
+    renderRunLoop(seeded);
+
+    const banner = await screen.findByRole('banner', { name: 'Tu equipo' });
+    expect(within(banner).getByText('Test FC')).toBeInTheDocument();
+    expect(banner.querySelector('svg')).not.toBeNull();
   });
 
   it('simulates the block and shows its results and the standings', async () => {
@@ -307,6 +471,16 @@ describe('RunLoop', () => {
       screen.getByText('Esta partida no está disponible en este dispositivo.'),
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Volver al inicio' })).toHaveAttribute('href', '/');
+  });
+
+  it('gives the link back home a touch-sized target', () => {
+    renderRunLoop({ runtime: createTestRuntime(), runId: UNKNOWN_RUN_ID, runToken: '' });
+
+    expect(screen.getByRole('link', { name: 'Volver al inicio' })).toHaveClass(
+      'inline-flex',
+      'min-h-touch',
+      'items-center',
+    );
   });
 
   it('forgets the token and says the run is not available when the API rejects it (403)', async () => {
