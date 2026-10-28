@@ -8,7 +8,7 @@ from uuid import uuid4
 import pytest
 from alembic import command
 from alembic.config import Config
-from httpx import ASGITransport, AsyncClient
+from httpx import ASGITransport, AsyncClient, Response
 from testcontainers.community.postgres import PostgresContainer
 
 from mister.bootstrap import bootstrap
@@ -33,7 +33,9 @@ def database_url() -> Iterator[str]:
 
 
 @pytest.mark.anyio
-async def test_real_http_composition_starts_and_recovers_a_private_run(database_url: str):  # noqa: PLR0915
+async def test_real_http_composition_starts_and_recovers_a_private_run(  # noqa: PLR0915
+    database_url: str,
+) -> None:
     container = bootstrap(Settings(database_url=database_url))
     assert container.engine is not None
     SqlCatalogLoader(container.engine).load(_CONTENT)
@@ -100,7 +102,7 @@ async def test_real_http_composition_starts_and_recovers_a_private_run(database_
             decision_key = "same-decision-001"
             decision_headers = {**headers, "Idempotency-Key": decision_key}
 
-            async def take_first_decision():
+            async def take_first_decision() -> Response:
                 return await client.post(
                     f"/api/runs/{run_id}/decisions",
                     json=first_decision,
@@ -165,7 +167,7 @@ async def test_real_http_composition_starts_and_recovers_a_private_run(database_
         expected_version = view["version"]
         advance_body = {"expectedVersion": expected_version}
 
-        async def advance(key: str):
+        async def advance(key: str) -> Response:
             return await client.post(
                 f"/api/runs/{run_id}/advance",
                 json=advance_body,
