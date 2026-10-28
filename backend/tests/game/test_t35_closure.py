@@ -6,9 +6,9 @@ from tests.contracts.suites.expected_test_fc import build_expected_test_fc_seaso
 
 from mister.catalog.application.api import PlayableSeasonDTO, PlayableSeasonSummaryDTO
 from mister.game.application.block_codec import decode_block
-from mister.game.application.closure import advance_snapshot
+from mister.game.application.closure import _resolve_goals, advance_snapshot
 from mister.game.application.content_model import CapturedSeason
-from mister.game.application.ports import BlockSimulationResult, PlayerOutcome
+from mister.game.application.ports import BlockEvent, BlockSimulationResult, EventKind, PlayerOutcome
 from mister.game.application.rules import RulesConfiguration
 from mister.game.application.use_cases import RunSnapshot, apply_choice
 from mister.game.domain.board import GoalProgress, GoalStatus
@@ -16,7 +16,7 @@ from mister.game.domain.run import Run
 from mister.game.infrastructure.catalog_adapter import CatalogRunContentAdapter
 from mister.game.infrastructure.in_memory.season_simulator import ScriptedSeasonSimulator
 from mister.shared_kernel.events import DomainEvent
-from mister.shared_kernel.ids import PlayableSeasonId, RunId
+from mister.shared_kernel.ids import CompetitionId, PlayableSeasonId, RunId
 from mister.shared_kernel.seed import Seed
 
 
@@ -93,3 +93,29 @@ def test_advance_snapshot_simulates_and_persists_full_block_payload_and_cursor()
     assert request.squad_memberships is not None
     assert request.player_pool is not None
     assert request.state_as_of == snapshot.run.run_state.state_as_of
+
+
+def test_advancing_from_semifinal_marks_final_stage_reached() -> None:
+    captured, snapshot = _captured()
+    cup_goal = next(goal for goal in captured.goals if goal.goal_id == "obj-copa")
+    semifinal_result = BlockSimulationResult(
+        captured.blocks[2].id,
+        (),
+        (),
+        (),
+        (
+            BlockEvent(
+                EventKind.ADVANCED,
+                captured.blocks[2].end,
+                captured.managed_club_season_id,
+                CompetitionId(cup_goal.competition_id),
+                "semifinal",
+            ),
+        ),
+        (),
+        (),
+    )
+
+    goals = _resolve_goals(snapshot, captured, semifinal_result)
+
+    assert next(item for item in goals if item.goal_id == cup_goal.goal_id).status is GoalStatus.MET
