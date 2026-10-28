@@ -33,13 +33,18 @@ export function MatchLine({ match, competitionName, keyMatchLabel, userSide }: M
       <span className="sr-only">{match.outcomeLabel}</span>
       <div className="min-w-0 flex-1">
         <p className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-body text-ink">
-          <span className={cx('truncate text-right', userSide === 'home' && 'font-bold')}>
+          <span
+            className={cx(
+              'text-right leading-tight break-words',
+              userSide === 'home' && 'font-bold',
+            )}
+          >
             {match.homeName}
           </span>
           <span className="rounded-md bg-surface-raised px-2 font-display font-bold tabular-nums">
             {`${String(match.homeScore)}–${String(match.awayScore)}`}
           </span>
-          <span className={cx('truncate', userSide === 'away' && 'font-bold')}>
+          <span className={cx('leading-tight break-words', userSide === 'away' && 'font-bold')}>
             {match.awayName}
           </span>
         </p>
