@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 
 import { useRun } from '../../../application/useRun';
 import { Button } from '../../design-system';
@@ -25,23 +25,23 @@ function Notice({ title, children }: { title: string; children: ReactNode }) {
 }
 
 /** Final screen of `/partida/:id/final`: loads the run of this device and shows how it ended. */
-export function RunFinal({ runId, onPlayAgain }: RunFinalProps) {
+export function RunFinal({ runId, onPlayAgain, onRunInPlay }: RunFinalProps) {
   const state = useRun(runId);
+  // Reached by URL or history while the run is still in play: there is no result yet.
+  const inPlay = state.kind === 'ready' && !isTerminalRun(state.run);
+  const handedBackRunId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!inPlay || handedBackRunId.current === runId) return;
+    handedBackRunId.current = runId;
+    onRunInPlay(runId);
+  }, [inPlay, runId, onRunInPlay]);
+
+  if (state.kind === 'ready' && isTerminalRun(state.run)) {
+    return <RunResult run={state.run} onPlayAgain={onPlayAgain} />;
+  }
 
   switch (state.kind) {
-    case 'ready':
-      if (isTerminalRun(state.run)) return <RunResult run={state.run} onPlayAgain={onPlayAgain} />;
-      // Reached by URL or history while the run is still in play: no result to show yet.
-      return (
-        <Notice title="La partida sigue en juego">
-          <p className="text-body text-ink-muted">
-            Esta partida todavía no ha terminado. Vuelve a ella para seguir jugando.
-          </p>
-          <a href={`/partida/${encodeURIComponent(runId)}`} className={LINK_CLASSES}>
-            Volver a la partida
-          </a>
-        </Notice>
-      );
     case 'unavailable':
       return (
         <Notice title="Partida no disponible">
@@ -60,6 +60,7 @@ export function RunFinal({ runId, onPlayAgain }: RunFinalProps) {
           <Button onClick={state.retry}>Reintentar</Button>
         </Notice>
       );
+    case 'ready':
     case 'loading':
       return (
         <main className="mx-auto flex min-h-dvh max-w-md items-center justify-center px-gutter">
