@@ -197,7 +197,14 @@ describe('RunResult', () => {
   });
 
   it('leaves out the standings when no table of the last block lists the user team', () => {
-    renderResult(run({ lastBlockSummary: summary({ standings: [] }) }));
+    const tableWithoutUser = {
+      competitionId: 'copa-test',
+      competitionName: 'Copa Test',
+      stageId: 'grupos',
+      groupId: 'b',
+      rows: [row(1, RIVAL, 10), row(2, ATLETICO, 7)],
+    };
+    renderResult(run({ lastBlockSummary: summary({ standings: [tableWithoutUser] }) }));
 
     expect(screen.getByRole('region', { name: 'Último bloque' })).toBeVisible();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
