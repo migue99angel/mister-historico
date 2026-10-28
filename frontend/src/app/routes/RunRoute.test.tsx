@@ -1,5 +1,12 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { Suspense } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import {
+  createTestRuntime,
+  mockFixtures,
+  renderWithRuntime,
+} from '../../../test/renderWithRuntime';
 
 import { App } from '../App';
 import { NativeRouter } from '../nativeRouter';
@@ -45,16 +52,39 @@ describe('RunRoute mount point (/partida/:id)', () => {
     expect(window.history.length).toBe(historyLength);
   });
 
-  it('currently mounts the placeholder page with its identifier', async () => {
+  it('mounts the run loop screen, loaded lazily, with the run of this device', async () => {
+    const { RunRoute } = await vi.importActual<typeof RunRouteModule>('./RunRoute');
+    const runtime = createTestRuntime();
+    const started = await runtime.gameApi.startRun({ seasonId: mockFixtures.TEST_SEASON_ID });
+    runtime.runTokenStore.save(started.run.runId, started.runToken);
+
+    renderWithRuntime(
+      <NativeRouter>
+        <Suspense fallback={<p>Cargando…</p>}>
+          <RunRoute runId={started.run.runId} onRunEnded={() => undefined} />
+        </Suspense>
+      </NativeRouter>,
+      { runtime },
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: 'Decisiones del bloque' }),
+    ).toBeInTheDocument();
+  });
+
+  it('mounts the run loop screen, which says a run without a token is not available', async () => {
     const { RunRoute } = await vi.importActual<typeof RunRouteModule>('./RunRoute');
 
-    render(
+    renderWithRuntime(
       <NativeRouter>
-        <RunRoute runId="run-1" onRunEnded={() => undefined} />
+        <Suspense fallback={<p>Cargando…</p>}>
+          <RunRoute runId="run-1" onRunEnded={() => undefined} />
+        </Suspense>
       </NativeRouter>,
     );
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Partida' })).toBeInTheDocument();
-    expect(screen.getByText('Identificador: run-1')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Esta partida no está disponible en este dispositivo.'),
+    ).toBeInTheDocument();
   });
 });
