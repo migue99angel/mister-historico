@@ -1,18 +1,20 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 import { useMemo, useState, type ReactNode } from 'react';
 
-import type { GameApi } from '../application/ports';
+import { ApplicationProviders } from '../application/ApplicationProviders';
+import type { GameApi, RunTokenStore } from '../application/ports';
 import { createHttpGameApi } from '../infrastructure/api/http-game-api';
+import { createLocalStorageRunTokenStore } from '../infrastructure/storage/localStorageRunTokenStore';
 import { resolveApiBaseUrl } from './apiBaseUrl';
-import { GameApiProvider } from './GameApiProvider';
 
 export interface AppRuntimeProps {
   children: ReactNode;
   gameApi?: GameApi | undefined;
+  runTokenStore?: RunTokenStore | undefined;
   queryClient?: QueryClient | undefined;
 }
 
-export function AppRuntime({ children, gameApi, queryClient }: AppRuntimeProps) {
+export function AppRuntime({ children, gameApi, runTokenStore, queryClient }: AppRuntimeProps) {
   const [client] = useState(
     () =>
       queryClient ??
@@ -34,10 +36,11 @@ export function AppRuntime({ children, gameApi, queryClient }: AppRuntimeProps) 
       }),
     [gameApi],
   );
+  const tokens = useMemo(() => runTokenStore ?? createLocalStorageRunTokenStore(), [runTokenStore]);
 
   return (
-    <QueryClientProvider client={client}>
-      <GameApiProvider api={api}>{children}</GameApiProvider>
-    </QueryClientProvider>
+    <ApplicationProviders gameApi={api} runTokenStore={tokens} queryClient={client}>
+      {children}
+    </ApplicationProviders>
   );
 }
