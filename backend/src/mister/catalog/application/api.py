@@ -713,3 +713,10 @@ class SeasonContentProvider(Protocol):
     def get_playable_season(self, season_id: PlayableSeasonId) -> PlayableSeasonDTO:
         """The full season; raises `PlayableSeasonNotFoundError` if it does not exist."""
         ...
+
+
+def present_person_name(display_name: str, alias_name: str, *, real_names: bool) -> str:
+    """Apply the published presentation policy without exposing Catalog domain types."""
+    from mister.catalog.domain.name_policy import NamePolicy
+
+    return NamePolicy(real_names).display(display_name, alias_name)
