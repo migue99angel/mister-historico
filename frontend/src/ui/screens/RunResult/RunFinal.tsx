@@ -8,6 +8,8 @@ import { isTerminalRun } from './runResultView';
 export interface RunFinalProps {
   runId: string;
   onPlayAgain: () => void;
+  /** Called when the run is still in play, to send the player back to its page. */
+  onRunInPlay: (runId: string) => void;
 }
 
 const LINK_CLASSES =

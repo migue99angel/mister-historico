@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import { HttpResponse, http } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
@@ -77,11 +77,17 @@ function spyOnRunFetches(): string[] {
   return fetches;
 }
 
-function renderRunFinal(runtime: TestRuntime, runId: string, onPlayAgain = vi.fn()) {
-  const rendered = renderWithRuntime(<RunFinal runId={runId} onPlayAgain={onPlayAgain} />, {
-    runtime,
-  });
-  return { ...rendered, onPlayAgain };
+function renderRunFinal(
+  runtime: TestRuntime,
+  runId: string,
+  onPlayAgain = vi.fn(),
+  onRunInPlay = vi.fn(),
+) {
+  const rendered = renderWithRuntime(
+    <RunFinal runId={runId} onPlayAgain={onPlayAgain} onRunInPlay={onRunInPlay} />,
+    { runtime },
+  );
+  return { ...rendered, onPlayAgain, onRunInPlay };
 }
 
 describe('RunFinal', () => {
@@ -178,18 +184,15 @@ describe('RunFinal', () => {
     ).toBeVisible();
   });
 
-  it('sends a run still in play back to its page instead of showing a result', async () => {
+  it('hands a run still in play back to its page through onRunInPlay', async () => {
     const { runtime, run } = await seedRun(null);
 
-    renderRunFinal(runtime, run.runId);
+    const { onRunInPlay } = renderRunFinal(runtime, run.runId);
 
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'La partida sigue en juego' }),
-    ).toBeVisible();
-    expect(screen.getByRole('link', { name: 'Volver a la partida' })).toHaveAttribute(
-      'href',
-      `/partida/${run.runId}`,
-    );
+    await waitFor(() => {
+      expect(onRunInPlay).toHaveBeenCalledWith(run.runId);
+    });
+    expect(onRunInPlay).toHaveBeenCalledTimes(1);
     expect(screen.queryByText('Final de la partida')).not.toBeInTheDocument();
   });
 
@@ -203,14 +206,6 @@ describe('RunFinal', () => {
 
   it('has no accessibility violations when the run is not available', async () => {
     const { container } = renderRunFinal(createTestRuntime(), UNKNOWN_RUN_ID);
-
-    expect(await axe(container)).toHaveNoViolations();
-  });
-
-  it('has no accessibility violations for a run still in play', async () => {
-    const { runtime, run } = await seedRun(null);
-    const { container } = renderRunFinal(runtime, run.runId);
-    await screen.findByRole('heading', { level: 1, name: 'La partida sigue en juego' });
 
     expect(await axe(container)).toHaveNoViolations();
   });

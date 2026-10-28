@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Suspense } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -94,6 +94,30 @@ describe('RunFinalRoute mount point (/partida/:id/final)', () => {
       await screen.findByRole('heading', { level: 1, name: 'Final de la partida' }),
     ).toBeInTheDocument();
     expect(screen.getByText(/^La directiva te destituyó/)).toBeInTheDocument();
+  });
+
+  it('replaces the final page with the run page while the run is still in play', async () => {
+    const { RunFinalRoute } = await vi.importActual<typeof RunFinalRouteModule>('./RunFinalRoute');
+    const runtime = createTestRuntime();
+    const started = await runtime.gameApi.startRun({ seasonId: mockFixtures.TEST_SEASON_ID });
+    const { runId } = started.run;
+    runtime.runTokenStore.save(runId, started.runToken);
+    window.history.replaceState(null, '', `/partida/${runId}/final`);
+    const historyLength = window.history.length;
+
+    renderWithRuntime(
+      <NativeRouter>
+        <Suspense fallback={<p>Cargando…</p>}>
+          <RunFinalRoute runId={runId} onPlayAgain={() => undefined} />
+        </Suspense>
+      </NativeRouter>,
+      { runtime },
+    );
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe(`/partida/${runId}`);
+    });
+    expect(window.history.length).toBe(historyLength);
   });
 
   it('mounts the final screen, which says a run without a token is not available', async () => {
