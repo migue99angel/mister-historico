@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe } from 'jest-axe';
 import { HttpResponse, http } from 'msw';
@@ -56,6 +56,21 @@ describe('SeasonPicker', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
 
     expect(await screen.findByRole('region', { name: 'Test FC' })).toBeInTheDocument();
+  });
+
+  it('keeps the seasons on screen when a later refetch fails', async () => {
+    const { queryClient } = renderPicker();
+    await screen.findByRole('region', { name: 'Test FC' });
+    mockServer.use(
+      http.get('*/api/seasons', () => HttpResponse.text('down', { status: 500 }), { once: true }),
+    );
+
+    await act(() => queryClient.refetchQueries());
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'No hemos podido actualizar las temporadas.',
+    );
+    expect(screen.getByRole('region', { name: 'Test FC' })).toBeInTheDocument();
   });
 
   it('says so when there are no seasons to play yet', async () => {
