@@ -138,6 +138,12 @@ function segmentStates(container: HTMLElement): (string | undefined)[] {
 }
 
 describe('RunResult', () => {
+  it('moves the focus to the screen title when it mounts', () => {
+    renderResult(run());
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Final de la partida' })).toHaveFocus();
+  });
+
   it('shows a finished run as the end of the season', () => {
     const { container } = renderResult(run());
 
