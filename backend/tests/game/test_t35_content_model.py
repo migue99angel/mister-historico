@@ -18,6 +18,15 @@ def test_restore_game_rebuilds_private_state_and_market_players_without_catalog_
     captured = CatalogRunContentAdapter.restore_game(snapshot, RulesConfiguration.a_profile())
     assert captured.snapshot == snapshot
     assert captured.initial_state.managed_club_season_id == season.club_season_id
+    captured_clubs = {club.id: club for club in captured.clubs}
+    assert set(captured_clubs) == {club.id for club in season.club_seasons}
+    for source_club in season.club_seasons:
+        game_club = captured_clubs[source_club.id]
+        assert game_club.has_squad is (source_club.squad is not None)
+        assert game_club.default_tactic.style.value == source_club.default_tactic.style.value
+        assert game_club.default_tactic.system == tuple(
+            int(line) for line in source_club.default_tactic.system.split("-")
+        )
     assert captured.blocks[0].start == season.blocks[0].start
     assert captured.run_blocks[0].dilemmas
     assert captured.goals
