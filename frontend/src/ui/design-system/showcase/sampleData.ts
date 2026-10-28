@@ -82,7 +82,7 @@ export interface SampleMatch {
   keyMatchLabel?: string;
 }
 
-/** Last block played in the loop mock-up: August, 3 wins, 1 draw and 1 loss. */
+/** Last block played in the loop mock-up: October-November, 3 wins, 1 draw and 1 loss. */
 export const lastBlockMatches: readonly SampleMatch[] = [
   {
     match: {
@@ -166,45 +166,61 @@ export const extraTimeMatch: SampleMatch = {
   userSide: 'away',
 };
 
-/** Liga Test after August: Test FC climbs from fifth to second. */
-export const standingsAfterAugust: readonly MiniStandingsRow[] = [
+/** Liga Test after October-November: Test FC climbs from fifth to second. */
+export const loopStandings: readonly MiniStandingsRow[] = [
   {
     position: 1,
     teamName: 'Union Ficticia',
-    played: 4,
-    points: 10,
+    played: 12,
+    points: 26,
     change: { direction: 'same', symbol: '=', text: 'Mantiene el puesto' },
   },
   {
     position: 2,
     teamName: 'Test FC',
-    played: 4,
-    points: 7,
+    played: 12,
+    points: 23,
     isUser: true,
     change: { direction: 'up', symbol: '▲3', text: 'Sube 3 puestos' },
   },
   {
     position: 3,
     teamName: 'Deportivo Muestra',
-    played: 4,
-    points: 7,
+    played: 12,
+    points: 22,
     change: { direction: 'up', symbol: '▲1', text: 'Sube 1 puesto' },
   },
   {
     position: 4,
     teamName: 'Rovers Prueba',
-    played: 4,
-    points: 6,
+    played: 12,
+    points: 20,
     change: { direction: 'down', symbol: '▼2', text: 'Baja 2 puestos' },
   },
   {
     position: 5,
     teamName: 'Athletic Ensayo',
-    played: 4,
-    points: 5,
+    played: 12,
+    points: 18,
     change: { direction: 'down', symbol: '▼2', text: 'Baja 2 puestos' },
   },
 ];
+
+/** Liga Test after August: no previous standings yet, so no position changes. */
+export const firstBlockStandings: readonly MiniStandingsRow[] = [
+  ['Union Ficticia', 10],
+  ['Test FC', 7],
+  ['Deportivo Muestra', 7],
+  ['Rovers Prueba', 6],
+  ['Athletic Ensayo', 5],
+].map(([teamName, points], index) => ({
+  position: index + 1,
+  teamName: String(teamName),
+  played: 4,
+  points: Number(points),
+  isUser: teamName === 'Test FC',
+  change: { direction: 'new', symbol: null, text: null },
+}));
 
 export const finalStandings: readonly MiniStandingsRow[] = [
   {
@@ -234,7 +250,7 @@ export const finalStandings: readonly MiniStandingsRow[] = [
     teamName: 'Rovers Prueba',
     played: 38,
     points: 66,
-    change: { direction: 'new', symbol: null, text: null },
+    change: { direction: 'up', symbol: '▲1', text: 'Sube 1 puesto' },
   },
 ];
 
@@ -254,11 +270,11 @@ function progress(overrides: Partial<SeasonProgress>): SeasonProgress {
 export const progressStates = {
   start: progress({}),
   loop: progress({
-    blockNumber: 2,
-    playedBlocks: 1,
-    percent: 20,
-    title: 'Bloque 2 de 5',
-    subtitle: 'Octubre-noviembre',
+    blockNumber: 3,
+    playedBlocks: 2,
+    percent: 40,
+    title: 'Bloque 3 de 5',
+    subtitle: 'Diciembre-enero',
   }),
   middle: progress({
     blockNumber: 3,

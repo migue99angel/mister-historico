@@ -12,12 +12,13 @@ import { VerdictBanner } from '../VerdictBanner';
 import {
   clubs,
   extraTimeMatch,
+  firstBlockStandings,
   lastBlockMatches,
   LEAGUE,
+  loopStandings,
   progressStates,
   ROVERS_HISTORICAL_MANAGER,
   specimenDilemmas,
-  standingsAfterAugust,
 } from './sampleData';
 import { Specimen, Variant } from './Specimen';
 
@@ -125,7 +126,12 @@ export function ComponentsSection() {
         name="MiniStandings"
         description="Clasificación corta: sube, baja, se mantiene y tu equipo resaltado."
       >
-        <MiniStandings competitionName={LEAGUE} rows={standingsAfterAugust} />
+        <Variant label="Tras varios bloques">
+          <MiniStandings competitionName={LEAGUE} rows={loopStandings} />
+        </Variant>
+        <Variant label="Primer bloque (sin posición previa)">
+          <MiniStandings competitionName={LEAGUE} rows={firstBlockStandings} />
+        </Variant>
       </Specimen>
 
       <Specimen name="BlockProgress" description="Progreso de la temporada por bloques.">
