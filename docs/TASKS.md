@@ -22,8 +22,9 @@ comprobado, no se presume que exista un backlog adicional en Projects.
 - **Ahora, A:** CR-T3.0, T3.1a/T3.1b, T3.4 y T4.2 están integradas.
   T3.2/T3.3 están integradas con revisión Sol y CI verde.
   F4-A cerrada: T4.1, T4.2 y T4.3 integradas, con CR-T4.1a y CR-T4.1b.
-  Siguen T4.4/T4.5/T4.6a con MSW; convergen en T3.5/T3.6,
-  T3.7a y el frontend conectado T4.7a. No requieren contenido real firmado.
+  F4-B cerrada con MSW: CR-T4.B, T4.4, T4.5 y T4.6a integradas (PR #70-#73 y #75).
+  Sigue T4.7a (E2E real), que espera a T3.5/T3.6/T3.7a del backend.
+  No requieren contenido real firmado.
 - **En paralelo, para B:** contenido F2, verificación y firma, después
   calibración/rendimiento del piloto; evaluación/compartir y UX móvil. La beta
   RM sin ranking es una propuesta de producto pendiente, no una reducción
@@ -775,7 +776,9 @@ existen; los casos de uso de partida siguen pendientes.
 - **Tests primero:** tablas de casos para cada función. La cobertura tiene que llegar al 100 %.
 
 ### CR-T4.B · Cableado de pantallas
-- **Estado:** en revisión en [PR #70](https://github.com/migue99angel/mister-historico/pull/70).
+- **Estado:** integrada en [PR #70](https://github.com/migue99angel/mister-historico/pull/70)
+  por rebase-merge, tras dos rondas de revisión independiente (cambios pequeños y después
+  aprobar con matices) y CI en verde. 361 tests frontend; JS inicial 79,84 KB gzip.
   [Propiedad y decisiones](changes/CR-T4.B-screen-wiring.md).
 - Se integra antes que T4.4, T4.5 y T4.6a. Mueve el contexto de `GameApi` y `ApiError` a
   `application/`, añade el puerto `RunTokenStore` (adaptador `localStorage` y fake), el
@@ -784,6 +787,14 @@ existen; los casos de uso de partida siguen pendientes.
   callbacks de navegación por props. Fija el contrato de `useRun` cuando no hay token.
 
 ### T4.4 · Pantalla de selección de equipo y contexto
+- **Estado:** integrada en [PR #72](https://github.com/migue99angel/mister-historico/pull/72)
+  por rebase-merge, con dos rondas de revisión independiente (aprobar con matices y
+  después aprobar) y CI en verde. 401 tests frontend; JS inicial 85,05 KB gzip.
+  `SeasonPicker` sustituye a `HomeScreen` en `/` (decisión del orquestador; conserva el
+  h1 y el lema que exige `e2e/home.spec.ts`) y precarga el chunk de `SeasonIntro`, que
+  se carga con `lazy()`. `useStartRun` guarda el token y siembra la caché
+  `runQueryKey(runId) = ['runs', runId]`, que `useRun` está obligado a usar. Los datos
+  ya cargados se conservan si falla un refetch.
 - **Oleada:** F4-B · **Tamaño:** M · **Depende de:** T4.1-T4.3
 - **Propiedad:** `frontend/src/ui/screens/{SeasonPicker,SeasonIntro}/**`, `frontend/src/application/useSeasons.ts`, `useStartRun.ts` y `frontend/src/app/routes/{HomeRoute,SeasonRoute}.tsx` con sus tests
 - **Tests primero:** con MSW, se listan las temporadas, se elige una, se ve el contexto con los objetivos de la directiva y se pulsa "Empezar", que navega a `/partida/:id`.
@@ -793,6 +804,19 @@ existen; los casos de uso de partida siguen pendientes.
   sistema de diseño, no dentro de `screens/`.
 
 ### T4.5 · Pantalla del bucle de bloques
+- **Estado:** integrada en [PR #73](https://github.com/migue99angel/mister-historico/pull/73)
+  por rebase-merge, con dos rondas de revisión independiente (aprobar con matices y
+  después aprobar) y CI en verde. 462 tests frontend; `application/` al 99 % de líneas;
+  JS inicial 86,75 KB gzip y chunk `RunLoop` de 4,52 KB.
+  - **Flujo «Elegir y Simular»** (decisión del humano, alineada con la maqueta): la
+    elección es local y se puede cambiar; «Simular bloque» se activa cuando todos los
+    dilemas tienen opción y envía en serie una `takeDecision` por dilema y después
+    `advanceBlock`. Cada paso tiene su `Idempotency-Key`; el hook reutiliza la del
+    intento fallido al reintentar.
+  - Un 409 recarga la vista y bloquea los comandos mientras tanto; solo red, 5xx y 429
+    se reintentan con la misma clave, y el resto de 4xx descarta el intento.
+  - `useRun` sigue el contrato sin token de CR-T4.B y usa `staleTime: Infinity`, así
+    que la Partida recién iniciada no vuelve a pedirse.
 - **Oleada:** F4-B · **Tamaño:** L · **Depende de:** T4.1-T4.3
 - **Propiedad:** `frontend/src/ui/screens/RunLoop/**`, `frontend/src/application/{useRun,useTakeDecision,useAdvanceBlock}.ts` y `frontend/src/app/routes/RunRoute.tsx` con su test
 - **Qué hacer:** dilemas del bloque, selección de opción, botón "Simular bloque" y resumen con los resultados clave y la clasificación. Si el míster queda destituido, se va directo al final.
@@ -813,7 +837,16 @@ existen; los casos de uso de partida siguen pendientes.
     diseño, con su ciclo TDD.
 
 ### T4.6 · Pantalla final (dos entregas en el mismo directorio)
-- **Propiedad:** `frontend/src/ui/screens/RunResult/**` y `frontend/src/app/routes/RunFinalRoute.tsx` con su test.
+- **Propiedad:** `frontend/src/ui/screens/RunResult/**` y `frontend/src/app/routes/RunFinalRoute.tsx` con su test (`RunFinalRoute.test.tsx` y `RunFinalRoute.flow.test.tsx`).
+- **Estado de T4.6a:** integrada en dos PR por rebase-merge, cada una con revisión
+  independiente (aprobar con matices y después aprobar) y CI en verde.
+  - [PR #71](https://github.com/migue99angel/mister-historico/pull/71): pantalla
+    `RunResult` con props (estado final, cabecera del club, último bloque y «Jugar otra
+    partida»), sin puntuación, percentil ni veredicto inventados.
+  - [PR #75](https://github.com/migue99angel/mister-historico/pull/75): contenedor
+    `RunFinal` sobre `useRun`, montado con `lazy()`. Una Partida en juego se redirige a
+    `/partida/:id` con `replace`, y el foco va al `h1` al llegar. 506 tests frontend;
+    JS inicial 86,84 KB gzip y chunk `RunResult` de 1,85 KB.
 - **T4.6a (A):** depende de T4.1-T4.3 y del hook `useRun` integrado de T4.5
   para conexión/aceptación; la preparación visual con props puede avanzar antes.
   Pantalla terminal con `GetRun`/`RunView`,
@@ -828,6 +861,27 @@ existen; los casos de uso de partida siguen pendientes.
   (cuatro veredictos del glosario; `score` opcional, que T4.6a no muestra),
   `BlockProgress` con `status`, `MiniStandings` y `Button`. T4.6a puede maquetarse con
   props antes de que exista `useRun`, sin inventar puntuación ni percentil.
+
+### Seguimientos de F4-B (sin tarea asignada)
+Recogidos en las revisiones de CR-T4.B y T4.4-T4.6a. No bloquean T4.7a.
+- **Bundle (CR o T4.7):** declarar `"sideEffects": ["*.css"]` en `frontend/package.json`.
+  Hoy el barril del sistema de diseño arrastra a la entrada componentes que solo usa
+  `RunLoop`; con el cambio, el JS inicial bajaría unos 1,5 KB.
+- **Dominio (tarea de `domain/`):** mover a `domain/` la elección de la tabla del usuario
+  (`findUserTable`, hoy duplicada en `RunResult/runResultView.ts`) e `isTerminalRun`.
+- **Sistema de diseño:** un `Notice`/`StatusPage` común para carga, error y «Partida no
+  disponible», hoy repetidos en `RunLoop` y `RunFinal`. El «Volver al inicio» de
+  `RunLoop` sigue recargando la página.
+- **Contrato de mocks (CR):** los textos de presentación, objetivos y dilemas de los
+  fixtures MSW de Test FC están en inglés y se ven así en modo MSW.
+- **Router o T4.8:** foco al cambiar de ruta en general (las pantallas finales ya lo
+  resuelven).
+- **Contrato de `RunView` (CR):** incluir el equipo del usuario. Hoy la cabecera del club
+  del bucle no aparece en el primer bloque, porque sale del último resumen.
+- **Producto:** «Continuar partida». Hoy, volver atrás a `/equipo/:id` y pulsar «Empezar»
+  abre otra Partida.
+- **Tests:** el test de precarga de `HomeRoute.test.tsx` depende del orden dentro del
+  fichero; `RunResult/testRuns.ts` podría ir a `frontend/test/`.
 
 ### T4.7 · E2E real y rendimiento móvil (dos entregas)
 - **Propiedad:** `frontend/e2e/**`, `lighthouserc.json` y configuración de `size-limit`.
