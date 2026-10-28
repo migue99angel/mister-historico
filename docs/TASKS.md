@@ -36,8 +36,8 @@ antes del 2026-10-28 no se migraron: su registro son las PR y HANDOFF.
   aprobada de la V1 de 3-5 equipos.
 - **C:** ranking/percentiles, más equipos, equilibrio y mejoras según feedback.
   **D:** iniciativa de temporada actual descrita en PLAN §3.4; sin implementación.
-- La tabla indica paralelismo posible por dependencias; limitar cada oleada a
-  2-3 agentes y reservar revisión independiente. Dos subtareas con la misma
+- La tabla indica paralelismo posible por dependencias; el límite de agentes
+  simultáneos y la revisión independiente están en PLAN §6. Dos subtareas con la misma
   propiedad de archivos se integran en secuencia. Ningún cambio de contrato se
   cuela dentro de una tarea normal.
 
@@ -1070,7 +1070,7 @@ Recogidos en las revisiones de CR-T4.B y T4.4-T4.6a. No bloquean T4.7a.
 - **Oleada:** F6-A (los cuatro en paralelo) · **Tamaño:** L cada uno · **Depende de:** T2.15 (pipeline RM); prioridad C tras recoger feedback de B
 - **Propiedad:** `content/seasons/<slug>/**` y los `content/club-seasons/<club>-<temporada>/**` de esa temporada
 - **Qué hacer:** repetir T2.10 → T2.16 → T2.15 para cada equipo, con subtareas `a` (temporada), `b` (plantilla propia), `c` (calendario, clasificaciones y lista de rivales), `d` (dilemas y textos), `r1`-`r5` (lotes de plantillas rivales, como en T2.16), `e` (verificación independiente), `f` [HUMANO] (firma) y `g` (calibración en verde con `make calibrate SEASON=<slug>`, incluida la de los rivales).
-- **Volumen:** inventariar cada temporada antes de estimar. El RM exige 60 club-seasons (48 plantillas contando la propia y 12 agregados), por todos los participantes de grupos/cuadros; la estimación anterior de 30 era insuficiente. Mantener lotes revisables y oleadas de 2-3 agentes, sin abrir 20 investigadores que saturen la firma humana.
+- **Volumen:** inventariar cada temporada antes de estimar. El RM exige 60 club-seasons (48 plantillas contando la propia y 12 agregados), por todos los participantes de grupos/cuadros; la estimación anterior de 30 era insuficiente. Mantener lotes revisables con el límite de agentes de PLAN §6, sin abrir 20 investigadores que saturen la firma humana.
 - **Reutilización:** los `content/clubs/<club>.yaml` se comparten entre temporadas. Si una plantilla rival ya existe porque coincide la temporada, se reutiliza.
 - **Nota:** el Barça 2008-09 es el reto difícil. Las bandas de T1.3 tienen que permitir que el triplete sea posible pero poco probable.
 
