@@ -112,7 +112,7 @@ export function describeRunResult(run: TerminalRunView): RunResultView {
         }),
       },
     standings: table && {
-      title: run.status === 'finished' ? 'Clasificación final' : 'Clasificación al ser destituido',
+      title: run.status === 'finished' ? 'Clasificación final' : 'Clasificación en la destitución',
       competitionName: table.competitionName,
       rows: table.rows.map((row) => ({
         position: row.position,
