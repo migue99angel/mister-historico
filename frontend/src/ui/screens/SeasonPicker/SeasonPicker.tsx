@@ -105,7 +105,7 @@ function SeasonCard({
   onChoose: (seasonId: string) => void;
 }) {
   return (
-    <Card title={season.clubName} eyebrow={season.seasonLabel} headingLevel={3}>
+    <Card title={`${season.clubName} ${season.seasonLabel}`} headingLevel={3}>
       <div className="flex items-center gap-3">
         <GenericCrest colors={season.colors} size={48} />
         <p className="min-w-0 flex-1 text-caption text-ink-muted">

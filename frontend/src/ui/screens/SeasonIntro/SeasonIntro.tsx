@@ -40,6 +40,7 @@ export function SeasonIntro({ seasonId, onRunStarted, onBackHome }: SeasonIntroP
   if (season.isPending) {
     return (
       <main className={PAGE_CLASSES}>
+        <h1 className="sr-only">Contexto de la temporada</h1>
         <p role="status" className="text-ink-muted">
           Cargando la temporada…
         </p>
@@ -59,6 +60,7 @@ export function SeasonIntro({ seasonId, onRunStarted, onBackHome }: SeasonIntroP
 
   return (
     <main className={PAGE_CLASSES}>
+      <h1 className="font-display text-headline font-extrabold">Temporada no disponible</h1>
       <div role="alert" className="flex flex-col items-start gap-3">
         <p>No hemos podido cargar la temporada.</p>
         <Button
