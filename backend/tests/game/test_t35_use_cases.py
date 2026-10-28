@@ -879,6 +879,259 @@ def test_advance_validates_expected_version_after_authentication() -> None:
         advance.execute(created.run_id, created.token, "advance-key-0001", True)
 
 
+def test_advance_simulator_failure_rolls_back_without_reply_or_event() -> None:
+    season, _, store, events, start, _, take = _setup()
+    created = start.execute(season.id)
+    rules = RulesConfiguration.a_profile()
+    captured = CatalogRunContentAdapter.restore_game(
+        store.runs[created.run_id].replay_inputs.content, rules
+    )
+    for dilemma in captured.blocks[0].dilemmas:
+        take.execute(
+            created.run_id,
+            created.token,
+            f"advance-failure-choice-{dilemma.id.value}",
+            store.runs[created.run_id].version,
+            dilemma.id,
+            dilemma.historical_option,
+        )
+    before = store.runs[created.run_id]
+    simulator = ScriptedSeasonSimulator()
+    simulator.fail_with(RuntimeError("engine failed"))
+    emitted: list[DomainEvent] = []
+    bus = InMemoryEventBus()
+    bus.subscribe(DomainEvent, emitted.append)
+    advance = AdvanceBlock(
+        uow=InMemoryUnitOfWork(store),
+        clock=FixedClock(datetime(2026, 10, 28, tzinfo=UTC)),
+        event_bus=bus,
+        token_hasher=Sha256RunTokenHasher(),
+        restore_game=CatalogRunContentAdapter.restore_game,
+        simulator=simulator,
+    )
+
+    with pytest.raises(RuntimeError, match="engine failed"):
+        advance.execute(created.run_id, created.token, "advance-failure-0001", before.version)
+
+    assert store.runs[created.run_id] == before
+    assert (created.run_id, "advance-failure-0001") not in store.replies
+    assert emitted == []
+    assert len(events) == 1 + len(captured.blocks[0].dilemmas)
+
+
+def test_concurrent_same_key_advances_commit_once_and_return_original_reply() -> None:
+    season, _, store, _, start, _, take = _setup()
+    created = start.execute(season.id)
+    captured = CatalogRunContentAdapter.restore_game(
+        store.runs[created.run_id].replay_inputs.content, RulesConfiguration.a_profile()
+    )
+    for dilemma in captured.blocks[0].dilemmas:
+        take.execute(
+            created.run_id,
+            created.token,
+            f"advance-race-choice-{dilemma.id.value}",
+            store.runs[created.run_id].version,
+            dilemma.id,
+            dilemma.historical_option,
+        )
+    before = store.runs[created.run_id]
+    barrier = Barrier(2)
+    bus = InMemoryEventBus()
+    emitted: list[DomainEvent] = []
+    bus.subscribe(DomainEvent, emitted.append)
+
+    class RacingUnitOfWork(InMemoryUnitOfWork):
+        def commit(self) -> None:
+            barrier.wait(timeout=5)
+            super().commit()
+
+    def build_advance() -> AdvanceBlock:
+        simulator = ScriptedSeasonSimulator()
+        simulator.script(
+            BlockSimulationResult(
+                captured.blocks[0].id,
+                (),
+                (),
+                (),
+                (),
+                (),
+                tuple(
+                    PlayerOutcome(player.player_id, player.fitness, player.injured_until, 0)
+                    for player in captured.players
+                ),
+            )
+        )
+        return AdvanceBlock(
+            uow=RacingUnitOfWork(store),
+            clock=FixedClock(datetime(2026, 10, 28, tzinfo=UTC)),
+            event_bus=bus,
+            token_hasher=Sha256RunTokenHasher(),
+            restore_game=CatalogRunContentAdapter.restore_game,
+            simulator=simulator,
+        )
+
+    left, right = build_advance(), build_advance()
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = tuple(
+            future.result(timeout=10)
+            for future in (
+                pool.submit(
+                    left.execute,
+                    created.run_id,
+                    created.token,
+                    "advance-race-0001",
+                    before.version,
+                ),
+                pool.submit(
+                    right.execute,
+                    created.run_id,
+                    created.token,
+                    "advance-race-0001",
+                    before.version,
+                ),
+            )
+        )
+
+    assert results[0] == results[1]
+    assert len(RunSnapshot.decode(store.runs[created.run_id].snapshot).run.block_records) == 1
+    assert len(store.replies) == len(captured.blocks[0].dilemmas) + 1
+    assert len(emitted) == 1
+
+
+def test_advance_idempotency_returns_original_reply_after_later_closure() -> None:
+    season, _, store, _, start, _, take = _setup()
+    created = start.execute(season.id)
+    captured = CatalogRunContentAdapter.restore_game(
+        store.runs[created.run_id].replay_inputs.content, RulesConfiguration.a_profile()
+    )
+    original_version = store.runs[created.run_id].version
+    simulator = ScriptedSeasonSimulator()
+    for block in captured.blocks[:2]:
+        simulator.script(
+            BlockSimulationResult(
+                block.id,
+                (),
+                (),
+                (),
+                (),
+                (),
+                tuple(
+                    PlayerOutcome(player.player_id, player.fitness, player.injured_until, 0)
+                    for player in captured.players
+                ),
+            )
+        )
+    advance = AdvanceBlock(
+        uow=InMemoryUnitOfWork(store),
+        clock=FixedClock(datetime(2026, 10, 28, tzinfo=UTC)),
+        event_bus=InMemoryEventBus(),
+        token_hasher=Sha256RunTokenHasher(),
+        restore_game=CatalogRunContentAdapter.restore_game,
+        simulator=simulator,
+    )
+    for dilemma in captured.blocks[0].dilemmas:
+        take.execute(
+            created.run_id,
+            created.token,
+            f"advance-history-choice-{dilemma.id.value}",
+            store.runs[created.run_id].version,
+            dilemma.id,
+            dilemma.historical_option,
+        )
+    first_version = store.runs[created.run_id].version
+    first = advance.execute(
+        created.run_id,
+        created.token,
+        "advance-history-0001",
+        store.runs[created.run_id].version,
+    )
+    for dilemma in captured.blocks[1].dilemmas:
+        take.execute(
+            created.run_id,
+            created.token,
+            f"advance-history-next-{dilemma.id.value}",
+            store.runs[created.run_id].version,
+            dilemma.id,
+            dilemma.historical_option,
+        )
+    advance.execute(
+        created.run_id,
+        created.token,
+        "advance-history-0002",
+        store.runs[created.run_id].version,
+    )
+
+    replay = advance.execute(
+        created.run_id, created.token, "advance-history-0001", first_version
+    )
+
+    assert replay == first
+    assert replay.run.block_index == 1
+    assert store.runs[created.run_id].version > first.version
+    assert len(simulator.requests) == 2
+    with pytest.raises(ConcurrencyError):
+        advance.execute(
+            created.run_id, created.token, "advance-history-stale", original_version
+        )
+
+
+def test_advance_conflicts_with_same_key_used_for_a_decision() -> None:
+    season, _, store, _, start, _, take = _setup()
+    created = start.execute(season.id)
+    captured = CatalogRunContentAdapter.restore_game(
+        store.runs[created.run_id].replay_inputs.content, RulesConfiguration.a_profile()
+    )
+    first_dilemma = captured.blocks[0].dilemmas[0]
+    take.execute(
+        created.run_id,
+        created.token,
+        "cross-operation-0001",
+        0,
+        first_dilemma.id,
+        first_dilemma.historical_option,
+    )
+    for dilemma in captured.blocks[0].dilemmas[1:]:
+        take.execute(
+            created.run_id,
+            created.token,
+            f"cross-operation-choice-{dilemma.id.value}",
+            store.runs[created.run_id].version,
+            dilemma.id,
+            dilemma.historical_option,
+        )
+    simulator = ScriptedSeasonSimulator()
+    simulator.script(
+        BlockSimulationResult(
+            captured.blocks[0].id,
+            (),
+            (),
+            (),
+            (),
+            (),
+            tuple(
+                PlayerOutcome(player.player_id, player.fitness, player.injured_until, 0)
+                for player in captured.players
+            ),
+        )
+    )
+    advance = AdvanceBlock(
+        uow=InMemoryUnitOfWork(store),
+        clock=FixedClock(datetime(2026, 10, 28, tzinfo=UTC)),
+        event_bus=InMemoryEventBus(),
+        token_hasher=Sha256RunTokenHasher(),
+        restore_game=CatalogRunContentAdapter.restore_game,
+        simulator=simulator,
+    )
+
+    with pytest.raises(IdempotencyConflictError):
+        advance.execute(
+            created.run_id,
+            created.token,
+            "cross-operation-0001",
+            len(captured.blocks[0].dilemmas),
+        )
+
+
 def test_choice_rejects_sale_to_club_without_captured_squad() -> None:
     season, _, store, _, start, _, _ = _setup()
     created = start.execute(season.id)

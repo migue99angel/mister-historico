@@ -3,6 +3,7 @@
 from dataclasses import replace
 from datetime import UTC, datetime
 
+import pytest
 from tests.contracts.suites.expected_test_fc import build_expected_test_fc_season
 
 from mister.catalog.application.api import PlayableSeasonDTO, PlayableSeasonSummaryDTO
@@ -18,6 +19,7 @@ from mister.game.application.ports import (
 from mister.game.application.rules import RulesConfiguration
 from mister.game.application.use_cases import RunSnapshot, apply_choice
 from mister.game.domain.board import GoalProgress, GoalStatus
+from mister.game.domain.errors import InvalidRunTransitionError
 from mister.game.domain.run import Run
 from mister.game.infrastructure.catalog_adapter import CatalogRunContentAdapter
 from mister.game.infrastructure.in_memory.season_simulator import ScriptedSeasonSimulator
@@ -151,6 +153,96 @@ def test_sacking_closes_the_current_block_and_keeps_terminal_status() -> None:
     assert result.run.block_index == 0
     assert len(result.run.block_records) == 1
     assert [type(event).__name__ for event in events] == ["BlockSimulated", "ManagerSacked"]
+    with pytest.raises(InvalidRunTransitionError, match="terminal runs"):
+        advance_snapshot(
+            result,
+            captured,
+            simulator,
+            RulesConfiguration.a_profile(),
+            datetime(2026, 10, 28, tzinfo=UTC),
+        )
+
+
+def test_sacking_on_last_block_keeps_final_cursor_and_full_closure_history() -> None:
+    captured, snapshot = _captured()
+    rules = RulesConfiguration.a_profile()
+    simulator = ScriptedSeasonSimulator()
+    for index, block in enumerate(captured.blocks[:-1]):
+        for dilemma in captured.blocks[index].dilemmas:
+            if any(
+                decision.dilemma_id == dilemma.id
+                for decision in snapshot.run.decisions
+            ):
+                continue
+            snapshot, _ = apply_choice(
+                snapshot,
+                captured,
+                dilemma.id,
+                dilemma.historical_option,
+                datetime(2026, 10, 28, tzinfo=UTC),
+            )
+        simulator.script(
+            BlockSimulationResult(
+                block.id,
+                (),
+                (),
+                (),
+                (),
+                (),
+                tuple(
+                    PlayerOutcome(player.player_id, player.fitness, player.injured_until, 0)
+                    for player in snapshot.run.run_state.players
+                ),
+            )
+        )
+        snapshot, _ = advance_snapshot(
+            snapshot, captured, simulator, rules, datetime(2026, 10, 28, tzinfo=UTC)
+        )
+    for dilemma in captured.blocks[-1].dilemmas:
+        snapshot, _ = apply_choice(
+            snapshot,
+            captured,
+            dilemma.id,
+            dilemma.historical_option,
+            datetime(2026, 10, 28, tzinfo=UTC),
+        )
+    snapshot = replace(
+        snapshot,
+        run=replace(
+            snapshot.run,
+            run_state=replace(snapshot.run.run_state, board_confidence=0),
+        ),
+    )
+    final_block = captured.blocks[-1]
+    simulator.script(
+        BlockSimulationResult(
+            final_block.id,
+            (),
+            (),
+            (),
+            (),
+            (),
+            tuple(
+                PlayerOutcome(player.player_id, player.fitness, player.injured_until, 0)
+                for player in snapshot.run.run_state.players
+            ),
+        )
+    )
+    rules = replace(rules, board=replace(rules.board, sacking_threshold=100))
+
+    result, events = advance_snapshot(
+        snapshot,
+        captured,
+        simulator,
+        rules,
+        datetime(2026, 10, 28, tzinfo=UTC),
+    )
+
+    assert result.run.status.value == "sacked"
+    assert result.run.block_index == len(captured.blocks) - 1
+    assert len(result.run.block_records) == len(captured.blocks)
+    assert result.run.cursor == final_block.end
+    assert type(events[-1]).__name__ == "ManagerSacked"
 
 
 def test_advancing_from_semifinal_marks_final_stage_reached() -> None:
