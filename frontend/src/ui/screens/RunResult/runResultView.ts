@@ -1,8 +1,10 @@
 import type {
+  BlockSummaryDto,
   MatchReportDto,
   RunStatusDto,
   RunViewDto,
   StandingsDto,
+  TeamRefDto,
 } from '../../../application/ports';
 import type { MatchResultViewModel } from '../../../domain/matchResult';
 import { toRunViewModel } from '../../../domain/runViewModel';
@@ -38,6 +40,8 @@ export interface ResultStandingRowView {
 }
 
 export interface RunResultView {
+  /** The user's club, from the last block; null when the run has no summary. */
+  club: { name: string; colors: TeamRefDto['colors'] } | null;
   status: TerminalStatus;
   progress: SeasonProgressViewModel;
   outcomeText: string;
@@ -63,6 +67,14 @@ function userSide(match: MatchReportDto): 'home' | 'away' | undefined {
   return undefined;
 }
 
+function userTeam(summary: BlockSummaryDto): TeamRefDto | null {
+  const teams = [
+    ...summary.results.flatMap((report) => [report.home, report.away]),
+    ...summary.standings.flatMap((table) => table.rows.map((row) => row.team)),
+  ];
+  return teams.find((team) => team.isUser) ?? null;
+}
+
 /** The user's league table wins over a group-stage table, as in `findUserStanding`. */
 function userTable(tables: StandingsDto[]): StandingsDto | null {
   const withUser = tables.filter((table) => table.rows.some((row) => row.team.isUser));
@@ -74,8 +86,10 @@ export function describeRunResult(run: TerminalRunView): RunResultView {
   const summary = run.lastBlockSummary;
   const { progress, lastBlock } = toRunViewModel(run);
   const table = summary ? userTable(summary.standings) : null;
+  const team = summary ? userTeam(summary) : null;
 
   return {
+    club: team && { name: team.name, colors: team.colors },
     status: run.status,
     progress,
     outcomeText: outcomeText(run),
