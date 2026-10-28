@@ -25,7 +25,10 @@ No toca contratos, dependencias, `application/`, `domain/` ni `infrastructure/`.
   desarrollo. El componente perezoso se crea con
   `import.meta.env.DEV ? lazy(() => import(...)) : null`: Vite sustituye la condición por
   `false` al construir y elimina el `import()`, de modo que no se emite ningún chunk de la
-  página. Comprobado con `npm run build`: `dist/` no contiene la página.
+  página. Comprobado con `npm run build` y con `vite build --mode development` (Vite fija
+  `NODE_ENV=production` al construir): `dist/` no contiene código ni textos de la página.
+  Solo queda el literal del tipo de ruta `design-showcase` en el `switch`, unos bytes que
+  resuelven a «Página no encontrada».
 - **Fuera del bundle inicial.** También en desarrollo la página llega en un chunk aparte,
   solo al visitar `/diseno`.
 - **Tokens en la app.** `index.css` importa `theme.css` para que Tailwind genere las
@@ -49,5 +52,10 @@ Abre `http://localhost:5173/diseno`. Desde el móvil, en la misma red, arranca V
 ## Comprobación
 
 - En desarrollo, `/diseno` muestra «Sistema de diseño» (test con la app completa).
-- Con `DEV` a `false`, `/diseno` es una página desconocida.
+- Con `DEV` a `false`, `/diseno` es una página desconocida. Este test ya pasaba antes de
+  la CR: es una guarda que falla si se quita la comprobación de `DEV`. La rama de
+  `Routes.tsx` sin componente perezoso no se ejecuta en los tests (la constante se evalúa
+  al cargar el módulo y `vi.stubEnv` no la alcanza); `matchRoute` ya la hace inalcanzable.
+- Si el chunk no carga (por ejemplo, al parar Vite), el `ErrorBoundary` de la app muestra
+  su pantalla de error; no hay reintento, suficiente para una página de desarrollo.
 - `npm run build`: sin chunk de la página; `npm run size`: 79,5 KB gzip.
