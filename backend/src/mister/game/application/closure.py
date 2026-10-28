@@ -263,6 +263,15 @@ def _player_minutes(
             and item.club_season_id == state.managed_club_season_id
             and item.joined_on is not None
             and block.start <= item.joined_on <= block.end
+            and state.squad_registry.owner_on(player.player_id, item.joined_on)
+            == state.managed_club_season_id
+            and (
+                item.joined_on == date.min
+                or state.squad_registry.owner_on(
+                    player.player_id, item.joined_on - timedelta(days=1)
+                )
+                != state.managed_club_season_id
+            )
             for item in state.squad_registry.base_memberships
         )
         eligible = (
