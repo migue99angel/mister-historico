@@ -366,7 +366,7 @@ convierte una propuesta de beta en una decisión ya firmada.
 
 ## 6. Cómo trabajan los agentes en paralelo
 
-1. **Una tarea es un agente, un *git worktree* o rama (`task/T2.3-league`) y una PR.**
+1. **Una tarea es un agente, un *git worktree* o rama (`task/T2.3-league`), una issue del [GitHub Project](https://github.com/users/migue99angel/projects/1) y una PR que la cierra al integrarse** ([ADR-016](adr/016-seguimiento-en-github-projects.md)). TASKS especifica; el Project lleva el estado.
 2. **Propiedad de ficheros.** Cada tarea declara en `TASKS.md` los directorios que le pertenecen. Un agente no toca ficheros que no son suyos. Si necesita cambiar un contrato (puerto, esquema u OpenAPI), **para y abre una tarea de cambio de contrato (CR)**, que se integra primero.
 3. **Oleadas.** Las letras agrupan trabajo; las dependencias explícitas de cada tarea mandan. Solo ejecutar a la vez tareas sin dependencia pendiente ni archivos compartidos. Trabajar en oleadas de 2 o 3 agentes, contando la revisión, conforme al traspaso actual; la tabla describe trabajo posible, no una orden de lanzarlo todo.
 4. **Ficheros compartidos** (`pyproject.toml`, `package.json`, workflows de la CI y `bootstrap.py`): solo los modifica la tarea que los creó o una tarea CR. Si una tarea necesita una dependencia nueva, la pide en la descripción de la PR.
