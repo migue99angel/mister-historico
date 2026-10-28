@@ -381,6 +381,15 @@ class TakeDecision:
             self._require_token(command.token, record)
             if type(command.expected_version) is not int or command.expected_version < 0:
                 raise InvalidValueError("expected_version must be a non-negative integer")
+            if (
+                not isinstance(command.idempotency_key, str)
+                or not ports.MIN_IDEMPOTENCY_KEY_LENGTH
+                <= len(command.idempotency_key)
+                <= ports.MAX_IDEMPOTENCY_KEY_LENGTH
+            ):
+                raise InvalidValueError(
+                    "idempotency key must have 8 to 128 characters"
+                )
             snapshot = RunSnapshot.decode(record.snapshot)
             rules = _validate_revisions(record)
             captured = self._restore_game(record.replay_inputs.content, rules)
