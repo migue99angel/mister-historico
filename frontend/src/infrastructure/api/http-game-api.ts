@@ -1,37 +1,8 @@
 import createClient from 'openapi-fetch';
 
+import { ApiError, type ApiErrorFields } from '../../application/apiError';
 import type { GameApi } from '../../application/ports';
 import type { paths } from './generated/schema';
-
-export type ApiErrorKind = 'problem' | 'transport' | 'unexpected-response';
-
-export interface ApiErrorFields {
-  status?: number;
-  code?: string | undefined;
-  title?: string | undefined;
-  detail?: string | undefined;
-  instance?: string | undefined;
-}
-
-export class ApiError extends Error {
-  readonly kind: ApiErrorKind;
-  readonly status: number | undefined;
-  readonly code: string | undefined;
-  readonly title: string | undefined;
-  readonly detail: string | undefined;
-  readonly instance: string | undefined;
-
-  constructor(kind: ApiErrorKind, message: string, fields: ApiErrorFields = {}) {
-    super(message);
-    this.name = 'ApiError';
-    this.kind = kind;
-    this.status = fields.status;
-    this.code = fields.code;
-    this.title = fields.title;
-    this.detail = fields.detail;
-    this.instance = fields.instance;
-  }
-}
 
 interface OpenApiResult {
   data?: unknown;

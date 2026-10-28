@@ -1,10 +1,11 @@
 import { HttpResponse, http } from 'msw';
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { ApiError } from '../../application/apiError';
 import { TEST_SEASON_ID } from './mocks/fixtures';
 import { resetMockState } from './mocks/handlers';
 import { server } from './mocks/node';
-import { ApiError, createHttpGameApi } from './http-game-api';
+import { createHttpGameApi } from './http-game-api';
 
 describe('createHttpGameApi', () => {
   beforeEach(() => {
