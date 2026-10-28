@@ -253,16 +253,22 @@ def _player_minutes(
             state.squad_registry.owner_on(player.player_id, block.end)
             == state.managed_club_season_id
         )
-        signed_during = any(
+        joined_during = any(
             item.player_id == player.player_id
             and item.to_club_season_id == state.managed_club_season_id
             and block.start <= item.effective_on <= block.end
             for item in state.squad_registry.transfers
+        ) or any(
+            item.player_id == player.player_id
+            and item.club_season_id == state.managed_club_season_id
+            and item.joined_on is not None
+            and block.start <= item.joined_on <= block.end
+            for item in state.squad_registry.base_memberships
         )
         eligible = (
             (not rules.eligibility.require_membership_at_block_start or start_member)
             and (not rules.eligibility.require_membership_at_block_end or end_member)
-            and (not rules.eligibility.exempt_players_signed_during_block or not signed_during)
+            and (not rules.eligibility.exempt_players_signed_during_block or not joined_during)
             and len(own_fixtures) >= rules.eligibility.minimum_team_fixtures
             and (
                 not rules.eligibility.require_availability_for_all_fixtures
