@@ -33,8 +33,8 @@ export function DilemmaCard({
     <Card
       title={dilemma.title}
       headingLevel={headingLevel}
+      eyebrow={eyebrow}
       tone={selectedOptionId === null ? 'default' : 'highlight'}
-      {...(eyebrow !== undefined && { eyebrow })}
     >
       <p className="mb-4 text-body text-ink">{dilemma.prompt}</p>
       <div role="group" aria-label={`Opciones: ${dilemma.title}`} className="flex flex-col gap-2">

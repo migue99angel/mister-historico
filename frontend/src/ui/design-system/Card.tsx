@@ -8,7 +8,7 @@ export interface CardProps {
   /** Names the card as a region; without a title the card is a plain container. */
   title?: string;
   headingLevel?: 2 | 3 | 4;
-  eyebrow?: string;
+  eyebrow?: string | undefined;
   tone?: CardTone;
   children: ReactNode;
 }
