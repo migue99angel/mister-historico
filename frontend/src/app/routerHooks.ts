@@ -9,8 +9,12 @@ export function useNavigate(): RouterContextValue['navigate'] {
   return context.navigate;
 }
 
-export function useCurrentRoute(): AppRoute {
+export function usePathname(): string {
   const context = useContext(RouterContext);
   if (!context) throw new Error('Routing is only available inside NativeRouter.');
-  return matchRoute(context.pathname);
+  return context.pathname;
+}
+
+export function useCurrentRoute(): AppRoute {
+  return matchRoute(usePathname());
 }

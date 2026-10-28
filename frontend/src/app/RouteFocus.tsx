@@ -1,6 +1,6 @@
-import { useContext, useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 
-import { RouterContext } from './routerContext';
+import { usePathname } from './routerHooks';
 
 /**
  * Wraps every page and, after a navigation, moves the focus into it unless the new page has
@@ -10,9 +10,7 @@ import { RouterContext } from './routerContext';
  * loading and loaded states, so the focus is not dropped again when the content arrives.
  */
 export function RouteFocus({ children }: { children: ReactNode }) {
-  const context = useContext(RouterContext);
-  if (!context) throw new Error('RouteFocus is only available inside NativeRouter.');
-  const { pathname } = context;
+  const pathname = usePathname();
   const container = useRef<HTMLDivElement>(null);
   const handledPathname = useRef(pathname);
   const focusBeforePage = useRef<Element | null>(null);
