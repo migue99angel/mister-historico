@@ -1,9 +1,70 @@
+import type { ReactNode } from 'react';
+
+import { useRun } from '../../../application/useRun';
+import { Button } from '../../design-system';
+import { RunResult } from './RunResult';
+import { isTerminalRun } from './runResultView';
+
 export interface RunFinalProps {
   runId: string;
   onPlayAgain: () => void;
 }
 
-// Placeholder so the tests fail on behaviour, not on a missing module.
-export function RunFinal(props: RunFinalProps) {
-  return <main data-run={props.runId} />;
+const LINK_CLASSES =
+  'inline-flex min-h-touch items-center font-semibold text-ink underline underline-offset-4';
+
+function Notice({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-4 px-gutter py-12 text-center">
+      <h1 className="font-display text-headline font-extrabold">{title}</h1>
+      {children}
+    </main>
+  );
+}
+
+/** Final screen of `/partida/:id/final`: loads the run of this device and shows how it ended. */
+export function RunFinal({ runId, onPlayAgain }: RunFinalProps) {
+  const state = useRun(runId);
+
+  switch (state.kind) {
+    case 'ready':
+      if (isTerminalRun(state.run)) return <RunResult run={state.run} onPlayAgain={onPlayAgain} />;
+      // Reached by URL or history while the run is still in play: no result to show yet.
+      return (
+        <Notice title="La partida sigue en juego">
+          <p className="text-body text-ink-muted">
+            Esta partida todavía no ha terminado. Vuelve a ella para seguir jugando.
+          </p>
+          <a href={`/partida/${encodeURIComponent(runId)}`} className={LINK_CLASSES}>
+            Volver a la partida
+          </a>
+        </Notice>
+      );
+    case 'unavailable':
+      return (
+        <Notice title="Partida no disponible">
+          <p className="text-body text-ink-muted">
+            Esta partida no está disponible en este dispositivo.
+          </p>
+          <a href="/" className={LINK_CLASSES}>
+            Volver al inicio
+          </a>
+        </Notice>
+      );
+    case 'error':
+      return (
+        <Notice title="No se pudo cargar la partida">
+          <p className="text-body text-ink-muted">Comprueba la conexión y vuelve a intentarlo.</p>
+          <Button onClick={state.retry}>Reintentar</Button>
+        </Notice>
+      );
+    case 'loading':
+      return (
+        <main className="mx-auto flex min-h-dvh max-w-md items-center justify-center px-gutter">
+          <p role="status" className="text-body text-ink-muted">
+            Cargando la partida…
+          </p>
+        </main>
+      );
+  }
 }
