@@ -28,17 +28,38 @@ describe('SeasonPicker', () => {
   it('lists each season with its club, season and historical manager', async () => {
     renderPicker();
 
-    const season = await screen.findByRole('region', { name: 'Test FC' });
-    expect(season).toHaveTextContent('2000-01');
+    const season = await screen.findByRole('region', { name: 'Test FC 2000-01' });
     expect(season).toHaveTextContent('Míster real: Ramon Prueba');
-    expect(screen.getByRole('region', { name: 'Rovers Prueba' })).toHaveTextContent('2001-02');
+    expect(screen.getByRole('region', { name: 'Rovers Prueba 2001-02' })).toBeInTheDocument();
+  });
+
+  it('names each season by club and season, so two seasons of a club differ', async () => {
+    const summary = {
+      id: 'test-fc-2001-02',
+      clubName: 'Test FC',
+      shortName: 'TFC',
+      seasonLabel: '2001-02',
+      historicalManager: 'Ramon Prueba',
+      colors: { primary: '#1d4ed8', secondary: '#f8fafc' },
+    };
+    mockServer.use(
+      http.get('*/api/seasons', () =>
+        HttpResponse.json({
+          items: [{ ...summary, id: mockFixtures.TEST_SEASON_ID, seasonLabel: '2000-01' }, summary],
+        }),
+      ),
+    );
+    renderPicker();
+
+    expect(await screen.findByRole('region', { name: 'Test FC 2000-01' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Test FC 2001-02' })).toBeInTheDocument();
   });
 
   it('reports the season the player chooses', async () => {
     const onSeasonChosen = vi.fn<(seasonId: string) => void>();
     renderPicker(onSeasonChosen);
 
-    const season = await screen.findByRole('region', { name: 'Test FC' });
+    const season = await screen.findByRole('region', { name: 'Test FC 2000-01' });
     await userEvent.click(within(season).getByRole('button', { name: 'Elegir Test FC 2000-01' }));
 
     expect(onSeasonChosen).toHaveBeenCalledExactlyOnceWith(mockFixtures.TEST_SEASON_ID);
@@ -55,12 +76,12 @@ describe('SeasonPicker', () => {
     );
     await userEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
 
-    expect(await screen.findByRole('region', { name: 'Test FC' })).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: 'Test FC 2000-01' })).toBeInTheDocument();
   });
 
   it('keeps the seasons on screen when a later refetch fails', async () => {
     const { queryClient } = renderPicker();
-    await screen.findByRole('region', { name: 'Test FC' });
+    await screen.findByRole('region', { name: 'Test FC 2000-01' });
     mockServer.use(
       http.get('*/api/seasons', () => HttpResponse.text('down', { status: 500 }), { once: true }),
     );
@@ -70,7 +91,7 @@ describe('SeasonPicker', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'No hemos podido actualizar las temporadas.',
     );
-    expect(screen.getByRole('region', { name: 'Test FC' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Test FC 2000-01' })).toBeInTheDocument();
   });
 
   it('says so when there are no seasons to play yet', async () => {
@@ -82,7 +103,7 @@ describe('SeasonPicker', () => {
 
   it('has no accessibility violations once the seasons are listed', async () => {
     const { container } = renderPicker();
-    await screen.findByRole('region', { name: 'Test FC' });
+    await screen.findByRole('region', { name: 'Test FC 2000-01' });
 
     expect(await axe(container)).toHaveNoViolations();
   });
