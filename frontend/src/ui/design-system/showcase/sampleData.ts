@@ -207,20 +207,24 @@ export const loopStandings: readonly MiniStandingsRow[] = [
 ];
 
 /** Liga Test after August: no previous standings yet, so no position changes. */
-export const firstBlockStandings: readonly MiniStandingsRow[] = [
+const FIRST_BLOCK_POINTS: readonly (readonly [string, number])[] = [
   ['Union Ficticia', 10],
   ['Test FC', 7],
   ['Deportivo Muestra', 7],
   ['Rovers Prueba', 6],
   ['Athletic Ensayo', 5],
-].map(([teamName, points], index) => ({
-  position: index + 1,
-  teamName: String(teamName),
-  played: 4,
-  points: Number(points),
-  isUser: teamName === 'Test FC',
-  change: { direction: 'new', symbol: null, text: null },
-}));
+];
+
+export const firstBlockStandings: readonly MiniStandingsRow[] = FIRST_BLOCK_POINTS.map(
+  ([teamName, points], index) => ({
+    position: index + 1,
+    teamName,
+    played: 4,
+    points,
+    isUser: teamName === clubs.testFc.name,
+    change: { direction: 'new', symbol: null, text: null },
+  }),
+);
 
 export const finalStandings: readonly MiniStandingsRow[] = [
   {

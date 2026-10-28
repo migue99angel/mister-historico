@@ -57,8 +57,8 @@ export function MatchLine({ match, competitionName, keyMatchLabel, userSide }: M
                 {keyMatchLabel}
               </span>
             )}
-            {meta.map((item) => (
-              <span key={item}>{item}</span>
+            {meta.map((item, index) => (
+              <span key={index}>{item}</span>
             ))}
           </p>
         )}
