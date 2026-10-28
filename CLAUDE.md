@@ -17,10 +17,10 @@ Míster Histórico es un juego de navegador, gratuito y sin registro: entrenas a
 
 No leas enteros `PLAN.md`, `TASKS.md`, `HANDOFF.md` ni los ADR. Amplía el contexto por niveles:
 
-1. **Al arrancar:** este fichero y tu issue (`gh issue view <N> -R migue99angel/mister-historico --json title,body,comments`), con su Status y sus «blocked by» (comandos bajo la tabla del Project). La issue da el ID, el enlace a la especificación, las dependencias, la propiedad y la aceptación.
+1. **Al arrancar:** este fichero, `make status N=<N>` (Status, «blocked by», PR y últimos comentarios) y el cuerpo de la issue (`gh issue view <N>`), que da el ID, el enlace a la especificación, las dependencias, la propiedad y la aceptación.
 2. **Para implementar:** solo la sección de tu tarea en TASKS (`awk -v id="<ID>" 'index($0,"### "id" ")==1{f=1;print;next} /^#{1,3} /{f=0} f' docs/TASKS.md`), los contratos y ADR que cite, y el código que vas a tocar o del que dependes.
 3. **Bajo demanda:** el resto de PLAN, ADR o HANDOFF solo si surge un conflicto de arquitectura, un cambio de contrato, una dependencia ambigua o un comportamiento sin documentar, o si la revisión lo pide. Busca con `grep` y lee rangos.
-4. **Al reanudar:** si la herramienta lo permite, reanuda la sesión original (`claude --resume`, `codex resume`). Si no, parte de lo persistido: comentarios recientes de la issue, `git status` y `git log --oneline origin/main..HEAD` en el worktree, la PR y su CI (`gh pr view <rama> --json number,state,statusCheckRollup,comments`) y el último bloqueo anotado. Sigue desde ahí, sin volver a planificar.
+4. **Al reanudar:** si la herramienta lo permite, reanuda la sesión original (`claude --resume`, `codex resume`). Si no, parte de lo persistido: `make status N=<N>`, `git status` y `git log --oneline origin/main..HEAD` en el worktree, y la PR con su CI (`gh pr checks <rama>`). Sigue desde ahí, sin volver a planificar.
 
 ## Cómo trabajar una tarea
 
@@ -50,20 +50,16 @@ No leas enteros `PLAN.md`, `TASKS.md`, `HANDOFF.md` ni los ADR. Amplía el conte
 | Tras integrar | Quien integra | Revisa las issues que esa tarea bloqueaba: si ya no les queda ninguna dependencia abierta, pásalas de **Blocked** a **Ready** con un comentario. |
 | Descubres trabajo nuevo | Cualquiera | Crea una issue con su ID de TASKS, o añade antes la tarea a TASKS (con una CR si cambia contratos). Enlaza sus bloqueos, milestone, Priority y Phase. No dejes seguimientos solo en comentarios o en HANDOFF. |
 
-Comandos de GitHub (Project 1; requieren el scope `project` del token). Con `gh` 2.45, `gh issue view` sin `--json` y `gh pr edit` fallan por Projects clásico (retirado): usa `--json` y `gh api`.
+Consulta el estado con `make status` (tareas abiertas del Project) o `make status N=<N>` (una issue). Para escribir (requiere `gh` ≥ 2.103 y el scope `project` del token):
 
 ```bash
-# Estado de todas las tareas
-gh project item-list 1 --owner migue99angel --limit 500 --format json --jq '.items[]|"\(.status)\t\(.priority)\t#\(.content.number)\t\(.title)"'
-# Dependencias de una issue
-gh api repos/migue99angel/mister-historico/issues/<N>/dependencies/blocked_by --jq '.[]|"#\(.number) \(.state)"'
 # Mover el Status: Backlog=9a5adce2 Ready=522e867f "In Progress"=a5c268dc "In Review"=8743f1a4 Blocked=171336ac Done=664872bc
 ITEM=$(gh project item-list 1 --owner migue99angel --limit 500 --format json --jq '.items[]|select(.content.number==<N>)|.id')
 gh project item-edit --project-id PVT_kwHOAphq684BpIRk --id "$ITEM" --field-id PVTSSF_lAHOAphq684BpIRkzhnlQd0 --single-select-option-id <opción>
 # Añadir «#<N> blocked by #<M>»
 gh api -X POST repos/migue99angel/mister-historico/issues/<N>/dependencies/blocked_by -F issue_id=$(gh api repos/migue99angel/mister-historico/issues/<M> --jq .id)
 # Comentar
-gh issue comment <N> -R migue99angel/mister-historico -b "..."
+gh issue comment <N> -b "..."
 ```
 
 ## Arquitectura (PLAN §3.2, ADR-002, ADR-003 y ADR-011)
@@ -124,6 +120,7 @@ Punto de entrada único: el `Makefile` raíz (no hay `just`).
 | `make dev` | Levanta Postgres, API y frontend con Docker Compose (puertos en `.env`, ver `.env.example`; `POSTGRES_PORT` si el 5432 está ocupado). |
 | `make validate-content` | Valida `content/` (desde T2.20). |
 | `make calibrate SEASON=<slug>` | Calibración del motor (desde T2.7). |
+| `make status [N=<issue>]` | Tareas abiertas del Project, o el estado, los bloqueos, las PR y los últimos comentarios de una issue. |
 
 - Backend: `cd backend && uv run pytest -m unit` (marcadores: `unit`, `integration`, `contract`, `calibration`, `content`, `e2e`; `calibration` se excluye por defecto). Gestiona dependencias con `uv`, nunca con `pip`.
 - Frontend: `cd frontend && npm run test | lint | build | e2e | size`. Playwright emula Pixel 7 e iPhone 14 sobre Chromium.
