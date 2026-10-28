@@ -68,7 +68,8 @@ GitHub Projects y [Kanvas](https://github.com/XMihura/Kanvas) 0.4.0.
   - El autor consulta el Kanban sin leer Markdown.
   - Para el «qué hay» basta un `gh project item-list` filtrado (~1 KB), sin leer `TASKS.md` entero.
 - **Negativas y trade-offs:**
-  - Mover el Status sigue siendo manual (Ready, In Progress, In Review y Blocked).
+  - Mover el Status sigue siendo manual (Ready, In Progress, In Review y Blocked, y
+    también Done mientras no se active la automatización «Item closed → Done»).
   - Una consulta a GitHub tarda ~1,4 s, frente a ~0,1 s en Kanvas.
   - Hace falta el scope `project` del token.
   - Con `gh` 2.45 hay que usar `--json` o `gh api` (ver `CLAUDE.md`).
