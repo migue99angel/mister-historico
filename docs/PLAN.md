@@ -254,10 +254,7 @@ Las PR se integran con **rebase-merge, no con squash**, para que la secuencia ro
 
 ### 4.4 Reglas de tests para los agentes
 
-- Fakes antes que mocks. Un mock solo se usa para comprobar una interacción saliente en un borde, como un evento publicado.
-- Un comportamiento por test. El nombre del test describe la regla de negocio, por ejemplo `test_manager_is_sacked_when_board_confidence_drops_below_threshold`.
-- Prohibido escribir datos históricos reales en los tests unitarios: se usa `Test FC` (P5).
-- Prohibido el azar sin semilla: todo test que use azar recibe un `RandomSource` con semilla.
+Están en `CLAUDE.md` («Reglas de los tests»), que carga todo agente.
 
 ---
 
@@ -338,8 +335,8 @@ comprobada (HANDOFF §12). La segunda tanda integra T3.1b y T3.4 (HANDOFF §13),
 sin absorber efectos/directiva ni casos de uso. La tercera tanda integra
 T3.2/T3.3 (HANDOFF §14). La cuarta integra T3.5 y la CR de plantillas por
 fecha (HANDOFF §15), con revisión Sol y CI verde. F4-A/F4-B están integradas
-con MSW por su tanda independiente. Siguen T3.6 y la aceptación T3.7a/T4.7a. Oleadas de 2-3 agentes
-contando revisiones; no abrir todas las tareas de la tabla a la vez. F2 continúa
+con MSW por su tanda independiente. Siguen T3.6 y la aceptación T3.7a/T4.7a. El límite de
+agentes simultáneos está en §6; no abrir todas las tareas de la tabla a la vez. F2 continúa
 por lotes sin consumir toda la capacidad reservada a A.
 
 ### 5.4 Decisiones de producto pendientes de aprobación del autor
@@ -366,13 +363,32 @@ convierte una propuesta de beta en una decisión ya firmada.
 
 ## 6. Cómo trabajan los agentes en paralelo
 
+`CLAUDE.md` es el punto de entrada operativo (carga progresiva de contexto, pasos de una tarea y tabla del Project). Esta sección detalla las reglas que solo hacen falta al coordinar, revisar o integrar.
+
 1. **Una tarea es un agente, un *git worktree* o rama (`task/T2.3-league`), una issue del [GitHub Project](https://github.com/users/migue99angel/projects/1) y una PR que la cierra al integrarse** ([ADR-016](adr/016-seguimiento-en-github-projects.md)). TASKS especifica; el Project lleva el estado.
-2. **Propiedad de ficheros.** Cada tarea declara en `TASKS.md` los directorios que le pertenecen. Un agente no toca ficheros que no son suyos. Si necesita cambiar un contrato (puerto, esquema u OpenAPI), **para y abre una tarea de cambio de contrato (CR)**, que se integra primero.
-3. **Oleadas.** Las letras agrupan trabajo; las dependencias explícitas de cada tarea mandan. Solo ejecutar a la vez tareas sin dependencia pendiente ni archivos compartidos. Trabajar en oleadas de 2 o 3 agentes, contando la revisión, conforme al traspaso actual; la tabla describe trabajo posible, no una orden de lanzarlo todo.
-4. **Ficheros compartidos** (`pyproject.toml`, `package.json`, workflows de la CI y `bootstrap.py`): solo los modifica la tarea que los creó o una tarea CR. Si una tarea necesita una dependencia nueva, la pide en la descripción de la PR.
-5. **Revisión.** Cada PR pasa la CI y una revisión independiente (un agente revisor sin el contexto del autor, por ejemplo `/code-review`) antes de integrarse. Las tareas **[HUMANO]** las cierras tú.
-6. **Contenido histórico:**
+2. **Propiedad de ficheros.** Cada tarea declara en `TASKS.md` los directorios que le pertenecen. Un agente no toca ficheros que no son suyos. Si necesita cambiar un contrato (puerto, esquema u OpenAPI), **para y abre una tarea de cambio de contrato (CR)**, que se integra primero. Mientras una CR esté pendiente, no empieza ninguna tarea que dependa del contrato que cambia.
+3. **Paralelismo.** Como máximo **dos agentes implementadores a la vez**, normalmente uno de Claude Code y otro de Codex, cada uno en su worktree. Una tercera sesión solo puede revisar, cuando haya cuota, nunca implementar. Dos tareas van en paralelo solo si sus dependencias están integradas, su propiedad no se solapa, ninguna CR pendiente afecta a sus contratos y no compiten por infraestructura. Las letras de oleada de TASKS agrupan trabajo posible, no una orden de lanzarlo.
+   - Los worktrees separan el código, no el entorno. `make dev` usa el proyecto Compose fijo `mister-historico` y los puertos de `.env`, y Playwright levanta Vite en el 5173 con `--strictPort`, el mismo puerto que el frontend de Compose. Por eso `make dev` y los E2E se ejecutan en un solo worktree a la vez.
+   - Los tests con *testcontainers* crean sus contenedores con puertos aleatorios y pueden ir en paralelo. Ante cualquier otro recurso sin aislamiento garantizado (puertos, bases de datos, ficheros temporales o artefactos de tests), serializa: el segundo agente espera.
+4. **Selección de tareas.** Por defecto, el autor asigna una issue a cada agente. Si autoriza a un agente a elegir:
+   1. Lista el Project (comando en `CLAUDE.md`) y toma una issue en **Ready** del hito activo, por prioridad (P0 primero) y sin «blocked by» abiertas.
+   2. Lee sus comentarios y descártala si tiene una reclamación no retirada.
+   3. Reclámala con un comentario `Reclamo <ID> · <Claude Code|Codex> · rama <rama> · worktree <ruta>`. Todos los agentes usan la misma cuenta, así que el assignee no los distingue.
+   4. Vuelve a leer los comentarios. Si hay otra reclamación no retirada, gana la más antigua: el otro agente retira la suya con un comentario y elige otra issue.
+   5. Solo entonces pasa la issue a **In Progress** y crea el worktree.
+
+   GitHub no ofrece una reclamación atómica: esto reduce las carreras, no las elimina. Ante cualquier duda, no empieces y avisa al autor. Elegir tarea no salta el límite del punto 3, y no hay coordinador ni cola aparte del Project.
+5. **Ficheros compartidos** (`pyproject.toml`, `package.json`, workflows de la CI y `bootstrap.py`): solo los modifica la tarea que los creó o una tarea CR. Si una tarea necesita una dependencia nueva, la pide en la descripción de la PR.
+6. **Revisión cruzada.** Cada PR pasa la CI y una revisión independiente antes de integrarse. Las tareas **[HUMANO]** las cierras tú.
+   - **Independencia obligatoria; modelo distinto, preferente.** Revisa otra sesión que no comparte la conversación del implementador. Se prefiere el otro modelo (Codex revisa lo de Claude Code y al revés); si uno no tiene cuota, revisa otra sesión del mismo.
+   - **Contexto del revisor:** la issue y su aceptación, la sección de TASKS, el diff de la PR, los contratos, ficheros y ADR que toca, y la CI. No recibe las conclusiones del implementador.
+   - **Qué comprueba:** corrección funcional y casos límite, reglas de capas, contratos, cobertura de los comportamientos modificados, ciclo TDD visible en los commits, regresiones, idempotencia y concurrencia cuando apliquen, y ajuste a la especificación.
+   - **Resultado:** un comentario en la PR (o comentarios en línea) que separa **bloqueantes** de **opcionales**, y el veredicto en la issue con el commit revisado. El revisor no escribe en la rama del autor salvo autorización expresa.
+   - **Ciclo:** PR → CI → revisión → el implementador corrige los bloqueantes en la misma PR → el revisor comprueba los cambios relevantes y aprueba el nuevo HEAD → integra, con rebase-merge, el autor o el agente al que el autor lo haya autorizado, nunca el implementador de esa PR → Done. Las sugerencias opcionales no abren PR propias: si merecen seguimiento, van a una issue en Backlog.
+   - El contenido histórico (punto 7) y las CR (punto 2) conservan sus controles propios.
+7. **Contenido histórico:**
    - El **agente investigador** escribe los datos con una fuente para cada uno. Si no encuentra un dato, deja `null` y `verify: pending`, y la validación en modo release falla. **Nunca inventa.**
    - Un **agente verificador independiente** (que no ve las notas del investigador, solo el YAML y la web) contrasta cada dato y genera un informe de discrepancias.
    - **Tú firmas** (`reviewed_by` en el fichero).
-7. **Prompt base para cada agente:** *"Lee `CLAUDE.md`, `docs/PLAN.md` §3-4, los ADR relevantes y la tarea `<ID>` de `docs/TASKS.md`. Trabaja solo en los ficheros que te pertenecen. Sigue el ciclo TDD de §4.1 con commits separados. Termina cuando cumplas todos los criterios de aceptación y la CI esté en verde."*
+8. **Traspasos.** El estado vive en el Project y la evidencia en las PR y la CI. `HANDOFF.md` conserva decisiones técnicas y contexto que no se recuperan desde GitHub; no es un segundo tablero ni un diario de sesiones. Sus secciones fechadas se conservan como registro.
+9. **Prompts base:** para implementar, *"Trabaja la issue #<N> siguiendo `CLAUDE.md`."*; para revisar, *"Revisa la PR #<P> de la issue #<N> según PLAN §6, «Revisión cruzada»."*
