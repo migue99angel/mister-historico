@@ -44,7 +44,8 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(simulate).toBeVisible();
       await expectAccessibleScreen(page);
 
-      for (let block = 1; block <= MAX_BLOCKS && !page.url().endsWith('/final'); block += 1) {
+      const finalTitle = page.getByRole('heading', { level: 1, name: 'Final de la partida' });
+      for (let block = 1; block <= MAX_BLOCKS; block += 1) {
         const optionGroups = page.getByRole('group', { name: /^Opciones/ });
         for (const group of await optionGroups.all()) {
           await tabTo(page, group.getByRole('button').first());
@@ -54,13 +55,15 @@ for (const colorScheme of ['light', 'dark'] as const) {
         await page.keyboard.press('Enter');
         // The block summary (or the final page) takes the focus once the block is simulated.
         await expect(page.locator(':focus')).toHaveRole('heading');
+        // «Simular bloque» only renders while the run goes on: without it, the run is over and
+        // the final page is on its way, so this screen is not the one to audit.
+        if (!(await simulate.isVisible())) break;
         await expectAccessibleScreen(page);
       }
 
       await expect(page).toHaveURL(/\/final$/);
-      await expect(
-        page.getByRole('heading', { level: 1, name: 'Final de la partida' }),
-      ).toBeFocused();
+      await expect(finalTitle).toBeFocused();
+      await expectAccessibleScreen(page);
     });
   });
 }
