@@ -9,10 +9,12 @@ entra con esta CR y se integra antes que T4.1.
 
 ## Propiedad
 
-- `frontend/package.json` y `frontend/package-lock.json`: una dependencia de desarrollo.
-- `frontend/test/setup.ts`: registra el matcher `toHaveNoViolations` con `expect.extend`.
-- `frontend/test/jest-axe.d.ts` y `frontend/test/vitest-axe.d.ts` (nuevos): tipos del
-  módulo y del matcher. Se añaden porque `jest-axe` no publica tipos (ver alternativas).
+- `frontend/package.json` y `frontend/package-lock.json`: dos dependencias de desarrollo.
+- `frontend/test/setup.ts`: registra el matcher `toHaveNoViolations` con `expect.extend` y
+  amplía `Matchers` de Vitest con su tipo.
+- `frontend/test/jest-axe.d.ts` (nuevo): tipos del módulo. Se añade porque `jest-axe` no
+  publica tipos (ver alternativas).
+- `docs/TASKS.md`: la entrada de esta CR.
 - `frontend/test/a11y/axe-matcher.test.tsx` (nuevo): prueba el matcher.
 - Este documento.
 
@@ -24,14 +26,26 @@ No toca `src/`, el contrato OpenAPI, la configuración de Vite o Vitest ni la CI
   `axe-core` 4.12 y funciona con Vitest 5 sin adaptadores: su `axe()` devuelve los
   resultados de axe-core y `toHaveNoViolations` es un matcher con la forma estándar
   `{ pass, message }`, que Vitest acepta con `expect.extend`.
+- Se declara también `axe-core` `4.12.1` como `devDependency`, con la versión exacta que
+  fija `jest-axe`. Los tipos importan de `axe-core`; sin declararla, solo se resolvía
+  porque npm sube la copia transitiva a `node_modules`. Con la misma versión, ambas
+  comparten una única instalación.
 - **No se instala `@types/jest-axe`.** Depende de `@types/jest` (declara los globales de
   Jest: `describe`, `expect`…, en conflicto con `globals: false` de Vitest) y de los tipos
   de axe-core 3. En su lugar, `test/jest-axe.d.ts` declara solo `axe`, `configureAxe` y
-  `toHaveNoViolations` sobre los tipos de axe-core 4, y `test/vitest-axe.d.ts` amplía
-  `Matchers` de Vitest con `toHaveNoViolations()`.
-- jsdom no calcula estilos ni colores, así que la regla `color-contrast` de axe no aporta
-  en Vitest. T4.1 comprueba el contraste de los tokens con un test propio de la paleta, y
-  Lighthouse CI (ADR-011) lo vigila sobre la página real.
+  `toHaveNoViolations` sobre los tipos de axe-core 4. `configureAxe` admite además
+  `globalOptions` e `impactLevels`, como la librería.
+- `skipLibCheck` hace que `tsc` ignore cualquier `.d.ts`, también los nuestros. Por eso la
+  ampliación de `Matchers` vive en `test/setup.ts`, que sí se comprueba, y el test del
+  matcher afirma con `expectTypeOf` que `axe()` resuelve a `AxeResults` y no a `any`. La
+  declaración del módulo tiene que seguir en un `.d.ts` porque es ambiental.
+- jsdom no calcula estilos ni colores. `jest-axe` ya desactiva por defecto las reglas de la
+  categoría `cat.color` (entre ellas `color-contrast`) en `axe` y en `configureAxe`, así que
+  no hace falta configurarlo. T4.1 comprueba el contraste de los tokens con un test propio
+  de la paleta, y Lighthouse CI (ADR-011) lo vigila sobre la página real.
+- axe-core es una instancia global y rechaza un análisis mientras otro sigue en marcha
+  («Axe is already running»). Hay que esperar (`await`) cada `axe()` antes del siguiente y
+  no usar `it.concurrent` en tests que lo llamen.
 
 ## Impacto en el bundle
 
@@ -52,5 +66,6 @@ Ninguno. Es una dependencia de desarrollo que solo importan `test/` y los ficher
 ## Comprobación
 
 `test/a11y/axe-matcher.test.tsx` pasa con un botón con nombre accesible y falla, citando
-la regla `button-name`, con un botón vacío. En rojo, antes de registrar el matcher, Vitest
+la regla `button-name`, con un botón vacío. Con `configureAxe({ impactLevels: ['minor'] })`,
+esa misma infracción (crítica) se filtra. En rojo, antes de registrar el matcher, Vitest
 respondía `Invalid Chai property: toHaveNoViolations`.

@@ -684,6 +684,13 @@ existen; los casos de uso de partida siguen pendientes.
   - Tests de componente: renderizado, estados (deshabilitado, seleccionado) y accesibilidad con `jest-axe`.
   - `GenericCrest` es determinista para los mismos colores.
 
+### CR-T4.1a · Dependencia de accesibilidad (jest-axe)
+- **Estado:** en revisión en [PR #63](https://github.com/migue99angel/mister-historico/pull/63).
+  Añade `jest-axe` y `axe-core` como dependencias de desarrollo, registra
+  `toHaveNoViolations` en `frontend/test/setup.ts` y declara los tipos en
+  `frontend/test/jest-axe.d.ts`. [Propiedad y decisiones](changes/CR-T4.1a-a11y.md).
+- Se integra antes que T4.1, que usa `jest-axe` en sus tests de componente.
+
 ### CR-T4.0 · Dependencia y cableado web previo
 - **Estado:** integrada en [PR #52](https://github.com/migue99angel/mister-historico/pull/52),
   Luna implementó y Sol revisó; CI en verde. Añade únicamente TanStack Query,
