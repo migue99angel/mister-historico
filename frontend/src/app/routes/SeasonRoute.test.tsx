@@ -1,6 +1,7 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { mockFixtures, renderWithRuntime } from '../../../test/renderWithRuntime';
 import { App } from '../App';
 import { NativeRouter } from '../nativeRouter';
 import type * as SeasonRouteModule from './SeasonRoute';
@@ -45,18 +46,47 @@ describe('SeasonRoute mount point (/equipo/:id)', () => {
     expect(window.history.length).toBe(historyLength + 1);
   });
 
-  it('currently mounts the placeholder page with its identifier', async () => {
+  it('mounts the season intro with the context of the season', async () => {
     const { SeasonRoute } = await vi.importActual<typeof SeasonRouteModule>('./SeasonRoute');
 
-    render(
+    renderWithRuntime(
       <NativeRouter>
-        <SeasonRoute seasonId="test-fc-2000-01" onRunStarted={() => undefined} />
+        <SeasonRoute seasonId={mockFixtures.TEST_SEASON_ID} onRunStarted={() => undefined} />
       </NativeRouter>,
     );
 
-    expect(
-      screen.getByRole('heading', { level: 1, name: 'Contexto del equipo' }),
-    ).toBeInTheDocument();
-    expect(screen.getByText('Identificador: test-fc-2000-01')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Test FC' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Objetivos de la directiva' })).toBeInTheDocument();
+  });
+
+  it('reports the started run through onRunStarted', async () => {
+    const { SeasonRoute } = await vi.importActual<typeof SeasonRouteModule>('./SeasonRoute');
+    const onRunStarted = vi.fn<(runId: string) => void>();
+
+    const { runTokenStore } = renderWithRuntime(
+      <NativeRouter>
+        <SeasonRoute seasonId={mockFixtures.TEST_SEASON_ID} onRunStarted={onRunStarted} />
+      </NativeRouter>,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Empezar' }));
+
+    await waitFor(() => {
+      expect(onRunStarted).toHaveBeenCalledOnce();
+    });
+    const [runId] = onRunStarted.mock.calls[0] ?? [''];
+    expect(runTokenStore.read(runId)).not.toBeNull();
+  });
+
+  it('goes back home from an unknown season', async () => {
+    const { SeasonRoute } = await vi.importActual<typeof SeasonRouteModule>('./SeasonRoute');
+
+    renderWithRuntime(
+      <NativeRouter>
+        <SeasonRoute seasonId="no-such-season" onRunStarted={() => undefined} />
+      </NativeRouter>,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Volver al inicio' }));
+
+    expect(window.location.pathname).toBe('/');
   });
 });
