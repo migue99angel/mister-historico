@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe } from 'jest-axe';
+import type { SyntheticEvent } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { Button } from './Button';
@@ -67,16 +68,11 @@ describe('Button', () => {
   });
 
   it('does not submit its form while loading', async () => {
-    const onSubmit = vi.fn((event: SubmitEvent) => {
+    const onSubmit = vi.fn((event: SyntheticEvent) => {
       event.preventDefault();
     });
     render(
-      <form
-        aria-label="Decisión"
-        onSubmit={(event) => {
-          onSubmit(event.nativeEvent as SubmitEvent);
-        }}
-      >
+      <form aria-label="Decisión" onSubmit={onSubmit}>
         <Button type="submit" loading>
           Enviando…
         </Button>
