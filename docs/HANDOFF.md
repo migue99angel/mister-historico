@@ -526,3 +526,61 @@ accidental a `uv` sin `UV_NO_SYNC=1` reinstaló el paquete editable: se restaura
 el hook, URL y shebang al entorno de `main`, con hashes RECORD actualizados y
 sin otra instalación. Las ejecuciones restantes usaron el entorno compartido
 con `PYTHONPATH` explícito y sin sincronización.
+
+## 16. Tanda frontend F4-B: pantallas jugables con MSW (2026-10-28)
+
+**Planificación realizada:** el orquestador (claude-opus-5.5) comprobó `main`, PR y
+worktrees, y detectó que las pantallas no podían usar la API sin romper capas:
+`useGameApi` vivía en `app/`, no había dónde guardar el `runToken` y montar pantallas
+tocaba propiedad de T4.2. Abrió primero una CR de cableado y después lanzó tres agentes
+en paralelo, cada uno en su rama y worktree, con `node_modules` enlazado y sin
+dependencias nuevas. Cada PR pasó revisión independiente de un agente sin contexto del
+autor y CI verde; se integraron por rebase-merge en secuencia. Tras el límite de uso se
+reanudaron los mismos agentes, conservando su trabajo.
+
+**Implementación integrada:**
+
+- **CR-T4.B, [PR #70](https://github.com/migue99angel/mister-historico/pull/70):**
+  `GameApi`, `ApiError` y sus contextos pasan a `application/`; puerto `RunTokenStore`
+  (`save`/`read`/`remove`) con adaptador `localStorage` tolerante a fallos (copia en
+  memoria), fake y suite de contrato común; arnés `frontend/test/renderWithRuntime.tsx`
+  para probar pantallas y hooks con MSW sin importar `infrastructure/`, protegido por la
+  regla `only-tests-import-test-harness`; un punto de montaje por ruta en
+  `app/routes/`, con parámetros y callbacks por props y test propio. Fija el contrato
+  sin token: `useRun` no llama a la API sin token y borra el token ante 401/403/404.
+  [Propiedad y decisiones](changes/CR-T4.B-screen-wiring.md).
+- **T4.4, [PR #72](https://github.com/migue99angel/mister-historico/pull/72):**
+  `SeasonPicker` sustituye a `HomeScreen` en `/` (conserva el h1 y el lema del e2e) y
+  `SeasonIntro` en `/equipo/:id`, cargada con `lazy()` y precargada desde `HomeRoute`.
+  `useStartRun` guarda el token y siembra `runQueryKey(runId) = ['runs', runId]`; un
+  refetch fallido conserva los datos ya pintados, para no dejar Partidas huérfanas.
+- **T4.5, [PR #73](https://github.com/migue99angel/mister-historico/pull/73):** bucle
+  de bloques con el flujo «Elegir y Simular», decidido por el autor frente a confirmar
+  cada dilema: la elección es local y «Simular bloque» envía en serie las decisiones y
+  el avance, con `Idempotency-Key` estable por intento. Un 409 recarga la vista y
+  bloquea comandos mientras tanto; solo red, 5xx y 429 se reintentan con la misma
+  clave. `useRun` usa `staleTime: Infinity`, así que la Partida recién iniciada no se
+  vuelve a pedir.
+- **T4.6a, [PR #71](https://github.com/migue99angel/mister-historico/pull/71) y
+  [PR #75](https://github.com/migue99angel/mister-historico/pull/75):** pantalla final
+  con props y después conectada a `useRun` con `lazy()`. Sin puntuación, percentil ni
+  veredicto inventados; una Partida en juego abierta en `/final` vuelve a
+  `/partida/:id` con `replace`, y el foco va al `h1`.
+- **Cierre documental, [PR #77](https://github.com/migue99angel/mister-historico/pull/77):**
+  estado de las tareas en TASKS, seguimientos de las revisiones y posiciones de jugador
+  en el glosario.
+
+**Verificación:** en `main` tras #75, `npm run test` da **57 ficheros y 506 tests**;
+`lint` (con dependency-cruiser), `format:check` y `build` en verde; JS inicial
+**86,84 KB gzip** (límite 100 KB), con chunks aparte para `SeasonIntro`, `RunLoop` y
+`RunResult`. Cobertura de `application/` ≥ 99 % de líneas. No se ejecutó Playwright
+ni nada del backend.
+
+**Límites y siguiente trabajo:** todo funciona contra MSW con Test FC; no declara A.
+No se cambiaron `contracts/openapi.yaml`, el cliente generado, los handlers MSW ni
+`package.json`. Los seguimientos están en TASKS («Seguimientos de F4-B»); el de más
+impacto es declarar `sideEffects` en `frontend/package.json` (unos 1,5 KB menos de JS
+inicial). Siguiente: T4.7a, E2E real con Playwright contra backend, motor y SQL reales,
+cuando estén T3.6 y T3.7a; necesita permiso explícito para ejecutar Playwright.
+Worktrees y ramas locales de la tanda eliminados tras comprobar con
+`git log --cherry-pick --right-only` que no quedaba nada fuera de `main`.
