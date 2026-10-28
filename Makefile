@@ -43,5 +43,5 @@ ifdef N
 	@echo "Latest comments:"
 	@gh issue view $(N) -R $(REPO) --json comments --jq '.comments[-3:][]|"  [\(.createdAt[0:16])] \(.body|gsub("\\s+";" ")|.[0:400])"'
 else
-	@gh project item-list 1 --owner migue99angel --limit 500 --query "-status:Done" --format json --jq '.items[]|"\(.status)\t\(.priority)\t#\(.content.number)\t\(.title)"' | sort
+	@gh project item-list 1 --owner migue99angel --limit 500 --query "-status:Done" --format json --jq '.items[]|"\(.status)\t\(.priority)\t#\(.content.number)\t\(.title)"' | sort -t'	' -k1,1 -k2,2 -k3.2n
 endif
