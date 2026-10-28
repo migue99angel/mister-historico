@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, replace
 from enum import StrEnum
+from typing import cast
 
 from mister.game.domain.run import ClosureOutcome
 from mister.game.domain.state import RunState
@@ -121,14 +122,18 @@ class GoalFacts:
             self.position_status, PositionStatus
         ):
             raise InvalidValueError("goal facts require valid statuses")
+        if self.position_status is PositionStatus.FINAL and self.final_position is None:
+            raise InvalidValueError("final position status requires final_position")
+        if self.position_status is PositionStatus.PROVISIONAL and self.final_position is not None:
+            raise InvalidValueError("provisional position cannot carry final_position")
         for value in (self.position, self.final_position):
             if value is not None and (type(value) is not int or value < 1):
                 raise InvalidValueError("positions must be positive integers or None")
         if not isinstance(self.stages, tuple) or not isinstance(self.reached_stages, tuple):
             raise InvalidValueError("stages must be tuples")
-        if len(set(self.stages)) != len(self.stages) or any(
-            not isinstance(s, str) or not s for s in self.stages
-        ):
+        if any(not isinstance(s, str) or not s for s in self.stages):
+            raise InvalidValueError("stages must be unique non-empty names in competition order")
+        if len(set(self.stages)) != len(self.stages):
             raise InvalidValueError("stages must be unique non-empty names in competition order")
         if any(stage not in self.stages for stage in self.reached_stages):
             raise InvalidValueError("reached stages must appear in competition order")
@@ -193,6 +198,8 @@ class BoardRules:
         old = {g.goal_id: g.status for g in previous_goals}
         for goal in current_goals:
             before = old[goal.goal_id]
+            if before is not GoalStatus.PENDING and goal.status is not before:
+                raise InvalidValueError("a finalized objective status cannot change")
             if before is GoalStatus.PENDING and goal.status is GoalStatus.MET:
                 delta += self.objective_met_delta
             elif before is GoalStatus.PENDING and goal.status is GoalStatus.MISSED:
@@ -232,8 +239,7 @@ def evaluate_goals(
                 else GoalStatus.PENDING
             )
         elif goal.kind is GoalKind.FINISH_TOP:
-            if type(goal.target) is not int:
-                raise InvalidValueError("finish_top target must be an integer")
+            target = cast("int", goal.target)
             rank = (
                 competition.final_position
                 if competition.position_status is PositionStatus.FINAL
@@ -242,15 +248,13 @@ def evaluate_goals(
             is_final = competition.position_status is PositionStatus.FINAL
             status = (
                 GoalStatus.MET
-                if is_final and rank is not None and rank <= goal.target
+                if is_final and rank is not None and rank <= target
                 else GoalStatus.MISSED
                 if is_final and rank is not None
                 else GoalStatus.PENDING
             )
         else:
-            stage = goal.target
-            if not isinstance(stage, str):
-                raise InvalidValueError("reach_stage target must be a phase ID")
+            stage = cast("str", goal.target)
             if stage not in competition.stages:
                 raise InvalidValueError(
                     "reach_stage target must be an ordered phase in its competition"
