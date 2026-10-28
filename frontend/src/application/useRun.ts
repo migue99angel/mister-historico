@@ -1,8 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useRef, useState } from 'react';
 
 import { ApiError } from './apiError';
 import { useGameApi } from './gameApi';
-import type { RunViewDto } from './ports';
+import type { GameApi, IdempotentRunCommand, RunViewDto } from './ports';
 import { useRunTokenStore } from './runTokenStore';
 
 /**
@@ -74,13 +75,117 @@ export function requireRunToken(runToken: string | null): string {
   return runToken;
 }
 
+// Commands on a run (decide a dilemma, simulate a block) share this plumbing: they send the
+// version of the cached view, keep one Idempotency-Key per attempt and write the reply back to
+// the run's cache entry.
+
 export type RunCommandFailure =
+  /** 409 (`version_conflict`, `dilemma_already_decided`, `run_already_finished`…): reloaded. */
   | { kind: 'conflict'; code: string | undefined }
+  /** The token no longer opens the run (401, 403 or 404); useRun turns unavailable. */
   | { kind: 'unavailable' }
+  /** Network or server failure: sending the same variables again retries the same attempt. */
   | { kind: 'failed'; error: Error };
 
 export interface RunCommand<Variables> {
+  /**
+   * Sends the command against the cached view's version. Sending the variables of the last
+   * failed attempt again reuses its Idempotency-Key, so a retry never applies twice. Ignored
+   * (resolves `null`) while another attempt is in flight or before the run has loaded.
+   * Resolves with the new run view, or `null` when ignored or failed (see `failure`).
+   */
   send: (variables: Variables) => Promise<RunViewDto | null>;
   isPending: boolean;
+  /** Why the last attempt failed; cleared when a new attempt starts. */
   failure: RunCommandFailure | null;
+}
+
+export type RunCommandRequest = IdempotentRunCommand & { expectedVersion: number };
+
+export type RunCommandExecutor<Variables> = (
+  gameApi: GameApi,
+  request: RunCommandRequest,
+  variables: Variables,
+) => Promise<RunViewDto>;
+
+interface Attempt<Variables> {
+  variables: Variables;
+  fingerprint: string;
+  expectedVersion: number;
+  idempotencyKey: string;
+}
+
+function nextAttempt<Variables>(
+  failed: Attempt<Variables> | null,
+  variables: Variables,
+  version: number,
+): Attempt<Variables> {
+  const fingerprint = JSON.stringify([variables]);
+  if (failed?.fingerprint === fingerprint) return failed;
+  return { variables, fingerprint, expectedVersion: version, idempotencyKey: crypto.randomUUID() };
+}
+
+function toFailure(error: unknown): RunCommandFailure {
+  if (error instanceof ApiError && error.status === 409) {
+    return { kind: 'conflict', code: error.code };
+  }
+  if (isRunUnavailableError(error)) return { kind: 'unavailable' };
+  return { kind: 'failed', error: error instanceof Error ? error : new Error(String(error)) };
+}
+
+/** Shared by useTakeDecision and useAdvanceBlock; see RunCommand. */
+export function useRunCommand<Variables>(
+  runId: string,
+  execute: RunCommandExecutor<Variables>,
+): RunCommand<Variables> {
+  const gameApi = useGameApi();
+  const runTokenStore = useRunTokenStore();
+  const queryClient = useQueryClient();
+  // Refs, not state: a double tap fires twice before React re-renders.
+  const inFlight = useRef(false);
+  const failedAttempt = useRef<Attempt<Variables> | null>(null);
+  const [failure, setFailure] = useState<RunCommandFailure | null>(null);
+
+  const { mutateAsync, isPending } = useMutation({
+    mutationFn: async (attempt: Attempt<Variables>) =>
+      execute(
+        gameApi,
+        {
+          runId,
+          runToken: requireRunToken(runTokenStore.read(runId)),
+          idempotencyKey: attempt.idempotencyKey,
+          expectedVersion: attempt.expectedVersion,
+        },
+        attempt.variables,
+      ),
+  });
+
+  const send = useCallback(
+    async (variables: Variables): Promise<RunViewDto | null> => {
+      const current = queryClient.getQueryData<RunViewDto>(runQueryKey(runId));
+      if (inFlight.current || !current) return null;
+      const attempt = nextAttempt(failedAttempt.current, variables, current.version);
+      inFlight.current = true;
+      setFailure(null);
+      try {
+        const run = await mutateAsync(attempt);
+        failedAttempt.current = null;
+        queryClient.setQueryData(runQueryKey(runId), run);
+        return run;
+      } catch (error) {
+        const reason = toFailure(error);
+        failedAttempt.current = reason.kind === 'failed' ? attempt : null;
+        setFailure(reason);
+        if (reason.kind !== 'failed') {
+          void queryClient.invalidateQueries({ queryKey: runQueryKey(runId) });
+        }
+        return null;
+      } finally {
+        inFlight.current = false;
+      }
+    },
+    [mutateAsync, queryClient, runId],
+  );
+
+  return { send, isPending, failure };
 }

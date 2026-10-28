@@ -1,11 +1,13 @@
-import type { RunCommand } from './useRun';
+import { useRunCommand, type RunCommand } from './useRun';
 
 export interface DecisionChoice {
   dilemmaId: string;
   optionId: string;
 }
 
+/** Decides one pending dilemma of the current block. */
 export function useTakeDecision(runId: string): RunCommand<DecisionChoice> {
-  void runId;
-  return { send: () => Promise.resolve(null), isPending: false, failure: null };
+  return useRunCommand(runId, (gameApi, request, choice: DecisionChoice) =>
+    gameApi.takeDecision({ ...request, ...choice }),
+  );
 }

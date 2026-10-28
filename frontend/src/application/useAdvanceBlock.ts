@@ -1,6 +1,6 @@
-import type { RunCommand } from './useRun';
+import { useRunCommand, type RunCommand } from './useRun';
 
+/** Simulates the current block once every dilemma is decided. */
 export function useAdvanceBlock(runId: string): RunCommand<void> {
-  void runId;
-  return { send: () => Promise.resolve(null), isPending: false, failure: null };
+  return useRunCommand(runId, (gameApi, request) => gameApi.advanceBlock(request));
 }
