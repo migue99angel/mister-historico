@@ -191,7 +191,7 @@ def test_pool_injury_remains_unavailable_when_the_player_faces_the_managed_team(
         player_pool=pool,
     )
     healthy, injured = FixedMatches(), FixedMatches()
-    forced = tuple(ForcedInjuryDTO(player.player_id, START, 10) for player in rival.players)
+    forced = tuple(ForcedInjuryDTO(player.player_id, START, 10) for player in rival.players[:7])
 
     play(dated, healthy)
     summary = play(replace(dated, forced_injuries_from_effects=forced), injured)
@@ -201,7 +201,46 @@ def test_pool_injury_remains_unavailable_when_the_player_faces_the_managed_team(
     assert all(
         state.injured_until is not None
         for state in summary.player_states
-        if state.player_id in {player.player_id for player in rival.players}
+        if state.player_id in {player.player_id for player in rival.players[:7]}
+    )
+
+
+def test_initial_pool_injury_remains_unavailable_for_a_rival() -> None:
+    value = request()
+    rival_id = ClubSeasonId("sample-united-2000-01")
+    rival = SquadTeamInput(
+        rival_id,
+        tuple(
+            replace(item, player_id=PlayerId(f"rival-{index:02}"))
+            for index, item in enumerate(value.managed_team.players)
+        ),
+        TacticDTO("balanced", "4-4-2"),
+    )
+    memberships = (
+        *(SquadMembershipInput(player.player_id, ME) for player in value.managed_team.players),
+        *(SquadMembershipInput(player.player_id, rival_id) for player in rival.players),
+    )
+    injured_players = tuple(
+        replace(player, injured_until=date(2000, 9, 10)) if index < 7 else player
+        for index, player in enumerate(rival.players)
+    )
+    pool = (*value.managed_team.players, *injured_players)
+    dated = replace(
+        value,
+        season=replace(value.season, teams=(value.season.teams[0], rival)),
+        squad_memberships=memberships,
+        player_pool=pool,
+    )
+    healthy, injured = FixedMatches(), FixedMatches()
+
+    play(replace(dated, player_pool=(*value.managed_team.players, *rival.players)), healthy)
+    summary = play(dated, injured)
+
+    assert injured.setups[0].away.attack < healthy.setups[0].away.attack
+    injured_states = {state.player_id: state for state in summary.player_states}
+    assert all(
+        injured_states[player.player_id].injured_until == date(2000, 9, 10)
+        for player in injured_players[:7]
     )
 
 
