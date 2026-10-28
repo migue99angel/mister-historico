@@ -191,11 +191,19 @@ class _Started:
         return {"runToken": self.run_token, "run": self.view.to_json()}
 
 
+class _PublicError(Exception):
+    def __init__(self, code):
+        super().__init__(code)
+        self.code = code
+
+
 class _GameApi:
     def list_seasons(self):
         return (_Presented(_season_summary()),)
 
     def get_season(self, season_id):
+        if season_id.value == "missing-season":
+            raise _PublicError("season_not_found")
         return _Presented(
             {
                 **_season_summary(),
@@ -208,6 +216,8 @@ class _GameApi:
         )
 
     def start_run(self, season_id):
+        if season_id.value == "missing-season":
+            raise _PublicError("season_not_found")
         return _Started()
 
     def authenticate(self, run_id, token):
@@ -217,6 +227,10 @@ class _GameApi:
         return _Presented(_run_json())
 
     def take_decision(self, *args):
+        if args[-1].value == "nope":
+            raise _PublicError("invalid_option")
+        if args[-1].value == "already":
+            raise _PublicError("dilemma_already_decided")
         value = _run_json()
         value["version"] = 1
         return _Presented(value)
@@ -318,6 +332,95 @@ async def test_non_object_body_is_validation_error_after_authentication(client):
     assert response.status_code == 400
     assert response.json()["code"] == "validation_error"
     _assert_contract_response(response, "/runs/{runId}/advance", "post", 400)
+
+
+@pytest.mark.anyio
+async def test_invalid_and_unknown_season_ids_are_mapped(client):
+    malformed = await client.get("/api/seasons/INVALID")
+    assert malformed.status_code == 400
+    assert malformed.json()["code"] == "validation_error"
+    missing = await client.get("/api/seasons/missing-season")
+    assert missing.status_code == 404
+    assert missing.json()["code"] == "season_not_found"
+
+
+@pytest.mark.anyio
+async def test_start_body_errors_and_unknown_season_are_mapped(client):
+    for content, headers, expected_code in (
+        ("not-json", {"Content-Type": "application/json"}, "validation_error"),
+        ('{"seasonId":"test-fc-2000-01","seed":1}', {}, "validation_error"),
+    ):
+        response = await client.post("/api/runs", content=content, headers=headers)
+        assert response.status_code == 400
+        assert response.json()["code"] == expected_code
+    missing = await client.post("/api/runs", json={"seasonId": "missing-season"})
+    assert missing.status_code == 404
+    assert missing.json()["code"] == "season_not_found"
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    "body",
+    [
+        {},
+        {"expectedVersion": -1},
+        {"expectedVersion": "1"},
+        {"expectedVersion": 1.0},
+        {"expectedVersion": True},
+        {"expectedVersion": None},
+        {"expectedVersion": 0, "seed": 3},
+    ],
+)
+async def test_advance_request_rejects_invalid_version_shapes(client, body):
+    run = "0b6f3a52-6c0e-4d3e-8d0a-3f1f6e2b9c11"
+    response = await client.post(
+        f"/api/runs/{run}/advance",
+        json=body,
+        headers={"Authorization": "Bearer fixture", "Idempotency-Key": "advance-123"},
+    )
+    assert response.status_code == 400
+    assert response.json()["code"] == "validation_error"
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("key", ["short", "k" * 129])
+async def test_idempotency_key_length_errors_are_validation_errors(client, key):
+    run = "0b6f3a52-6c0e-4d3e-8d0a-3f1f6e2b9c11"
+    response = await client.post(
+        f"/api/runs/{run}/advance",
+        json={"expectedVersion": 0},
+        headers={"Authorization": "Bearer fixture", "Idempotency-Key": key},
+    )
+    assert response.status_code == 400
+    assert response.json()["code"] == "validation_error"
+
+
+@pytest.mark.anyio
+async def test_missing_idempotency_key_is_a_distinct_bad_request(client):
+    run = "0b6f3a52-6c0e-4d3e-8d0a-3f1f6e2b9c11"
+    response = await client.post(
+        f"/api/runs/{run}/advance",
+        json={"expectedVersion": 0},
+        headers={"Authorization": "Bearer fixture"},
+    )
+    assert response.status_code == 400
+    assert response.json()["code"] == "idempotency_key_required"
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("option_id", "status", "code"),
+    [("nope", 422, "invalid_option"), ("already", 409, "dilemma_already_decided")],
+)
+async def test_decision_domain_errors_keep_their_public_codes(client, option_id, status, code):
+    run = "0b6f3a52-6c0e-4d3e-8d0a-3f1f6e2b9c11"
+    response = await client.post(
+        f"/api/runs/{run}/decisions",
+        json={"expectedVersion": 0, "dilemmaId": "summer-striker", "optionId": option_id},
+        headers={"Authorization": "Bearer fixture", "Idempotency-Key": "decision-123"},
+    )
+    assert response.status_code == status
+    assert response.json()["code"] == code
 
 
 @pytest.mark.anyio
