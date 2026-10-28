@@ -150,6 +150,41 @@ def _validate_revisions(record: ports.RunRecord) -> RulesConfiguration:
     return rules
 
 
+def _load_snapshot(
+    record: ports.RunRecord,
+    restore_game: Callable[[RunContentSnapshot, RulesConfiguration], CapturedSeason],
+) -> tuple[RunSnapshot, CapturedSeason, RulesConfiguration]:
+    """Restore a persisted envelope and validate it against the captured immutable inputs."""
+    rules = _validate_revisions(record)
+    snapshot = RunSnapshot.decode(record.snapshot)
+    captured = restore_game(record.replay_inputs.content, rules)
+    _validate_record_snapshot(record, snapshot, captured)
+    return snapshot, captured, rules
+
+
+def apply_choice(
+    snapshot: RunSnapshot,
+    captured: CapturedSeason,
+    dilemma_id: DilemmaId,
+    option_id: OptionId,
+    occurred_at: datetime,
+) -> tuple[RunSnapshot, tuple[DomainEvent, ...]]:
+    """Apply one valid captured choice with its historical decision date."""
+    current_block = captured.blocks[snapshot.run.block_index]
+    dilemma = next((item for item in current_block.dilemmas if item.id == dilemma_id), None)
+    if dilemma is None:
+        raise InvalidValueError("dilemma does not belong to the current block")
+    option = next((item for item in dilemma.options if item.id == option_id), None)
+    if option is None:
+        raise InvalidValueError("option does not belong to the selected dilemma")
+    validated, events = snapshot.run.take_decision(dilemma_id, option_id, occurred_at)
+    resulting_state: RunState = snapshot.run.run_state
+    for effect in option.effects:
+        resulting_state = effects.apply(effect, resulting_state, on=current_block.start)
+    changed = replace(validated, run_state=resulting_state)
+    return RunSnapshot(changed, snapshot.goals), cast("tuple[DomainEvent, ...]", events)
+
+
 @dataclass(frozen=True, slots=True)
 class RunView:
     run: Run
@@ -305,10 +340,7 @@ class GetRun:
             raise ports.RunNotFoundError(run_id)
         if not self._token_hasher.verify(token, record.run_token_hash):
             raise RunAccessDeniedError("invalid run token")
-        rules = _validate_revisions(record)
-        snapshot = RunSnapshot.decode(record.snapshot)
-        captured = self._restore_game(record.replay_inputs.content, rules)
-        _validate_record_snapshot(record, snapshot, captured)
+        snapshot, _, _ = _load_snapshot(record, self._restore_game)
         return RunView(
             snapshot.run, snapshot.goals, record.version, record.created_at, record.updated_at
         )
@@ -390,10 +422,7 @@ class TakeDecision:
                 raise InvalidValueError(
                     "idempotency key must have 8 to 128 characters"
                 )
-            snapshot = RunSnapshot.decode(record.snapshot)
-            rules = _validate_revisions(record)
-            captured = self._restore_game(record.replay_inputs.content, rules)
-            _validate_record_snapshot(record, snapshot, captured)
+            snapshot, captured, _ = _load_snapshot(record, self._restore_game)
             existing = uow.runs.get_idempotent(run_id, command.idempotency_key)
             if existing is not None:
                 if existing.request_hash != command.request_hash:
@@ -402,23 +431,15 @@ class TakeDecision:
 
             if record.version != command.expected_version:
                 raise ports.ConcurrencyError(run_id, expected=command.expected_version)
-            current_block = captured.blocks[snapshot.run.block_index]
-            dilemma = next(
-                (item for item in current_block.dilemmas if item.id == command.dilemma_id), None
+            current_block_id = captured.blocks[snapshot.run.block_index].id
+            updated_snapshot, events = apply_choice(
+                snapshot,
+                captured,
+                command.dilemma_id,
+                command.option_id,
+                now,
             )
-            if dilemma is None:
-                raise InvalidValueError("dilemma does not belong to the current block")
-            option = next((item for item in dilemma.options if item.id == command.option_id), None)
-            if option is None:
-                raise InvalidValueError("option does not belong to the selected dilemma")
-            validated, events = snapshot.run.take_decision(
-                command.dilemma_id, command.option_id, now
-            )
-            resulting_state: RunState = snapshot.run.run_state
-            for effect in option.effects:
-                resulting_state = effects.apply(effect, resulting_state, on=current_block.start)
-            changed = replace(validated, run_state=resulting_state)
-            updated_snapshot = RunSnapshot(changed, snapshot.goals)
+            changed = updated_snapshot.run
             updated = ports.RunRecord(
                 record.run_id,
                 record.playable_season_id,
@@ -431,7 +452,7 @@ class TakeDecision:
                     *record.decisions,
                     ports.DecisionRecord(
                         len(record.decisions) + 1,
-                        current_block.id,
+                        current_block_id,
                         command.dilemma_id,
                         command.option_id,
                         now,
@@ -449,7 +470,7 @@ class TakeDecision:
                 )
             )
             uow.commit()
-        return _view(updated), cast("tuple[DomainEvent, ...]", events)
+        return _view(updated), events
 
     def _read_idempotency(
         self, run_id: RunId, token: str, key: str
