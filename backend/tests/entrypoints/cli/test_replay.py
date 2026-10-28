@@ -34,7 +34,7 @@ def test_cli_command_uses_the_injected_replay_and_reports_verification(
 
     assert result.verified is True
     assert replay.calls == [(run_id, "secret")]
-    assert output == [f"Replay verified: {run_id}"]
+    assert output == [f"Partida reproducida y verificada: {run_id}"]
     assert not hasattr(cli_replay, "app")
 
 
