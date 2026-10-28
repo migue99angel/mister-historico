@@ -19,10 +19,11 @@ const gameApi: GameApi = {
 const runTokenStore: RunTokenStore = { save: () => undefined, read: () => null };
 
 function PortsProbe({ queryClient }: { queryClient: QueryClient }) {
+  const providedApi = useGameApi();
+  const providedStore = useRunTokenStore();
+  const providedClient = useQueryClient();
   const providesAll =
-    useGameApi() === gameApi &&
-    useRunTokenStore() === runTokenStore &&
-    useQueryClient() === queryClient;
+    providedApi === gameApi && providedStore === runTokenStore && providedClient === queryClient;
   return <p>{providesAll ? 'all-ports-provided' : 'missing'}</p>;
 }
 
