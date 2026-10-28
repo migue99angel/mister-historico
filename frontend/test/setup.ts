@@ -24,6 +24,8 @@ beforeAll(() => {
 afterEach(() => {
   server.resetHandlers();
   cleanup();
+  // Run tokens must not leak between tests; node-environment tests have no window.
+  if (typeof window !== 'undefined') window.localStorage.clear();
 });
 
 afterAll(() => {
