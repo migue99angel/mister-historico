@@ -158,6 +158,27 @@ describe('RunFinal', () => {
     );
   });
 
+  it('goes home through onPlayAgain, without reloading, when the link back home is clicked', () => {
+    const { onPlayAgain } = renderRunFinal(createTestRuntime(), UNKNOWN_RUN_ID);
+
+    const followed = fireEvent.click(screen.getByRole('link', { name: 'Volver al inicio' }));
+
+    expect(followed).toBe(false);
+    expect(onPlayAgain).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ['with a modifier key', { ctrlKey: true }],
+    ['with a button other than the main one', { button: 1 }],
+  ])('leaves the link back home to the browser when it is clicked %s', (_case, init) => {
+    const { onPlayAgain } = renderRunFinal(createTestRuntime(), UNKNOWN_RUN_ID);
+
+    const followed = fireEvent.click(screen.getByRole('link', { name: 'Volver al inicio' }), init);
+
+    expect(followed).toBe(true);
+    expect(onPlayAgain).not.toHaveBeenCalled();
+  });
+
   it('forgets the token and says the run is not available when the API rejects it (403)', async () => {
     const { runtime, run } = await seedRun('finished');
     runtime.runTokenStore.save(run.runId, 'a-token-from-another-run');
