@@ -83,7 +83,55 @@ def parse_ts(value: str) -> datetime:
 
 def is_wait_call(tools: list[tuple[str, str]]) -> bool:
     """A call is a wait call when every tool it asked for only waits or polls."""
-    return bool(tools) and all(name in WAIT_TOOLS or bool(POLL_COMMAND.search(args)) for name, args in tools)
+    return bool(tools) and all(name in WAIT_TOOLS or _only_waits(args) for name, args in tools)
+
+
+# Steps of a shell command that neither wait nor do work, and filters allowed after a pipe.
+NEUTRAL_STEP = re.compile(r"^(?:cd\s+\S+|echo\b.*|true|date\b.*)$")
+PIPE_FILTER = re.compile(r"^(?:head|tail|grep|jq|wc|sort|uniq|cut)\b")
+CELL_TOOL = re.compile(r"tools\.(\w+)\s*\(")
+CELL_COMMAND = re.compile(r"exec_command\(\s*\{[^{}]*?\bcmd\s*:\s*(['\"`])(.*?)\1", re.DOTALL)
+
+
+def _commands(args: str) -> list[str] | None:
+    """Shell commands a tool call runs, or None when they cannot be read reliably."""
+    try:
+        data = json.loads(args)
+    except json.JSONDecodeError:
+        data = None
+    if isinstance(data, dict) and isinstance(data.get("command") or data.get("cmd"), str):
+        return [data.get("command") or data.get("cmd")]
+    code = data.get("code") if isinstance(data, dict) else args
+    if not isinstance(code, str):
+        return None
+    commands = [m.group(2) for m in CELL_COMMAND.finditer(code)]
+    # A cell that calls any other tool, or whose commands we cannot extract, may do work.
+    if not commands or any(name != "exec_command" for name in CELL_TOOL.findall(code)):
+        return None
+    if len(commands) != len(CELL_TOOL.findall(code)):
+        return None
+    return commands
+
+
+def _only_waits(args: str) -> bool:
+    """True when every step of every command waits or polls, and at least one does."""
+    commands = _commands(args)
+    if not commands:
+        return False
+    polled = False
+    for command in commands:
+        for step in re.split(r"&&|\|\||;|\n", command):
+            stages = [stage.strip() for stage in step.split("|") if stage.strip()]
+            if not stages:
+                continue
+            head, filters = stages[0], stages[1:]
+            if any(not PIPE_FILTER.match(f) for f in filters):
+                return False
+            if POLL_COMMAND.search(" " + head):
+                polled = True
+            elif not NEUTRAL_STEP.match(head):
+                return False
+    return polled
 
 
 def _text(content) -> str:
@@ -264,7 +312,8 @@ def attribute(session: Session, known: set[str], override: dict | None = None) -
     if tasks:
         kind, source = ("directa" if len(tasks) == 1 else "repartida"), "git"
     else:
-        tasks = _unique(normalize_task(t, known) for t in TASK_ID.findall(session.prompt[:3000]))
+        mentioned = [*TASK_ID.findall(session.prompt[:3000]), *session.mentioned]
+        tasks = _unique(normalize_task(t, known) for t in mentioned)
         kind = {0: "desconocida", 1: "inferida"}.get(len(tasks), "repartida")
         source = "prompt" if tasks else "ninguna"
     if REVIEW_PROMPT.search(session.prompt[:400]):
@@ -380,8 +429,11 @@ def _hours(a: str | None, b: str | None) -> float | None:
     return round((parse_ts(b) - parse_ts(a)).total_seconds() / 3600, 1)
 
 
-def aggregate_tasks(rows: list[dict], prs: list[dict], sizes: dict[str, str], board: dict[str, str] | None = None) -> list[dict]:
-    """Usage and delivery per task. Split sessions count as an estimate, apart from direct ones."""
+def aggregate_tasks(rows: list[dict], prs: list[dict] | None, sizes: dict[str, str], board: dict[str, str] | None = None) -> list[dict]:
+    """Usage and delivery per task. Split sessions count as an estimate, apart from direct ones.
+
+    `prs` is None when GitHub data is unavailable: delivery fields are then None, not zero.
+    """
     board = board or {}
     tasks: dict[str, dict] = {}
 
@@ -401,7 +453,7 @@ def aggregate_tasks(rows: list[dict], prs: list[dict], sizes: dict[str, str], bo
             t["sessions"] += 1
             if row.get("start") and (t["first_session"] is None or row["start"] < t["first_session"]):
                 t["first_session"] = row["start"]
-    for pr in prs:
+    for pr in prs or []:
         if pr.get("task"):
             entry(pr["task"])["prs"].append(pr)
     out = []
@@ -413,11 +465,17 @@ def aggregate_tasks(rows: list[dict], prs: list[dict], sizes: dict[str, str], bo
         if board.get(t["task"]) == "Blocked":
             state = "bloqueada"
         merged = [p["merged"] for p in prs_t if p.get("merged")]
+        if prs is None:
+            t.update({"tokens_by_role": dict(t["tokens_by_role"]), "tools": dict(t["tools"]), "prs": None, "pr_tools": None,
+                      "state": None, "review_verdicts": None, "ci_failures": None, "hours_to_pr": None, "hours_to_merge": None})
+            out.append(t)
+            continue
+        ci = [p.get("ci_failures") for p in prs_t]
         t.update({
             "tokens_by_role": dict(t["tokens_by_role"]), "tools": dict(t["tools"]),
             "prs": [p["number"] for p in prs_t], "pr_tools": sorted({p["tool"] for p in prs_t if p.get("tool")}),
             "state": state, "review_verdicts": sum(p.get("review_verdicts", 0) for p in prs_t),
-            "ci_failures": sum(p.get("ci_failures", 0) for p in prs_t),
+            "ci_failures": None if None in ci else sum(ci),
             "hours_to_pr": _hours(t["first_session"], prs_t[0]["created"]) if prs_t else None,
             "hours_to_merge": _hours(t["first_session"], max(merged)) if merged else None,
         })
@@ -482,13 +540,11 @@ def ccusage_rows(claude_sessions: list[Session], claude_dirs: list[Path]) -> tup
     return claude, codex
 
 
-def github_data(sizes: dict) -> tuple[list[dict], dict[str, str]]:
-    """Pull requests with their task, tool, review verdicts and failed CI runs, and the board status per task."""
-    prs = _run_json(["gh", "pr", "list", "--state", "all", "--limit", "500", "--json",
-                     "number,headRefName,createdAt,mergedAt,state,body,comments"]) or []
-    runs = _run_json(["gh", "run", "list", "--limit", "1000", "--json", "headBranch,conclusion"]) or []
-    failures = Counter(r["headBranch"] for r in runs if r.get("conclusion") == "failure")
-    known = set(sizes)
+def pr_rows(prs: list[dict] | None, runs: list[dict] | None, known: set[str]) -> list[dict] | None:
+    """Pull requests with task, tool, review verdicts and failed CI runs. None marks a failed query, never zero."""
+    if prs is None:
+        return None
+    failures = None if runs is None else Counter(r["headBranch"] for r in runs if r.get("conclusion") == "failure")
     out = []
     for pr in prs:
         task = task_from_branch(pr["headRefName"])
@@ -496,9 +552,29 @@ def github_data(sizes: dict) -> tuple[list[dict], dict[str, str]]:
             "number": pr["number"], "branch": pr["headRefName"], "task": normalize_task(task, known) if task else None,
             "tool": pr_tool(pr.get("body")), "state": pr["state"], "created": pr["createdAt"], "merged": pr.get("mergedAt"),
             "review_verdicts": sum(bool(re.search(r"veredicto", c.get("body", ""), re.IGNORECASE)) for c in pr.get("comments", [])),
-            "ci_failures": failures[pr["headRefName"]],
+            "ci_failures": None if failures is None else failures[pr["headRefName"]],
         })
-    items = _run_json(["gh", "project", "item-list", "1", "--owner", "migue99angel", "--limit", "500", "--format", "json"]) or {}
+    return out
+
+
+def prs_in_window(prs: list[dict] | None, tool: str | None, field: str, start: str, end: str) -> int | None:
+    """Pull requests of a tool (any tool if None) whose `field` falls in [start, end); None without GitHub data."""
+    if prs is None:
+        return None
+    return sum(1 for p in prs if (tool is None or p["tool"] == tool) and p.get(field)
+               and start <= parse_ts(p[field]).isoformat() < end)
+
+
+def github_data(sizes: dict) -> tuple[list[dict] | None, dict[str, str] | None]:
+    """Pull requests and the board status per task; each is None if its query failed."""
+    prs = _run_json(["gh", "pr", "list", "--state", "all", "--limit", "500", "--json",
+                     "number,headRefName,createdAt,mergedAt,state,body,comments"])
+    runs = _run_json(["gh", "run", "list", "--limit", "1000", "--json", "headBranch,conclusion"])
+    known = set(sizes)
+    out = pr_rows(prs, runs, known)
+    items = _run_json(["gh", "project", "item-list", "1", "--owner", "migue99angel", "--limit", "500", "--format", "json"])
+    if items is None:
+        return out, None
     board = {}
     for item in items.get("items", []):
         match = TASK_ID.search(item.get("title", ""))
@@ -546,7 +622,7 @@ def collect(out_dir: Path, cutoff: datetime, use_ccusage: bool = True, use_githu
         })
         snapshots += s.quota
         calls += [(c.ts.isoformat(), rows[-1]["tool"], a["role"], c.total, c.wait) for c in s.calls]
-    prs, board = github_data(sizes) if use_github else ([], {})
+    prs, board = github_data(sizes) if use_github else (None, None)
     tasks = aggregate_tasks(rows, prs, {k: v for k, v in sizes.items() if v}, board)
     windows = quota_windows(snapshots)
     claude_log = out_dir / "claude-quota.jsonl"
@@ -557,11 +633,10 @@ def collect(out_dir: Path, cutoff: datetime, use_ccusage: bool = True, use_githu
         windows += quota_windows(claude_snaps)
     for w in windows:
         tool = "Codex" if w["limit_id"] == "codex" else "Claude Code"
-        inside = lambda ts: ts and w["start"] <= parse_ts(ts).isoformat() < w["resets_at"]
         w["tool"] = tool
-        w["prs_opened"] = sum(1 for p in prs if p["tool"] == tool and inside(p["created"]))
-        w["prs_merged"] = sum(1 for p in prs if p["tool"] == tool and inside(p.get("merged")))
-        w["prs_merged_all_tools"] = sum(1 for p in prs if inside(p.get("merged")))
+        w["prs_opened"] = prs_in_window(prs, tool, "created", w["start"], w["resets_at"])
+        w["prs_merged"] = prs_in_window(prs, tool, "merged", w["start"], w["resets_at"])
+        w["prs_merged_all_tools"] = prs_in_window(prs, None, "merged", w["start"], w["resets_at"])
         mine = [c for c in calls if c[1] == tool and w["start"] <= c[0] < w["resets_at"]]
         w["calls"] = len(mine)
         w["wait_calls"] = sum(c[4] for c in mine)
@@ -580,6 +655,8 @@ def collect(out_dir: Path, cutoff: datetime, use_ccusage: bool = True, use_githu
                            for r in mine if abs(r["total"] - r["ccusage_total"]) > 0.005 * max(r["ccusage_total"], 1)],
         }
     out_dir.mkdir(parents=True, exist_ok=True)
+    validation["github"] = {"pull_requests": prs is not None, "ci_runs": prs is not None and all(p["ci_failures"] is not None for p in prs),
+                            "board": board is not None}
     for name, data in (("sessions", rows), ("tasks", tasks), ("prs", prs), ("windows", windows), ("validation", validation)):
         (out_dir / f"{name}.json").write_text(json.dumps(data, ensure_ascii=False, indent=1, default=str))
     return validation
