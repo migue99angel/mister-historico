@@ -8,6 +8,14 @@ import { server } from '../src/infrastructure/api/mocks/node';
 
 expect.extend(toHaveNoViolations);
 
+declare module 'vitest' {
+  // Type parameters mirror vitest's own declaration so the interfaces merge.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  interface Matchers<R extends void | Promise<void> = void | Promise<void>, T = unknown> {
+    toHaveNoViolations(): R;
+  }
+}
+
 // Any request without an explicit MSW handler is a test bug.
 beforeAll(() => {
   server.listen({ onUnhandledFrame: 'error' });
