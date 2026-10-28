@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { mockFixtures, renderWithRuntime } from '../../../test/renderWithRuntime';
@@ -21,6 +21,31 @@ vi.mock('./HomeRoute', () => ({
     </button>
   ),
 }));
+
+// Counts loads of the season intro chunk, which the home page preloads.
+const seasonIntroChunk = vi.hoisted(() => ({ loads: 0 }));
+vi.mock('../../ui/screens/SeasonIntro/SeasonIntro', () => {
+  seasonIntroChunk.loads += 1;
+  return { SeasonIntro: () => null };
+});
+
+// First in the file on purpose: a module loads once per file, and the wiring test below
+// loads the chunk itself when it opens /equipo/:id.
+describe('HomeRoute preloading', () => {
+  it('preloads the season intro chunk so choosing a season does not wait for it', async () => {
+    const { HomeRoute } = await vi.importActual<typeof HomeRouteModule>('./HomeRoute');
+
+    renderWithRuntime(
+      <NativeRouter>
+        <HomeRoute onSeasonChosen={() => undefined} />
+      </NativeRouter>,
+    );
+
+    await waitFor(() => {
+      expect(seasonIntroChunk.loads).toBe(1);
+    });
+  });
+});
 
 describe('HomeRoute mount point (/)', () => {
   beforeEach(() => {
