@@ -48,6 +48,13 @@ describe('MatchLine', () => {
     expect(screen.getByText('Final')).toBeInTheDocument();
   });
 
+  it('wraps long team names instead of cutting them on a narrow screen', () => {
+    render(<MatchLine match={{ ...win, homeName: 'Deportivo Muestra', awayName: 'Test FC' }} />);
+
+    expect(screen.getByText('Deportivo Muestra')).not.toHaveClass('truncate');
+    expect(screen.getByText('Deportivo Muestra')).toHaveClass('break-words');
+  });
+
   it('has no accessibility violations', async () => {
     const { container } = render(
       <MatchLine
