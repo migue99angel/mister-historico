@@ -80,6 +80,17 @@ class ClaudeParsingTest(unittest.TestCase):
         self.assertFalse(au.is_wait_call([("Bash", json.dumps({"command": "uv run pytest && gh pr checks 107"}))]))
         self.assertTrue(au.is_wait_call([("Bash", json.dumps({"command": "cd /r && sleep 30 && gh pr checks 107 | tail -5"}))]))
 
+    def test_background_operator_with_work_is_not_a_wait_call(self):
+        self.assertFalse(au.is_wait_call([("Bash", json.dumps({"command": "gh pr checks 107 & uv run pytest"}))]))
+
+    def test_command_that_only_mentions_a_wait_is_not_a_wait_call(self):
+        self.assertFalse(au.is_wait_call([("Bash", json.dumps({"command": "rg 'gh pr checks' docs/PLAN.md"}))]))
+        self.assertFalse(au.is_wait_call([("Bash", json.dumps({"command": "echo 'gh pr checks'"}))]))
+        self.assertFalse(au.is_wait_call([("Bash", json.dumps({"command": "gh pr checks $(make pr-number)"}))]))
+
+    def test_ci_watch_with_stderr_redirect_is_still_a_wait_call(self):
+        self.assertTrue(au.is_wait_call([("Bash", json.dumps({"command": "gh pr checks 107 --watch --fail-fast 2>&1 | tail -3"}))]))
+
 
 class CodexParsingTest(unittest.TestCase):
     def setUp(self):
