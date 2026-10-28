@@ -129,7 +129,7 @@ export const lastBlockMatches: readonly SampleMatch[] = [
       awayName: 'Athletic Ensayo',
       homeScore: 1,
       awayScore: 1,
-      detailText: '4-3 en los penaltis',
+      detailText: 'tras la prórroga, 4-3 en los penaltis',
       outcome: 'win',
       outcomeLabel: 'Victoria',
     },
