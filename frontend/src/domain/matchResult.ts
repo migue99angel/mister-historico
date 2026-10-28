@@ -46,7 +46,8 @@ export function formatMatchResult(match: MatchResultInput): MatchResultViewModel
   let detailText: string | null = null;
   if (match.penalties) {
     decidedBy = 'penalties';
-    detailText = `${String(match.penalties.home)}-${String(match.penalties.away)} en los penaltis`;
+    const shootout = `${String(match.penalties.home)}-${String(match.penalties.away)} en los penaltis`;
+    detailText = match.extraTime ? `tras la prórroga, ${shootout}` : shootout;
   } else if (match.extraTime) {
     decidedBy = 'extra_time';
     detailText = 'tras la prórroga';
