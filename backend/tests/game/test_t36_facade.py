@@ -135,6 +135,7 @@ def _api(
     advance: _Noop | None = None,
     uow: object | None = None,
     token_hasher: object | None = None,
+    seasons: object | None = None,
 ) -> GameApi:
     return GameApi(
         start_run=cast("StartRun", _Noop()),
@@ -146,5 +147,5 @@ def _api(
             "ports.RunTokenHasher", token_hasher if token_hasher is not None else _Hasher()
         ),
         presentation=cast("GamePresentation", _Presentation()),
-        seasons=cast("SeasonQueries", _Seasons()),
+        seasons=cast("SeasonQueries", seasons if seasons is not None else _Seasons()),
     )
