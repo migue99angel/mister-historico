@@ -27,10 +27,11 @@ describe('DilemmaCard', () => {
     render(<DilemmaCard dilemma={dilemma} />);
 
     const group = screen.getByRole('group', { name: 'Opciones: Delantero de verano' });
-    expect(within(group).getAllByRole('button').map((button) => button.textContent)).toEqual([
-      'AFichar al delantero veterano',
-      'BSubir al delantero de la cantera',
-    ]);
+    expect(
+      within(group)
+        .getAllByRole('button')
+        .map((button) => button.textContent),
+    ).toEqual(['AFichar al delantero veterano', 'BSubir al delantero de la cantera']);
   });
 
   it('marks only the selected option as pressed', () => {
