@@ -85,6 +85,25 @@ describe('useStartRun', () => {
     expect(onStarted).toHaveBeenCalledOnce();
   });
 
+  it('starts no second run once the first one has started', async () => {
+    const runtime = createTestRuntime();
+    const startRun = vi.spyOn(runtime.gameApi, 'startRun');
+    const { result } = renderHookWithRuntime(() => useStartRun(), { runtime });
+    act(() => {
+      result.current.start(mockFixtures.TEST_SEASON_ID);
+    });
+    await waitFor(() => {
+      expect(result.current.runId).not.toBeNull();
+    });
+
+    await act(async () => {
+      result.current.start(mockFixtures.TEST_SEASON_ID);
+      await Promise.resolve();
+    });
+
+    expect(startRun).toHaveBeenCalledOnce();
+  });
+
   it('exposes the ApiError when the run cannot start', async () => {
     mockServer.use(http.post('*/api/runs', () => problem(503, 'unavailable')));
     const { result } = renderHookWithRuntime(() => useStartRun());
