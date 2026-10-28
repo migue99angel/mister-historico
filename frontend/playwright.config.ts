@@ -1,6 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 5173;
+// Same app with the MSW handlers (fictional Test FC): the accessibility pass plays whole runs
+// without a backend. The real-backend E2E keeps PORT.
+const MOCKED_PORT = 5174;
 const isCI = Boolean(process.env.CI);
 
 export default defineConfig({
@@ -26,10 +29,19 @@ export default defineConfig({
       use: { ...devices['iPhone 14'], browserName: 'chromium' },
     },
   ],
-  webServer: {
-    command: `npm run dev -- --port ${String(PORT)} --strictPort`,
-    url: `http://localhost:${String(PORT)}`,
-    reuseExistingServer: !isCI,
-    timeout: 60_000,
-  },
+  webServer: [
+    {
+      command: `npm run dev -- --port ${String(PORT)} --strictPort`,
+      url: `http://localhost:${String(PORT)}`,
+      reuseExistingServer: !isCI,
+      timeout: 60_000,
+    },
+    {
+      command: `npm run dev -- --port ${String(MOCKED_PORT)} --strictPort`,
+      url: `http://localhost:${String(MOCKED_PORT)}`,
+      env: { VITE_API_MOCKING: 'enabled' },
+      reuseExistingServer: !isCI,
+      timeout: 60_000,
+    },
+  ],
 });
