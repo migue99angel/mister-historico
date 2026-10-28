@@ -371,7 +371,7 @@ convierte una propuesta de beta en una decisión ya firmada.
    - Los worktrees separan el código, no el entorno. `make dev` usa el proyecto Compose fijo `mister-historico` y los puertos de `.env`, y Playwright levanta Vite en el 5173 con `--strictPort`, el mismo puerto que el frontend de Compose. Por eso `make dev` y los E2E se ejecutan en un solo worktree a la vez.
    - Los tests con *testcontainers* crean sus contenedores con puertos aleatorios y pueden ir en paralelo. Ante cualquier otro recurso sin aislamiento garantizado (puertos, bases de datos, ficheros temporales o artefactos de tests), serializa: el segundo agente espera.
 4. **Selección de tareas.** Por defecto, el autor asigna una issue a cada agente. Si autoriza a un agente a elegir:
-   1. Lista el Project (comando en `CLAUDE.md`) y toma una issue en **Ready** del hito activo, por prioridad (P0 primero) y sin «blocked by» abiertas.
+   1. Lista el Project con `make status` y toma una issue en **Ready** del hito activo, por prioridad (P0 primero) y sin «blocked by» abiertas.
    2. Lee sus comentarios y descártala si tiene una reclamación no retirada.
    3. Reclámala con un comentario `Reclamo <ID> · <Claude Code|Codex> · rama <rama> · worktree <ruta>`. Todos los agentes usan la misma cuenta, así que el assignee no los distingue.
    4. Vuelve a leer los comentarios. Si hay otra reclamación no retirada, gana la más antigua: el otro agente retira la suya con un comentario y elige otra issue.
