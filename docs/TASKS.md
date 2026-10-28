@@ -24,7 +24,7 @@ comprobado, no se presume que exista un backlog adicional en Projects.
   F4-A cerrada: T4.1, T4.2 y T4.3 integradas, con CR-T4.1a y CR-T4.1b.
   F4-B cerrada con MSW: CR-T4.B, T4.4, T4.5 y T4.6a integradas (PR #70-#73 y #75).
   Sigue T4.7a (E2E real), que espera a T3.5/T3.6/T3.7a del backend.
-  No requieren contenido real firmado.
+  F4-B no requirió contenido real firmado.
 - **En paralelo, para B:** contenido F2, verificación y firma, después
   calibración/rendimiento del piloto; evaluación/compartir y UX móvil. La beta
   RM sin ranking es una propuesta de producto pendiente, no una reducción
@@ -791,8 +791,8 @@ existen; los casos de uso de partida siguen pendientes.
   por rebase-merge, con dos rondas de revisión independiente (aprobar con matices y
   después aprobar) y CI en verde. 401 tests frontend; JS inicial 85,05 KB gzip.
   `SeasonPicker` sustituye a `HomeScreen` en `/` (decisión del orquestador; conserva el
-  h1 y el lema que exige `e2e/home.spec.ts`) y precarga el chunk de `SeasonIntro`, que
-  se carga con `lazy()`. `useStartRun` guarda el token y siembra la caché
+  h1 y el lema que exige `e2e/home.spec.ts`). `HomeRoute` precarga el chunk de
+  `SeasonIntro`, que `SeasonRoute` carga con `lazy()`. `useStartRun` guarda el token y siembra la caché
   `runQueryKey(runId) = ['runs', runId]`, que `useRun` está obligado a usar. Los datos
   ya cargados se conservan si falla un refetch.
 - **Oleada:** F4-B · **Tamaño:** M · **Depende de:** T4.1-T4.3
@@ -807,7 +807,7 @@ existen; los casos de uso de partida siguen pendientes.
 - **Estado:** integrada en [PR #73](https://github.com/migue99angel/mister-historico/pull/73)
   por rebase-merge, con dos rondas de revisión independiente (aprobar con matices y
   después aprobar) y CI en verde. 462 tests frontend; `application/` al 99 % de líneas;
-  JS inicial 86,75 KB gzip y chunk `RunLoop` de 4,52 KB.
+  JS inicial 86,75 KB gzip y chunk `RunLoop` de 4,52 KB al integrar.
   - **Flujo «Elegir y Simular»** (decisión del humano, alineada con la maqueta): la
     elección es local y se puede cambiar; «Simular bloque» se activa cuando todos los
     dilemas tienen opción y envía en serie una `takeDecision` por dilema y después
@@ -868,7 +868,9 @@ Recogidos en las revisiones de CR-T4.B y T4.4-T4.6a. No bloquean T4.7a.
   Hoy el barril del sistema de diseño arrastra a la entrada componentes que solo usa
   `RunLoop`; con el cambio, el JS inicial bajaría unos 1,5 KB.
 - **Dominio (tarea de `domain/`):** mover a `domain/` la elección de la tabla del usuario
-  (`findUserTable`, hoy duplicada en `RunResult/runResultView.ts`) e `isTerminalRun`.
+  (`userTable` en `RunResult/runResultView.ts`, que repite la regla de
+  `findUserStanding`), `userTeam`/`userSide` (duplicados entre `RunResult` y `RunLoop`) e
+  `isTerminalRun`.
 - **Sistema de diseño:** un `Notice`/`StatusPage` común para carga, error y «Partida no
   disponible», hoy repetidos en `RunLoop` y `RunFinal`. El «Volver al inicio» de
   `RunLoop` sigue recargando la página.
