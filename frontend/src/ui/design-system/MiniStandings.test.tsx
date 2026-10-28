@@ -77,6 +77,21 @@ describe('MiniStandings', () => {
     expect(screen.getByText(text)).toHaveClass('sr-only');
   });
 
+  it("sets only the player's team name in bold", () => {
+    render(<MiniStandings competitionName="Liga Test" rows={rows} />);
+
+    expect(screen.getByRole('rowheader', { name: 'Test FC' })).toHaveClass('font-bold');
+    expect(screen.getByRole('rowheader', { name: 'Rovers Prueba' })).toHaveClass('font-normal');
+  });
+
+  it('wraps long team names instead of widening the table on a narrow screen', () => {
+    render(<MiniStandings competitionName="Liga Test" rows={rows} />);
+
+    const name = screen.getByRole('rowheader', { name: 'Athletic Ensayo' });
+    expect(name).not.toHaveClass('truncate');
+    expect(name).toHaveClass('break-words');
+  });
+
   it('shows no change for a team without a previous position', () => {
     render(<MiniStandings competitionName="Liga Test" rows={rows} />);
 
