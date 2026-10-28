@@ -130,5 +130,100 @@ class MetricsTest(unittest.TestCase):
         self.assertEqual(m["wait_share"], 0.25)
 
 
+KNOWN = {"T3.5", "T3.6", "T1.7b", "T4.3", "T4.4", "T4.5", "T4.6"}
+
+
+class AttributionTest(unittest.TestCase):
+    def session(self, branch="main", cwd="/r/mister-historico", prompt=""):
+        s = au.Session("s", "claude", prompt=prompt)
+        s.branches[branch] += 1
+        s.cwds[cwd] += 1
+        return s
+
+    def test_task_branch_is_a_direct_attribution(self):
+        a = au.attribute(self.session(branch="task/T3.6-api"), KNOWN)
+        self.assertEqual((a["tasks"], a["attribution"], a["role"]), (["T3.6"], "directa", "Implementación"))
+
+    def test_task_worktree_is_direct_and_subdeliveries_map_to_their_task(self):
+        a = au.attribute(self.session(cwd="/r/mister-historico-T3.5b"), KNOWN)
+        self.assertEqual((a["tasks"], a["attribution"]), (["T3.5"], "directa"))
+
+    def test_task_with_its_own_letter_in_tasks_is_kept(self):
+        self.assertEqual(au.normalize_task("T1.7b", KNOWN), "T1.7b")
+
+    def test_single_task_named_in_the_prompt_is_inferred(self):
+        a = au.attribute(self.session(prompt="Implementa únicamente T4.3 de Míster Histórico"), KNOWN)
+        self.assertEqual((a["tasks"], a["attribution"]), (["T4.3"], "inferida"))
+
+    def test_several_tasks_in_the_prompt_are_split_and_flagged_as_estimate(self):
+        a = au.attribute(self.session(prompt="Orquesta T4.4, T4.5 y T4.6a"), KNOWN)
+        self.assertEqual((a["tasks"], a["attribution"]), (["T4.4", "T4.5", "T4.6"], "repartida"))
+
+    def test_session_without_evidence_is_unknown_not_assigned(self):
+        a = au.attribute(self.session(prompt="Quiero quitar un MCP"), KNOWN)
+        self.assertEqual((a["tasks"], a["attribution"], a["role"]), ([], "desconocida", "Desconocido"))
+
+    def test_manual_override_wins(self):
+        a = au.attribute(self.session(branch="task/T3.6-api"), KNOWN, {"tasks": ["ORQ"], "attribution": "directa", "role": "Orquestación"})
+        self.assertEqual((a["tasks"], a["role"], a["source"]), (["ORQ"], "Orquestación", "manual"))
+
+
+class QuotaWindowTest(unittest.TestCase):
+    def test_snapshots_with_jittered_reset_belong_to_one_window(self):
+        snaps = [
+            {"ts": "2026-10-28T10:00:00Z", "limit_id": "codex", "plan": "plus", "used_percent": 10.0, "window_minutes": 300, "resets_at": 1793208200},
+            {"ts": "2026-10-28T11:00:00Z", "limit_id": "codex", "plan": "plus", "used_percent": 55.0, "window_minutes": 300, "resets_at": 1793208215},
+            {"ts": "2026-10-28T16:00:00Z", "limit_id": "codex", "plan": "plus", "used_percent": 4.0, "window_minutes": 300, "resets_at": 1793226000},
+        ]
+        windows = au.quota_windows(snaps)
+        self.assertEqual([(w["max_used"], w["snapshots"]) for w in windows], [(55.0, 2), (4.0, 1)])
+        self.assertEqual(windows[0]["start"], "2026-10-28T07:03:20+00:00")
+
+
+class GithubFieldsTest(unittest.TestCase):
+    def test_tool_comes_from_the_pull_request_footer(self):
+        self.assertEqual(au.pr_tool("...\n🤖 Generated with Codex"), "Codex")
+        self.assertEqual(au.pr_tool("🤖 Generated with [Claude Code](https://claude.com/claude-code)"), "Claude Code")
+        self.assertIsNone(au.pr_tool("sin pie"))
+
+    def test_task_comes_from_the_branch(self):
+        self.assertEqual(au.task_from_branch("task/CR-T3.5-dated-squads"), "CR-T3.5")
+        self.assertEqual(au.task_from_branch("task/T3.5b-use-cases"), "T3.5b")
+        self.assertIsNone(au.task_from_branch("task/docs-github-projects"))
+
+    def test_unknown_price_is_not_reported_as_free(self):
+        self.assertEqual(au.cost_fields(None), {"cost_usd": None, "cost_estimated": None})
+        self.assertEqual(au.cost_fields({"costUSD": 1.5, "models": {"m": {"isFallback": True}}}), {"cost_usd": 1.5, "cost_estimated": True})
+
+
+class StatuslineTest(unittest.TestCase):
+    payload = {"session_id": "s1", "model": {"id": "claude-opus-5-5", "display_name": "Opus 5.5"},
+               "context_window": {"used_percentage": 34.4},
+               "rate_limits": {"five_hour": {"used_percentage": 23, "resets_at": 1793208210},
+                               "seven_day": {"used_percentage": 40, "resets_at": 1793776975}}}
+
+    def test_line_shows_model_context_and_quota(self):
+        log = Path(tempfile.mkdtemp()) / "claude-quota.jsonl"
+        line = au.statusline(self.payload, log)
+        self.assertTrue(line.startswith("Opus 5.5 · ctx 34% · 5h 23% ↻ "), line)
+        self.assertTrue(line.endswith(" · 7d 40%"), line)
+
+    def test_quota_is_logged_only_when_it_changes(self):
+        log = Path(tempfile.mkdtemp()) / "claude-quota.jsonl"
+        au.statusline(self.payload, log)
+        au.statusline(self.payload, log)
+        changed = json.loads(json.dumps(self.payload))
+        changed["rate_limits"]["five_hour"]["used_percentage"] = 24
+        au.statusline(changed, log)
+        rows = [json.loads(l) for l in log.read_text().splitlines()]
+        self.assertEqual([r["five_hour_used"] for r in rows], [23, 24])
+
+    def test_missing_quota_is_shown_as_unavailable(self):
+        log = Path(tempfile.mkdtemp()) / "claude-quota.jsonl"
+        line = au.statusline({"model": {"display_name": "Opus 5.5"}}, log)
+        self.assertEqual(line, "Opus 5.5 · 5h n/d")
+        self.assertFalse(log.exists())
+
+
 if __name__ == "__main__":
     unittest.main()
