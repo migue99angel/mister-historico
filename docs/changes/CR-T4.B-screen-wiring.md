@@ -160,8 +160,10 @@ dependencias.
 - **Contrato sin token.** `useRun` (T4.5) lee `useRunTokenStore().read(runId)` y no llama a
   la API si es `null` (`enabled: token !== null`), y expone ese estado. La pantalla
   muestra «Esta partida no está disponible en este dispositivo» con un enlace al inicio.
-  Si `getRun` responde 401 o 404 (`ApiError` con ese `status`), `useRun` borra el token
-  con `remove(runId)` y la pantalla muestra el mismo mensaje. T4.6a reutiliza `useRun` y
+  Si `getRun` responde 403 o 404 (o 401) (`ApiError` con ese `status`), `useRun` borra
+  el token con `remove(runId)` y la pantalla muestra el mismo mensaje. Un token que no
+  corresponde a la Partida recibe 403 `run_token_invalid`; el 401 solo aparece si falta
+  `Authorization`. T4.6a reutiliza `useRun` y
   hereda este comportamiento.
 - **`lazy()`.** `AppRoutes` envuelve las rutas en un `Suspense` con «Cargando…», así que
   cada pantalla puede cargarse como chunk aparte sin tocar `Routes.tsx`:

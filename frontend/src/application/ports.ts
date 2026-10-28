@@ -276,6 +276,6 @@ export interface RunTokenStore {
   save(runId: string, runToken: string): void;
   /** Returns `null` when no token is known for the run (or storage is unavailable). */
   read(runId: string): string | null;
-  /** Forgets the run's token, e.g. after the API answers 401 or 404 for it. */
+  /** Forgets the run's token, e.g. after the API answers 403 or 404 (or 401) for it. */
   remove(runId: string): void;
 }
