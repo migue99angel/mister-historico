@@ -18,7 +18,12 @@ Esta CR prepara ese cableado y se integra antes que las pantallas.
 
 ## Propiedad
 
-- `frontend/src/application/ports.ts`: nuevo puerto `RunTokenStore`.
+- `frontend/src/application/ports.ts`: nuevo puerto `RunTokenStore` y nota de que
+  `GameApi` rechaza con `ApiError`.
+- `frontend/src/application/apiError.ts` y `apiError.test.ts` (nuevos): `ApiError`,
+  `ApiErrorKind` y `ApiErrorFields`, movidos desde el adaptador HTTP.
+- `frontend/src/infrastructure/api/http-game-api.ts` y su test: importan `ApiError` de
+  `application/`.
 - `frontend/src/application/gameApi.ts` y `gameApi.test.tsx` (nuevos): contexto y
   `useGameApi()`, movidos desde `app/`.
 - `frontend/src/application/runTokenStore.ts` y `runTokenStore.test.tsx` (nuevos).
@@ -41,6 +46,15 @@ configuración compartida.
 
 ## Decisiones
 
+- **`ApiError` en `application/`.** El error que lanza un puerto forma parte de su
+  contrato, así que `ApiError`, `ApiErrorKind` y `ApiErrorFields` pasan, con la misma forma
+  (`kind`, `status`, `code`, `title`, `detail` e `instance`), de
+  `infrastructure/api/http-game-api.ts` a `application/apiError.ts`. El adaptador HTTP los
+  importa de ahí; no hay una segunda clase. Los hooks y las pantallas pueden usar
+  `error instanceof ApiError` y comprobar `error.status === 409` o `error.code`
+  (`version_conflict`, `dilemma_already_decided`, `run_already_finished`…). Un test de
+  `application/` lanza a través del arnés un `advanceBlock` con `expectedVersion` desfasado
+  contra los handlers MSW existentes y recibe un `ApiError` con `status` 409.
 - **Contexto de `GameApi` en `application/`.** `application/gameApi.ts` exporta
   `GameApiContext` y `useGameApi()`, que lanza «GameApi is only available inside
   AppRuntime.» fuera del runtime. `application/runTokenStore.ts` hace lo mismo con
@@ -121,16 +135,9 @@ configuración compartida.
   `size-limit` solo mide `dist/assets/index-*.js`. La ruta `/diseno` conserva su `lazy()`
   y su propio `Suspense`, que tiene prioridad sobre el general.
 
-## Puntos abiertos
-
-- `ApiError` vive en `infrastructure/api/`, así que un hook de `application/` no puede usar
-  `instanceof ApiError` para distinguir un 409. Puede leer el campo `status` del error
-  (lo conservan todos los `ApiError` de tipo `problem`) o, si hace falta tipado, abrir una
-  CR que publique el tipo de error en `application/ports.ts`.
-
 ## Comprobación
 
-- `npm run test`: 38 ficheros, 339 tests en verde; `application/` con 100 % de cobertura.
+- `npm run test`: 39 ficheros, 340 tests en verde; `application/` con 100 % de cobertura.
 - `npm run lint` (ESLint, `tsc` y dependency-cruiser), `npm run format:check` y
   `npm run build` en verde.
 - `npm run size`: 79,83 KB gzip de JS inicial (antes, 79,5 KB), con límite de 100 KB.
