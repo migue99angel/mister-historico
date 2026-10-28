@@ -1,10 +1,12 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { Suspense } from 'react';
+import { http } from 'msw';
+import { Suspense, useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   createTestRuntime,
   mockFixtures,
+  mockServer,
   renderWithRuntime,
 } from '../../../test/renderWithRuntime';
 
@@ -12,6 +14,7 @@ import { App } from '../App';
 import { NativeRouter } from '../nativeRouter';
 import type * as RunRouteModule from './RunRoute';
 import type { RunRouteProps } from './RunRoute';
+import type * as SeasonRouteModule from './SeasonRoute';
 
 // Probe in place of the mounted screen: proves Routes.tsx passes the right props and
 // callbacks. Keep it when the screen lands (T4.5); adapt only the screen test below.
@@ -86,5 +89,39 @@ describe('RunRoute mount point (/partida/:id)', () => {
     expect(
       await screen.findByText('Esta partida no está disponible en este dispositivo.'),
     ).toBeInTheDocument();
+  });
+
+  it('opens the run started from the season page without fetching it again', async () => {
+    const { RunRoute } = await vi.importActual<typeof RunRouteModule>('./RunRoute');
+    const { SeasonRoute } = await vi.importActual<typeof SeasonRouteModule>('./SeasonRoute');
+    const runFetches: string[] = [];
+    mockServer.use(
+      http.get('*/api/runs/:runId', ({ request }) => {
+        runFetches.push(request.url);
+      }),
+    );
+    // Season page, then run page, sharing one runtime as the app does between both routes.
+    function SeasonThenRun() {
+      const [runId, setRunId] = useState<string | null>(null);
+      return (
+        <Suspense fallback={<p>Cargando…</p>}>
+          {runId === null ? (
+            <SeasonRoute seasonId={mockFixtures.TEST_SEASON_ID} onRunStarted={setRunId} />
+          ) : (
+            <RunRoute runId={runId} onRunEnded={() => undefined} />
+          )}
+        </Suspense>
+      );
+    }
+
+    renderWithRuntime(
+      <NativeRouter>
+        <SeasonThenRun />
+      </NativeRouter>,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Empezar' }));
+
+    expect(await screen.findByRole('heading', { name: 'Board meeting' })).toBeInTheDocument();
+    expect(runFetches).toEqual([]);
   });
 });
