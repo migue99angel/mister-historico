@@ -50,6 +50,27 @@ describe('useRun', () => {
     expect(runtime.queryClient.getQueryData(runQueryKey(runId))).toMatchObject({ runId });
   });
 
+  it('uses the run view seeded in the cache after startRun without fetching it again', async () => {
+    const runtime = createTestRuntime();
+    const started = await runtime.gameApi.startRun({ seasonId: mockFixtures.TEST_SEASON_ID });
+    const runId = started.run.runId;
+    runtime.runTokenStore.save(runId, started.runToken);
+    runtime.queryClient.setQueryData(runQueryKey(runId), started.run);
+    const requests: string[] = [];
+    mockServer.use(
+      http.get('*/api/runs/:runId', ({ request }) => {
+        requests.push(request.url);
+      }),
+    );
+
+    const { result } = renderHookWithRuntime(() => useRun(runId), { runtime });
+
+    expect(result.current.kind).toBe('ready');
+    // Give a mount refetch the chance to start before asserting it never does.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(requests).toEqual([]);
+  });
+
   it('is unavailable without calling the API when this device has no token for the run', () => {
     const requests: string[] = [];
     mockServer.use(
