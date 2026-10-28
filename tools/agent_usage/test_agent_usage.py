@@ -61,6 +61,14 @@ class ClaudeParsingTest(unittest.TestCase):
         self.assertEqual(set(sessions), {"p1", "p1/agent-a1"})
         self.assertEqual(sessions["p1/agent-a1"].parent, "p1")
 
+    def test_request_repeated_in_several_subagent_files_is_counted_once(self):
+        write_jsonl(self.dir / "p1.jsonl", [claude_assistant("m1", "2026-10-28T10:00:00Z")])
+        shared = claude_assistant("m2", "2026-10-28T10:01:00Z")
+        write_jsonl(self.dir / "p1" / "subagents" / "agent-a1.jsonl", [shared])
+        write_jsonl(self.dir / "p1" / "subagents" / "agent-a2.jsonl", [shared, claude_assistant("m3", "2026-10-28T10:02:00Z")])
+        calls = sum(len(s.calls) for s in au.load_claude_sessions([self.dir]))
+        self.assertEqual(calls, 3)
+
     def test_call_that_only_sleeps_or_checks_ci_is_a_wait_call(self):
         path = write_jsonl(self.dir / "s1.jsonl", [
             claude_assistant("m1", "2026-10-28T10:00:00Z", tools=[("Bash", {"command": "sleep 60 && gh pr checks 12"})]),
