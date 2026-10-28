@@ -5,14 +5,11 @@ import { ApiError } from './apiError';
 import { useGameApi } from './gameApi';
 import type { GameApi, IdempotentRunCommand, RunViewDto } from './ports';
 import { useRunTokenStore } from './runTokenStore';
+import { runQueryKey } from './useStartRun';
 
-/**
- * Cache key of one run's view. Every hook of the run (useRun, useTakeDecision,
- * useAdvanceBlock) reads and writes this entry; seed it after `startRun` to skip a fetch.
- */
-export function runQueryKey(runId: string) {
-  return ['runs', runId] as const;
-}
+// Cache key of one run's view, seeded by useStartRun after startRun. Every hook of the run
+// (useRun, useTakeDecision, useAdvanceBlock) reads and writes this entry.
+export { runQueryKey } from './useStartRun';
 
 /** Answers meaning this device's token no longer opens the run: 401, 403 or 404. */
 const UNAVAILABLE_STATUSES: ReadonlySet<number | undefined> = new Set([401, 403, 404]);
