@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import TYPE_CHECKING, cast
 
@@ -43,7 +43,7 @@ class IdempotencyConflictError(DomainError):
 class RunAccessDeniedError(DomainError):
     """The supplied bearer token does not grant access to this run."""
 
-    code = "run_access_denied"
+    code = "run_token_invalid"
 
 
 @dataclass(frozen=True, slots=True)
@@ -111,6 +111,27 @@ def _validate_record_snapshot(
     actual_goals = tuple(item.goal_id for item in snapshot.goals)
     if actual_goals != expected_goals:
         raise InvalidValueError("run snapshot goal progress does not match captured objectives")
+    try:
+        initial_data = json.loads(record.replay_inputs.initial_state_json)
+        initial = RunSnapshot.decode(initial_data)
+    except (json.JSONDecodeError, InvalidValueError) as error:
+        raise InvalidValueError("initial state snapshot is invalid") from error
+    initial_run = initial.run
+    if (
+        initial_run.id != record.run_id
+        or initial_run.season_id != record.playable_season_id
+        or initial_run.seed != record.seed
+        or initial_run.status.value != "in_progress"
+        or initial_run.block_index != 0
+        or initial_run.run_state != captured.initial_state
+        or initial_run.blocks != captured.run_blocks
+        or initial_run.decisions
+        or initial_run.block_records
+        or initial_run.cursor is not None
+        or tuple((item.goal_id, item.status) for item in initial.goals)
+        != tuple((goal.goal_id, GoalStatus.PENDING) for goal in captured.goals)
+    ):
+        raise InvalidValueError("initial state snapshot does not match captured run inputs")
 
 
 def _validate_revisions(record: ports.RunRecord) -> RulesConfiguration:
@@ -173,6 +194,7 @@ def _request_hash(
 ) -> str:
     payload = _canonical_json(
         {
+            "operation": "take_decision",
             "dilemma_id": dilemma_id.value,
             "option_id": option_id.value,
             "expected_version": expected_version,
@@ -314,8 +336,6 @@ class TakeDecision:
         dilemma_id: DilemmaId,
         option_id: OptionId,
     ) -> RunView:
-        if type(expected_version) is not int or expected_version < 0:
-            raise InvalidValueError("expected_version must be a non-negative integer")
         request_hash = _request_hash(dilemma_id, option_id, expected_version)
         command = _DecisionCommand(
             run_id,
@@ -354,6 +374,8 @@ class TakeDecision:
             if record is None:
                 raise ports.RunNotFoundError(run_id)
             self._require_token(command.token, record)
+            if type(command.expected_version) is not int or command.expected_version < 0:
+                raise InvalidValueError("expected_version must be a non-negative integer")
             snapshot = RunSnapshot.decode(record.snapshot)
             rules = _validate_revisions(record)
             captured = self._restore_game(record.replay_inputs.content, rules)
@@ -375,12 +397,13 @@ class TakeDecision:
             option = next((item for item in dilemma.options if item.id == command.option_id), None)
             if option is None:
                 raise InvalidValueError("option does not belong to the selected dilemma")
+            validated, events = snapshot.run.take_decision(
+                command.dilemma_id, command.option_id, now
+            )
             resulting_state: RunState = snapshot.run.run_state
             for effect in option.effects:
                 resulting_state = effects.apply(effect, resulting_state, on=current_block.start)
-            changed, events = snapshot.run.take_decision(
-                command.dilemma_id, command.option_id, now, resulting_state
-            )
+            changed = replace(validated, run_state=resulting_state)
             updated_snapshot = RunSnapshot(changed, snapshot.goals)
             updated = ports.RunRecord(
                 record.run_id,
