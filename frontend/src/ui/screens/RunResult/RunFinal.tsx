@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type MouseEvent, type ReactNode } from 'react';
 
 import { useRun } from '../../../application/useRun';
 import { Button } from '../../design-system';
@@ -10,6 +10,11 @@ export interface RunFinalProps {
   onPlayAgain: () => void;
   /** Called when the run is still in play, to send the player back to its page. */
   onRunInPlay: (runId: string) => void;
+}
+
+/** A plain main-button click stays in the app; others (new tab, middle click…) go to the browser. */
+function isPlainClick(event: MouseEvent<HTMLAnchorElement>): boolean {
+  return event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
 }
 
 const LINK_CLASSES =
@@ -48,7 +53,15 @@ export function RunFinal({ runId, onPlayAgain, onRunInPlay }: RunFinalProps) {
           <p className="text-body text-ink-muted">
             Esta partida no está disponible en este dispositivo.
           </p>
-          <a href="/" className={LINK_CLASSES}>
+          <a
+            href="/"
+            className={LINK_CLASSES}
+            onClick={(event) => {
+              if (!isPlainClick(event)) return;
+              event.preventDefault();
+              onPlayAgain();
+            }}
+          >
             Volver al inicio
           </a>
         </Notice>
