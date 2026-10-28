@@ -171,13 +171,13 @@ class AttributionTest(unittest.TestCase):
 class QuotaWindowTest(unittest.TestCase):
     def test_snapshots_with_jittered_reset_belong_to_one_window(self):
         snaps = [
-            {"ts": "2026-10-28T10:00:00Z", "limit_id": "codex", "plan": "plus", "used_percent": 10.0, "window_minutes": 300, "resets_at": 1793208200},
-            {"ts": "2026-10-28T11:00:00Z", "limit_id": "codex", "plan": "plus", "used_percent": 55.0, "window_minutes": 300, "resets_at": 1793208215},
-            {"ts": "2026-10-28T16:00:00Z", "limit_id": "codex", "plan": "plus", "used_percent": 4.0, "window_minutes": 300, "resets_at": 1793226000},
+            {"ts": "2026-10-28T13:00:00Z", "limit_id": "codex", "plan": "plus", "used_percent": 10.0, "window_minutes": 300, "resets_at": 1793208200},
+            {"ts": "2026-10-28T14:00:00Z", "limit_id": "codex", "plan": "plus", "used_percent": 55.0, "window_minutes": 300, "resets_at": 1793208215},
+            {"ts": "2026-10-28T18:00:00Z", "limit_id": "codex", "plan": "plus", "used_percent": 4.0, "window_minutes": 300, "resets_at": 1793226000},
         ]
         windows = au.quota_windows(snaps)
         self.assertEqual([(w["max_used"], w["snapshots"]) for w in windows], [(55.0, 2), (4.0, 1)])
-        self.assertEqual(windows[0]["start"], "2026-10-28T07:03:20+00:00")
+        self.assertEqual(windows[0]["start"], "2026-10-28T12:23:20+00:00")
 
 
 class GithubFieldsTest(unittest.TestCase):

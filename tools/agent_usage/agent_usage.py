@@ -12,7 +12,7 @@ import math
 import re
 from collections import Counter
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable, Iterator
 
@@ -223,3 +223,126 @@ def session_metrics(session: Session) -> dict:
         "elapsed_min": round((end - start).total_seconds() / 60, 1) if calls else None,
         "active_min": active_minutes([c.ts for c in calls]),
     }
+
+
+TASK_ID = re.compile(r"(?<![\w-])(CR-T\d+\.\d+[a-z]?|T\d+\.\d+[a-z]?)(?![\w.])")
+BRANCH_TASK = re.compile(r"^task/(CR-T\d+\.\d+[a-z]?|T\d+\.\d+[a-z]?)(?:-|$)")
+WORKTREE_TASK = re.compile(r"mister-historico-(CR-T\d+\.\d+[a-z]?|T\d+\.\d+[a-z]?)(?:-|$)")
+REVIEW_PROMPT = re.compile(r"\brevis(?:a|or|ión)\b|\breview(?:er)?\b|fact-checker|verificador", re.IGNORECASE)
+
+
+def normalize_task(task_id: str, known: set[str]) -> str:
+    """Map a sub-delivery (T3.5b) to its TASKS entry (T3.5) unless it has its own entry."""
+    if task_id in known or not task_id[-1].isalpha():
+        return task_id
+    return task_id[:-1] if task_id[:-1] in known else task_id
+
+
+def _unique(ids: Iterable[str]) -> list[str]:
+    return list(dict.fromkeys(ids))
+
+
+def attribute(session: Session, known: set[str], override: dict | None = None) -> dict:
+    """Assign a session to tasks and say how certain that assignment is."""
+    if override:
+        return {"tasks": override.get("tasks", []), "attribution": override.get("attribution", "desconocida"),
+                "role": override.get("role", "Desconocido"), "source": "manual", "label": override.get("label", "")}
+    from_git = [m.group(1) for b in session.branches if (m := BRANCH_TASK.match(b))]
+    from_git += [m.group(1) for c in session.cwds if (m := WORKTREE_TASK.search(Path(c).name))]
+    tasks = _unique(normalize_task(t, known) for t in from_git)
+    if tasks:
+        kind, source = ("directa" if len(tasks) == 1 else "repartida"), "git"
+    else:
+        tasks = _unique(normalize_task(t, known) for t in TASK_ID.findall(session.prompt[:3000]))
+        kind = {0: "desconocida", 1: "inferida"}.get(len(tasks), "repartida")
+        source = "prompt" if tasks else "ninguna"
+    if REVIEW_PROMPT.search(session.prompt[:400]):
+        role = "Revisión"
+    elif source == "git":
+        role = "Implementación"
+    else:
+        role = "Desconocido"
+    return {"tasks": tasks, "attribution": kind, "role": role, "source": source, "label": ""}
+
+
+def _iso(epoch: float) -> str:
+    return datetime.fromtimestamp(epoch, timezone.utc).isoformat()
+
+
+def quota_windows(snapshots: list[dict], tolerance_s: int = 180) -> list[dict]:
+    """Group quota snapshots by the reset time the provider reported (it jitters by seconds)."""
+    windows: list[dict] = []
+    for snap in sorted(snapshots, key=lambda s: s["ts"]):
+        current = windows[-1] if windows else None
+        if not current or current["limit_id"] != snap.get("limit_id") or abs(current["_reset"] - snap["resets_at"]) > tolerance_s:
+            current = {"limit_id": snap.get("limit_id"), "plan": snap.get("plan"), "window_minutes": snap["window_minutes"],
+                       "_reset": snap["resets_at"], "first_ts": snap["ts"], "first_used": snap["used_percent"],
+                       "max_used": snap["used_percent"], "snapshots": 0}
+            windows.append(current)
+        current["last_ts"] = snap["ts"]
+        current["max_used"] = max(current["max_used"], snap["used_percent"])
+        current["snapshots"] += 1
+    for w in windows:
+        reset = w.pop("_reset")
+        w["resets_at"] = _iso(reset)
+        w["start"] = _iso(reset - w["window_minutes"] * 60)
+    return windows
+
+
+def pr_tool(body: str | None) -> str | None:
+    """The tool a pull request was made with, from the footer the project requires."""
+    body = body or ""
+    if "Generated with Codex" in body:
+        return "Codex"
+    if "Generated with [Claude Code]" in body or "Generated with Claude Code" in body:
+        return "Claude Code"
+    return None
+
+
+def task_from_branch(branch: str) -> str | None:
+    match = BRANCH_TASK.match(branch or "")
+    return match.group(1) if match else None
+
+
+def cost_fields(ccusage_row: dict | None) -> dict:
+    """API-equivalent cost from ccusage; None when ccusage has no row, never 0."""
+    if ccusage_row is None:
+        return {"cost_usd": None, "cost_estimated": None}
+    cost = ccusage_row.get("costUSD", ccusage_row.get("totalCost"))
+    fallback = any(m.get("isFallback") for m in (ccusage_row.get("models") or {}).values() if isinstance(m, dict))
+    return {"cost_usd": cost, "cost_estimated": fallback}
+
+
+def statusline(payload: dict, log_path: Path) -> str:
+    """Render the Claude Code status line and log quota changes reported by Claude Code."""
+    parts = [(payload.get("model") or {}).get("display_name") or "?"]
+    used = (payload.get("context_window") or {}).get("used_percentage")
+    if used is not None:
+        parts.append(f"ctx {round(used)}%")
+    limits = payload.get("rate_limits") or {}
+    five, week = limits.get("five_hour"), limits.get("seven_day")
+    if five:
+        reset = datetime.fromtimestamp(five["resets_at"]).strftime("%H:%M")
+        parts.append(f"5h {round(five['used_percentage'])}% ↻ {reset}")
+    else:
+        parts.append("5h n/d")
+    if week:
+        parts.append(f"7d {round(week['used_percentage'])}%")
+    if five or week:
+        _log_quota(payload, five or {}, week or {}, log_path)
+    return " · ".join(parts)
+
+
+def _log_quota(payload: dict, five: dict, week: dict, log_path: Path) -> None:
+    snapshot = {"five_hour_used": five.get("used_percentage"), "five_hour_resets_at": five.get("resets_at"),
+                "seven_day_used": week.get("used_percentage"), "seven_day_resets_at": week.get("resets_at")}
+    state = log_path.with_suffix(".last")
+    key = json.dumps(snapshot, sort_keys=True)
+    if state.exists() and state.read_text() == key:
+        return
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    row = {"ts": datetime.now(timezone.utc).isoformat(), "session_id": payload.get("session_id"),
+           "model": (payload.get("model") or {}).get("id"), **snapshot}
+    with open(log_path, "a", encoding="utf-8") as fh:
+        fh.write(json.dumps(row) + "\n")
+    state.write_text(key)
