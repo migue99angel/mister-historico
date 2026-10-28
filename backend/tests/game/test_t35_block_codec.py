@@ -4,13 +4,13 @@ from dataclasses import replace
 import pytest
 from tests.contracts.suites.game_samples import make_simulation_result
 
-from mister.game.application.block_codec import BlockSimulationCodec
+from mister.game.application.block_codec import BlockSimulationCodec, decode_block, encode_block
 from mister.shared_kernel.errors import InvalidValueError
 
 
 def test_block_codec_round_trips_full_result_and_distinguishes_unknown_ties_from_empty() -> None:
     result = make_simulation_result()
-    decoded = BlockSimulationCodec.decode(BlockSimulationCodec.encode(result))
+    decoded = decode_block(encode_block(result))
     assert decoded == result
     assert decoded.matches[0].extra_time == result.matches[0].extra_time
     assert decoded.matches[0].penalties == result.matches[0].penalties
@@ -45,3 +45,27 @@ def test_block_codec_rejects_noncanonical_bytes_and_wrong_typed_fields() -> None
     corrupted = json.dumps(envelope, sort_keys=True, separators=(",", ":")).encode()
     with pytest.raises(InvalidValueError, match="field types"):
         BlockSimulationCodec.decode(corrupted)
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        "not bytes",
+        b"\xff",
+        b"{",
+        b'{"format_version":1,"format_version":1,"result":null}',
+        b'{"format_version":1,"result":NaN}',
+        b'{"extra":0,"format_version":1,"result":null}',
+        b'{"format_version":true,"result":null}',
+        b'{"format_version":99,"result":null}',
+        b'{"format_version":1,"result":42}',
+    ],
+)
+def test_block_codec_rejects_invalid_payload_shapes_and_versions(payload: object) -> None:
+    with pytest.raises(InvalidValueError):
+        decode_block(payload)  # type: ignore[arg-type]
+
+
+def test_block_codec_rejects_values_other_than_complete_results() -> None:
+    with pytest.raises(InvalidValueError, match="requires BlockSimulationResult"):
+        encode_block(object())  # type: ignore[arg-type]
