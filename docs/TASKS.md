@@ -15,7 +15,8 @@ Los hitos A/B/C/D y sus decisiones de producto están en [PLAN §5](PLAN.md#5-en
 Los IDs F0-F7 se conservan; las subtareas siguientes dividen aceptación y orden,
 sin eliminar funcionalidades. La planificación no equivale a implementación:
 HANDOFF §12–15 registra las tandas hacia A. T3.5 implementa los casos de
-uso y replay; la API y su aceptación conectada siguen pendientes. Las PR #45/#46/#49 conservan contenido parcial en borrador.
+uso y replay; T3.6 incorpora la API F3. Su aceptación conectada de temporada
+completa sigue en T3.7a/T4.7a. Las PR #45/#46/#49 conservan contenido parcial en borrador.
 Este fichero es la **especificación** de las tareas; su **estado operativo**
 (Ready, In Progress, In Review, Blocked, Done) se lleva en el
 [GitHub Project](https://github.com/users/migue99angel/projects/1), con una issue
@@ -28,7 +29,8 @@ antes del 2026-10-28 no se migraron: su registro son las PR y HANDOFF.
   F4-A cerrada: T4.1, T4.2 y T4.3 integradas, con CR-T4.1a y CR-T4.1b.
   F4-B cerrada con MSW: CR-T4.B, T4.4, T4.5 y T4.6a integradas (PR #70-#73 y #75).
   T3.5 está implementada con captura, cierre y replay (HANDOFF §15).
-  Sigue T3.6, después T3.7a y T4.7a (E2E con backend real).
+  T3.6 incorpora las seis operaciones F3 sobre SQL y motor reales.
+  Siguen T3.7a y T4.7a (E2E completo con backend real); A continúa abierto.
   F4-B no requirió contenido real firmado.
 - **En paralelo, para B:** contenido F2, verificación y firma, después
   calibración/rendimiento del piloto; evaluación/compartir y UX móvil. La beta
@@ -512,7 +514,8 @@ antes del 2026-10-28 no se migraron: su registro son las PR y HANDOFF.
 
 F3 avanza con Test FC mientras F2 histórica permanece abierta. La consulta y
 captura/restauración mediante el ACL, los comandos y el replay de T3.5 ya están
-integrados. Siguen T3.6 y la aceptación conectada T3.7a/T4.7a; F3 sigue abierta.
+integrados. La API T3.6 reutiliza esas piezas; la aceptación conectada
+T3.7a/T4.7a sigue pendiente y F3 continúa abierta.
 
 ### CR-T3.0 · Entradas fijadas de partida y contrato de replay (antes de A)
 - **Estado:** integrada por rebase-merge en [PR #54](https://github.com/migue99angel/mister-historico/pull/54), implementada por Luna y revisada por Sol sobre `d8170ac`, con CI y comprobación conjunta en verde. SQL está integrado en T3.4 y los casos de uso/replay en T3.5 (HANDOFF §15).
@@ -724,15 +727,32 @@ integrados. Siguen T3.6 y la aceptación conectada T3.7a/T4.7a; F3 sigue abierta
   dominio, entradas de replay ni parámetros del perfil A.
 
 ### T3.6 · Adaptadores de la API
+- **Implementación:** seis operaciones F3 con presentación capturada, errores
+  problem+json y composición SQL/motor reales. La CR previa #106/#108 publica
+  la fachada sin dominio y la política de nombres. Los límites técnicos y el
+  siguiente trabajo están en HANDOFF §17; el estado operativo vive en #81/Project.
 - **Oleada:** F3-B (después de T3.5) · **Tamaño:** M · **Depende de:** T3.5, T1.4
 - **Propiedad:** `entrypoints/api/routers/{seasons,runs}.py`, `entrypoints/api/errors.py`,
   `entrypoints/api/app.py` (registro de routers) y `bootstrap.py` (cableado game).
+  La [CR de presentación](changes/CR-T3.6-presentation.md), integrada en #108,
+  autoriza los nuevos `entrypoints/api/{schemas,dependencies,presenters}.py` y
+  `routers/__init__.py` si se necesitan. Los nuevos tests de esta entrega y sus
+  helpers pertenecen explícitamente a `backend/tests/entrypoints/api/test_t36_*.py`
+  y `backend/tests/entrypoints/api/test_t36/**`; no incluye los tests anteriores.
 - **Qué hacer:**
-  - Implementar los endpoints de la F3 del OpenAPI v0.
-  - Mapear `DomainError` a problem+json: 404, 409 en conflictos o al avanzar con dilemas pendientes, 422.
+  - Implementar exclusivamente `GET /seasons`, `GET /seasons/{seasonId}`,
+    `POST /runs`, `GET /runs/{runId}`, `POST /runs/{runId}/decisions` y
+    `POST /runs/{runId}/advance`, bajo el prefijo `/api` del contrato.
+  - Mapear `DomainError` a problem+json: 401/403/404, 409 en conflictos o dilemas
+    pendientes y 422 de negocio. La validación del request devuelve 400.
+  - Autenticar antes de leer el cuerpo; conservar idempotencia antes de versión.
+    Crear una fachada y UnitOfWork por petición, compartiendo solo el engine SQL.
   - `NamePolicy` en los presentadores.
 - **Tests primero:**
   - Un test de API por cada endpoint y error.
+  - Errores combinados para comprobar precedencia, versiones y ambas operaciones
+    idempotentes. Composición PostgreSQL, persistencia y motor reales, con
+    peticiones HTTP concurrentes; la temporada completa/golden pertenece a T3.7a.
   - Conformidad de operaciones/esquemas F3 implementados con OpenAPI v0. A no
     espera los endpoints de F5: no devolver respuestas ficticias de ranking o
     evaluación para fingir cobertura total. T5.5a/b completa las rutas restantes
@@ -740,8 +760,8 @@ integrados. Siguen T3.6 y la aceptación conectada T3.7a/T4.7a; F3 sigue abierta
 - **Aceptación:** el job `contracts.yml` está en verde. Para A, los endpoints
   de F3 sirven Test FC mediante configuración local/test y proveedor real; no se
   importa código de tests en producción. Ya se puede poblar la BD local desde
-  `backend/` con `uv run mister content load --root tests/fixtures/content`;
-  T3.6 cableará el proveedor SQL existente. Si hace falta tocar `settings.py`,
+  `backend/` con `UV_NO_SYNC=1 uv run mister content load --root tests/fixtures/content`;
+  T3.6 cablea el proveedor SQL existente. Si hace falta tocar `settings.py`,
   Compose o Makefile, abrir CR de cableado; esta tarea no adquiere esos archivos
   compartidos por cambiar la planificación.
 
