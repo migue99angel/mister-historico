@@ -121,14 +121,20 @@ def test_sell_player_moves_own_player_to_rival() -> None:
     assert result.squad_registry.owner_on(PLAYER, date(2000, 9, 1)) == RIVAL
 
 
-def test_tactic_priority_and_youth_effects_replace_target_values() -> None:
+def test_set_tactic_replaces_only_tactic() -> None:
     tactic = Tactic(TacticStyle.PRESSING, (3, 5, 2))
     result = apply(SetTacticEffect(tactic), state())
     assert result.tactic == tactic
+
+
+def test_competition_priority_adds_new_competition() -> None:
     competition = CompetitionId("league")
-    result = apply(CompetitionPriorityEffect(competition, Priority.HIGH), result)
+    result = apply(CompetitionPriorityEffect(competition, Priority.HIGH), state())
     assert result.competition_priorities == (CompetitionPriority(competition, Priority.HIGH),)
-    result = apply(YouthMinutesEffect(PLAYER), result)
+
+
+def test_youth_minutes_marks_player_without_changing_rating_or_minutes() -> None:
+    result = apply(YouthMinutesEffect(PLAYER), state())
     assert result.players[0].youth_minutes is True
     assert result.players[0].rating == 80
     assert result.players[0].minutes_played == 0
