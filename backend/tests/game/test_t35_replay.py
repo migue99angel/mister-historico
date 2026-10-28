@@ -8,7 +8,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 from tests.game.test_t35_use_cases import _setup
 
-from mister.catalog.application.api import PlayableSeasonDTO
+from mister.catalog.application.api import MoraleEffectDTO, PlayableSeasonDTO
 from mister.game.application import ports
 from mister.game.application.block_codec import decode_block, encode_block
 from mister.game.application.closure import advance_snapshot
@@ -21,7 +21,13 @@ from mister.game.application.ports import (
 )
 from mister.game.application.replay import ReplayResult, ReplayRun
 from mister.game.application.rules import RulesConfiguration
-from mister.game.application.use_cases import AdvanceBlock, RunAccessDeniedError, RunSnapshot
+from mister.game.application.use_cases import (
+    AdvanceBlock,
+    GetRun,
+    RunAccessDeniedError,
+    RunSnapshot,
+    TakeDecision,
+)
 from mister.game.domain.board import GoalStatus
 from mister.game.infrastructure.catalog_adapter import CatalogRunContentAdapter
 from mister.game.infrastructure.in_memory.run_repository import (
@@ -161,28 +167,161 @@ def test_replay_reconstructs_an_open_run_without_simulating_or_writing(
     assert tuple(events) == events_before
 
 
-def test_replay_stays_on_capture_a_after_provider_changes_and_new_run_captures_b() -> None:
+def test_replay_stays_on_capture_a_after_provider_changes_and_new_run_captures_b(  # noqa: PLR0915
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     season_a, provider_a, store_a, _, start_a, _, _ = _setup()
     run_a = start_a.execute(season_a.id)
-    capture_a = store_a.runs[run_a.run_id].replay_inputs.content
-    provider_a.season = replace(season_a, season="Test FC alternate season")
-
-    replay_a = _replay(store_a).execute(run_a.run_id, run_a.token)
-
-    assert replay_a.reconstructed == RunSnapshot.decode(store_a.runs[run_a.run_id].snapshot)
-    assert provider_a.calls == 1
+    record_a = store_a.runs[run_a.run_id]
+    capture_a = record_a.replay_inputs.content
+    content_a_before = capture_a.content_json
+    rules = RulesConfiguration.a_profile()
+    dilemma_a = season_a.dilemmas[0]
+    changed_option_a = dilemma_a.options[2]
 
     season_b, provider_b, store_b, _, start_b, _, _ = _setup()
-    provider_b.season = replace(season_b, season="Test FC alternate season")
+    club_b = season_b.own_club_season
+    assert club_b.squad is not None
+    original_player_b = club_b.squad[0]
+    changed_player_b = replace(original_player_b, rating=original_player_b.rating + 5)
+    changed_squad_b = (changed_player_b, *club_b.squad[1:])
+    clubs_b = tuple(
+        replace(club, squad=changed_squad_b) if club.id == club_b.id else club
+        for club in season_b.club_seasons
+    )
+    dilemma_b = season_b.dilemmas[0]
+    option_b = dilemma_b.options[2]
+    changed_option_b = replace(option_b, effects=(MoraleEffectDTO(delta=-5),))
+    dilemmas_b = tuple(
+        replace(
+            dilemma,
+            options=tuple(
+                changed_option_b if option.id == option_b.id else option
+                for option in dilemma.options
+            ),
+        )
+        if dilemma.id == dilemma_b.id
+        else dilemma
+        for dilemma in season_b.dilemmas
+    )
+    season_b = replace(
+        season_b,
+        season="Test FC alternate season",
+        club_seasons=clubs_b,
+        dilemmas=dilemmas_b,
+    )
+    provider_b.season = season_b
     run_b = start_b.execute(season_b.id)
-    capture_b = store_b.runs[run_b.run_id].replay_inputs.content
+    record_b = store_b.runs[run_b.run_id]
+    capture_b = record_b.replay_inputs.content
+    captured_b = CatalogRunContentAdapter.restore_game(capture_b, rules)
+    captured_player_b = next(
+        player
+        for player in captured_b.initial_state.players
+        if player.player_id == original_player_b.player_id
+    )
+    assert captured_player_b.rating == changed_player_b.rating
+
+    # A's provider is replaced by B and then retired; every subsequent operation restores A.
+    provider_a.season = season_b
+
+    def fail_retired_provider(_season_id: PlayableSeasonId) -> PlayableSeasonDTO:
+        raise AssertionError("continuing or replaying A must not query its retired provider")
+
+    monkeypatch.setattr(provider_a, "get_playable_season", fail_retired_provider)
+    del provider_a
+
+    hasher = Sha256RunTokenHasher()
+    restore_game = CatalogRunContentAdapter.restore_game
+    get_a = GetRun(
+        uow=InMemoryUnitOfWork(store_a),
+        token_hasher=hasher,
+        restore_game=restore_game,
+    )
+    take_a = TakeDecision(
+        uow=InMemoryUnitOfWork(store_a),
+        clock=FixedClock(datetime(2026, 10, 28, tzinfo=UTC)),
+        event_bus=InMemoryEventBus(),
+        token_hasher=hasher,
+        restore_game=restore_game,
+    )
+    assert get_a.execute(run_a.run_id, run_a.token).run.run_state.team_morale == 50
+    take_a.execute(
+        run_a.run_id,
+        run_a.token,
+        "capture-a-option-c",
+        store_a.runs[run_a.run_id].version,
+        dilemma_a.id,
+        changed_option_a.id,
+    )
+    second_dilemma_a = season_a.dilemmas[1]
+    take_a.execute(
+        run_a.run_id,
+        run_a.token,
+        "capture-a-option-second",
+        store_a.runs[run_a.run_id].version,
+        second_dilemma_a.id,
+        second_dilemma_a.options[0].id,
+    )
+    decision_state_a = get_a.execute(run_a.run_id, run_a.token)
+    assert decision_state_a.run.run_state.team_morale == 53
+    simulator = _OutcomeSimulator()
+    advance_a = AdvanceBlock(
+        uow=InMemoryUnitOfWork(store_a),
+        clock=FixedClock(datetime(2026, 10, 28, tzinfo=UTC)),
+        event_bus=InMemoryEventBus(),
+        token_hasher=hasher,
+        restore_game=restore_game,
+        simulator=simulator,
+    )
+    closed_a = advance_a.execute(
+        run_a.run_id,
+        run_a.token,
+        "capture-a-close-first-block",
+        store_a.runs[run_a.run_id].version,
+    )
+    assert len(closed_a.run.block_records) == 1
+    persisted_a = store_a.runs[run_a.run_id]
+
+    replay_a = ReplayRun(
+        uow=InMemoryUnitOfWork(store_a),
+        token_hasher=hasher,
+        restore_game=restore_game,
+        simulator=simulator,
+    ).execute(run_a.run_id, run_a.token)
 
     assert capture_b != capture_a
-    assert provider_b.calls == 1
+    assert capture_a.content_json == content_a_before
+    assert record_a.replay_inputs.content.content_json == content_a_before
+    assert record_b.replay_inputs.content.digest != record_a.replay_inputs.content.digest
+    assert replay_a.reconstructed == RunSnapshot.decode(persisted_a.snapshot)
+    assert store_a.runs[run_a.run_id] == persisted_a
+
+    get_b = GetRun(
+        uow=InMemoryUnitOfWork(store_b),
+        token_hasher=hasher,
+        restore_game=restore_game,
+    )
+    take_b = TakeDecision(
+        uow=InMemoryUnitOfWork(store_b),
+        clock=FixedClock(datetime(2026, 10, 28, tzinfo=UTC)),
+        event_bus=InMemoryEventBus(),
+        token_hasher=hasher,
+        restore_game=restore_game,
+    )
+    take_b.execute(
+        run_b.run_id,
+        run_b.token,
+        "capture-b-option-c",
+        store_b.runs[run_b.run_id].version,
+        dilemma_b.id,
+        changed_option_b.id,
+    )
+    assert get_b.execute(run_b.run_id, run_b.token).run.run_state.team_morale == 45
     assert ReplayRun(
         uow=InMemoryUnitOfWork(store_b),
-        token_hasher=Sha256RunTokenHasher(),
-        restore_game=CatalogRunContentAdapter.restore_game,
+        token_hasher=hasher,
+        restore_game=restore_game,
         simulator=_UnusedSimulator(),
     ).execute(run_b.run_id, run_b.token).reconstructed == RunSnapshot.decode(
         store_b.runs[run_b.run_id].snapshot
@@ -384,6 +523,49 @@ def test_replay_closed_test_fc_run_with_the_real_simulation_engine() -> None:
     assert result.reconstructed.run.status.value == "finished"
     assert len(result.reconstructed.run.block_records) == len(captured.blocks)
     assert store.runs[created.run_id] == persisted
+
+
+@given(seed=st.integers(min_value=0, max_value=2**32 - 1))
+@settings(max_examples=5, deadline=None)
+def test_replay_generated_seeds_finish_full_test_fc_runs(seed: int) -> None:
+    base_rules = RulesConfiguration.a_profile()
+    # A zero threshold keeps every clamped board confidence in the continuing state.
+    rules = replace(base_rules, board=replace(base_rules.board, sacking_threshold=0))
+    season, _, store, _, start, _, take = _setup(rules)
+    start._seed_factory = lambda: Seed(seed)
+    created = start.execute(season.id)
+    captured = CatalogRunContentAdapter.restore_game(
+        store.runs[created.run_id].replay_inputs.content, rules
+    )
+    simulator = SimulationServiceAdapter(SimulationService())
+    advance = _advance(store, simulator)
+
+    for block_index, block in enumerate(captured.blocks):
+        for dilemma in block.dilemmas:
+            take.execute(
+                created.run_id,
+                created.token,
+                f"finished-seed-{block_index}-{dilemma.id}",
+                store.runs[created.run_id].version,
+                dilemma.id,
+                dilemma.historical_option,
+            )
+        view = advance.execute(
+            created.run_id,
+            created.token,
+            f"finished-seed-close-{block_index}",
+            store.runs[created.run_id].version,
+        )
+        assert view.run.status.value != "sacked"
+
+    persisted = store.runs[created.run_id]
+    target = RunSnapshot.decode(persisted.snapshot)
+    assert target.run.status.value == "finished"
+    assert len(target.run.block_records) == len(captured.blocks)
+
+    replayed = _replay(store, simulator).execute(created.run_id, created.token)
+
+    assert replayed.reconstructed == target
 
 
 def test_replay_reconstructs_a_sacked_middle_block() -> None:
