@@ -38,5 +38,13 @@ export function createLocalStorageRunTokenStore({
         return null;
       }
     },
+    remove(runId) {
+      pageTokens.delete(runId);
+      try {
+        storage().removeItem(RUN_TOKEN_KEY_PREFIX + runId);
+      } catch {
+        // Storage unavailable: nothing was persisted there for this page to remove.
+      }
+    },
   };
 }

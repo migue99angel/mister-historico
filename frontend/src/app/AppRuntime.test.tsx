@@ -3,8 +3,9 @@ import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { useGameApi } from '../application/gameApi';
-import type { GameApi, RunTokenStore } from '../application/ports';
+import type { GameApi } from '../application/ports';
 import { useRunTokenStore } from '../application/runTokenStore';
+import { createInMemoryRunTokenStore } from '../infrastructure/storage/inMemoryRunTokenStore';
 import { RUN_TOKEN_KEY_PREFIX } from '../infrastructure/storage/localStorageRunTokenStore';
 import { AppRuntime } from './AppRuntime';
 
@@ -50,11 +51,7 @@ describe('AppRuntime', () => {
   });
 
   it('provides the RunTokenStore given by the caller', () => {
-    const tokens = new Map<string, string>();
-    const runTokenStore: RunTokenStore = {
-      save: (runId, runToken) => tokens.set(runId, runToken),
-      read: (runId) => tokens.get(runId) ?? null,
-    };
+    const runTokenStore = createInMemoryRunTokenStore();
 
     render(
       <AppRuntime gameApi={unusedApi} runTokenStore={runTokenStore}>
@@ -63,7 +60,7 @@ describe('AppRuntime', () => {
     );
 
     expect(screen.getByText('token-1')).toBeInTheDocument();
-    expect(tokens.get('run-1')).toBe('token-1');
+    expect(runTokenStore.read('run-1')).toBe('token-1');
   });
 
   it('keeps run tokens in localStorage by default so a reload resumes the run', () => {
