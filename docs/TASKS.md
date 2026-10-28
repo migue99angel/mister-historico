@@ -507,12 +507,12 @@ PR y CI; esta lista conserva el alcance y la propiedad de cada tarea.
 
 ## F3 · Partida en el servidor (`backend/src/mister/game/`)
 
-F3 puede comenzar con Test FC mientras F2 histórica permanece abierta. La
-consulta de contenido y su captura/restauración mediante el ACL de Game ya
-existen; los casos de uso de partida siguen pendientes.
+F3 avanza con Test FC mientras F2 histórica permanece abierta. La consulta y
+captura/restauración mediante el ACL, los comandos y el replay de T3.5 ya están
+integrados. Siguen T3.6 y la aceptación conectada T3.7a/T4.7a; F3 sigue abierta.
 
 ### CR-T3.0 · Entradas fijadas de partida y contrato de replay (antes de A)
-- **Estado:** integrada por rebase-merge en [PR #54](https://github.com/migue99angel/mister-historico/pull/54), implementada por Luna y revisada por Sol sobre `d8170ac`, con CI y comprobación conjunta en verde. SQL está integrado en T3.4; los casos de uso siguen pendientes.
+- **Estado:** integrada por rebase-merge en [PR #54](https://github.com/migue99angel/mister-historico/pull/54), implementada por Luna y revisada por Sol sobre `d8170ac`, con CI y comprobación conjunta en verde. SQL está integrado en T3.4 y los casos de uso/replay en T3.5 (HANDOFF §15).
 - **Tamaño:** M · **Depende de:** T1.5/T1.6, T2.6 y T2.21, ya integradas.
 - **Propiedad:** `game/application/ports.py`, sus DTOs de entrada/persistencia,
   fakes de `game/infrastructure/in_memory/`, suites de contrato y mapeo de Game,
@@ -795,8 +795,9 @@ existen; los casos de uso de partida siguen pendientes.
 ### T4.2 · Shell, rutas y adaptador de la API
 - **Estado:** implementada en [PR #55](https://github.com/migue99angel/mister-historico/pull/55),
   integrada por rebase-merge tras revisión independiente Sol y CI en verde
-  sobre `f4f151e`. 100 tests frontend y bundle de 79,49 KB gzip. Las pantallas
-  T4.4-T4.6 siguen pendientes; las rutas actuales solo montan su estructura.
+  sobre `f4f151e`; aquella entrega verificó 100 tests frontend y 79,49 KB gzip.
+  Las pantallas y rutas de T4.4/T4.5/T4.6a ya están integradas mediante la tanda
+  F4-B con MSW (PR #70-#73 y #75). La conexión al backend real sigue pendiente.
 - **Oleada:** F4-A · **Tamaño:** M · **Depende de:** T1.4
 - **Propiedad:** `frontend/src/{main.tsx,app/**}`, `frontend/src/infrastructure/**`
   (salvo `api/generated/**` y `api/mocks/**`, que pertenecen al contrato T1.4/CR)
