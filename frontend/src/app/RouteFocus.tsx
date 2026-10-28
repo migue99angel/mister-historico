@@ -15,7 +15,8 @@ export function RouteFocus({ children }: { children: ReactNode }) {
   const handledPathname = useRef(pathname);
   const focusBeforePage = useRef<Element | null>(null);
 
-  // Layout effects run before any page effect can move the focus.
+  // Runs before the pages' passive effects, where they move the focus (a page that focused in
+  // its own layout effect would be overridden).
   useLayoutEffect(() => {
     focusBeforePage.current = document.activeElement;
   }, [pathname]);
