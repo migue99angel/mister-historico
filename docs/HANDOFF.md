@@ -1,6 +1,6 @@
 # Traspaso de la orquestación (2026-10-26)
 
-> Las secciones 1–13 conservan las comprobaciones de su fecha. La sección 14 recoge la tercera tanda hacia la partida interna: efectos, directiva y moral. F2 y el hito A continúan abiertos. Léelo junto con `CLAUDE.md`, `docs/PLAN.md` y `docs/TASKS.md`. Las instrucciones del autor prevalecen sobre estos documentos.
+> Las secciones 1–14 conservan las comprobaciones de su fecha. La sección 15 recoge T3.5: captura, comandos, cierre y replay. F2, F3 y el hito A continúan abiertos. Léelo junto con `CLAUDE.md`, `docs/PLAN.md` y `docs/TASKS.md`. Las instrucciones del autor prevalecen sobre estos documentos.
 
 ## 1. Rol y forma de trabajo
 
@@ -412,38 +412,117 @@ queda intacto. Se reutilizan los entornos compartidos sin instalaciones nuevas.
 
 ## 15. Cuarta tanda hacia A: casos de uso y replay (2026-10-28)
 
-**Planificación contrastada con código:** gpt-6.1-sol revisó los contratos y
-el agregado sobre `2bf56b2`. T3.5 se divide en a (captura, modelo privado,
-reglas y codecs) y b (comandos, cierre y replay), con propiedad exclusiva
-registrada en TASKS. Luna implementa y Sol independiente revisa. No se absorben
-T3.6, endpoints, pantallas, temporada actual, mercado económico ni RAG.
+**Planificación realizada:** gpt-6.1-sol contrastó contratos y código sobre
+`2bf56b2`. T3.5 se dividió con propiedad exclusiva: a (captura, reglas y codecs),
+b (comandos y cierre) y c (replay y entrada CLI). La división de b/c se fijó antes
+del trabajo paralelo; c usó una rama apilada y se limpió conservando sus commits
+rojos y verdes antes de publicar. Agentes gpt-6-luna implementaron y gpt-6.1-sol independiente
+revisó cada entrega; oleadas de dos o tres agentes, contando revisión. Tras el
+límite de uso se reactivaron los mismos agentes, conservando trabajo y commits.
 
-**Dependencia descubierta:** los DTO de Catalog conservaban altas y bajas por
-fecha, pero el puerto hacia Simulation las descartaba y fijaba la plantilla
-para todo el bloque. Se preparó una CR separada, previa a b: intervalos inclusivos
-como `SquadRegistry` y pool completo de estados físicos. No se divide la llamada
-al motor por fechas: alteraría los cortes de clasificación y el calendario de
-minutos juveniles. Los seis módulos privados de dominio Game permanecen intactos.
+**Implementación integrada por rebase-merge, con revisión y CI verdes:**
 
-**Decisión del autor para A:** perfil provisional explícitamente aprobado en
-esta sesión, guardado íntegramente en `ReplayInputs` y seleccionado mediante
+- **T3.5a, [PR #67](https://github.com/migue99angel/mister-historico/pull/67):**
+  captura de una sola lectura y traducción a tipos privados de Game, incluidos
+  jugadores propios/rivales/mercado, pertenencias, tácticas por rival y diez
+  efectos. `CapturedClub` evita perder la distinción entre plantilla y agregado.
+  Sol aprobó código `181e282` y pruebas `502c565`.
+- **CR fechada previa, [PR #68](https://github.com/migue99angel/mister-historico/pull/68):**
+  el contrato anterior descartaba altas/bajas intra bloque. Se añadieron
+  intervalos inclusivos y pool completo de jugadores; el motor elige la plantilla
+  de cada fecha, conserva condición/lesión y mantiene las referencias originales
+  de fuerza. No se divide el bloque, para preservar cortes y calendario juvenil.
+  Sol detectó que se borraban lesiones del rival: rojo `3b33005`, verde `9a7c443`.
+  Aprobación final `0527434`, incluido el ajuste de una aserción de orden de campos.
+- **T3.5b, [PR #74](https://github.com/migue99angel/mister-historico/pull/74):**
+  `StartRun`, `GetRun`, `TakeDecision` y `AdvanceBlock`; ambos comandos conservan
+  respuesta idempotente y versión dentro de la UoW. Autenticación, forma del
+  comando, respuesta original, versión y reglas siguen el orden del contrato.
+  Las colisiones revierten y releen la respuesta; los eventos salen después del
+  commit. El cierre conserva estado, minutos acumulados, elegibilidad, progreso
+  anterior/actual y `ClosureOutcome` con cursor. Se corrigieron incoherencias
+  de snapshot/captura, acreditación de la siguiente fase y claves inválidas;
+  una transferencia que exigiría inventar una plantilla agregada se rechaza
+  antes de persistir. Sol aprobó `7b7faf6` y tests adicionales `038ba50`.
+- **T3.5c, [PR #76](https://github.com/migue99angel/mister-historico/pull/76):**
+  `ReplayRun` reutiliza `apply_choice` y `advance_snapshot`. Reconstruye prefijos,
+  temporadas completas y despidos sin escribir, emitir eventos productivos ni
+  leer Catalog vivo; compara el snapshot completo. Sol aprobó `ac9a123`, con
+  recorridos reales Test FC, Hypothesis de semillas/decisiones, finales normales
+  y despidos. A/B cambia rating y efecto, retira el proveedor y recrea los casos
+  de uso: A continúa y se reproduce con su captura; un nuevo Start obtiene B.
+
+**Corrección de la auditoría final, [PR #94](https://github.com/migue99angel/mister-historico/pull/94):**
+la exención de incorporaciones distinguía indebidamente un alta histórica del
+primer día de una transferencia efectiva esa misma fecha. La revisión Sol
+confirmó el P2 y aprobó `6c178b0`: la alta histórica debe ser una transición real
+de pertenencia, no una fecha base eclipsada por una transferencia anterior.
+Se conservan el control de alta anterior y el caso `date.min`; 21 pruebas
+dirigidas verdes, con rojos/verdes separados. No se cambian los parámetros A.
+
+**Serialización y revisiones:** `RunSnapshot` guarda un envelope versionado con
+el agregado y el progreso de objetivos. `encode_run`/`decode_run` preservan todo
+`Run`, registro de pertenencias, estados de jugadores, decisiones, cursor y
+bytes exactos de cada cierre (base64); `encode_block`/`decode_block` conservan
+resultados completos, prórroga, penaltis, eventos, lesiones, minutos,
+clasificaciones y empates pendientes, diferenciando `None` y colección vacía.
+Los codecs rechazan formatos, campos, tags y tipos desconocidos; el fingerprint
+obliga a revisar el formato si cambia el esquema. El registro conserva semilla
+y log; `ReplayInputs` conserva copia completa, estado inicial, reglas canónicas
+y revisiones.
+Solo se admiten `simulation-v1` y `a-provisional-1`; no hay cargador multiversión.
+El artefacto del motor fechado está conservado en #68 (`20c82c4`), el de reglas y
+orquestación en #74 con la corrección de elegibilidad #94, y los decoders en #67; sus commits y lockfiles siguen en Git.
+Una revisión incompatible se rechaza, sin sustituirla por el catálogo actual.
+
+**Decisión del autor para A:** perfil provisional explícitamente aprobado,
+guardado íntegramente en `ReplayInputs` y elegido con
 `RulesConfiguration.a_profile()`. Confianza inicial 50; victoria/empate/derrota
 +3/0/−3; objetivo cumplido/incumplido +10/−10; destitución estrictamente por debajo
 de 20. Moral inicial 50; resultados +2/0/−2; estrella con media ≥85, mínimo 90
 minutos por bloque y penalización −3. Solo es elegible quien pertenece al equipo
 al inicio y al cierre, hay partidos y está disponible en todos; se eximen las
-incorporaciones del bloque. Estado físico inicial 100, prioridad normal y fecha
-efectiva de decisión al inicio de su bloque. Los dilemas publicados no tienen
-fecha propia. Este perfil permite probar A; no acredita balance definitivo V1.
+incorporaciones efectivas del bloque, incluidas las históricas de su primer
+día. Estado físico inicial 100 y prioridad normal. Los
+dilemas no tienen fecha propia: su fecha efectiva es el inicio de su bloque,
+sin adelantar `state_as_of`; las lesiones futuras se agendan. Este perfil sirve
+para A y no acredita balance definitivo V1. Los parámetros especiales de tests
+(por ejemplo umbral 0 para garantizar un final generado) son sintéticos y se
+conservan en sus propias entradas de replay.
 
-**T3.5a integrada:** [PR #67](https://github.com/migue99angel/mister-historico/pull/67),
-rebase-merge con CI verde y revisión Sol sobre el código `181e282` y las pruebas
-adicionales `502c565`. Captura de una sola lectura, restauración a tipos privados,
-metadatos de rivales, diez efectos traducidos y codecs completos versionados.
-El codec de bloque conserva prórroga, penaltis, empates pendientes y la diferencia
-entre ausencia de información y colección vacía. El agregado conserva todos sus
-campos y los bytes exactos de cada cierre. La primera CI detectó cobertura
-insuficiente; se añadieron pruebas de rechazo reales sin tocar umbrales.
+**Verificación conjunta final:** `make test` completo tras la corrección final:
+**2572 backend y 506 frontend**, incluidos PostgreSQL y migraciones. `make lint`
+completo verde: Ruff, formato, mypy estricto, ocho contratos backend y reglas
+frontend. Dominio/aplicación: **98,36% líneas y 95,27% ramas**. La combinación
+con el trabajo frontend de `main` también se comprobó; el árbol backend integrado
+coincide con el probado en `56d534d`. CI final #94 verde antes de integrar:
+[backend y cobertura](https://github.com/migue99angel/mister-historico/actions/runs/40695374568),
+[Docker](https://github.com/migue99angel/mister-historico/actions/runs/40695374527) y
+[OpenAPI/cliente](https://github.com/migue99angel/mister-historico/actions/runs/40695374373).
+La primera CI de captura
+(94,07% ramas) y la de comandos (94,78%) exigieron tests de rechazos, pertenencias
+y errores de simulación; no se redujeron umbrales ni se excluyó código.
 
-**Pendiente de cierre de esta tanda:** CR fechada y T3.5b en curso; esta sección
-no acredita todavía casos de uso completos ni replay por caso de uso.
+**Límites y siguiente trabajo:** no se modificaron `Run`, `RunState`,
+`SquadRegistry`, `effects.py`, `board.py` ni `morale.py`. No se implementaron
+endpoints, pantallas ni una fachada pública nueva desde esta tanda. La entrada
+CLI es una fábrica inyectable con salida en español; no registra `mister replay`
+ni toca el composition root. Siguen T3.6 (API y cableado), T3.7a y T4.7a (aceptación
+con backend real). `RunView` sigue siendo un resultado privado con dominio,
+no el DTO HTTP: T3.6 deberá presentar nombres, textos y opciones desde la captura
+conservada. El modelo privado de orquestación no expone todavía todos esos campos
+de presentación; cualquier nueva API publicada o extensión de propiedad se
+fijará en una CR acotada, sin volver al catálogo vivo. La tanda frontend independiente ya integró F4-A/F4-B con MSW;
+no basta para declarar A. A, F2 y F3 siguen abiertos; temporada actual, mercado
+económico, RAG y modos genéricos quedan fuera.
+
+**Auditoría y entorno:** se verificaron GitHub, ramas y worktrees al empezar y
+tras reanudar. #45/#46/#49 siguen en borrador y conservan ramas y worktrees de
+revisión; al reanudar ya no figuraban los tres registros originales `prunable`
+de `/tmp`. Esta tanda no ejecutó ninguna poda global ni los eliminó o recreó.
+El trabajo frontend concurrente se conservó y se volvió a comprobar `main` antes
+de integrar. No hubo force-push ni dependencias o lockfiles nuevos. Una llamada
+accidental a `uv` sin `UV_NO_SYNC=1` reinstaló el paquete editable: se restauraron
+el hook, URL y shebang al entorno de `main`, con hashes RECORD actualizados y
+sin otra instalación. Las ejecuciones restantes usaron el entorno compartido
+con `PYTHONPATH` explícito y sin sincronización.

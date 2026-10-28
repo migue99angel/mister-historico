@@ -14,16 +14,18 @@
 Los hitos A/B/C/D y sus decisiones de producto están en [PLAN §5](PLAN.md#5-entregas-verticales-y-fases).
 Los IDs F0-F7 se conservan; las subtareas siguientes dividen aceptación y orden,
 sin eliminar funcionalidades. La planificación no equivale a implementación:
-HANDOFF §12–14 registra las tandas hacia A; siguen pendientes los casos
-de uso/API y el bucle F4. Las PR #45/#46/#49 conservan contenido parcial en borrador.
-GitHub no tiene issues abiertas; esta lista de tareas y las PR son el registro
-comprobado, no se presume que exista un backlog adicional en Projects.
+HANDOFF §12–15 registra las tandas hacia A. T3.5 implementa los casos de
+uso y replay; la API y su aceptación conectada siguen pendientes. Las PR #45/#46/#49 conservan contenido parcial en borrador.
+GitHub dispone de issues de seguimiento: #78/#79 corresponden a T3.5b/T3.5c
+y #81 a la siguiente API. Las issues no sustituyen la comprobación de código,
+PR y CI; esta lista conserva el alcance y la propiedad de cada tarea.
 
 - **Ahora, A:** CR-T3.0, T3.1a/T3.1b, T3.4 y T4.2 están integradas.
   T3.2/T3.3 están integradas con revisión Sol y CI verde.
   F4-A cerrada: T4.1, T4.2 y T4.3 integradas, con CR-T4.1a y CR-T4.1b.
   F4-B cerrada con MSW: CR-T4.B, T4.4, T4.5 y T4.6a integradas (PR #70-#73 y #75).
-  Sigue T4.7a (E2E real), que espera a T3.5/T3.6/T3.7a del backend.
+  T3.5 está implementada con captura, cierre y replay (HANDOFF §15).
+  Sigue T3.6, después T3.7a y T4.7a (E2E con backend real).
   F4-B no requirió contenido real firmado.
 - **En paralelo, para B:** contenido F2, verificación y firma, después
   calibración/rendimiento del piloto; evaluación/compartir y UX móvil. La beta
@@ -630,9 +632,23 @@ existen; los casos de uso de partida siguen pendientes.
 - **Aceptación:** pasa la misma suite que el fake.
 
 ### T3.5 · Casos de uso y replay
+- **Estado:** implementación integrada por rebase-merge en las PR
+  [#67](https://github.com/migue99angel/mister-historico/pull/67) (captura/codecs),
+  [#68](https://github.com/migue99angel/mister-historico/pull/68) (CR fechada previa),
+  [#74](https://github.com/migue99angel/mister-historico/pull/74) (comandos/cierre) y
+  [#76](https://github.com/migue99angel/mister-historico/pull/76) (replay), con
+  la corrección de elegibilidad de [#94](https://github.com/migue99angel/mister-historico/pull/94).
+  Implementación Luna, revisión independiente Sol y CI verde; evidencia en
+  HANDOFF §15. El perfil provisional A fue aprobado por el autor y se conserva
+  completo en `ReplayInputs`; los valores especiales de tests siguen siendo sintéticos.
+  `StartRun`, `GetRun`, `TakeDecision`, `AdvanceBlock` y `ReplayRun` privados están
+  conectados al agregado y al motor real. La entrada CLI es inyectable; no registra
+  un comando global ni modifica `bootstrap.py`. API y cableado productivo siguen
+  en T3.6; no se cierra A, F2 ni F3.
 - **Planificación de esta tanda (2026-10-28):** Sol contrastó código y contratos
   sobre `2bf56b2`. División con propiedad exclusiva, PR por subtarea y revisión
-  independiente Sol de cada entrega. Este reparto no acredita implementación.
+  independiente Sol de cada entrega. El reparto describe la planificación;
+  las PR y verificaciones anteriores acreditan la implementación.
   - **T3.5a (Luna):** nuevos `game/application/{content_model,run_codec,block_codec,rules}.py`,
     `game/infrastructure/simulation_adapter.py` y ampliación compatible de
     `game/infrastructure/catalog_adapter.py`; nuevos tests
@@ -650,17 +666,20 @@ existen; los casos de uso de partida siguen pendientes.
     sin duplicar efectos ni cierre. Puede prepararse en rama apilada tras fijar
     firmas, pero su PR requiere b integrada. Revisión Sol separada de implementación.
   - **CR-T3.5-dated-squads (Luna, revisión Sol, previa a b):** los puertos
-    actuales pierden altas/bajas intra bloque. Propiedad exclusiva de
+    anteriores perdían altas/bajas intra bloque. Propiedad exclusiva de
     `game/application/ports.py`, `game/infrastructure/simulation_mapping.py`,
     `simulation/application/{api,simulate_block}.py`, `simulation/domain/season.py`,
     nuevo `simulation/domain/dated_squads.py`, tests dedicados de mapeo/motor
-    y `docs/changes/CR-T3.5-dated-squads.md`. Añade intervalos inclusivos y pool
+    y `docs/changes/CR-T3.5-dated-squads.md`; actualiza también los tests de
+    contrato existentes `backend/tests/game/test_simulator_dtos_mapping.py` y
+    `backend/tests/simulation/unit/test_competition_completion_api.py`. Añade intervalos inclusivos y pool
     de estados mediante campos opcionales compatibles. No toca dominio Game.
   - La documentación de planificación/cierre pertenece al orquestador en
     `task/A4-handoff`. No modificar dominio, contratos existentes, codecs de contenido
-    ni `simulation_mapping.py`. Una fachada pública o cableado en `bootstrap.py`
-    requiere CR previa; endpoints y pantallas siguen fuera de T3.5.
-- **Oleada:** F3-B · **Tamaño:** L · **Depende de:** T3.1-T3.4, T2.6 y CR-T3.0; no T2.15
+    ni `simulation_mapping.py`. Desde T3.5, una fachada pública o cambios del
+    composition root requieren CR; T3.6 conserva su propiedad prevista del
+    cableado Game. Endpoints y pantallas siguen fuera de T3.5.
+- **Oleada:** F3-B · **Tamaño:** L · **Depende de:** T3.1-T3.4, T2.6, CR-T3.0 y CR-T3.5-dated-squads; no T2.15
 - **Propiedad:** `game/application/**` (salvo contratos `ports.py` y `api.py`),
   `game/infrastructure/catalog_adapter.py` (ACL, solo API publicada de Catalog),
   `game/infrastructure/simulation_adapter.py` (solo API publicada de Simulation)
