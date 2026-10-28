@@ -1,16 +1,35 @@
-import type { ComponentType } from 'react';
+import { lazy, type ComponentType } from 'react';
 
-import { MinimalRoute } from './MinimalRoute';
+import { useNavigate } from '../routerHooks';
 
 export interface SeasonRouteProps {
   seasonId: string;
   onRunStarted: (runId: string) => void;
 }
 
-/**
- * Mount point of `/equipo/:id`, owned by T4.4 (season intro). Replace the component below
- * with the screen, optionally `lazy()`; Routes.tsx already passes these props inside a Suspense.
- */
-export const SeasonRoute: ComponentType<SeasonRouteProps> = ({ seasonId }) => (
-  <MinimalRoute title="Contexto del equipo" identifier={seasonId} />
+const SeasonIntro = lazy(() =>
+  import('../../ui/screens/SeasonIntro/SeasonIntro').then((module) => ({
+    default: module.SeasonIntro,
+  })),
 );
+
+/**
+ * Mount point of `/equipo/:id`, owned by T4.4. The season intro loads as its own chunk inside
+ * the Suspense of Routes.tsx; its way back home is wired here, since screens never import
+ * the router.
+ */
+export const SeasonRoute: ComponentType<SeasonRouteProps> = function SeasonRoute({
+  seasonId,
+  onRunStarted,
+}) {
+  const navigate = useNavigate();
+  return (
+    <SeasonIntro
+      seasonId={seasonId}
+      onRunStarted={onRunStarted}
+      onBackHome={() => {
+        navigate('/');
+      }}
+    />
+  );
+};
