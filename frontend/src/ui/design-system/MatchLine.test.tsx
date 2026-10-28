@@ -48,6 +48,24 @@ describe('MatchLine', () => {
     expect(screen.getByText('Final')).toBeInTheDocument();
   });
 
+  it.each(['home', 'away'] as const)(
+    "tells screen readers which team is the player's when playing %s",
+    (userSide) => {
+      render(<MatchLine match={win} userSide={userSide} />);
+
+      const userTeam = userSide === 'home' ? win.homeName : win.awayName;
+      const marker = screen.getByText('(tu equipo)');
+      expect(marker).toHaveClass('sr-only');
+      expect(marker.parentElement).toHaveTextContent(`${userTeam} (tu equipo)`);
+    },
+  );
+
+  it('marks no team when the side is unknown', () => {
+    render(<MatchLine match={win} />);
+
+    expect(screen.queryByText('(tu equipo)')).not.toBeInTheDocument();
+  });
+
   it('wraps long team names instead of cutting them on a narrow screen', () => {
     render(<MatchLine match={{ ...win, homeName: 'Deportivo Muestra', awayName: 'Test FC' }} />);
 
