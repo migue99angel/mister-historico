@@ -16,13 +16,16 @@ from mister.catalog.application.api import (
 )
 from mister.game.application.content_model import CapturedSeason
 from mister.game.application.ports import (
+    BlockSimulationResult,
     ConcurrencyError,
+    PlayerOutcome,
     RunNotFoundError,
     RunStatus,
 )
 from mister.game.application.rules import RulesConfiguration
 from mister.game.application.run_content import RunContentSnapshot
 from mister.game.application.use_cases import (
+    AdvanceBlock,
     GetRun,
     IdempotencyConflictError,
     RunAccessDeniedError,
@@ -38,6 +41,7 @@ from mister.game.domain.events import DecisionTaken, RunStarted
 from mister.game.infrastructure.catalog_adapter import CatalogRunContentAdapter
 from mister.game.infrastructure.in_memory.run_repository import InMemoryRunStore, InMemoryUnitOfWork
 from mister.game.infrastructure.in_memory.run_tokens import FakeRunTokenGenerator
+from mister.game.infrastructure.in_memory.season_simulator import ScriptedSeasonSimulator
 from mister.game.infrastructure.security.run_tokens import Sha256RunTokenHasher
 from mister.shared_kernel.clock import FixedClock
 from mister.shared_kernel.errors import InvalidValueError
@@ -787,6 +791,66 @@ def test_take_decision_rejects_a_stale_expected_version() -> None:
             second_dilemma.id,
             second_dilemma.options[0].id,
         )
+
+
+def test_advance_block_persists_next_closure_and_is_idempotent() -> None:
+    season, _, store, events, start, _, take = _setup()
+    created = start.execute(season.id)
+    rules = RulesConfiguration.a_profile()
+    captured = CatalogRunContentAdapter.restore_game(
+        store.runs[created.run_id].replay_inputs.content, rules
+    )
+    for dilemma in captured.blocks[0].dilemmas:
+        take.execute(
+            created.run_id,
+            created.token,
+            f"advance-choice-{dilemma.id.value}",
+            store.runs[created.run_id].version,
+            dilemma.id,
+            dilemma.historical_option,
+        )
+    run_record = store.runs[created.run_id]
+    simulator = ScriptedSeasonSimulator()
+    simulator.script(
+        BlockSimulationResult(
+            captured.blocks[0].id,
+            (),
+            (),
+            (),
+            (),
+            (),
+            tuple(
+                PlayerOutcome(player.player_id, player.fitness, player.injured_until, 0)
+                for player in captured.players
+            ),
+        )
+    )
+    advance_events: list[DomainEvent] = []
+    advance_bus = InMemoryEventBus()
+    advance_bus.subscribe(DomainEvent, advance_events.append)
+    advance = AdvanceBlock(
+        uow=InMemoryUnitOfWork(store),
+        clock=FixedClock(datetime(2026, 10, 28, tzinfo=UTC)),
+        event_bus=advance_bus,
+        token_hasher=Sha256RunTokenHasher(),
+        restore_game=CatalogRunContentAdapter.restore_game,
+        simulator=simulator,
+    )
+
+    first = advance.execute(
+        created.run_id, created.token, "advance-key-0001", run_record.version
+    )
+    replay = advance.execute(
+        created.run_id, created.token, "advance-key-0001", run_record.version
+    )
+
+    assert replay == first
+    assert first.run.block_index == 1
+    assert len(first.run.block_records) == 1
+    assert len(store.replies) == len(captured.blocks[0].dilemmas) + 1
+    assert len(simulator.requests) == 1
+    assert len(events) == 1 + len(captured.blocks[0].dilemmas)
+    assert len(advance_events) == 1
 
 
 def test_invalid_idempotency_key_is_rejected_before_version_check() -> None:
