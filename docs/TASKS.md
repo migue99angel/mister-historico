@@ -774,9 +774,18 @@ existen; los casos de uso de partida siguen pendientes.
 - **Qué hacer:** funciones puras que pasan de `RunView` a un view model: narrativa del bloque, cambios de posición en la clasificación, formato de los resultados (con prórroga y penaltis) y progreso de la temporada.
 - **Tests primero:** tablas de casos para cada función. La cobertura tiene que llegar al 100 %.
 
+### CR-T4.B · Cableado de pantallas
+- **Estado:** en revisión en [PR #70](https://github.com/migue99angel/mister-historico/pull/70).
+  [Propiedad y decisiones](changes/CR-T4.B-screen-wiring.md).
+- Se integra antes que T4.4, T4.5 y T4.6a. Mueve el contexto de `GameApi` y `ApiError` a
+  `application/`, añade el puerto `RunTokenStore` (adaptador `localStorage` y fake), el
+  arnés `frontend/test/renderWithRuntime.tsx` para probar pantallas y hooks con MSW, y un
+  punto de montaje por ruta en `frontend/src/app/routes/`, que recibe parámetros y
+  callbacks de navegación por props. Fija el contrato de `useRun` cuando no hay token.
+
 ### T4.4 · Pantalla de selección de equipo y contexto
 - **Oleada:** F4-B · **Tamaño:** M · **Depende de:** T4.1-T4.3
-- **Propiedad:** `frontend/src/ui/screens/{SeasonPicker,SeasonIntro}/**` y `frontend/src/application/useSeasons.ts`, `useStartRun.ts`
+- **Propiedad:** `frontend/src/ui/screens/{SeasonPicker,SeasonIntro}/**`, `frontend/src/application/useSeasons.ts`, `useStartRun.ts` y `frontend/src/app/routes/{HomeRoute,SeasonRoute}.tsx` con sus tests
 - **Tests primero:** con MSW, se listan las temporadas, se elige una, se ve el contexto con los objetivos de la directiva y se pulsa "Empezar", que navega a `/partida/:id`.
 - **Notas de T4.1:** usar `ui/design-system` (`Card`, `Button`, `GenericCrest` con
   `TeamColors` del contrato) y sus tokens; no crear estilos ni componentes base paralelos.
@@ -785,7 +794,7 @@ existen; los casos de uso de partida siguen pendientes.
 
 ### T4.5 · Pantalla del bucle de bloques
 - **Oleada:** F4-B · **Tamaño:** L · **Depende de:** T4.1-T4.3
-- **Propiedad:** `frontend/src/ui/screens/RunLoop/**` y `frontend/src/application/{useRun,useTakeDecision,useAdvanceBlock}.ts`
+- **Propiedad:** `frontend/src/ui/screens/RunLoop/**`, `frontend/src/application/{useRun,useTakeDecision,useAdvanceBlock}.ts` y `frontend/src/app/routes/RunRoute.tsx` con su test
 - **Qué hacer:** dilemas del bloque, selección de opción, botón "Simular bloque" y resumen con los resultados clave y la clasificación. Si el míster queda destituido, se va directo al final.
 - **Tests primero:**
   - "Avanzar" está deshabilitado mientras haya dilemas pendientes.
@@ -804,7 +813,7 @@ existen; los casos de uso de partida siguen pendientes.
     diseño, con su ciclo TDD.
 
 ### T4.6 · Pantalla final (dos entregas en el mismo directorio)
-- **Propiedad:** `frontend/src/ui/screens/RunResult/**`.
+- **Propiedad:** `frontend/src/ui/screens/RunResult/**` y `frontend/src/app/routes/RunFinalRoute.tsx` con su test.
 - **T4.6a (A):** depende de T4.1-T4.3 y del hook `useRun` integrado de T4.5
   para conexión/aceptación; la preparación visual con props puede avanzar antes.
   Pantalla terminal con `GetRun`/`RunView`,
