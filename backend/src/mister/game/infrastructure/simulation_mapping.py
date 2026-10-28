@@ -289,6 +289,29 @@ def to_simulation_request(request: g.BlockSimulationRequest) -> s.BlockSimReques
         ),
         tuple(_to_sim_result(match) for match in request.prior_results),
         request.state_as_of,
+        None
+        if request.squad_memberships is None
+        else tuple(
+            s.SquadMembershipInput(
+                item.player_id, item.club_season_id, item.joined_on, item.left_on
+            )
+            for item in request.squad_memberships
+        ),
+        None
+        if request.player_pool is None
+        else tuple(
+            s.SquadPlayerInput(
+                player.player_id,
+                player.position.value,
+                player.rating,
+                player.age,
+                player.morale,
+                player.fitness,
+                player.injured_until,
+                player.youth_minutes,
+            )
+            for player in request.player_pool
+        ),
     )
 
 
