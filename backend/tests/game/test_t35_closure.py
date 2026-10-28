@@ -631,6 +631,50 @@ def test_player_availability_uses_current_state_and_fixture_date_injury_rules() 
     ).eligible
 
 
+def test_same_day_base_membership_is_exempt_like_same_day_signing() -> None:
+    captured, snapshot = _captured()
+    block = captured.blocks[0]
+    managed = snapshot.run.run_state.managed_club_season_id
+    player = snapshot.run.run_state.players[0]
+    player = replace(player, rating=90)
+    players = tuple(
+        player if item.player_id == player.player_id else item
+        for item in snapshot.run.run_state.players
+    )
+    rules = RulesConfiguration.a_profile()
+    rules = replace(
+        rules,
+        eligibility=replace(rules.eligibility, minimum_team_fixtures=0),
+    )
+    outcomes = tuple(
+        PlayerOutcome(item.player_id, item.fitness, item.injured_until, 0) for item in players
+    )
+    result = BlockSimulationResult(block.id, (), (), (), (), (), outcomes)
+
+    def eligible_for(registry: SquadRegistry) -> bool:
+        state = replace(
+            snapshot.run.run_state,
+            players=players,
+            squad_registry=registry,
+        )
+        changed = replace(snapshot, run=replace(snapshot.run, run_state=state))
+        minutes = _player_minutes(changed, captured, block, result, rules)
+        entry = next(item for item in minutes if item.player_id == player.player_id)
+        assert entry.star
+        assert entry.minutes == 0
+        return entry.eligible
+
+    joined_at_start = SquadRegistry((Membership(player.player_id, managed, block.start, None),))
+    signed_at_start = SquadRegistry().transfer(player.player_id, None, managed, block.start)
+    joined_before_start = SquadRegistry(
+        (Membership(player.player_id, managed, block.start - timedelta(days=1), None),)
+    )
+
+    assert eligible_for(joined_at_start) is False
+    assert eligible_for(signed_at_start) is False
+    assert eligible_for(joined_before_start) is True
+
+
 @pytest.mark.parametrize("result_kind", ["wrong_block", "duplicate_player", "missing_player"])
 def test_closure_rejects_invalid_simulator_result_without_closing(result_kind: str) -> None:
     captured, snapshot = _captured()
