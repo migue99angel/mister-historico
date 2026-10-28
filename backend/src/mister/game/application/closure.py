@@ -370,6 +370,12 @@ def _goal_facts(
     reached_set = {
         item.stage_id for item in events if item.stage_id in stage_order
     } | (stage_matches & set(stage_order))
+    for event in events:
+        if event.kind is not ports.EventKind.ADVANCED or event.stage_id not in stage_order:
+            continue
+        next_stage_index = stage_order.index(event.stage_id) + 1
+        if next_stage_index < len(stage_order):
+            reached_set.add(stage_order[next_stage_index])
     reached = tuple(stage for stage in stage_order if stage in reached_set)
     matching_tables = [
         table

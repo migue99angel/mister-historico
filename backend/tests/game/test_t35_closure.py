@@ -8,16 +8,23 @@ from mister.catalog.application.api import PlayableSeasonDTO, PlayableSeasonSumm
 from mister.game.application.block_codec import decode_block
 from mister.game.application.closure import _resolve_goals, advance_snapshot
 from mister.game.application.content_model import CapturedSeason
-from mister.game.application.ports import BlockEvent, BlockSimulationResult, EventKind, PlayerOutcome
+from mister.game.application.ports import (
+    BlockEvent,
+    BlockSimulationResult,
+    EventKind,
+    PlayerOutcome,
+)
 from mister.game.application.rules import RulesConfiguration
 from mister.game.application.use_cases import RunSnapshot, apply_choice
 from mister.game.domain.board import GoalProgress, GoalStatus
 from mister.game.domain.run import Run
 from mister.game.infrastructure.catalog_adapter import CatalogRunContentAdapter
 from mister.game.infrastructure.in_memory.season_simulator import ScriptedSeasonSimulator
+from mister.game.infrastructure.simulation_adapter import SimulationServiceAdapter
 from mister.shared_kernel.events import DomainEvent
 from mister.shared_kernel.ids import CompetitionId, PlayableSeasonId, RunId
 from mister.shared_kernel.seed import Seed
+from mister.simulation.application.api import SimulationService
 
 
 def _captured() -> tuple[CapturedSeason, RunSnapshot]:
@@ -67,7 +74,7 @@ def test_advance_snapshot_simulates_and_persists_full_block_payload_and_cursor()
         (),
         (),
         tuple(
-            PlayerOutcome(player.player_id, player.fitness, player.injured_until, 0)
+            PlayerOutcome(player.player_id, player.fitness, player.injured_until, 90)
             for player in snapshot.run.run_state.players
         ),
     )
@@ -86,6 +93,7 @@ def test_advance_snapshot_simulates_and_persists_full_block_payload_and_cursor()
     assert decode_block(closed.payload) == expected
     assert result.run.cursor == captured.blocks[0].end
     assert result.run.run_state.state_as_of == captured.blocks[0].end
+    assert all(player.minutes_played == 90 for player in result.run.run_state.players)
     assert result.run.block_index == 1
     assert result.goals == snapshot.goals
     assert all(isinstance(event, DomainEvent) for event in events)
@@ -93,6 +101,21 @@ def test_advance_snapshot_simulates_and_persists_full_block_payload_and_cursor()
     assert request.squad_memberships is not None
     assert request.player_pool is not None
     assert request.state_as_of == snapshot.run.run_state.state_as_of
+
+
+def test_test_fc_closure_runs_through_real_simulation_service() -> None:
+    captured, snapshot = _captured()
+
+    result, _ = advance_snapshot(
+        snapshot,
+        captured,
+        SimulationServiceAdapter(SimulationService()),
+        RulesConfiguration.a_profile(),
+        datetime(2026, 10, 28, tzinfo=UTC),
+    )
+
+    assert len(result.run.block_records) == 1
+    assert decode_block(result.run.block_records[0].payload).block_id == captured.blocks[0].id
 
 
 def test_advancing_from_semifinal_marks_final_stage_reached() -> None:
