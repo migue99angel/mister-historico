@@ -1,5 +1,6 @@
-import { lazy, type ComponentType } from 'react';
+import { lazy, useMemo, type ComponentType } from 'react';
 
+import { createRouteNavigation } from '../routeNavigation';
 import { useNavigate } from '../routerHooks';
 
 export interface SeasonRouteProps {
@@ -23,13 +24,7 @@ export const SeasonRoute: ComponentType<SeasonRouteProps> = function SeasonRoute
   onRunStarted,
 }) {
   const navigate = useNavigate();
-  return (
-    <SeasonIntro
-      seasonId={seasonId}
-      onRunStarted={onRunStarted}
-      onBackHome={() => {
-        navigate('/');
-      }}
-    />
-  );
+  // Home is where «Jugar otra vez» goes too; reuse the route table instead of a literal '/'.
+  const { onPlayAgain } = useMemo(() => createRouteNavigation(navigate), [navigate]);
+  return <SeasonIntro seasonId={seasonId} onRunStarted={onRunStarted} onBackHome={onPlayAgain} />;
 };
