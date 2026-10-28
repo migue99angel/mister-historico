@@ -643,6 +643,13 @@ existen; los casos de uso de partida siguen pendientes.
     `backend/tests/game/test_t35_{use_cases,closure,replay}.py` y
     `backend/tests/entrypoints/cli/test_replay.py`.
     Comandos, progreso de objetivos, transacciones, replay y entrada CLI inyectable.
+  - **CR-T3.5-dated-squads (Luna, revisión Sol, previa a b):** los puertos
+    actuales pierden altas/bajas intra bloque. Propiedad exclusiva de
+    `game/application/ports.py`, `game/infrastructure/simulation_mapping.py`,
+    `simulation/application/{api,simulate_block}.py`, `simulation/domain/season.py`,
+    nuevo `simulation/domain/dated_squads.py`, tests dedicados de mapeo/motor
+    y `docs/changes/CR-T3.5-dated-squads.md`. Añade intervalos inclusivos y pool
+    de estados mediante campos opcionales compatibles. No toca dominio Game.
   - La documentación de planificación/cierre pertenece al orquestador en
     `task/A4-handoff`. No modificar dominio, contratos existentes, codecs de contenido
     ni `simulation_mapping.py`. Una fachada pública o cableado en `bootstrap.py`
