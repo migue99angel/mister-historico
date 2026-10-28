@@ -14,13 +14,14 @@
 Los hitos A/B/C/D y sus decisiones de producto están en [PLAN §5](PLAN.md#5-entregas-verticales-y-fases).
 Los IDs F0-F7 se conservan; las subtareas siguientes dividen aceptación y orden,
 sin eliminar funcionalidades. La planificación no equivale a implementación:
-HANDOFF §12–13 registra las dos tandas integradas; siguen pendientes los casos
+HANDOFF §12–14 registra las tandas hacia A; siguen pendientes los casos
 de uso/API y el bucle F4. Las PR #45/#46/#49 conservan contenido parcial en borrador.
 GitHub no tiene issues abiertas; esta lista de tareas y las PR son el registro
 comprobado, no se presume que exista un backlog adicional en Projects.
 
 - **Ahora, A:** CR-T3.0, T3.1a/T3.1b, T3.4 y T4.2 están integradas.
-  Siguen pendientes T3.2/T3.3 y T4.1/T4.3. Convergen en T3.5/T3.6,
+  T3.2/T3.3 están integradas con revisión Sol y CI verde.
+  T4.1/T4.3 siguen su vía independiente. Convergen en T3.5/T3.6,
   T3.7a y el frontend conectado T4.7a. No requieren contenido real firmado.
 - **En paralelo, para B:** contenido F2, verificación y firma, después
   calibración/rendimiento del piloto; evaluación/compartir y UX móvil. La beta
@@ -507,7 +508,7 @@ consulta de contenido y su captura/restauración mediante el ACL de Game ya
 existen; los casos de uso de partida siguen pendientes.
 
 ### CR-T3.0 · Entradas fijadas de partida y contrato de replay (antes de A)
-- **Estado:** integrada por rebase-merge en [PR #54](https://github.com/migue99angel/mister-historico/pull/54), implementada por Luna y revisada por Sol sobre `d8170ac`, con CI y comprobación conjunta en verde. Los casos de uso y SQL siguen pendientes.
+- **Estado:** integrada por rebase-merge en [PR #54](https://github.com/migue99angel/mister-historico/pull/54), implementada por Luna y revisada por Sol sobre `d8170ac`, con CI y comprobación conjunta en verde. SQL está integrado en T3.4; los casos de uso siguen pendientes.
 - **Tamaño:** M · **Depende de:** T1.5/T1.6, T2.6 y T2.21, ya integradas.
 - **Propiedad:** `game/application/ports.py`, sus DTOs de entrada/persistencia,
   fakes de `game/infrastructure/in_memory/`, suites de contrato y mapeo de Game,
@@ -571,6 +572,11 @@ existen; los casos de uso de partida siguen pendientes.
 - **Aceptación:** ninguna dependencia de infraestructura.
 
 ### T3.2 · Intérprete de efectos
+- **Estado:** integrada por rebase-merge en [PR #61](https://github.com/migue99angel/mister-historico/pull/61),
+  implementación Luna y aprobación independiente Sol sobre `6859414`.
+  Diez efectos privados, pertenencias por fecha explícita y lesiones agendadas;
+  20 pruebas dirigidas, CI y comprobación conjunta verdes (HANDOFF §14).
+  La traducción desde Catalog corresponde a T3.5.
 - **Oleada:** F3-A · **Tamaño:** M · **Depende de:** T1.2 (DSL), T1.6 y T3.1a (estado privado integrado)
 - **Propiedad:** `game/domain/effects.py` y sus tests
 - **Qué hacer:** aplica cada tipo de efecto del DSL a `RunState`. Es una función pura `apply(effect, state) -> state`.
@@ -584,6 +590,12 @@ existen; los casos de uso de partida siguen pendientes.
 - **Aceptación:** el pattern matching sobre la unión de efectos es exhaustivo (lo comprueba mypy con `assert_never`).
 
 ### T3.3 · Directiva, moral y destitución
+- **Estado:** integrada por rebase-merge en [PR #62](https://github.com/migue99angel/mister-historico/pull/62),
+  implementación Luna y aprobación independiente Sol sobre `396aac7`.
+  Objetivos por competición, confianza y moral parametrizadas, resolución de
+  cierre sin mutar el agregado; 53 pruebas dirigidas. El balance numérico no
+  está aprobado por estos tests. Hallazgos de objetivos finales corregidos;
+  CI y comprobación conjunta verdes (HANDOFF §14).
 - **Oleada:** F3-A · **Tamaño:** M · **Depende de:** T1.6 y T3.1a
 - **Propiedad:** `game/domain/board.py`, `game/domain/morale.py` y sus tests
 - **Qué hacer:**
@@ -621,6 +633,15 @@ existen; los casos de uso de partida siguen pendientes.
   `game/infrastructure/catalog_adapter.py` (ACL, solo API publicada de Catalog),
   `game/infrastructure/simulation_adapter.py` (solo API publicada de Simulation)
   y `entrypoints/cli/replay.py`. Nuevos contratos públicos requieren CR explícita.
+- **Entradas privadas ya disponibles:** T3.2/T3.3 no importan DTOs de Catalog.
+  Traducir desde la captura fijada a sus tipos de efectos, objetivos, resultados
+  y minutos del bloque; precargar jugadores de rivales/mercado y normalizar
+  mercado/exterior a propietario `None`. Pasar la fecha de decisión con `on` y
+  `effective_on` sin mover el cursor físico. Conservar progreso de objetivos
+  finales y aportar elegibilidad para la penalización por pocos minutos.
+  Fijar explícitamente las reglas de balance en la configuración recuperable
+  de la partida (`ReplayInputs`); los valores de tests no son política aprobada.
+  Combinar estado y `ClosureOutcome` en `BlockResolution` con cursor del bloque.
 - **Qué hacer:**
   - Casos de uso `StartRun` (genera la semilla en el servidor), `GetRun`, `TakeDecision` (idempotente) y `AdvanceBlock`, este último a través del puerto `SeasonSimulator` y su adaptador (ACL hacia simulation).
   - `StartRun` captura el contenido inicial completo una vez y lo guarda con el
