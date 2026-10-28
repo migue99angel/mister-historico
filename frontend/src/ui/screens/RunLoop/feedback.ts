@@ -3,14 +3,19 @@ import type { RunCommandFailure } from '../../../application/useRun';
 export type RunLoopCommand = 'decision' | 'advance';
 
 const CONFLICT_MESSAGES: Partial<Record<string, string>> = {
-  version_conflict:
-    'La partida ha cambiado en otra pestaña o dispositivo. Hemos recargado su estado.',
+  version_conflict: 'La partida ya había cambiado. Hemos recargado su estado.',
   dilemma_already_decided: 'Ese dilema ya estaba decidido. Hemos recargado la partida.',
   run_already_finished: 'La partida ya había terminado. Hemos recargado su estado.',
   pending_dilemmas: 'Aún quedan dilemas por decidir. Hemos recargado la partida.',
 };
 
-const DEFAULT_CONFLICT_MESSAGE = 'La partida ha cambiado. Hemos recargado su estado.';
+const DEFAULT_CONFLICT_MESSAGE = 'La partida ya había cambiado. Hemos recargado su estado.';
+
+const REJECTED_MESSAGES: Partial<Record<string, string>> = {
+  invalid_option: 'Esa opción ya no es válida. Hemos recargado la partida.',
+};
+
+const DEFAULT_REJECTED_MESSAGE = 'La partida no ha aceptado la acción. Hemos recargado su estado.';
 
 const FAILED_MESSAGES: Record<RunLoopCommand, string> = {
   decision: 'No se pudo enviar la decisión. Comprueba la conexión y vuelve a intentarlo.',
@@ -24,6 +29,9 @@ export function commandFailureMessage(
 ): string | null {
   if (failure === null || failure.kind === 'unavailable') return null;
   if (failure.kind === 'failed') return FAILED_MESSAGES[command];
+  if (failure.kind === 'rejected') {
+    return (failure.code && REJECTED_MESSAGES[failure.code]) ?? DEFAULT_REJECTED_MESSAGE;
+  }
   return (failure.code && CONFLICT_MESSAGES[failure.code]) ?? DEFAULT_CONFLICT_MESSAGE;
 }
 

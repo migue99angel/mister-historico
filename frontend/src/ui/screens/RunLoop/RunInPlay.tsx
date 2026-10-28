@@ -1,15 +1,17 @@
 import { useEffect, useId, useRef, useState } from 'react';
 
-import type { DilemmaDto, RunViewDto } from '../../../application/ports';
+import type { DilemmaDto, RunViewDto, TeamRefDto } from '../../../application/ports';
 import { useAdvanceBlock } from '../../../application/useAdvanceBlock';
 import { useTakeDecision } from '../../../application/useTakeDecision';
 import { toRunViewModel } from '../../../domain/runViewModel';
-import { BlockProgress, Button, DilemmaCard } from '../../design-system';
+import { BlockProgress, Button, DilemmaCard, GenericCrest } from '../../design-system';
 import { BlockSummary } from './BlockSummary';
 import { commandFailureMessage, pendingDilemmasHint, type RunLoopCommand } from './feedback';
 
 export interface RunInPlayProps {
   run: RunViewDto;
+  /** True while a newer view is loading (e.g. after a 409): commands wait for it. */
+  isRefreshing: boolean;
 }
 
 interface DecidedDilemma {
@@ -24,7 +26,7 @@ type Sending = { command: 'decision'; dilemmaId: string } | { command: 'advance'
 type FocusTarget = 'after-decision' | 'after-simulation';
 
 /** The run view while it can be played: block progress, last block and pending dilemmas. */
-export function RunInPlay({ run }: RunInPlayProps) {
+export function RunInPlay({ run, isRefreshing }: RunInPlayProps) {
   const decision = useTakeDecision(run.runId);
   const advance = useAdvanceBlock(run.runId);
   const [choices, setChoices] = useState<Partial<Record<string, string>>>({});
@@ -41,6 +43,7 @@ export function RunInPlay({ run }: RunInPlayProps) {
   const dilemmasHeadingId = useId();
 
   const viewModel = toRunViewModel(run);
+  const userTeam = findUserTeam(run);
   const inProgress = run.status === 'in_progress';
   const pending = run.pendingDilemmas;
   const decidedInBlock = decided.filter(
@@ -76,9 +79,9 @@ export function RunInPlay({ run }: RunInPlayProps) {
     setLastCommand(nextSending.command);
     pendingFocus.current = focusTarget;
     try {
-      const updated = await send();
-      if (!updated) pendingFocus.current = null;
-      return updated;
+      // On failure the target stays: a 409 or rejection reloads the run, and the new version
+      // may remove the element that had the focus.
+      return await send();
     } finally {
       busy.current = false;
       setSending(null);
@@ -107,91 +110,117 @@ export function RunInPlay({ run }: RunInPlayProps) {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-col gap-4 px-gutter pt-4">
-      <h1 className="sr-only">Partida</h1>
-      <BlockProgress progress={viewModel.progress} status={run.status} />
-
-      {run.lastBlockSummary && viewModel.lastBlock && (
-        <BlockSummary
-          summary={run.lastBlockSummary}
-          narrative={viewModel.lastBlock}
-          headingRef={summaryHeading}
-        />
+    <>
+      {userTeam && (
+        <header
+          aria-label="Tu equipo"
+          className="mx-auto flex w-full max-w-md items-center gap-3 border-b border-line px-gutter py-3"
+        >
+          <GenericCrest colors={userTeam.colors} size={36} />
+          <p className="min-w-0 font-display text-title leading-tight font-bold">{userTeam.name}</p>
+        </header>
       )}
+      <main className="mx-auto flex w-full max-w-md flex-col gap-4 px-gutter pt-4">
+        <h1 className="sr-only">Partida</h1>
+        <BlockProgress progress={viewModel.progress} status={run.status} />
 
-      {inProgress && (
-        <section aria-labelledby={dilemmasHeadingId} className="flex flex-col gap-4">
-          <h2
-            id={dilemmasHeadingId}
-            ref={dilemmasHeading}
-            tabIndex={-1}
-            className="mt-2 font-display text-headline font-extrabold"
-          >
-            Decisiones del bloque
-          </h2>
-          {decidedInBlock.length > 0 && (
-            <ul aria-label="Ya decidido en este bloque" className="flex flex-col gap-1">
-              {decidedInBlock.map((item) => (
-                <li key={item.dilemmaId} className="text-caption text-ink-muted">
-                  {`✓ ${item.text}`}
-                </li>
-              ))}
-            </ul>
-          )}
-          {pending.map((dilemma, index) => {
-            const isSending = sending?.command === 'decision' && sending.dilemmaId === dilemma.id;
-            return (
-              <div key={dilemma.id} className="flex flex-col gap-2">
-                <DilemmaCard
-                  dilemma={dilemma}
-                  eyebrow={`Dilema ${String(index + 1)} de ${String(pending.length)}`}
-                  headingLevel={3}
-                  selectedOptionId={choices[dilemma.id] ?? null}
-                  disabled={isSending}
-                  onSelect={(optionId) => {
-                    setChoices((current) => ({ ...current, [dilemma.id]: optionId }));
-                  }}
-                />
-                <Button
-                  variant="secondary"
-                  disabled={choices[dilemma.id] === undefined || (sending !== null && !isSending)}
-                  loading={isSending}
-                  onClick={() => {
-                    void confirm(dilemma);
-                  }}
-                >
-                  Confirmar decisión<span className="sr-only">{`: ${dilemma.title}`}</span>
-                </Button>
-              </div>
-            );
-          })}
-        </section>
-      )}
+        {run.lastBlockSummary && viewModel.lastBlock && (
+          <BlockSummary
+            summary={run.lastBlockSummary}
+            narrative={viewModel.lastBlock}
+            headingRef={summaryHeading}
+          />
+        )}
 
-      {inProgress && (
-        <div className="sticky bottom-0 -mx-gutter border-t border-line bg-canvas/95 px-gutter py-3 backdrop-blur">
-          {failureMessage && (
-            <p role="alert" className="mb-2 text-center text-body text-loss">
-              {failureMessage}
+        {inProgress && (
+          <section aria-labelledby={dilemmasHeadingId} className="flex flex-col gap-4">
+            <h2
+              id={dilemmasHeadingId}
+              ref={dilemmasHeading}
+              tabIndex={-1}
+              className="mt-2 font-display text-headline font-extrabold"
+            >
+              Decisiones del bloque
+            </h2>
+            {decidedInBlock.length > 0 && (
+              <ul aria-label="Ya decidido en este bloque" className="flex flex-col gap-1">
+                {decidedInBlock.map((item) => (
+                  <li key={item.dilemmaId} className="text-caption text-ink-muted">
+                    {`✓ ${item.text}`}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {pending.map((dilemma, index) => {
+              const isSending = sending?.command === 'decision' && sending.dilemmaId === dilemma.id;
+              return (
+                <div key={dilemma.id} className="flex flex-col gap-2">
+                  <DilemmaCard
+                    dilemma={dilemma}
+                    eyebrow={`Dilema ${String(index + 1)} de ${String(pending.length)}`}
+                    headingLevel={3}
+                    selectedOptionId={choices[dilemma.id] ?? null}
+                    disabled={isSending}
+                    onSelect={(optionId) => {
+                      setChoices((current) => ({ ...current, [dilemma.id]: optionId }));
+                    }}
+                  />
+                  <Button
+                    variant="secondary"
+                    disabled={
+                      choices[dilemma.id] === undefined ||
+                      isRefreshing ||
+                      (sending !== null && !isSending)
+                    }
+                    loading={isSending}
+                    onClick={() => {
+                      void confirm(dilemma);
+                    }}
+                  >
+                    Confirmar decisión<span className="sr-only">{`: ${dilemma.title}`}</span>
+                  </Button>
+                </div>
+              );
+            })}
+          </section>
+        )}
+
+        {inProgress && (
+          <div className="sticky bottom-0 -mx-gutter border-t border-line bg-canvas/95 px-gutter py-3 backdrop-blur">
+            {failureMessage && (
+              <p role="alert" className="mb-2 text-center text-body text-loss">
+                {failureMessage}
+              </p>
+            )}
+            <Button
+              id={simulateId}
+              fullWidth
+              disabled={pending.length > 0 || isRefreshing}
+              loading={sending?.command === 'advance'}
+              aria-describedby={hintId}
+              onClick={() => {
+                void sendCommand({ command: 'advance' }, 'after-simulation', () => advance.send());
+              }}
+            >
+              {sending?.command === 'advance' ? 'Simulando…' : 'Simular bloque'}
+            </Button>
+            <p id={hintId} className="mt-1.5 text-center text-caption text-ink-muted">
+              {pendingDilemmasHint(pending.length)}
             </p>
-          )}
-          <Button
-            id={simulateId}
-            fullWidth
-            disabled={pending.length > 0}
-            loading={sending?.command === 'advance'}
-            aria-describedby={hintId}
-            onClick={() => {
-              void sendCommand({ command: 'advance' }, 'after-simulation', () => advance.send());
-            }}
-          >
-            {sending?.command === 'advance' ? 'Simulando…' : 'Simular bloque'}
-          </Button>
-          <p id={hintId} className="mt-1.5 text-center text-caption text-ink-muted">
-            {pendingDilemmasHint(pending.length)}
-          </p>
-        </div>
-      )}
-    </main>
+          </div>
+        )}
+      </main>
+    </>
   );
+}
+
+/** The player's club as the last block summary names it; none before the first block. */
+function findUserTeam(run: RunViewDto): TeamRefDto | null {
+  const summary = run.lastBlockSummary;
+  if (!summary) return null;
+  const teams = [
+    ...summary.results.flatMap((match) => [match.home, match.away]),
+    ...summary.standings.flatMap((table) => table.rows.map((row) => row.team)),
+  ];
+  return teams.find((team) => team.isUser) ?? null;
 }
