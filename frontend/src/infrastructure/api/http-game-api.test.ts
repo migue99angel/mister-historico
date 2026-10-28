@@ -75,6 +75,25 @@ describe('createHttpGameApi', () => {
     expect(advanced.lastBlockSummary?.blockNumber).toBe(1);
   });
 
+  it('rejects a command with a stale expected version as a 409 ApiError', async () => {
+    const api = createHttpGameApi({ baseUrl: 'http://localhost/api' });
+    const { run, runToken } = await api.startRun({ seasonId: TEST_SEASON_ID });
+
+    const staleAdvance = api.advanceBlock({
+      runId: run.runId,
+      runToken,
+      idempotencyKey: 'stale-advance-1',
+      expectedVersion: run.version + 1,
+    });
+
+    await expect(staleAdvance).rejects.toBeInstanceOf(ApiError);
+    await expect(staleAdvance).rejects.toMatchObject({
+      kind: 'problem',
+      status: 409,
+      code: 'version_conflict',
+    });
+  });
+
   it('translates problem responses without discarding their public fields', async () => {
     const api = createHttpGameApi({ baseUrl: 'http://localhost/api' });
 

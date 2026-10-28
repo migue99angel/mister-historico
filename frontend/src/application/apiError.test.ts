@@ -1,25 +1,38 @@
 import { describe, expect, it } from 'vitest';
 
-import { createTestRuntime, mockFixtures } from '../../test/renderWithRuntime';
 import { ApiError } from './apiError';
 
 describe('ApiError', () => {
-  it('reaches the application as an ApiError carrying the 409 of a stale command', async () => {
-    const { gameApi } = createTestRuntime();
-    const { run, runToken } = await gameApi.startRun({ seasonId: mockFixtures.TEST_SEASON_ID });
-
-    const staleAdvance = gameApi.advanceBlock({
-      runId: run.runId,
-      runToken,
-      idempotencyKey: 'stale-advance-1',
-      expectedVersion: run.version + 1,
-    });
-
-    await expect(staleAdvance).rejects.toBeInstanceOf(ApiError);
-    await expect(staleAdvance).rejects.toMatchObject({
-      kind: 'problem',
+  it('keeps the problem fields an adapter reports', () => {
+    const error = new ApiError('problem', 'Version conflict', {
       status: 409,
       code: 'version_conflict',
+      title: 'Version conflict',
+      detail: 'The run is at version 2, not 1.',
+      instance: '/api/runs/run-1/advance',
     });
+
+    expect(error).toMatchObject({
+      kind: 'problem',
+      message: 'Version conflict',
+      status: 409,
+      code: 'version_conflict',
+      title: 'Version conflict',
+      detail: 'The run is at version 2, not 1.',
+      instance: '/api/runs/run-1/advance',
+    });
+  });
+
+  it('leaves the problem fields undefined for a transport failure', () => {
+    const error = new ApiError('transport', 'Network down');
+
+    expect(error).toMatchObject({ kind: 'transport', status: undefined, code: undefined });
+  });
+
+  it('is an Error named ApiError so callers can tell it apart', () => {
+    const error = new ApiError('unexpected-response', 'Bad body', { status: 200 });
+
+    expect(error).toBeInstanceOf(Error);
+    expect(error.name).toBe('ApiError');
   });
 });
