@@ -155,7 +155,8 @@ function SeasonContext({
         >
           {startRun.error ? 'Reintentar' : 'Empezar'}
         </Button>
-        <Button variant="ghost" fullWidth onClick={onBackHome}>
+        {/* Leaving mid-start would orphan the run; focus stays on «Empezar», so disable. */}
+        <Button variant="ghost" fullWidth disabled={startRun.isPending} onClick={onBackHome}>
           Elegir otra temporada
         </Button>
       </div>
