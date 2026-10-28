@@ -1,6 +1,6 @@
 # ADR-016 · El estado de las tareas vive en GitHub Projects; Kanvas no se adopta
 
-- **Estado:** Propuesta
+- **Estado:** Aceptada (el autor eligió solo GitHub, 2026-10-28)
 - **Fecha:** 2026-10-28
 - **Relacionado con:** PLAN §5-6, `docs/TASKS.md`, `CLAUDE.md` («Cómo trabajar una tarea»)
 
@@ -37,6 +37,8 @@ GitHub Projects y [Kanvas](https://github.com/XMihura/Kanvas) 0.4.0.
 5. **Done = PR integrada en `main`.** La PR lleva `Closes #N`; si una tarea se reparte en
    varias PR, solo la última cierra la issue y las demás usan `Refs`. Nadie mueve una
    issue a Done a mano.
+   Cada agente actualiza el Project en cada cambio de estado: estado, bloqueos
+   nativos, comentario de cierre y desbloqueo de dependientes (tabla de `CLAUDE.md`).
 6. **Sin sincronizadores ni workflows propios.** Solo se usan las automatizaciones
    nativas del Project.
 7. **No se migra el histórico.** Las tareas integradas antes del 2026-10-28 se quedan en
