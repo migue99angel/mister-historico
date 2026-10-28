@@ -169,10 +169,7 @@ def test_sacking_on_last_block_keeps_final_cursor_and_full_closure_history() -> 
     simulator = ScriptedSeasonSimulator()
     for index, block in enumerate(captured.blocks[:-1]):
         for dilemma in captured.blocks[index].dilemmas:
-            if any(
-                decision.dilemma_id == dilemma.id
-                for decision in snapshot.run.decisions
-            ):
+            if any(decision.dilemma_id == dilemma.id for decision in snapshot.run.decisions):
                 continue
             snapshot, _ = apply_choice(
                 snapshot,

@@ -134,8 +134,7 @@ def test_start_run_captures_once_and_stores_recoverable_initial_snapshot() -> No
         record.replay_inputs.content, RulesConfiguration.a_profile()
     )
     assert RunSnapshot.decode(record.snapshot).goals == tuple(
-        GoalProgress(goal.goal_id, GoalStatus.PENDING)
-        for goal in restored.goals
+        GoalProgress(goal.goal_id, GoalStatus.PENDING) for goal in restored.goals
     )
     assert events  # RunStarted is published after the transaction commits.
     assert get.execute(created.run_id, created.token).run.id == created.run_id
@@ -250,9 +249,7 @@ def test_get_run_rejects_snapshot_decision_log_mismatch() -> None:
 def test_get_run_rejects_snapshot_status_mismatch() -> None:
     season, _, store, _, start, get, _ = _setup()
     created = start.execute(season.id)
-    store.runs[created.run_id] = replace(
-        store.runs[created.run_id], status=RunStatus.FINISHED
-    )
+    store.runs[created.run_id] = replace(store.runs[created.run_id], status=RunStatus.FINISHED)
 
     with pytest.raises(InvalidValueError, match="identity or status"):
         get.execute(created.run_id, created.token)
@@ -555,9 +552,7 @@ def test_effect_failure_rolls_back_decision_and_emits_no_event() -> None:
     dilemma = season.dilemmas[0]
     option = dilemma.options[0]
 
-    def invalid_effects(
-        snapshot: RunContentSnapshot, rules: RulesConfiguration
-    ) -> CapturedSeason:
+    def invalid_effects(snapshot: RunContentSnapshot, rules: RulesConfiguration) -> CapturedSeason:
         captured = CatalogRunContentAdapter.restore_game(snapshot, rules)
         own = set(
             captured.initial_state.squad_registry.squad_on(
@@ -613,22 +608,16 @@ def test_already_decided_error_precedes_effect_evaluation() -> None:
     created = start.execute(season.id)
     dilemma = season.dilemmas[0]
     option = dilemma.options[0]
-    take.execute(
-        created.run_id, created.token, "decision-first-0001", 0, dilemma.id, option.id
-    )
+    take.execute(created.run_id, created.token, "decision-first-0001", 0, dilemma.id, option.id)
 
-    def invalid_effects(
-        snapshot: RunContentSnapshot, rules: RulesConfiguration
-    ) -> CapturedSeason:
+    def invalid_effects(snapshot: RunContentSnapshot, rules: RulesConfiguration) -> CapturedSeason:
         captured = CatalogRunContentAdapter.restore_game(snapshot, rules)
         own = set(
             captured.initial_state.squad_registry.squad_on(
                 captured.managed_club_season_id, captured.blocks[0].start
             )
         )
-        non_member = next(
-            item.player_id for item in captured.players if item.player_id not in own
-        )
+        non_member = next(item.player_id for item in captured.players if item.player_id not in own)
         first_block = captured.blocks[0]
         first_dilemma = first_block.dilemmas[0]
         changed_dilemma = replace(
@@ -757,13 +746,9 @@ def test_take_decision_rejects_idempotency_key_reused_with_another_version() -> 
     created = start.execute(season.id)
     dilemma = season.dilemmas[0]
     option = dilemma.options[0]
-    take.execute(
-        created.run_id, created.token, "decision-key-0001", 0, dilemma.id, option.id
-    )
+    take.execute(created.run_id, created.token, "decision-key-0001", 0, dilemma.id, option.id)
     with pytest.raises(IdempotencyConflictError):
-        take.execute(
-            created.run_id, created.token, "decision-key-0001", 1, dilemma.id, option.id
-        )
+        take.execute(created.run_id, created.token, "decision-key-0001", 1, dilemma.id, option.id)
 
 
 def test_take_decision_rejects_a_stale_expected_version() -> None:
@@ -838,12 +823,8 @@ def test_advance_block_persists_next_closure_and_is_idempotent() -> None:
         simulator=simulator,
     )
 
-    first = advance.execute(
-        created.run_id, created.token, "advance-key-0001", run_record.version
-    )
-    replay = advance.execute(
-        created.run_id, created.token, "advance-key-0001", run_record.version
-    )
+    first = advance.execute(created.run_id, created.token, "advance-key-0001", run_record.version)
+    replay = advance.execute(created.run_id, created.token, "advance-key-0001", run_record.version)
 
     assert replay == first
     assert first.run.block_index == 1
@@ -1061,18 +1042,14 @@ def test_advance_idempotency_returns_original_reply_after_later_closure() -> Non
         store.runs[created.run_id].version,
     )
 
-    replay = advance.execute(
-        created.run_id, created.token, "advance-history-0001", first_version
-    )
+    replay = advance.execute(created.run_id, created.token, "advance-history-0001", first_version)
 
     assert replay == first
     assert replay.run.block_index == 1
     assert store.runs[created.run_id].version > first.version
     assert len(simulator.requests) == 2
     with pytest.raises(ConcurrencyError):
-        advance.execute(
-            created.run_id, created.token, "advance-history-stale", original_version
-        )
+        advance.execute(created.run_id, created.token, "advance-history-stale", original_version)
 
 
 def test_advance_conflicts_with_same_key_used_for_a_decision() -> None:
@@ -1177,4 +1154,3 @@ def test_invalid_idempotency_key_is_rejected_before_version_check() -> None:
             dilemma.id,
             dilemma.options[0].id,
         )
-
