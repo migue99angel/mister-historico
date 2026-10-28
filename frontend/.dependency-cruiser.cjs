@@ -6,6 +6,7 @@
 //   application/    use-case hooks and ports -> domain/
 //   domain/         view models, pure funcs  -> nothing internal, no React
 //   infrastructure/ adapters (API, Query...) -> application/ (ports), domain/
+//   test/           test harness             <- only *.test.ts(x) files under src/
 //
 // test/architecture/dependency-rules.test.ts checks every rule against
 // test/fixtures/arch. Keep rule names stable: the test refers to them.
@@ -61,6 +62,13 @@ module.exports = {
       comment: 'Only src/app/ (composition root) wires infrastructure/ adapters.',
       from: { path: '^src/', pathNot: '^src/(app|infrastructure)/' },
       to: { path: '^src/infrastructure/' },
+    },
+    {
+      name: 'only-tests-import-test-harness',
+      severity: 'error',
+      comment: 'test/ (harness, MSW wiring) is for test files only; it must never ship.',
+      from: { path: '^src/', pathNot: '\\.test\\.tsx?$' },
+      to: { path: '^test/' },
     },
     {
       name: 'not-to-unresolvable',
