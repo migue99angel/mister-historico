@@ -675,6 +675,59 @@ def test_same_day_base_membership_is_exempt_like_same_day_signing() -> None:
     assert eligible_for(joined_before_start) is True
 
 
+def test_preexisting_transfer_overrides_later_base_join_date() -> None:
+    captured, snapshot = _captured()
+    block = captured.blocks[0]
+    managed = snapshot.run.run_state.managed_club_season_id
+    player = replace(snapshot.run.run_state.players[0], rating=90)
+    players = tuple(
+        player if item.player_id == player.player_id else item
+        for item in snapshot.run.run_state.players
+    )
+    rival = next(item.id for item in captured.clubs if item.id != managed)
+    registry = SquadRegistry(
+        (
+            Membership(
+                player.player_id,
+                rival,
+                None,
+                block.start - timedelta(days=10),
+            ),
+            Membership(player.player_id, managed, block.start, None),
+        )
+    ).transfer(
+        player.player_id,
+        rival,
+        managed,
+        block.start - timedelta(days=10),
+    )
+    state = replace(snapshot.run.run_state, players=players, squad_registry=registry)
+    changed = replace(snapshot, run=replace(snapshot.run, run_state=state))
+    outcomes = tuple(
+        PlayerOutcome(item.player_id, item.fitness, item.injured_until, 0) for item in players
+    )
+    result = BlockSimulationResult(block.id, (), (), (), (), (), outcomes)
+    rules = replace(
+        RulesConfiguration.a_profile(),
+        eligibility=replace(
+            RulesConfiguration.a_profile().eligibility,
+            minimum_team_fixtures=0,
+        ),
+    )
+
+    entry = next(
+        item
+        for item in _player_minutes(changed, captured, block, result, rules)
+        if item.player_id == player.player_id
+    )
+
+    assert registry.owner_on(player.player_id, block.start - timedelta(days=1)) == managed
+    assert registry.owner_on(player.player_id, block.start) == managed
+    assert entry.star
+    assert entry.minutes == 0
+    assert entry.eligible is True
+
+
 @pytest.mark.parametrize("result_kind", ["wrong_block", "duplicate_player", "missing_player"])
 def test_closure_rejects_invalid_simulator_result_without_closing(result_kind: str) -> None:
     captured, snapshot = _captured()
