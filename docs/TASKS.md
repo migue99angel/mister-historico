@@ -630,6 +630,23 @@ existen; los casos de uso de partida siguen pendientes.
 - **Aceptación:** pasa la misma suite que el fake.
 
 ### T3.5 · Casos de uso y replay
+- **Planificación de esta tanda (2026-10-28):** Sol contrastó código y contratos
+  sobre `2bf56b2`. División secuencial con propiedad exclusiva, dos PR y revisión
+  independiente Sol de cada entrega. Este reparto no acredita implementación.
+  - **T3.5a (Luna):** nuevos `game/application/{content_model,run_codec,block_codec,rules}.py`,
+    `game/infrastructure/simulation_adapter.py` y ampliación compatible de
+    `game/infrastructure/catalog_adapter.py`; nuevos tests
+    `backend/tests/game/test_t35_{content_model,run_codec,block_codec,simulation_adapter,rules}.py`.
+    Traducción a tipos Game, captura/restauración, reglas explícitas y codecs completos.
+  - **T3.5b (Luna, después de a):** nuevos `game/application/{use_cases,closure,replay}.py`,
+    `entrypoints/cli/replay.py` y nuevos tests propios
+    `backend/tests/game/test_t35_{use_cases,closure,replay}.py` y
+    `backend/tests/entrypoints/cli/test_replay.py`.
+    Comandos, progreso de objetivos, transacciones, replay y entrada CLI inyectable.
+  - La documentación de planificación/cierre pertenece al orquestador en
+    `task/A4-handoff`. No modificar dominio, contratos existentes, codecs de contenido
+    ni `simulation_mapping.py`. Una fachada pública o cableado en `bootstrap.py`
+    requiere CR previa; endpoints y pantallas siguen fuera de T3.5.
 - **Oleada:** F3-B · **Tamaño:** L · **Depende de:** T3.1-T3.4, T2.6 y CR-T3.0; no T2.15
 - **Propiedad:** `game/application/**` (salvo contratos `ports.py` y `api.py`),
   `game/infrastructure/catalog_adapter.py` (ACL, solo API publicada de Catalog),
