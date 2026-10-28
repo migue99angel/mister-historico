@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react';
+
 import {
   BlockProgress,
   Button,
@@ -19,6 +21,12 @@ export interface RunResultProps {
 /** Final screen of a run: how it ended, the last block played and a way to play again. */
 export function RunResult({ run, onPlayAgain }: RunResultProps) {
   const view = describeRunResult(run);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+
+  // Arriving from the run loop or a reload, screen readers start at the outcome.
+  useEffect(() => {
+    titleRef.current?.focus();
+  }, []);
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-4 px-gutter py-6">
@@ -31,7 +39,13 @@ export function RunResult({ run, onPlayAgain }: RunResultProps) {
             </p>
           </div>
         )}
-        <h1 className="font-display text-headline font-extrabold text-ink">Final de la partida</h1>
+        <h1
+          ref={titleRef}
+          tabIndex={-1}
+          className="font-display text-headline font-extrabold text-ink focus:outline-none"
+        >
+          Final de la partida
+        </h1>
       </header>
       <BlockProgress progress={view.progress} status={view.status} />
       <p className="text-body text-ink">{view.outcomeText}</p>
