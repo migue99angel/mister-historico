@@ -82,7 +82,9 @@ def _text(content) -> str:
     return ""
 
 
-def parse_claude(path: Path, session_id: str | None = None, parent: str | None = None) -> Session:
+def parse_claude(path: Path, session_id: str | None = None, parent: str | None = None, seen: set[str] | None = None) -> Session:
+    """Parse one Claude Code log. `seen` holds request keys already counted in other logs."""
+    seen = set() if seen is None else seen
     session = Session(session_id or path.stem, "claude", parent=parent)
     calls: dict[str, Call] = {}
     tools: dict[str, list[tuple[str, str]]] = {}
@@ -102,7 +104,7 @@ def parse_claude(path: Path, session_id: str | None = None, parent: str | None =
         for block in message.get("content") or []:
             if isinstance(block, dict) and block.get("type") == "tool_use":
                 tools.setdefault(key, []).append((block.get("name", ""), json.dumps(block.get("input"))))
-        if key in calls:
+        if key in calls or key in seen:
             continue
         usage = message.get("usage") or {}
         calls[key] = Call(
@@ -112,19 +114,20 @@ def parse_claude(path: Path, session_id: str | None = None, parent: str | None =
         )
     for key, call in calls.items():
         call.wait = is_wait_call(tools.get(key, []))
+    seen.update(calls)
     session.calls = sorted(calls.values(), key=lambda c: c.ts)
     return session
 
 
 def load_claude_sessions(project_dirs: Iterable[Path]) -> list[Session]:
     """Main sessions and their subagents, each subagent as its own session."""
-    sessions = []
+    sessions, seen = [], set()
     for project in project_dirs:
         for path in sorted(project.glob("*.jsonl")):
-            sessions.append(parse_claude(path))
+            sessions.append(parse_claude(path, seen=seen))
         for path in sorted(project.glob("*/subagents/*.jsonl")):
             parent = path.parent.parent.name
-            sessions.append(parse_claude(path, f"{parent}/{path.stem}", parent))
+            sessions.append(parse_claude(path, f"{parent}/{path.stem}", parent, seen))
     return sessions
 
 
