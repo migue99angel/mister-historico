@@ -6,7 +6,10 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
 
 export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'className'> {
   variant?: ButtonVariant;
-  /** Shows a spinner, sets `aria-busy` and blocks further taps until the action ends. */
+  /**
+   * Shows a spinner, sets `aria-busy` and ignores further taps until the action ends. The
+   * button stays focusable (`aria-disabled`, not `disabled`) so keyboard focus is not lost.
+   */
   loading?: boolean;
   fullWidth?: boolean;
   children: ReactNode;
@@ -24,6 +27,7 @@ export function Button({
   fullWidth = false,
   disabled = false,
   type = 'button',
+  onClick,
   children,
   ...rest
 }: ButtonProps) {
@@ -31,12 +35,20 @@ export function Button({
     <button
       {...rest}
       type={type}
-      disabled={disabled || loading}
+      disabled={disabled}
       aria-busy={loading || undefined}
+      aria-disabled={loading || undefined}
+      onClick={(event) => {
+        if (loading) {
+          event.preventDefault();
+          return;
+        }
+        onClick?.(event);
+      }}
       className={cx(
         'inline-flex min-h-touch min-w-touch items-center justify-center gap-2 rounded-control px-5',
         'text-body font-semibold transition-colors select-none',
-        'disabled:cursor-not-allowed disabled:opacity-50',
+        'disabled:cursor-not-allowed disabled:opacity-50 aria-busy:cursor-wait',
         FOCUS_RING,
         VARIANT_CLASSES[variant],
         fullWidth && 'w-full',
