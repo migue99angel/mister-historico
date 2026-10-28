@@ -2,7 +2,7 @@
 
 > Las secciones 1–14 conservan las comprobaciones de su fecha. La sección 15 recoge T3.5: captura, comandos, cierre y replay. F2, F3 y el hito A continúan abiertos. Las instrucciones del autor prevalecen sobre estos documentos.
 >
-> **No es lectura de arranque.** Consulta solo la sección que necesites (CLAUDE.md, «Contexto»). El estado de las tareas está en el Project (ADR-016) y las reglas vigentes de trabajo en `CLAUDE.md` y PLAN §6, que prevalecen sobre las secciones 1-2. Las secciones nuevas solo recogen decisiones técnicas o contexto que GitHub no conserve, nunca resúmenes de estado o de sesión.
+> **No es lectura de arranque.** Consulta solo la sección que necesites (CLAUDE.md, «Contexto»). El estado de las tareas está en el Project (ADR-016) y las reglas vigentes de trabajo en `CLAUDE.md` y PLAN §6, que prevalecen sobre cualquier regla de trabajo de este documento. Las secciones nuevas solo recogen decisiones técnicas o contexto que GitHub no conserve, nunca resúmenes de estado o de sesión.
 
 ## 1. Rol y forma de trabajo
 

@@ -18,7 +18,7 @@ Míster Histórico es un juego de navegador, gratuito y sin registro: entrenas a
 No leas enteros `PLAN.md`, `TASKS.md`, `HANDOFF.md` ni los ADR. Amplía el contexto por niveles:
 
 1. **Al arrancar:** este fichero, `make status N=<N>` (Status, «blocked by», PR y últimos comentarios) y el cuerpo de la issue (`gh issue view <N>`), que da el ID, el enlace a la especificación, las dependencias, la propiedad y la aceptación.
-2. **Para implementar:** solo la sección de tu tarea en TASKS (`awk -v id="<ID>" 'index($0,"### "id" ")==1{f=1;print;next} /^#{1,3} /{f=0} f' docs/TASKS.md`), los contratos y ADR que cite, y el código que vas a tocar o del que dependes.
+2. **Para implementar:** solo la sección de tu tarea en TASKS (`awk -v id="<ID>" '/^#{1,4} /{f=(index($0,"### "id" ")==1||index($0,"#### "id" ")==1)} f' docs/TASKS.md`; para una subentrega como T3.7a, usa el ID padre, T3.7), los contratos y ADR que cite, y el código que vas a tocar o del que dependes.
 3. **Bajo demanda:** el resto de PLAN, ADR o HANDOFF solo si surge un conflicto de arquitectura, un cambio de contrato, una dependencia ambigua o un comportamiento sin documentar, o si la revisión lo pide. Busca con `grep` y lee rangos.
 4. **Al reanudar:** si la herramienta lo permite, reanuda la sesión original (`claude --resume`, `codex resume`). Si no, parte de lo persistido: `make status N=<N>`, `git status` y `git log --oneline origin/main..HEAD` en el worktree, y la PR con su CI (`gh pr checks <rama>`). Sigue desde ahí, sin volver a planificar.
 
@@ -33,9 +33,9 @@ No leas enteros `PLAN.md`, `TASKS.md`, `HANDOFF.md` ni los ADR. Amplía el conte
 7. Los ficheros compartidos (`pyproject.toml`, `package.json`, workflows de CI, `bootstrap.py`) solo los modifica la tarea que los creó o una CR. ¿Necesitas una dependencia nueva? Pídela en la descripción de la PR.
 8. **Tests en proporción al cambio.** En cada ciclo TDD ejecuta solo lo afectado (`cd backend && uv run pytest --no-cov <ruta>`, `cd frontend && npx vitest run <ruta>`), la suite de contrato si tocas un puerto y el lint del área; amplía si hay riesgo de regresión. Antes de `make dev` o de los E2E, mira PLAN §6 («Paralelismo»): los worktrees comparten Docker y puertos.
 9. Termina cuando se cumplan todos los criterios de aceptación y `make test` y `make lint` completos estén en verde, antes de abrir la PR.
-10. No integres tu propia PR: necesita la CI en verde y una revisión independiente aprobada sobre su último commit (PLAN §6, «Revisión cruzada»). Las tareas **[HUMANO]** las cierra el autor.
+10. No integres tu propia PR: necesita la CI en verde y una revisión independiente aprobada sobre su último commit, con un comentario de veredicto que cite ese SHA (todos los agentes usan la misma cuenta y GitHub no deja aprobar una PR propia; PLAN §6, «Revisión cruzada»). Las tareas **[HUMANO]** las cierra el autor.
 11. **Done solo tras integrar.** Una issue pasa a Done cuando su PR está integrada en `main` y el `Closes` la cierra; nunca antes. El Project debe reflejar en todo momento el estado real: actualízalo en cada cambio, según la tabla siguiente.
-12. **Sin subagentes por defecto**, salvo para investigaciones independientes, trabajo paralelo sin solape o la revisión independiente.
+12. **Sin subagentes por defecto**, salvo para investigaciones independientes, trabajo paralelo sin solape o, si eres el revisor, para dividir la revisión. Un subagente lanzado por el implementador no cuenta como revisión independiente.
 13. **Sin resúmenes de sesión:** el estado y los bloqueos van a la issue y la evidencia, a la PR; `HANDOFF.md` solo recoge decisiones técnicas que GitHub no conserve.
 
 ### Mantener el Project al día
@@ -68,7 +68,7 @@ Backend: siete contextos en `backend/src/mister/` (`catalog`, `simulation`, `gam
 
 - `domain/`: Python puro (`dataclasses` y biblioteca estándar) más `shared_kernel`, sin IO. **Nunca** FastAPI, SQLAlchemy, Pydantic ni Redis. Su `ports.py` solo declara **estrategias puras** (`GoalModel`, `MatchSimulator`), que recibe por parámetro como el `RandomSource`.
 - `application/`: casos de uso, DTOs y **puertos de IO** (`typing.Protocol` en `ports.py`); `api.py` es la **API publicada** del contexto. Nunca importa `infrastructure`.
-- `infrastructure/`: adaptadores y fakes en memoria; solo la importan `bootstrap.py` y los tests. Un contexto usa otro solo desde aquí y solo por su `application/api.py` (ACL), nunca por su `domain`.
+- `infrastructure/`: adaptadores y fakes en memoria; solo la importan `bootstrap.py` y los tests. Un contexto usa otro solo desde aquí y solo por la `application/api.py` del otro contexto (ACL), nunca por su `domain`.
 - `entrypoints/` solo llama a casos de uso. El motor (`simulation`) es determinista y sin IO: todo el azar llega por un `RandomSource` con semilla.
 
 Frontend (`frontend/src/`, `dependency-cruiser`): `domain/` (puro) ← `application/` (hooks sobre TanStack Query y puertos) ← `infrastructure/` (cliente generado, analítica, MSW). `ui/` solo importa `application/` y `domain/`; `app/` es el composition root y **lo único que importa `infrastructure/`**. Sin store global.
