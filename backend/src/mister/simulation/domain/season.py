@@ -509,7 +509,8 @@ class SeasonSimulation:
             rival_team = replace(
                 rival_team,
                 squad=tuple(
-                    replace(p, injured=p.player_id in unavailable) for p in rival_team.squad
+                    replace(p, injured=p.injured or p.player_id in unavailable)
+                    for p in rival_team.squad
                 ),
             )
         rival = calculate_strength(rival_team, self.references[spec.competition_id], neutral=True)
