@@ -16,7 +16,7 @@ export interface DilemmaCardProps {
   /** Locks every option, for example once the decision has been sent. */
   disabled?: boolean;
   eyebrow?: string;
-  headingLevel?: 2 | 3 | 4;
+  headingLevel?: 2 | 3 | 4 | 5;
 }
 
 const MARKERS = 'ABCDEFGH';

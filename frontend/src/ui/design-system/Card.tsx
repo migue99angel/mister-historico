@@ -7,7 +7,7 @@ export type CardTone = 'default' | 'highlight';
 export interface CardProps {
   /** Names the card as a region; without a title the card is a plain container. */
   title?: string;
-  headingLevel?: 2 | 3 | 4;
+  headingLevel?: 2 | 3 | 4 | 5;
   eyebrow?: string | undefined;
   tone?: CardTone;
   children: ReactNode;
@@ -24,7 +24,7 @@ export function Card({ title, headingLevel = 2, eyebrow, tone = 'default', child
 
   if (title === undefined) return <div className={className}>{children}</div>;
 
-  const Heading = `h${String(headingLevel)}` as 'h2' | 'h3' | 'h4';
+  const Heading = `h${String(headingLevel)}` as 'h2' | 'h3' | 'h4' | 'h5';
   return (
     <section aria-labelledby={titleId} className={className}>
       <header className="mb-3">
