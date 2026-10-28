@@ -53,6 +53,8 @@ CORRESPONDENCE: dict[str, tuple[type, dict[str, str | None]]] = {
                 "competition_priorities",
                 "forced_injuries_from_effects",
                 "prior_results",
+                "squad_memberships",
+                "player_pool",
             ),
         },
     ),

@@ -434,6 +434,33 @@ class TeamSquad:
 
 
 @dataclass(frozen=True, slots=True)
+class SquadMembership:
+    """Inclusive player ownership interval for one simulated run."""
+
+    player_id: PlayerId
+    club_season_id: ClubSeasonId
+    joined_on: date | None = None
+    left_on: date | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.player_id, PlayerId) or not isinstance(
+            self.club_season_id, ClubSeasonId
+        ):
+            raise InvalidValueError("squad membership needs typed player and club-season IDs")
+        if any(
+            value is not None and type(value) is not date
+            for value in (self.joined_on, self.left_on)
+        ):
+            raise InvalidValueError("membership bounds must be dates or None")
+        if (
+            self.joined_on is not None
+            and self.left_on is not None
+            and self.joined_on > self.left_on
+        ):
+            raise InvalidValueError("membership joined_on must not be after left_on")
+
+
+@dataclass(frozen=True, slots=True)
 class ForcedInjury:
     """An injury applied on `date` for `days` days (from a dilemma effect)."""
 
@@ -614,6 +641,8 @@ class BlockSimulationRequest:
     forced_injuries_from_effects: tuple[ForcedInjury, ...]
     prior_results: tuple[MatchOutcome, ...]
     state_as_of: date | None = None
+    squad_memberships: tuple[SquadMembership, ...] | None = None
+    player_pool: tuple[SquadPlayerState, ...] | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.captured_content, RunContentSnapshot):
@@ -622,6 +651,38 @@ class BlockSimulationRequest:
             raise InvalidValueError("captured content identity must match playable_season_id")
         if self.state_as_of is not None and not isinstance(self.state_as_of, date):
             raise InvalidValueError("state_as_of must be a date or None")
+        _validate_dated_player_data(self.squad_memberships, self.player_pool)
+
+
+def _validate_dated_player_data(
+    memberships: tuple[SquadMembership, ...] | None,
+    players: tuple[SquadPlayerState, ...] | None,
+) -> None:
+    if (memberships is None) != (players is None):
+        raise InvalidValueError("dated memberships and player pool must be supplied together")
+    if memberships is None or players is None:
+        return
+    if not isinstance(memberships, tuple) or not isinstance(players, tuple):
+        raise InvalidValueError("dated squad collections must be immutable tuples")
+    if any(not isinstance(item, SquadMembership) for item in memberships):
+        raise InvalidValueError("squad_memberships must contain SquadMembership values")
+    if any(not isinstance(item, SquadPlayerState) for item in players):
+        raise InvalidValueError("player_pool must contain player states")
+    pool_ids = tuple(player.player_id for player in players)
+    if len(pool_ids) != len(set(pool_ids)):
+        raise InvalidValueError("player_pool player IDs must be unique")
+    if not {item.player_id for item in memberships} <= set(pool_ids):
+        raise InvalidValueError("squad membership refers to a player outside player_pool")
+    for index, item in enumerate(memberships):
+        for other in memberships[index + 1 :]:
+            if item.player_id != other.player_id:
+                continue
+            start_a = item.joined_on or date.min
+            end_a = item.left_on or date.max
+            start_b = other.joined_on or date.min
+            end_b = other.left_on or date.max
+            if start_a <= end_b and start_b <= end_a:
+                raise InvalidValueError("a player cannot have overlapping memberships")
 
 
 @dataclass(frozen=True, slots=True)

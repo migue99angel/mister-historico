@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Literal, cast
 from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.ids import BlockId, ClubSeasonId, CompetitionId, FixtureId, PlayerId
 from mister.simulation.application import api as dto
+from mister.simulation.domain.dated_squads import DatedMembership, validate_memberships
 from mister.simulation.domain.groups import GroupMatch, GroupRules
 from mister.simulation.domain.injuries import Injury
 from mister.simulation.domain.knockout import (
@@ -714,6 +715,48 @@ def _snapshots(
     return tuple(snapshots)
 
 
+def _dated_squad_inputs(
+    value: dto.BlockSimRequest,
+    team_ids: set[ClubSeasonId],
+    reference_teams: dict[ClubSeasonId, dto.TeamInput],
+) -> tuple[tuple[DatedMembership, ...] | None, tuple[SimPlayer, ...] | None]:
+    if (value.squad_memberships is None) != (value.player_pool is None):
+        raise InvalidValueError("dated memberships and player pool must be supplied together")
+    if value.squad_memberships is None or value.player_pool is None:
+        return None, None
+    if not isinstance(value.squad_memberships, tuple) or not isinstance(value.player_pool, tuple):
+        raise InvalidValueError("dated squad collections must be immutable tuples")
+    if any(not isinstance(item, dto.SquadMembershipInput) for item in value.squad_memberships):
+        raise InvalidValueError("squad_memberships must contain SquadMembershipInput values")
+    if any(item.club_season_id not in team_ids for item in value.squad_memberships):
+        raise InvalidValueError("squad membership refers to an unknown club-season")
+    if any(
+        isinstance(reference_teams[item.club_season_id], dto.AggregateTeamInput)
+        for item in value.squad_memberships
+    ):
+        raise InvalidValueError("dated ownership cannot partially replace an aggregate rival")
+    memberships = tuple(
+        DatedMembership(item.player_id, item.club_season_id, item.joined_on, item.left_on)
+        for item in value.squad_memberships
+    )
+    validate_memberships(memberships)
+    pool_ids = tuple(player.player_id for player in value.player_pool)
+    _unique(pool_ids, "player pool players")
+    if not {item.player_id for item in memberships} <= set(pool_ids):
+        raise InvalidValueError("squad membership refers to a player outside player_pool")
+    if not {player.player_id for player in value.managed_team.players} <= set(pool_ids):
+        raise InvalidValueError("player_pool must include the managed squad state")
+    pool_team = _team(
+        dto.SquadTeamInput(
+            value.season.managed_club_season_id,
+            value.player_pool,
+            value.managed_team.tactic,
+        ),
+        morale=value.team_morale,
+    )
+    return memberships, cast("tuple[SimPlayer, ...]", pool_team.squad)
+
+
 def _map_request(value: dto.BlockSimRequest) -> Block:
 
     season = value.season
@@ -750,6 +793,9 @@ def _map_request(value: dto.BlockSimRequest) -> Block:
         for t in rivals
     ):
         raise InvalidValueError("override needs a known rival")
+    memberships, player_pool = _dated_squad_inputs(
+        value, team_ids, {team.club_season_id: team for team in season.teams}
+    )
     slots = _slots(season, tuple(competitions), fixtures)
     prior = _prior_results(value, fixtures, slots, competition_map)
     snapshots = _snapshots(season, competition_map)
@@ -759,7 +805,10 @@ def _map_request(value: dto.BlockSimRequest) -> Block:
             for i in (*season.forced_injuries, *value.forced_injuries_from_effects)
         )
     )
-    squad_ids = {p.player_id for p in value.managed_team.players}
+    incoming_players = (
+        value.player_pool if value.player_pool is not None else value.managed_team.players
+    )
+    squad_ids = {p.player_id for p in incoming_players}
     if any(i.player_id not in squad_ids for i in injuries):
         raise InvalidValueError("forced injury refers to a player outside managed squad")
     return Block(
@@ -775,12 +824,8 @@ def _map_request(value: dto.BlockSimRequest) -> Block:
         _evidence(season, fixtures, competition_map),
         priorities,
         injuries,
-        {
-            p.player_id: p.injured_until
-            for p in value.managed_team.players
-            if p.injured_until is not None
-        },
-        frozenset(p.player_id for p in value.managed_team.players if p.youth_minutes),
+        {p.player_id: p.injured_until for p in incoming_players if p.injured_until is not None},
+        frozenset(p.player_id for p in incoming_players if p.youth_minutes),
         tuple(prior),
         slots,
         _entries(season, tuple(competitions), tuple(snapshots)),
@@ -793,6 +838,8 @@ def _map_request(value: dto.BlockSimRequest) -> Block:
             for p in source.players
             if p.injured_until is not None
         ),
+        memberships,
+        player_pool,
     )
 
 

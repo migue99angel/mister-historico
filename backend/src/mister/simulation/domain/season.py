@@ -7,6 +7,7 @@ from datetime import timedelta
 from typing import TYPE_CHECKING, cast
 
 from mister.shared_kernel.errors import InvalidValueError
+from mister.simulation.domain.dated_squads import DatedMembership, owner_on
 from mister.simulation.domain.fitness import match_fitness, recover_between
 from mister.simulation.domain.groups import (
     GroupEvidence,
@@ -151,6 +152,8 @@ class Block:
     slots: tuple[SeasonFixture, ...] = ()
     entries: tuple[GroupEntry, ...] = ()
     rival_absences: tuple[tuple[ClubSeasonId, PlayerId, date], ...] = ()
+    squad_memberships: tuple[DatedMembership, ...] | None = None
+    player_pool: tuple[SimPlayer, ...] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -187,10 +190,19 @@ class SeasonSimulation:
         self.rng = rng
         self.simulator = simulator
         self.team = block.managed_team
+        self.player_pool: dict[PlayerId, SimPlayer] | None = None
+        if block.squad_memberships is not None and block.player_pool is not None:
+            self.player_pool = {player.player_id: player for player in block.player_pool}
+            self._select_team(block.start)
+        else:
+            self.player_pool = None
         self.cursor = block.state_as_of
         self.injuries = list(block.injuries)
         self.new_injuries = [i for i in block.injuries if block.start <= i.date <= block.end]
-        self.minutes = dict.fromkeys((p.player_id for p in self.team.squad or ()), 0)
+        state_players = (
+            self.player_pool.values() if self.player_pool is not None else (self.team.squad or ())
+        )
+        self.minutes = dict.fromkeys((p.player_id for p in state_players), 0)
         self.youth_available: set[PlayerId] = set()
         teams = {t.club_season_id: t for t in block.references}
         self.references = {
@@ -208,6 +220,31 @@ class SeasonSimulation:
         self._validate_evidence_consistency()
         self._validate_original_tables()
         self._validate_group_feeders()
+
+    def _squad_on(self, club: ClubSeasonId, on_date: date) -> tuple[SimPlayer, ...]:
+        if self.player_pool is None or self.block.squad_memberships is None:
+            team = self.rivals.get(club)
+            if team is None or team.squad is None:
+                return ()
+            return team.squad
+        return tuple(
+            player
+            for player in self.player_pool.values()
+            if owner_on(self.block.squad_memberships, player.player_id, on_date) == club
+        )
+
+    def _select_team(self, on_date: date) -> None:
+        if self.player_pool is None or self.block.squad_memberships is None:
+            return
+        self.team = replace(
+            self.team,
+            squad=self._squad_on(self.team.club_season_id, on_date),
+        )
+
+    def _save_team_players(self) -> None:
+        if self.player_pool is None:
+            return
+        self.player_pool.update((player.player_id, player) for player in self.team.squad or ())
 
     def _validate_evidence_consistency(self) -> None:
         fixtures: dict[FixtureId, FixtureSpec] = {}
@@ -334,6 +371,18 @@ class SeasonSimulation:
         return max((end for end in ends if end is not None), default=None)
 
     def _recover(self, on_date: date) -> None:
+        if self.player_pool is not None:
+            self.player_pool = {
+                player_id: replace(
+                    player,
+                    fitness=recover_between(player.fitness, self.cursor, on_date),
+                    injured=self._absence(player_id, on_date) is not None,
+                )
+                for player_id, player in self.player_pool.items()
+            }
+            self.cursor = on_date
+            self._select_team(on_date)
+            return
         self.team = replace(
             self.team,
             squad=tuple(
@@ -403,6 +452,11 @@ class SeasonSimulation:
                 index
                 for index, fixture in enumerate(calendar)
                 if self._absence(player, fixture.date) is None
+                and (
+                    self.block.squad_memberships is None
+                    or owner_on(self.block.squad_memberships, player, fixture.date)
+                    == self.team.club_season_id
+                )
             )
             for player in pending
         }
@@ -430,6 +484,7 @@ class SeasonSimulation:
     def _play(self, fixture: SeasonFixture, tie: KnockoutTie | None = None) -> PlayedMatch:
         spec = fixture.spec
         self._recover(spec.date)
+        self._select_team(spec.date)
         competition = self.competitions[spec.competition_id]
         priority = self.block.priorities.get(spec.competition_id, Priority.NORMAL)
         required = self._youth_required(spec, tie)
@@ -439,6 +494,12 @@ class SeasonSimulation:
         own = calculate_strength(self.team, self.references[spec.competition_id], lineup=lineup)
         rival_id = spec.away if spec.home == self.team.club_season_id else spec.home
         rival_team = self.rivals[rival_id]
+        if (
+            self.player_pool is not None
+            and self.block.squad_memberships is not None
+            and rival_team.squad is not None
+        ):
+            rival_team = replace(rival_team, squad=self._squad_on(rival_id, spec.date))
         if rival_team.squad is not None:
             unavailable = {
                 pid
@@ -484,6 +545,7 @@ class SeasonSimulation:
             self.minutes[p.player_id] += exposure
             players.append(replace(p, fitness=match_fitness(p.fitness, exposure, priority)))
         self.team = replace(self.team, squad=tuple(players))
+        self._save_team_players()
         played = PlayedMatch(fixture, result)
         self.played[spec.fixture_id] = played
         self.results.append(played)
@@ -1129,7 +1191,11 @@ class SeasonSimulation:
                     self._absence(p.player_id, self.block.end),
                     self.minutes[p.player_id],
                 )
-                for p in self.team.squad or ()
+                for p in (
+                    self.player_pool.values()
+                    if self.player_pool is not None
+                    else self.team.squad or ()
+                )
             ),
             tuple(
                 sorted(self.events, key=lambda e: (e.date, str(e.competition_id), e.stage_id or ""))

@@ -7,7 +7,10 @@ in `SeasonSimInput` and the run state goes per block in `BlockSimRequest`.
 Fixed during a run: the reference squads of every participant, which also fix the ADR-004
 section 2 normalisation (computed over the participants as they are in the content, so signing
 a star raises your attack over a fixed reference). Variable: the managed team and the rivals
-changed by signings and sales (`team_overrides`, from the `SquadRegistry`, ADR-015).
+    changed by signings and sales (`team_overrides`, from the `SquadRegistry`, ADR-015).
+    Optional `squad_memberships` and `player_pool` select effective rosters at each fixture date
+    while carrying fitness and injury state for every known player. Both are absent in legacy
+    fixed-squad requests.
 
 Design: the DTOs are defined here, independent of `simulation.domain`, instead of re-exporting
 its value objects. Vocabulary (style, system, position, venue...) travels as plain strings and
@@ -101,6 +104,33 @@ class SquadTeamInput:
     club_season_id: ClubSeasonId
     players: tuple[SquadPlayerInput, ...]
     tactic: TacticDTO
+
+
+@dataclass(frozen=True, slots=True)
+class SquadMembershipInput:
+    """Inclusive player ownership interval; `None` means an open bound."""
+
+    player_id: PlayerId
+    club_season_id: ClubSeasonId
+    joined_on: date | None = None
+    left_on: date | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.player_id, PlayerId) or not isinstance(
+            self.club_season_id, ClubSeasonId
+        ):
+            raise InvalidValueError("squad membership needs typed player and club-season IDs")
+        if any(
+            value is not None and type(value) is not date
+            for value in (self.joined_on, self.left_on)
+        ):
+            raise InvalidValueError("membership bounds must be dates or None")
+        if (
+            self.joined_on is not None
+            and self.left_on is not None
+            and self.joined_on > self.left_on
+        ):
+            raise InvalidValueError("membership joined_on must not be after left_on")
 
 
 @dataclass(frozen=True, slots=True)
@@ -408,6 +438,8 @@ class BlockSimRequest:
     forced_injuries_from_effects: tuple[ForcedInjuryDTO, ...] = ()
     prior_results: tuple["MatchResultDTO", ...] = ()
     state_as_of: date | None = None
+    squad_memberships: tuple[SquadMembershipInput, ...] | None = None
+    player_pool: tuple[SquadPlayerInput, ...] | None = None
 
 
 # --------------------------------------------------------------------------- output

@@ -3,10 +3,12 @@
 from dataclasses import replace
 from datetime import date
 
+import pytest
 from tests.contracts.suites.game_samples import make_simulation_request
 
 from mister.game.application.ports import SquadMembership
 from mister.game.infrastructure.simulation_mapping import to_simulation_request
+from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.ids import ClubSeasonId, PlayerId
 
 
@@ -36,3 +38,24 @@ def test_legacy_request_keeps_both_dated_fields_absent() -> None:
     assert mapped.squad_memberships is None
     assert mapped.player_pool is None
 
+
+def test_request_rejects_partial_dated_inputs() -> None:
+    with pytest.raises(InvalidValueError):
+        replace(make_simulation_request(), squad_memberships=())
+
+
+def test_request_rejects_duplicate_player_pool_entries() -> None:
+    request = make_simulation_request()
+    player = request.managed_team.players[0]
+
+    with pytest.raises(InvalidValueError):
+        replace(request, squad_memberships=(), player_pool=(player, player))
+
+
+def test_request_rejects_membership_player_outside_pool() -> None:
+    request = make_simulation_request()
+    player = request.managed_team.players[0]
+    membership = SquadMembership(PlayerId("other-player"), ClubSeasonId("test-fc-2000-01"))
+
+    with pytest.raises(InvalidValueError):
+        replace(request, squad_memberships=(membership,), player_pool=(player,))
