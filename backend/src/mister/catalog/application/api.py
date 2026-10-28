@@ -30,6 +30,7 @@ from datetime import date
 from enum import StrEnum
 from typing import Literal, Protocol
 
+from mister.catalog.domain.name_policy import NamePolicy
 from mister.shared_kernel.errors import DomainError, InvalidValueError
 from mister.shared_kernel.ids import (
     BlockId,
@@ -717,6 +718,4 @@ class SeasonContentProvider(Protocol):
 
 def present_person_name(display_name: str, alias_name: str, *, real_names: bool) -> str:
     """Apply the published presentation policy without exposing Catalog domain types."""
-    from mister.catalog.domain.name_policy import NamePolicy
-
     return NamePolicy(real_names).display(display_name, alias_name)
