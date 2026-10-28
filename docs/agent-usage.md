@@ -9,7 +9,7 @@ make usage        # recoge y escribe en ~/.local/share/mister-historico/agent-us
 make usage-test   # tests de la herramienta (datos sintéticos)
 ```
 
-Necesita `npx` (ejecuta `ccusage@20.0.45`) y `gh` autenticado. `--no-ccusage` y `--no-github` permiten trabajar sin ellos: los costes y los datos de PR quedan entonces como no disponibles, nunca como cero.
+Necesita `npx` (ejecuta `ccusage@20.0.45`) y `gh` autenticado. `--no-ccusage` y `--no-github` permiten trabajar sin ellos: los costes y los datos de PR quedan entonces como no disponibles, nunca como cero. Lo mismo ocurre si falla una consulta a GitHub; `validation.json` dice qué fuentes estaban disponibles.
 
 Ficheros que escribe:
 
@@ -30,7 +30,7 @@ Nada sale de la máquina: los prompts no se escriben en ningún fichero y el dir
 |---|---|---|
 | Tokens por sesión, modelo y tipo (entrada nueva, salida, escritura y lectura de caché) | Registros locales; contrastados con ccusage | Real |
 | Llamadas al modelo, contexto por llamada (media, mediana, p90 y máximo) y su evolución por deciles | Registros locales | Real |
-| Llamadas de espera | Registros locales: llamadas cuyas herramientas solo esperan (`sleep`, `wait`, `wait_agent`, `list_agents`, `TaskOutput`, `Monitor`, `gh pr checks`, `gh run watch`) | Real, con una definición explícita |
+| Llamadas de espera | Registros locales: llamadas en las que todas las operaciones solo esperan (`sleep`, `wait`, `wait_agent`, `list_agents`, `TaskOutput`, `Monitor`, `gh pr checks`, `gh run watch`). Una llamada que también ejecuta trabajo, o una celda de Codex que no se puede leer, no cuenta | Real, con una definición explícita y conservadora |
 | Tiempo transcurrido y tiempo activo | Marcas temporales; activo suma los huecos entre llamadas de hasta 5 minutos | Transcurrido, real; activo, estimado |
 | Coste equivalente de la API | ccusage | Estimado: no es lo que se paga con la suscripción, y los modelos sin precio en ccusage llevan un precio aproximado (`cost_estimated`) |
 | Cuota de 5 horas y semanal de Codex | `rate_limits` que Codex escribe en sus registros | Real, desde el primer registro |
@@ -68,7 +68,7 @@ Codex ya muestra el contexto y la cuota con `/status` y guarda la cuota en sus r
 ## Diagnóstico de partida (hasta el 28 de octubre de 2026)
 
 - 1.519 M de tokens en 127 sesiones; el 97,4 % son lecturas de caché.
-- La orquestación suma 599 M (39 %) en 12 sesiones. En los orquestadores de Codex, 682 de 2.860 llamadas (24 %) solo esperaban.
+- La orquestación suma 599 M (39 %) en 12 sesiones. En los orquestadores de Codex, 502 de 2.860 llamadas (17,6 %) solo esperaban.
 - Las tres sesiones más costosas fueron orquestadores persistentes: F2 en Codex (247 M, 1.493 llamadas, 33 horas abiertas y unas 5 activas), F1-F2 en Codex (145 M, 69 horas abiertas) y la oleada A4 en Codex (76 M en 6 horas).
 - Reutilizar una conversación para implementar varias tareas fue poco frecuente: 11 sesiones de implementación o revisión con varias tareas suman 102 M (7 %).
 - Las ventanas de Codex llegaron al 99-100 % en 11 de las 13 ventanas cerradas, entre 35 minutos y 2 horas después de empezar; el resto de la ventana se pasó en el límite.
