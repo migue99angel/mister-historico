@@ -570,17 +570,18 @@ reanudaron los mismos agentes, conservando su trabajo.
   estado de las tareas en TASKS, seguimientos de las revisiones y posiciones de jugador
   en el glosario.
 
-**Verificación:** en `main` tras #75, `npm run test` da **57 ficheros y 506 tests**;
+**Verificación:** en `main` tras #77 (sin cambios de código desde #75), `npm run test` da **57 ficheros y 506 tests**;
 `lint` (con dependency-cruiser), `format:check` y `build` en verde; JS inicial
 **86,84 KB gzip** (límite 100 KB), con chunks aparte para `SeasonIntro`, `RunLoop` y
 `RunResult`. Cobertura de `application/` ≥ 99 % de líneas. No se ejecutó Playwright
 ni nada del backend.
 
-**Límites y siguiente trabajo:** todo funciona contra MSW con Test FC; no declara A.
+**Límites y siguiente trabajo:** esta tanda funciona solo contra MSW con Test FC y no
+basta para declarar A.
 No se cambiaron `contracts/openapi.yaml`, el cliente generado, los handlers MSW ni
-`package.json`. Los seguimientos están en TASKS («Seguimientos de F4-B»); el de más
-impacto es declarar `sideEffects` en `frontend/package.json` (unos 1,5 KB menos de JS
-inicial). Siguiente: T4.7a, E2E real con Playwright contra backend, motor y SQL reales,
+`package.json`. Los seguimientos están en TASKS («Seguimientos de F4-B»), entre ellos
+declarar `sideEffects` en `frontend/package.json` mediante CR o en T4.7 (unos 1,5 KB
+menos de JS inicial). Siguiente: T4.7a, E2E real con Playwright contra backend, motor y SQL reales,
 cuando estén T3.6 y T3.7a; necesita permiso explícito para ejecutar Playwright.
 Worktrees y ramas locales de la tanda eliminados tras comprobar con
 `git log --cherry-pick --right-only` que no quedaba nada fuera de `main`.
