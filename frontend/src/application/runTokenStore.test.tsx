@@ -7,6 +7,7 @@ import { RunTokenStoreContext, useRunTokenStore } from './runTokenStore';
 const store: RunTokenStore = {
   save: () => undefined,
   read: () => null,
+  remove: () => undefined,
 };
 
 function RunTokenStoreProbe() {

@@ -16,7 +16,11 @@ const gameApi: GameApi = {
   advanceBlock: () => Promise.reject(new Error('Not used in this test.')),
 };
 
-const runTokenStore: RunTokenStore = { save: () => undefined, read: () => null };
+const runTokenStore: RunTokenStore = {
+  save: () => undefined,
+  read: () => null,
+  remove: () => undefined,
+};
 
 function PortsProbe({ queryClient }: { queryClient: QueryClient }) {
   const providedApi = useGameApi();

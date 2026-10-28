@@ -11,5 +11,8 @@ export function createInMemoryRunTokenStore(): RunTokenStore {
     read(runId) {
       return tokens.get(runId) ?? null;
     },
+    remove(runId) {
+      tokens.delete(runId);
+    },
   };
 }
