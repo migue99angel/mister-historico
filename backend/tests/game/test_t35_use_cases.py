@@ -6,7 +6,7 @@ import pytest
 from tests.contracts.suites.expected_test_fc import build_expected_test_fc_season
 
 from mister.catalog.application.api import PlayableSeasonDTO, PlayableSeasonSummaryDTO
-from mister.game.application.ports import ConcurrencyError
+from mister.game.application.ports import ConcurrencyError, RunNotFoundError
 from mister.game.application.rules import RulesConfiguration
 from mister.game.application.use_cases import (
     GetRun,
@@ -125,6 +125,21 @@ def test_get_run_authenticates_without_returning_a_token_hash() -> None:
     view = get.execute(created.run_id, created.token)
     assert view.run.id == created.run_id
     assert not hasattr(view, "run_token_hash")
+
+
+def test_unknown_run_is_reported_before_invalid_decision_body() -> None:
+    season, _, _, _, _, _, take = _setup()
+    dilemma = season.dilemmas[0]
+
+    with pytest.raises(RunNotFoundError):
+        take.execute(
+            RunId.parse("00000000-0000-4000-8000-000000000002"),
+            "irrelevant-token",
+            "decision-key-0001",
+            True,  # type: ignore[arg-type]
+            dilemma.id,
+            dilemma.options[0].id,
+        )
 
 
 def test_take_decision_is_idempotent_and_conflicts_on_different_command() -> None:
