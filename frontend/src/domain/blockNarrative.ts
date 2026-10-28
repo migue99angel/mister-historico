@@ -4,6 +4,7 @@ import {
   type MatchResultInput,
   type MatchResultViewModel,
 } from './matchResult';
+import { countable } from './countable';
 import { findUserStanding, type StandingsInput, type UserStandingViewModel } from './standings';
 
 /** Structural subset of a match report in a block summary. */
@@ -53,21 +54,14 @@ export interface BlockNarrativeViewModel {
   injuries: string[];
 }
 
-function countable(count: number, singular: string, plural: string): string {
-  return `${String(count)} ${count === 1 ? singular : plural}`;
-}
-
-function joinSpanish(parts: string[]): string {
-  if (parts.length <= 1) return parts.join('');
-  return `${parts.slice(0, -1).join(', ')} y ${parts.slice(-1).join('')}`;
-}
+const SPANISH_LIST = new Intl.ListFormat('es', { type: 'conjunction' });
 
 function recordText(record: BlockRecord): string {
   const parts: string[] = [];
   if (record.won > 0) parts.push(countable(record.won, 'victoria', 'victorias'));
   if (record.drawn > 0) parts.push(countable(record.drawn, 'empate', 'empates'));
   if (record.lost > 0) parts.push(countable(record.lost, 'derrota', 'derrotas'));
-  return parts.length === 0 ? 'Sin partidos en este bloque' : joinSpanish(parts);
+  return parts.length === 0 ? 'Sin partidos en este bloque' : SPANISH_LIST.format(parts);
 }
 
 function tone(record: BlockRecord): BlockTone {
@@ -80,16 +74,17 @@ export function describeBlock(summary: BlockSummaryInput): BlockNarrativeViewMod
   const record: BlockRecord = { won: 0, drawn: 0, lost: 0 };
   for (const match of summary.results) record[RECORD_KEYS[match.userResult]] += 1;
 
-  const keyMatches = summary.results
-    .filter((match) => match.isKeyMatch)
-    .map((match) => ({
+  const formatted = summary.results.map((match) => ({ match, view: formatMatchResult(match) }));
+  const keyMatches = formatted
+    .filter(({ match }) => match.isKeyMatch)
+    .map(({ match, view }) => ({
       label: match.keyMatchLabel ?? match.competitionName,
-      text: formatMatchResult(match).text,
+      text: view.text,
     }));
 
   // ISO dates sort lexicographically; Array.prototype.sort is stable.
   const events = [...summary.events]
-    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+    .sort((a, b) => a.date.localeCompare(b.date))
     .map((event) => event.text);
 
   return {
@@ -97,7 +92,7 @@ export function describeBlock(summary: BlockSummaryInput): BlockNarrativeViewMod
     record,
     recordText: recordText(record),
     tone: tone(record),
-    results: summary.results.map(formatMatchResult),
+    results: formatted.map(({ view }) => view),
     keyMatches,
     standing: findUserStanding(summary.standings),
     events,
