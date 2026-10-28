@@ -16,9 +16,12 @@ Los IDs F0-F7 se conservan; las subtareas siguientes dividen aceptación y orden
 sin eliminar funcionalidades. La planificación no equivale a implementación:
 HANDOFF §12–15 registra las tandas hacia A. T3.5 implementa los casos de
 uso y replay; la API y su aceptación conectada siguen pendientes. Las PR #45/#46/#49 conservan contenido parcial en borrador.
-GitHub dispone de issues de seguimiento: #78/#79 corresponden a T3.5b/T3.5c
-y #81 a la siguiente API. Las issues no sustituyen la comprobación de código,
-PR y CI; esta lista conserva el alcance y la propiedad de cada tarea.
+Este fichero es la **especificación** de las tareas; su **estado operativo**
+(Ready, In Progress, In Review, Blocked, Done) vive solo en el
+[GitHub Project](https://github.com/users/migue99angel/projects/1), con una issue
+por tarea activa o pendiente de A y del arranque de B ([ADR-016](adr/016-seguimiento-en-github-projects.md)).
+Las issues no sustituyen la comprobación de código, PR y CI. Las tareas cerradas
+antes del 2026-10-28 no se migraron: su registro son las PR y HANDOFF.
 
 - **Ahora, A:** CR-T3.0, T3.1a/T3.1b, T3.4 y T4.2 están integradas.
   T3.2/T3.3 están integradas con revisión Sol y CI verde.

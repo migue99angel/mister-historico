@@ -9,6 +9,7 @@ Míster Histórico es un juego de navegador, gratuito y sin registro: entrenas a
 | Qué se construye y por qué | [`docs/PRODUCT_BRIEF.md`](docs/PRODUCT_BRIEF.md) |
 | Arquitectura, testing, fases y trabajo en paralelo | [`docs/PLAN.md`](docs/PLAN.md) |
 | Tareas, con su propiedad de ficheros | [`docs/TASKS.md`](docs/TASKS.md) |
+| Estado de las tareas (qué está listo, en curso, en revisión o bloqueado) | [GitHub Project «Míster Histórico — Development»](https://github.com/users/migue99angel/projects/1) ([ADR-016](docs/adr/016-seguimiento-en-github-projects.md)) |
 | Decisiones de arquitectura | [`docs/adr/`](docs/adr/) (plantilla: [`000-template.md`](docs/adr/000-template.md)) |
 | Lenguaje ubicuo ES ↔ EN | [`docs/glossary.md`](docs/glossary.md) |
 
@@ -16,13 +17,15 @@ Antes de empezar, lee este fichero, PLAN §3-4, los ADR relevantes y tu tarea en
 
 ## Cómo trabajar una tarea
 
-1. Lee la tarea completa: dependencias, **propiedad**, qué hacer, tests primero y aceptación.
-2. **Toca solo los ficheros de tu propiedad.** Si necesitas otro, para y dilo en la PR.
-3. Trabaja en la rama `task/<ID>-<slug>` (por ejemplo, `task/T2.3-league`). **Una tarea, una PR** contra `main`.
-4. **No cambies contratos** (puertos en `*/application/ports.py` y `*/domain/ports.py`, APIs publicadas en `*/application/api.py`, esquema de contenido, `contracts/openapi.yaml`) desde una tarea normal: abre una tarea de cambio de contrato (**CR**), que se integra primero (PLAN §6).
-5. Los ficheros compartidos (`pyproject.toml`, `package.json`, workflows de CI, `bootstrap.py`) solo los modifica la tarea que los creó o una CR. ¿Necesitas una dependencia nueva? Pídela en la descripción de la PR.
-6. Termina cuando se cumplan todos los criterios de aceptación y `make test` y `make lint` estén en verde.
-7. No integres tu propia PR: pasa la CI y una revisión independiente. Las tareas **[HUMANO]** las cierra el autor.
+1. Si no te han asignado una tarea, elige en el Project una issue en **Ready**, por prioridad (P0 primero), sin issues abiertas en «blocked by». Pásala a **In Progress**.
+2. Lee la tarea completa en `docs/TASKS.md` (la issue enlaza su ID): dependencias, **propiedad**, qué hacer, tests primero y aceptación. La especificación manda sobre el resumen de la issue.
+3. **Toca solo los ficheros de tu propiedad.** Si necesitas otro, para y dilo en la PR.
+4. Trabaja en un worktree con la rama `task/<ID>-<slug>` (por ejemplo, `task/T2.3-league`). **Una tarea, una PR** contra `main`, con `Closes #<issue>` en la descripción; pasa la issue a **In Review**. Si la tarea se reparte en varias PR, solo la última lleva `Closes`; las demás, `Refs`.
+5. **No cambies contratos** (puertos en `*/application/ports.py` y `*/domain/ports.py`, APIs publicadas en `*/application/api.py`, esquema de contenido, `contracts/openapi.yaml`) desde una tarea normal: abre una tarea de cambio de contrato (**CR**), que se integra primero (PLAN §6).
+6. Los ficheros compartidos (`pyproject.toml`, `package.json`, workflows de CI, `bootstrap.py`) solo los modifica la tarea que los creó o una CR. ¿Necesitas una dependencia nueva? Pídela en la descripción de la PR.
+7. Termina cuando se cumplan todos los criterios de aceptación y `make test` y `make lint` estén en verde.
+8. No integres tu propia PR: pasa la CI y una revisión independiente. Las tareas **[HUMANO]** las cierra el autor.
+9. **No marques Done a mano.** Una issue solo pasa a Done cuando su PR se integra en `main` y el `Closes` la cierra. Si quedas bloqueado, pasa la issue a **Blocked** y explica el motivo en un comentario.
 
 ## Arquitectura (PLAN §3, ADR-002 y ADR-003)
 
@@ -89,6 +92,7 @@ Punto de entrada único: el `Makefile` raíz (no hay `just`).
 
 - Backend: `cd backend && uv run pytest -m unit` (marcadores: `unit`, `integration`, `contract`, `calibration`, `content`, `e2e`; `calibration` se excluye por defecto). Gestiona dependencias con `uv`, nunca con `pip`.
 - Frontend: `cd frontend && npm run test | lint | build | e2e | size`. Playwright emula Pixel 7 e iPhone 14 sobre Chromium.
+- Tareas: `gh project item-list 1 --owner migue99angel --format json --jq '.items[]|"\(.status)\t\(.priority)\t#\(.content.number)\t\(.title)"'` lista el estado. Las dependencias de una issue: `gh api repos/migue99angel/mister-historico/issues/<n>/dependencies/blocked_by --jq '.[]|"#\(.number) \(.state)"'`. Con `gh` 2.45, `gh issue view` y `gh pr edit` fallan sin `--json` (Projects clásico retirado): usa `gh issue view <n> --json title,body,state` y `gh api` para editar. Mover el Status requiere el scope `project` del token.
 
 ## Restricciones del autor
 
