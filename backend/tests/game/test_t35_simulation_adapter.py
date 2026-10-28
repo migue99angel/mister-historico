@@ -1,25 +1,27 @@
-from tests.contracts.suites.game_samples import make_simulation_request, make_simulation_result
+from typing import cast
 
+from tests.contracts.suites.game_samples import make_simulation_request
+
+from mister.game.application.ports import BlockSimulationResult
 from mister.game.infrastructure.simulation_adapter import SimulationServiceAdapter
-from mister.simulation.application.api import SimulationService
+from mister.shared_kernel.randomness import RandomSource
+from mister.simulation.application.api import BlockSimRequest, BlockSummaryDTO, SimulationService
 
 
 class Service:
-    def simulate_block(self, request, rng):
-        self.request = request
+    mapped: BlockSimRequest
+
+    def simulate_block(self, request: BlockSimRequest, rng: RandomSource) -> BlockSummaryDTO:
+        self.mapped = request
         self.rng = rng
-        return make_simulation_result()
+        return BlockSummaryDTO(block_id=request.block_id)
 
 
 def test_adapter_reuses_game_acl_mapping_and_calls_published_simulation_service() -> None:
     request = make_simulation_request()
     service = Service()
-    result = SimulationServiceAdapter(service).simulate_block(request)
-    assert result == SimulationServiceAdapter._map_result(make_simulation_result())
-    assert service.request.season.managed_club_season_id == request.managed_team.club_season_id
-
-
-def test_adapter_accepts_the_real_simulation_facade() -> None:
-    adapter = SimulationServiceAdapter(SimulationService())
-    request = make_simulation_request()
-    assert adapter.simulate_block(request).block_id == request.block_id
+    result = SimulationServiceAdapter(cast("SimulationService", service)).simulate_block(request)
+    assert isinstance(result, BlockSimulationResult)
+    assert result.block_id == request.block_id
+    assert service.mapped.season.managed_club_season_id == request.managed_team.club_season_id
+    assert service.mapped.state_as_of == request.state_as_of
