@@ -40,6 +40,12 @@ describe('SeasonIntro', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Cargando la temporada…');
   });
 
+  it('titles the page while the season is loading', () => {
+    renderIntro();
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Contexto de la temporada');
+  });
+
   it('presents the club, the season and its historical manager', async () => {
     renderIntro();
 
@@ -149,6 +155,20 @@ describe('SeasonIntro', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Test FC' })).toBeInTheDocument();
+  });
+
+  it('titles the page and has no accessibility violations when the season cannot load', async () => {
+    mockServer.use(
+      http.get('*/api/seasons/:seasonId', () => HttpResponse.text('down', { status: 500 })),
+    );
+    const { container } = renderIntro();
+
+    await screen.findByRole('alert');
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Temporada no disponible' }),
+    ).toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('keeps the season on screen when a later refetch fails', async () => {
