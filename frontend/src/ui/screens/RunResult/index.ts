@@ -1,2 +1,3 @@
-// Placeholder so the test fails on behaviour, not on a missing module.
-export {};
+// Public entry point of the final screen, e.g. for `lazy(() => import('.../RunResult'))`.
+export { RunResult, type RunResultProps } from './RunResult';
+export { isTerminalRun, type TerminalRunView } from './runResultView';
