@@ -4,12 +4,9 @@ import type {
   RunViewDto,
   StandingsDto,
 } from '../../../application/ports';
-import { describeBlock } from '../../../domain/blockNarrative';
-import { formatMatchResult, type MatchResultViewModel } from '../../../domain/matchResult';
-import {
-  describeSeasonProgress,
-  type SeasonProgressViewModel,
-} from '../../../domain/seasonProgress';
+import type { MatchResultViewModel } from '../../../domain/matchResult';
+import { toRunViewModel } from '../../../domain/runViewModel';
+import type { SeasonProgressViewModel } from '../../../domain/seasonProgress';
 import { describePositionChange, type PositionChangeViewModel } from '../../../domain/standings';
 
 export type TerminalStatus = Exclude<RunStatusDto, 'in_progress'>;
@@ -75,22 +72,31 @@ function userTable(tables: StandingsDto[]): StandingsDto | null {
 /** Decides what the final screen shows for an ended run, from the run view alone. */
 export function describeRunResult(run: TerminalRunView): RunResultView {
   const summary = run.lastBlockSummary;
+  const { progress, lastBlock } = toRunViewModel(run);
   const table = summary ? userTable(summary.standings) : null;
 
   return {
     status: run.status,
-    progress: describeSeasonProgress(run),
+    progress,
     outcomeText: outcomeText(run),
-    lastBlock: summary && {
-      eyebrow: `${summary.label} · ${describeBlock(summary).recordText}`,
-      matches: summary.results.map((report) => ({
-        key: report.fixtureId,
-        match: formatMatchResult(report),
-        competitionName: report.competitionName,
-        keyMatchLabel: report.keyMatchLabel,
-        userSide: userSide(report),
-      })),
-    },
+    lastBlock: summary &&
+      lastBlock && {
+        eyebrow: `${lastBlock.title} · ${lastBlock.recordText}`,
+        // The block view model formats each report in order; pair them back by index.
+        matches: summary.results.flatMap((report, index) => {
+          const match = lastBlock.results[index];
+          if (!match) return [];
+          return [
+            {
+              key: report.fixtureId,
+              match,
+              competitionName: report.competitionName,
+              keyMatchLabel: report.keyMatchLabel,
+              userSide: userSide(report),
+            },
+          ];
+        }),
+      },
     standings: table && {
       title: run.status === 'finished' ? 'Clasificación final' : 'Clasificación al ser destituido',
       competitionName: table.competitionName,
