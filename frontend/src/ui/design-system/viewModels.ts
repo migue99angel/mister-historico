@@ -1,7 +1,7 @@
 /**
  * Data shapes the components accept. Field names and values mirror the frontend view
  * models of T4.3 (`MatchResultViewModel`, `PositionChangeViewModel`,
- * `SeasonProgressViewModel`), so a view model can be passed straight in; the design
+ * `SeasonProgressViewModel`), so a view model can be passed straight in (viewModels.test.ts); the design
  * system never builds them.
  */
 export type MatchOutcome = 'win' | 'draw' | 'loss';
