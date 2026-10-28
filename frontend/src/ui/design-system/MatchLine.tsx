@@ -5,7 +5,7 @@ export interface MatchLineProps {
   match: MatchLineResult;
   competitionName?: string | undefined;
   keyMatchLabel?: string | null | undefined;
-  /** Side of the player's team, shown in bold. */
+  /** Side of the player's team: bold on screen and named «tu equipo» for screen readers. */
   userSide?: 'home' | 'away' | undefined;
 }
 
@@ -40,12 +40,14 @@ export function MatchLine({ match, competitionName, keyMatchLabel, userSide }: M
             )}
           >
             {match.homeName}
+            {userSide === 'home' && <span className="sr-only"> (tu equipo)</span>}
           </span>
           <span className="rounded-md bg-surface-raised px-2 font-display font-bold tabular-nums">
             {`${String(match.homeScore)}–${String(match.awayScore)}`}
           </span>
           <span className={cx('leading-tight break-words', userSide === 'away' && 'font-bold')}>
             {match.awayName}
+            {userSide === 'away' && <span className="sr-only"> (tu equipo)</span>}
           </span>
         </p>
         {(meta.length > 0 || keyMatchLabel) && (
