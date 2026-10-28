@@ -17,7 +17,7 @@ sin eliminar funcionalidades. La planificación no equivale a implementación:
 HANDOFF §12–15 registra las tandas hacia A. T3.5 implementa los casos de
 uso y replay; la API y su aceptación conectada siguen pendientes. Las PR #45/#46/#49 conservan contenido parcial en borrador.
 Este fichero es la **especificación** de las tareas; su **estado operativo**
-(Ready, In Progress, In Review, Blocked, Done) vive solo en el
+(Ready, In Progress, In Review, Blocked, Done) se lleva en el
 [GitHub Project](https://github.com/users/migue99angel/projects/1), con una issue
 por tarea activa o pendiente de A y del arranque de B ([ADR-016](adr/016-seguimiento-en-github-projects.md)).
 Las issues no sustituyen la comprobación de código, PR y CI. Las tareas cerradas

@@ -17,7 +17,7 @@ Antes de empezar, lee este fichero, PLAN §3-4, los ADR relevantes y tu tarea en
 
 ## Cómo trabajar una tarea
 
-1. Si no te han asignado una tarea, elige en el Project una issue en **Ready**, por prioridad (P0 primero), sin issues abiertas en «blocked by». Pásala a **In Progress**.
+1. Si no te han asignado una tarea, elige en el Project una issue en **Ready**, por prioridad (P0 primero), sin issues abiertas en «blocked by» y sin un comentario de otro agente que ya la haya reclamado. Pásala a **In Progress** y reclámala con un comentario (todos los agentes usan la misma cuenta, así que el assignee no distingue a uno de otro). Elegir tarea por tu cuenta no salta el límite de oleadas de 2-3 agentes (PLAN §6).
 2. Lee la tarea completa en `docs/TASKS.md` (la issue enlaza su ID): dependencias, **propiedad**, qué hacer, tests primero y aceptación. La especificación manda sobre el resumen de la issue.
 3. **Toca solo los ficheros de tu propiedad.** Si necesitas otro, para y dilo en la PR.
 4. Trabaja en un worktree con la rama `task/<ID>-<slug>` (por ejemplo, `task/T2.3-league`). **Una tarea, una PR** contra `main`, con `Closes #<issue>` en la descripción; pasa la issue a **In Review**. Si la tarea se reparte en varias PR, solo la última lleva `Closes`; las demás, `Refs`.
@@ -25,8 +25,7 @@ Antes de empezar, lee este fichero, PLAN §3-4, los ADR relevantes y tu tarea en
 6. Los ficheros compartidos (`pyproject.toml`, `package.json`, workflows de CI, `bootstrap.py`) solo los modifica la tarea que los creó o una CR. ¿Necesitas una dependencia nueva? Pídela en la descripción de la PR.
 7. Termina cuando se cumplan todos los criterios de aceptación y `make test` y `make lint` estén en verde.
 8. No integres tu propia PR: pasa la CI y una revisión independiente. Las tareas **[HUMANO]** las cierra el autor.
-9. **No marques Done a mano.** Una issue solo pasa a Done cuando su PR se integra en `main` y el `Closes` la cierra.
-10. **Una tarea no está terminada hasta que el [Project](https://github.com/users/migue99angel/projects/1) refleja su estado real.** Actualízalo en cada cambio, según la tabla siguiente.
+9. **Done solo tras integrar.** Una issue pasa a Done cuando su PR está integrada en `main` y el `Closes` la cierra; nunca antes. El Project debe reflejar en todo momento el estado real: actualízalo en cada cambio, según la tabla siguiente.
 
 ### Mantener el Project al día
 
@@ -35,8 +34,8 @@ Antes de empezar, lee este fichero, PLAN §3-4, los ADR relevantes y tu tarea en
 | Empiezas | Implementador | Status **In Progress**; comentario con la rama y el worktree. |
 | Abres la PR | Implementador | Status **In Review**; `Closes #N` o `Refs #N` en la PR. |
 | Quedas bloqueado | Quien lo detecte | Status **Blocked**, relación nativa «blocked by» con la issue que bloquea (si no existe, créala) y comentario con el motivo y qué lo desbloquea. Una decisión del autor también es un bloqueo: dilo en el comentario. |
-| Revisas | Revisor | Comentario con el veredicto y el commit revisado. Si hay cambios, la issue vuelve a **In Progress** hasta la corrección. |
-| Se integra la PR | Quien integra | Comprueba que la issue se cerró y está en **Done**. Añade el comentario de cierre: PR y commit integrado, CI, revisión independiente, aceptación cumplida y desviaciones o límites. |
+| Revisas | Revisor | Comentario con el veredicto y el commit revisado. Si pide cambios, el implementador devuelve la issue a **In Progress** hasta corregirlos. |
+| Se integra la PR | Quien integra | Comprueba que la issue se cerró y está en **Done**; si la automatización «Item closed → Done» no la movió, pásala tú. Añade el comentario de cierre: PR y commit integrado, CI, revisión independiente, aceptación cumplida y desviaciones o límites. |
 | Tras integrar | Quien integra | Revisa las issues que esa tarea bloqueaba: si ya no les queda ninguna dependencia abierta, pásalas de **Blocked** a **Ready** con un comentario. |
 | Descubres trabajo nuevo | Cualquiera | Crea una issue con su ID de TASKS, o añade antes la tarea a TASKS (con una CR si cambia contratos). Enlaza sus bloqueos, milestone, Priority y Phase. No dejes seguimientos solo en comentarios o en HANDOFF. |
 
@@ -44,7 +43,7 @@ Comandos (los IDs son los del Project 1):
 
 ```bash
 # Mover el Status: Backlog=9a5adce2 Ready=522e867f "In Progress"=a5c268dc "In Review"=8743f1a4 Blocked=171336ac Done=664872bc
-ITEM=$(gh project item-list 1 --owner migue99angel --format json --jq '.items[]|select(.content.number==<N>)|.id')
+ITEM=$(gh project item-list 1 --owner migue99angel --limit 500 --format json --jq '.items[]|select(.content.number==<N>)|.id')
 gh project item-edit --project-id PVT_kwHOAphq684BpIRk --id "$ITEM" --field-id PVTSSF_lAHOAphq684BpIRkzhnlQd0 --single-select-option-id <opción>
 # Añadir «#<N> blocked by #<M>»
 gh api -X POST repos/migue99angel/mister-historico/issues/<N>/dependencies/blocked_by -F issue_id=$(gh api repos/migue99angel/mister-historico/issues/<M> --jq .id)
@@ -117,7 +116,7 @@ Punto de entrada único: el `Makefile` raíz (no hay `just`).
 
 - Backend: `cd backend && uv run pytest -m unit` (marcadores: `unit`, `integration`, `contract`, `calibration`, `content`, `e2e`; `calibration` se excluye por defecto). Gestiona dependencias con `uv`, nunca con `pip`.
 - Frontend: `cd frontend && npm run test | lint | build | e2e | size`. Playwright emula Pixel 7 e iPhone 14 sobre Chromium.
-- Tareas: `gh project item-list 1 --owner migue99angel --format json --jq '.items[]|"\(.status)\t\(.priority)\t#\(.content.number)\t\(.title)"'` lista el estado. Las dependencias de una issue: `gh api repos/migue99angel/mister-historico/issues/<n>/dependencies/blocked_by --jq '.[]|"#\(.number) \(.state)"'`. Con `gh` 2.45, `gh issue view` y `gh pr edit` fallan sin `--json` (Projects clásico retirado): usa `gh issue view <n> --json title,body,state` y `gh api` para editar. Mover el Status requiere el scope `project` del token.
+- Tareas: `gh project item-list 1 --owner migue99angel --limit 500 --format json --jq '.items[]|"\(.status)\t\(.priority)\t#\(.content.number)\t\(.title)"'` lista el estado. Las dependencias de una issue: `gh api repos/migue99angel/mister-historico/issues/<n>/dependencies/blocked_by --jq '.[]|"#\(.number) \(.state)"'`. Con `gh` 2.45, `gh issue view` sin `--json` y `gh pr edit` fallan al consultar Projects clásico (retirado): usa `gh issue view <n> --json title,body,state` y `gh api` para editar. Mover el Status requiere el scope `project` del token.
 
 ## Restricciones del autor
 
