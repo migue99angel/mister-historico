@@ -178,6 +178,30 @@ describe('SeasonIntro', () => {
     expect(onBackHome).toHaveBeenCalledOnce();
   });
 
+  it('does not let the player leave while the run is starting', async () => {
+    let answer: () => void = () => undefined;
+    const answered = new Promise<void>((resolve) => {
+      answer = resolve;
+    });
+    mockServer.use(
+      http.post('*/api/runs', async () => {
+        await answered;
+        return problem(503, 'unavailable');
+      }),
+    );
+    const onBackHome = vi.fn<() => void>();
+    renderIntro({ onBackHome });
+
+    await userEvent.click(await startButton());
+    const back = screen.getByRole('button', { name: 'Elegir otra temporada' });
+    await userEvent.click(back);
+
+    expect(back).toBeDisabled();
+    expect(onBackHome).not.toHaveBeenCalled();
+    answer();
+    await screen.findByRole('alert');
+  });
+
   it('has no accessibility violations once the season is shown', async () => {
     const { container } = renderIntro();
     await startButton();
