@@ -38,5 +38,32 @@ export function describeRunTokenStoreContract(
 
       expect(store.read('run-1')).toBe('token-1b');
     });
+
+    it('reads no token once the run has been removed', () => {
+      const store = createStore();
+      store.save('run-1', 'token-1');
+
+      store.remove('run-1');
+
+      expect(store.read('run-1')).toBeNull();
+    });
+
+    it('keeps other runs when one run is removed', () => {
+      const store = createStore();
+      store.save('run-1', 'token-1');
+      store.save('run-2', 'token-2');
+
+      store.remove('run-1');
+
+      expect(store.read('run-2')).toBe('token-2');
+    });
+
+    it('accepts removing a run that was never saved', () => {
+      const store = createStore();
+
+      expect(() => {
+        store.remove('run-unknown');
+      }).not.toThrow();
+    });
   });
 }

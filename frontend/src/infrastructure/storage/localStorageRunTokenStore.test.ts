@@ -73,4 +73,21 @@ describe('createLocalStorageRunTokenStore', () => {
 
     expect(store.read('run-1')).toBe('token-1');
   });
+
+  it('removes the token from storage so a reload no longer finds it', () => {
+    createLocalStorageRunTokenStore().save('run-1', 'token-1');
+
+    createLocalStorageRunTokenStore().remove('run-1');
+
+    expect(createLocalStorageRunTokenStore().read('run-1')).toBeNull();
+  });
+
+  it('forgets the in-page copy on remove even when storage rejects it', () => {
+    const store = createLocalStorageRunTokenStore({ storage: () => new FailingStorage() });
+    store.save('run-1', 'token-1');
+
+    store.remove('run-1');
+
+    expect(store.read('run-1')).toBeNull();
+  });
 });
