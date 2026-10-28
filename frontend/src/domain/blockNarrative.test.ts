@@ -97,7 +97,7 @@ describe('describeBlock', () => {
 
     expect(narrative.keyMatches).toEqual([
       { label: 'Derbi', text: 'Test FC 2-0 Rival CF' },
-      { label: 'Copa Test', text: 'Test FC 1-1 Rival CF (3-1 en los penaltis)' },
+      { label: 'Copa Test', text: 'Test FC 1-1 Rival CF (tras la prórroga, 3-1 en los penaltis)' },
     ]);
   });
 
