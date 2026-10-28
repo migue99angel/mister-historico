@@ -235,8 +235,23 @@ def test_block_request_appends_optional_state_date_without_inferring_it_from_res
     request = api.BlockSimRequest(
         season, BlockId("b2"), DAY, DAY, team, prior_results=(second_leg(),)
     )
-    assert fields(api.BlockSimRequest)[-1].name == "state_as_of"
+    field_names = [field.name for field in fields(api.BlockSimRequest)]
+    assert field_names[:10] == [
+        "season",
+        "block_id",
+        "start",
+        "end",
+        "managed_team",
+        "team_morale",
+        "team_overrides",
+        "competition_priorities",
+        "forced_injuries_from_effects",
+        "prior_results",
+    ]
+    assert field_names[-3:] == ["state_as_of", "squad_memberships", "player_pool"]
     assert request.state_as_of is None
+    assert request.squad_memberships is None
+    assert request.player_pool is None
 
 
 def test_continuation_request_preserves_the_explicit_previous_state_date() -> None:
