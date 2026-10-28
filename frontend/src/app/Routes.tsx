@@ -1,6 +1,7 @@
 import { lazy, Suspense, useMemo } from 'react';
 
 import { NativeRouter } from './nativeRouter';
+import { RouteFocus } from './RouteFocus';
 import { createRouteNavigation } from './routeNavigation';
 import { useCurrentRoute, useNavigate } from './routerHooks';
 import { HomeRoute } from './routes/HomeRoute';
@@ -19,10 +20,12 @@ const DesignShowcase = import.meta.env.DEV
 export function AppRoutes() {
   return (
     <NativeRouter>
-      {/* Screens may be lazy() chunks (initial JS budget); this covers them all. */}
-      <Suspense fallback={<RouteFallback />}>
-        <RouteContent />
-      </Suspense>
+      <RouteFocus>
+        {/* Screens may be lazy() chunks (initial JS budget); this covers them all. */}
+        <Suspense fallback={<RouteFallback />}>
+          <RouteContent />
+        </Suspense>
+      </RouteFocus>
     </NativeRouter>
   );
 }
