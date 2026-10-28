@@ -1,6 +1,6 @@
 # Míster Histórico monorepo commands. Run `make help` to list targets.
 .DEFAULT_GOAL := help
-.PHONY: help test test-backend test-frontend lint lint-backend lint-frontend dev validate-content calibrate status
+.PHONY: help test test-backend test-frontend lint lint-backend lint-frontend dev validate-content calibrate status usage usage-test
 
 REPO := migue99angel/mister-historico
 
@@ -45,3 +45,9 @@ ifdef N
 else
 	@gh project item-list 1 --owner migue99angel --limit 500 --query "-status:Done" --format json --jq '.items[]|"\(.status)\t\(.priority)\t#\(.content.number)\t\(.title)"' | sort -t'	' -k1,1 -k2,2 -k3.2n
 endif
+
+usage: ## Local audit of Claude Code and Codex usage (writes outside the repo; see docs/agent-usage.md)
+	python3 tools/agent_usage/agent_usage.py collect
+
+usage-test: ## Tests of the usage audit tool
+	python3 -m unittest discover -s tools/agent_usage -p 'test_*.py'
