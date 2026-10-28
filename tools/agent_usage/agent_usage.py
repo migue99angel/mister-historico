@@ -59,6 +59,7 @@ class Session:
     quota: list[dict] = field(default_factory=list)
     user_turns: int = 0
     mentioned: Counter = field(default_factory=Counter)
+    thread: str = ""
 
     def add_user_turn(self, text: str) -> None:
         if not self.prompt:
@@ -149,7 +150,7 @@ def parse_codex(path: Path) -> Session:
     for row in rows:
         kind, payload = row.get("type"), row.get("payload") or {}
         if kind == "session_meta":
-            session.id = payload.get("id", session.id)
+            session.thread = payload.get("id", "")
             session.parent = payload.get("parent_thread_id")
             session.agent = payload.get("agent_path") or ""
             if payload.get("cwd"):
@@ -279,6 +280,10 @@ def _iso(epoch: float) -> str:
     return datetime.fromtimestamp(epoch, timezone.utc).isoformat()
 
 
+# Codex rounds usage; 99 % already blocks most requests.
+LIMIT_REACHED = 99.0
+
+
 def quota_windows(snapshots: list[dict], tolerance_s: int = 180) -> list[dict]:
     """Group quota snapshots by the reset time the provider reported (it jitters by seconds)."""
     windows: list[dict] = []
@@ -287,11 +292,13 @@ def quota_windows(snapshots: list[dict], tolerance_s: int = 180) -> list[dict]:
         if not current or current["limit_id"] != snap.get("limit_id") or abs(current["_reset"] - snap["resets_at"]) > tolerance_s:
             current = {"limit_id": snap.get("limit_id"), "plan": snap.get("plan"), "window_minutes": snap["window_minutes"],
                        "_reset": snap["resets_at"], "first_ts": snap["ts"], "first_used": snap["used_percent"],
-                       "max_used": snap["used_percent"], "snapshots": 0}
+                       "max_used": snap["used_percent"], "snapshots": 0, "first_at_limit": None}
             windows.append(current)
         current["last_ts"] = snap["ts"]
         current["max_used"] = max(current["max_used"], snap["used_percent"])
         current["snapshots"] += 1
+        if current["first_at_limit"] is None and snap["used_percent"] >= LIMIT_REACHED:
+            current["first_at_limit"] = snap["ts"]
     for w in windows:
         reset = w.pop("_reset")
         w["resets_at"] = _iso(reset)
@@ -416,3 +423,177 @@ def aggregate_tasks(rows: list[dict], prs: list[dict], sizes: dict[str, str], bo
         })
         out.append(t)
     return sorted(out, key=lambda t: t["task"])
+
+
+# --- Collection: reads local logs, ccusage and GitHub; writes outside the repository. ---
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_OUT = Path.home() / ".local/share/mister-historico/agent-usage"
+CCUSAGE = ["npx", "-y", "ccusage@20.0.45"]
+# PR #105 (progressive disclosure and agent workflow) was merged at this instant.
+WORKFLOW_CUTOFF = "2026-10-28T15:32:01+00:00"
+
+
+def _run_json(cmd: list[str], env: dict | None = None) -> dict | list | None:
+    import os
+    import subprocess
+
+    try:
+        out = subprocess.run(cmd, capture_output=True, text=True, timeout=600, check=True,
+                             env={**os.environ, **(env or {})})
+        return json.loads(out.stdout)
+    except (OSError, subprocess.SubprocessError, json.JSONDecodeError):
+        return None
+
+
+def load_tasks_spec(tasks_md: Path) -> dict[str, str | None]:
+    """Task IDs in TASKS.md with their size (S/M/L) when the entry declares one."""
+    sizes: dict[str, str | None] = {}
+    current = None
+    for line in tasks_md.read_text(encoding="utf-8").splitlines():
+        heading = re.match(r"^#{2,4} ((?:CR-)?T[\d.]+[a-zA-Z]?(?:-[\w.-]+)?) · ", line)
+        if heading:
+            current = heading.group(1)
+            sizes[current] = None
+        elif current and (size := re.search(r"\*\*Tamaño:\*\* ([SML])\b", line)):
+            sizes[current] = size.group(1)
+    return sizes
+
+
+def ccusage_rows(claude_sessions: list[Session], claude_dirs: list[Path]) -> tuple[dict, dict]:
+    """ccusage rows by our session id. Subagents are copied as their own files so ccusage prices them apart."""
+    import shutil
+    import tempfile
+
+    claude: dict[str, dict] = {}
+    with tempfile.TemporaryDirectory() as tmp:
+        for project in claude_dirs:
+            dest = Path(tmp) / "projects" / project.name
+            dest.mkdir(parents=True)
+            for path in project.glob("*.jsonl"):
+                shutil.copy(path, dest / path.name)
+            for path in project.glob("*/subagents/*.jsonl"):
+                shutil.copy(path, dest / f"{path.parent.parent.name}__{path.name}")
+        data = _run_json([*CCUSAGE, "claude", "session", "--json"], {"CLAUDE_CONFIG_DIR": tmp})
+    for row in (data or {}).get("sessions", []):
+        claude[row["sessionId"].replace("__", "/")] = row
+    codex_data = _run_json([*CCUSAGE, "codex", "session", "--json"])
+    codex = {row["sessionFile"]: row for row in (codex_data or {}).get("sessions", [])}
+    return claude, codex
+
+
+def github_data(sizes: dict) -> tuple[list[dict], dict[str, str]]:
+    """Pull requests with their task, tool, review verdicts and failed CI runs, and the board status per task."""
+    prs = _run_json(["gh", "pr", "list", "--state", "all", "--limit", "500", "--json",
+                     "number,headRefName,createdAt,mergedAt,state,body,comments"]) or []
+    runs = _run_json(["gh", "run", "list", "--limit", "1000", "--json", "headBranch,conclusion"]) or []
+    failures = Counter(r["headBranch"] for r in runs if r.get("conclusion") == "failure")
+    known = set(sizes)
+    out = []
+    for pr in prs:
+        task = task_from_branch(pr["headRefName"])
+        out.append({
+            "number": pr["number"], "branch": pr["headRefName"], "task": normalize_task(task, known) if task else None,
+            "tool": pr_tool(pr.get("body")), "state": pr["state"], "created": pr["createdAt"], "merged": pr.get("mergedAt"),
+            "review_verdicts": sum(bool(re.search(r"veredicto", c.get("body", ""), re.IGNORECASE)) for c in pr.get("comments", [])),
+            "ci_failures": failures[pr["headRefName"]],
+        })
+    items = _run_json(["gh", "project", "item-list", "1", "--owner", "migue99angel", "--limit", "500", "--format", "json"]) or {}
+    board = {}
+    for item in items.get("items", []):
+        match = TASK_ID.search(item.get("title", ""))
+        if match:
+            board[normalize_task(match.group(1), known)] = item.get("status")
+    return out, board
+
+
+def collect(out_dir: Path, cutoff: datetime, use_ccusage: bool = True, use_github: bool = True) -> dict:
+    home = Path.home()
+    claude_dirs = sorted(p for p in (home / ".claude/projects").glob("*mister-historico*") if p.is_dir())
+    claude = load_claude_sessions(claude_dirs)
+    codex = [s for s in (parse_codex(p) for p in sorted((home / ".codex/sessions").glob("**/rollout-*.jsonl")))
+             if any("mister-historico" in c for c in s.cwds)]
+    by_thread = {s.thread: s.id for s in codex}
+    for s in codex:
+        s.parent = by_thread.get(s.parent, s.parent)
+    sizes = load_tasks_spec(REPO_ROOT / "docs/TASKS.md")
+    known = set(sizes)
+    overrides_path = out_dir / "overrides.json"
+    overrides = json.loads(overrides_path.read_text()) if overrides_path.exists() else {}
+    cc_claude, cc_codex = ccusage_rows(claude, claude_dirs) if use_ccusage else ({}, {})
+
+    rows, snapshots = [], []
+    for s in claude + codex:
+        if not s.calls:
+            continue
+        m = session_metrics(s)
+        a = attribute(s, known, overrides.get(s.id))
+        cc = (cc_claude if s.tool == "claude" else cc_codex).get(s.id)
+        models = m.pop("models")
+        rows.append({
+            "id": s.id, "tool": "Claude Code" if s.tool == "claude" else "Codex", "parent": s.parent,
+            "subagent": bool(s.parent), "agent": s.agent, **m, "main_model": max(models, key=models.get),
+            "models": models, **a, "period": period(m["start"], m["end"], cutoff),
+            "user_turns": s.user_turns, "tasks_mentioned": len({normalize_task(t, known) for t in s.mentioned}),
+            "ccusage_total": cc.get("totalTokens") if cc else None, **cost_fields(cc),
+        })
+        snapshots += s.quota
+    prs, board = github_data(sizes) if use_github else ([], {})
+    tasks = aggregate_tasks(rows, prs, {k: v for k, v in sizes.items() if v}, board)
+    windows = quota_windows(snapshots)
+    claude_log = out_dir / "claude-quota.jsonl"
+    if claude_log.exists():
+        claude_snaps = [{"ts": r["ts"], "limit_id": "claude-5h", "plan": None, "used_percent": r["five_hour_used"],
+                         "window_minutes": 300, "resets_at": r["five_hour_resets_at"]}
+                        for r in iter_jsonl(claude_log) if r.get("five_hour_resets_at")]
+        windows += quota_windows(claude_snaps)
+    for w in windows:
+        tool = "Codex" if w["limit_id"] == "codex" else "Claude Code"
+        inside = lambda ts: ts and w["start"] <= parse_ts(ts).isoformat() < w["resets_at"]
+        w["tool"] = tool
+        w["prs_opened"] = sum(1 for p in prs if p["tool"] == tool and inside(p["created"]))
+        w["prs_merged"] = sum(1 for p in prs if p["tool"] == tool and inside(p.get("merged")))
+        w["prs_merged_all_tools"] = sum(1 for p in prs if inside(p.get("merged")))
+
+    validation = {}
+    for tool, cc in (("Claude Code", cc_claude), ("Codex", cc_codex)):
+        mine = [r for r in rows if r["tool"] == tool and r["ccusage_total"] is not None]
+        validation[tool] = {
+            "sessions": sum(r["tool"] == tool for r in rows), "matched_in_ccusage": len(mine),
+            "tokens_parser": sum(r["total"] for r in mine), "tokens_ccusage": sum(r["ccusage_total"] for r in mine),
+            "mismatches": [{"id": r["id"], "parser": r["total"], "ccusage": r["ccusage_total"]}
+                           for r in mine if abs(r["total"] - r["ccusage_total"]) > 0.005 * max(r["ccusage_total"], 1)],
+        }
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for name, data in (("sessions", rows), ("tasks", tasks), ("prs", prs), ("windows", windows), ("validation", validation)):
+        (out_dir / f"{name}.json").write_text(json.dumps(data, ensure_ascii=False, indent=1, default=str))
+    return validation
+
+
+def main(argv: list[str] | None = None) -> int:
+    import argparse
+    import sys
+
+    parser = argparse.ArgumentParser(description="Local audit of Claude Code and Codex usage for this repository.")
+    sub = parser.add_subparsers(dest="command", required=True)
+    c = sub.add_parser("collect", help="Write per-session, per-task and per-window metrics.")
+    c.add_argument("--out", type=Path, default=DEFAULT_OUT)
+    c.add_argument("--cutoff", default=WORKFLOW_CUTOFF, help="Workflow change instant (ISO 8601).")
+    c.add_argument("--no-ccusage", action="store_true")
+    c.add_argument("--no-github", action="store_true")
+    sub.add_parser("statusline", help="Claude Code status line: reads its JSON on stdin.")
+    args = parser.parse_args(argv)
+    if args.command == "statusline":
+        try:
+            print(statusline(json.load(sys.stdin), DEFAULT_OUT / "claude-quota.jsonl"))
+        except Exception:  # A status line must never break the session.
+            print("?")
+        return 0
+    validation = collect(args.out, datetime.fromisoformat(args.cutoff), not args.no_ccusage, not args.no_github)
+    print(json.dumps(validation, indent=1)[:2000])
+    print(f"Metrics written to {args.out}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
