@@ -13,8 +13,9 @@ from mister.catalog.application.api import (
     PlayableSeasonSummaryDTO,
     present_person_name,
 )
-from mister.game.infrastructure.presentation_adapter import CatalogPresentationAdapter
+from mister.game.application import ports
 from mister.game.domain.squad_registry import SquadRegistry
+from mister.game.infrastructure.presentation_adapter import CatalogPresentationAdapter
 from mister.settings import Settings
 from mister.shared_kernel.ids import PlayableSeasonId
 
@@ -114,3 +115,40 @@ def test_active_squad_uses_block_start_membership_date() -> None:
     players = cast("list[dict[str, object]]", squad["players"])
 
     assert player.player_id.value not in {item["id"] for item in players}
+
+
+def test_block_events_keep_their_distinct_captured_meaning() -> None:
+    season = build_expected_test_fc_season()
+    adapter = CatalogPresentationAdapter(_Catalog(season), Settings())
+    block = season.blocks[0]
+    competition = season.competitions[0]
+    event_types = (ports.EventKind.ADVANCED, ports.EventKind.ELIMINATED, ports.EventKind.CHAMPION)
+    result = ports.BlockSimulationResult(
+        block.id,
+        (),
+        (),
+        (),
+        tuple(
+            ports.BlockEvent(kind, block.end, season.club_season_id, competition.id)
+            for kind in event_types
+        ),
+        (),
+        (),
+    )
+
+    summary = adapter._block_summary(
+        result,
+        None,
+        1,
+        season,
+        {club.id: club for club in season.club_seasons},
+        {item.id: item for item in season.competitions},
+        {player.player_id: player for club in season.club_seasons for player in (club.squad or ())},
+    )
+
+    events = cast("list[dict[str, object]]", summary["events"])
+    assert [item["text"] for item in events] == [
+        f"{season.own_club_season.name} avanza en {competition.name}.",
+        f"{season.own_club_season.name} queda eliminado de {competition.name}.",
+        f"{season.own_club_season.name} gana {competition.name}.",
+    ]
