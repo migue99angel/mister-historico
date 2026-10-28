@@ -266,3 +266,13 @@ export interface GameApi {
   takeDecision(request: IdempotentRunCommand & TakeDecisionRequestDto): Promise<RunViewDto>;
   advanceBlock(request: IdempotentRunCommand & AdvanceBlockRequestDto): Promise<RunViewDto>;
 }
+
+/**
+ * Keeps the bearer token `startRun` issues, per run, so a reload can resume the run.
+ * Synchronous on purpose: browser storage is synchronous and screens read it while rendering.
+ */
+export interface RunTokenStore {
+  save(runId: string, runToken: string): void;
+  /** Returns `null` when no token is known for the run (or storage is unavailable). */
+  read(runId: string): string | null;
+}
