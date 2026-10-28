@@ -1,5 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
+import { cx, FOCUS_RING } from './styles';
+
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
 
 export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'className'> {
@@ -31,14 +33,14 @@ export function Button({
       type={type}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={[
+      className={cx(
         'inline-flex min-h-touch min-w-touch items-center justify-center gap-2 rounded-control px-5',
         'text-body font-semibold transition-colors select-none',
-        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
         'disabled:cursor-not-allowed disabled:opacity-50',
+        FOCUS_RING,
         VARIANT_CLASSES[variant],
-        fullWidth ? 'w-full' : '',
-      ].join(' ')}
+        fullWidth && 'w-full',
+      )}
     >
       {loading && (
         <span
