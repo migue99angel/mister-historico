@@ -38,7 +38,7 @@ describe('Button', () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
-  it('is busy and disabled while loading, so a double tap sends nothing twice', async () => {
+  it('ignores taps while loading, so a double tap sends nothing twice', async () => {
     const onClick = vi.fn();
     render(
       <Button loading onClick={onClick}>
@@ -49,9 +49,43 @@ describe('Button', () => {
 
     await userEvent.dblClick(button);
 
-    expect(button).toBeDisabled();
     expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(button).toHaveAttribute('aria-disabled', 'true');
     expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('keeps keyboard focus when it starts loading', async () => {
+    const { rerender } = render(<Button>Simular bloque</Button>);
+    await userEvent.tab();
+
+    rerender(<Button loading>Simulando…</Button>);
+
+    // Browsers move focus off a natively disabled control; jsdom does not, so check both.
+    const button = screen.getByRole('button', { name: 'Simulando…' });
+    expect(button).toBeEnabled();
+    expect(button).toHaveFocus();
+  });
+
+  it('does not submit its form while loading', async () => {
+    const onSubmit = vi.fn((event: SubmitEvent) => {
+      event.preventDefault();
+    });
+    render(
+      <form
+        aria-label="Decisión"
+        onSubmit={(event) => {
+          onSubmit(event.nativeEvent as SubmitEvent);
+        }}
+      >
+        <Button type="submit" loading>
+          Enviando…
+        </Button>
+      </form>,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Enviando…' }));
+
+    expect(onSubmit).not.toHaveBeenCalled();
   });
 
   it('keeps a touch target of at least 44 px', () => {
