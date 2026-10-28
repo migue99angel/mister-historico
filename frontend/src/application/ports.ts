@@ -258,6 +258,7 @@ export interface IdempotentRunCommand extends RunCredentials {
   idempotencyKey: string;
 }
 
+/** Every operation rejects with `ApiError` (`./apiError`), part of this port's contract. */
 export interface GameApi {
   listSeasons(): Promise<SeasonListDto>;
   getSeason(seasonId: string): Promise<SeasonDetailDto>;
