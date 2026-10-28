@@ -710,6 +710,19 @@ integrados. Siguen T3.6 y la aceptación conectada T3.7a/T4.7a; F3 sigue abierta
   - El replay de una partida terminada coincide con el snapshot (Hypothesis); publicar B después de empezar con A cambia la siguiente partida, pero no la anterior ni su evaluación posterior.
   - Un error del simulador no deja la partida a medias (UoW).
 
+### CR-T3.6-presentation · Presentación pública desde la captura
+- **Depende de:** T3.5 integrada; se integra antes de consumirla en T3.6.
+- **Propiedad:** [CR acotada](changes/CR-T3.6-presentation.md): API publicada de
+  Game, DTOs y presentación privados, ACL de Catalog, helper publicado de nombres,
+  configuración `real_names` y tests propios. Esta entrada la mantiene la orquestación.
+- **Qué hacer:** presentar la respuesta original de los casos de uso con los nombres,
+  textos y etiquetas de la captura inmutable; publicar autenticación sin decodificar
+  snapshots y traducir los errores privados sin filtrar dominio ni secretos.
+- **Tests primero:** nombres reales/alias, autenticación, privacidad, bloques y
+  terminales, reintentos originales y retirada/sustitución de Catalog.
+- **Aceptación:** revisión independiente y CI verdes; sin cambios de OpenAPI,
+  dominio, entradas de replay ni parámetros del perfil A.
+
 ### T3.6 · Adaptadores de la API
 - **Oleada:** F3-B (después de T3.5) · **Tamaño:** M · **Depende de:** T3.5, T1.4
 - **Propiedad:** `entrypoints/api/routers/{seasons,runs}.py`, `entrypoints/api/errors.py`,
