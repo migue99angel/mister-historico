@@ -48,6 +48,9 @@ export function useRun(runId: string): RunQueryState {
       }
     },
     enabled: runToken !== null,
+    // Only this run's commands change it, and they write their reply to this entry; a 409
+    // invalidates it. So a cached view (e.g. seeded after startRun) never needs a refetch.
+    staleTime: Infinity,
   });
 
   if (runToken === null || isRunUnavailableError(query.error)) return { kind: 'unavailable' };
