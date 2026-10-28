@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { GameApi } from '../application/ports';
 import { AppRuntime } from './AppRuntime';
-import { useGameApi } from './useGameApi';
+import { useGameApi } from '../application/gameApi';
 
 const unusedApi: GameApi = {
   listSeasons: () => Promise.resolve({ items: [] }),
