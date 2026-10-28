@@ -6,8 +6,8 @@ import type { RunViewDto } from './ports';
 import { useRunTokenStore } from './runTokenStore';
 
 /**
- * Query key of a run's `RunView`. `useStartRun` seeds it with the view `startRun` returns, so
- * the run screen can paint at once; `useRun` (T4.5) may reuse it or ignore it.
+ * Query key of a run's `RunView`: `useRun` (T4.5) must use this key; seeded with the
+ * `RunViewDto` from `startRun`.
  */
 export function runQueryKey(runId: string) {
   return ['runs', runId] as const;
