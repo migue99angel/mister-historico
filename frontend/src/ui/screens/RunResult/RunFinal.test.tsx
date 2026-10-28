@@ -148,6 +148,12 @@ describe('RunFinal', () => {
     expect(screen.getByRole('link', { name: 'Volver al inicio' })).toHaveAttribute('href', '/');
   });
 
+  it('moves the focus to the not-available notice title when it mounts', () => {
+    renderRunFinal(createTestRuntime(), UNKNOWN_RUN_ID);
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Partida no disponible' })).toHaveFocus();
+  });
+
   it('gives the link back home a touch-sized target', () => {
     renderRunFinal(createTestRuntime(), UNKNOWN_RUN_ID);
 
