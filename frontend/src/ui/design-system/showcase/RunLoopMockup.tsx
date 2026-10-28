@@ -8,13 +8,7 @@ import { MatchLine } from '../MatchLine';
 import { MiniStandings } from '../MiniStandings';
 import { ClubHeader } from './ClubHeader';
 import { PhoneFrame } from './PhoneFrame';
-import {
-  dilemmas,
-  lastBlockMatches,
-  LEAGUE,
-  progressStates,
-  standingsAfterAugust,
-} from './sampleData';
+import { dilemmas, lastBlockMatches, LEAGUE, progressStates, loopStandings } from './sampleData';
 
 const SIMULATION_DEMO_MS = 1500;
 
@@ -45,7 +39,7 @@ export function RunLoopMockup() {
       <div className="flex flex-col gap-4 px-gutter py-4">
         <BlockProgress progress={progressStates.loop} />
 
-        <Card title="Resumen del bloque" eyebrow="Agosto · 3V 1E 1D" headingLevel={4}>
+        <Card title="Resumen del bloque" eyebrow="Octubre-noviembre · 3V 1E 1D" headingLevel={4}>
           <ul className="divide-y divide-line">
             {lastBlockMatches.map((sample) => (
               <li key={`${sample.match.homeName}-${sample.match.awayName}`}>
@@ -64,7 +58,7 @@ export function RunLoopMockup() {
         </Card>
 
         <Card title="Clasificación" headingLevel={4}>
-          <MiniStandings competitionName={LEAGUE} rows={standingsAfterAugust} />
+          <MiniStandings competitionName={LEAGUE} rows={loopStandings} />
         </Card>
 
         <h4 className="mt-2 font-display text-headline font-extrabold">Decisiones del bloque</h4>
