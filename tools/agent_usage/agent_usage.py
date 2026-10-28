@@ -22,7 +22,10 @@ WAIT_TOOLS = {"sleep", "wait", "wait_agent", "list_agents", "TaskOutput", "Monit
 TASK_ID = re.compile(r"(?<![\w-])(CR-T\d+\.\d+[a-z]?|T\d+\.\d+[a-z]?)(?![\w.])")
 # Text a tool injects as a user turn, not written by the person.
 SYSTEM_TEXT = ("<local-command", "<command-name>", "<task-notification", "<system-reminder")
-POLL_COMMAND = re.compile(r"(?:^|[\s;&|(])sleep\s+\d|gh pr checks|gh run (?:watch|view|list)|statusCheckRollup")
+# A shell operation that only waits or polls, recognised by its executable and subcommand.
+POLL_STEP = re.compile(r"^(?:sleep\s+\d+(?:\.\d+)?[smhd]?|gh\s+pr\s+checks\b.*|gh\s+run\s+(?:watch|view|list)\b.*|gh\s+pr\s+view\b.*--json\s+\S*statusCheckRollup.*)$")
+# Shell constructs the classifier does not interpret: background jobs, substitutions and redirections.
+UNSUPPORTED_SHELL = re.compile(r"&|\$\(|`|[<>]")
 
 
 @dataclass
@@ -120,6 +123,9 @@ def _only_waits(args: str) -> bool:
         return False
     polled = False
     for command in commands:
+        command = re.sub(r"\s2>&1\b", " ", command)
+        if UNSUPPORTED_SHELL.search(re.sub(r"&&", " ", command)):
+            return False
         for step in re.split(r"&&|\|\||;|\n", command):
             stages = [stage.strip() for stage in step.split("|") if stage.strip()]
             if not stages:
@@ -127,7 +133,7 @@ def _only_waits(args: str) -> bool:
             head, filters = stages[0], stages[1:]
             if any(not PIPE_FILTER.match(f) for f in filters):
                 return False
-            if POLL_COMMAND.search(" " + head):
+            if POLL_STEP.match(head):
                 polled = True
             elif not NEUTRAL_STEP.match(head):
                 return False
