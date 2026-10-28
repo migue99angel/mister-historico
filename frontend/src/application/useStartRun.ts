@@ -19,7 +19,10 @@ export interface StartRunOptions {
 }
 
 export interface StartRun {
-  /** Starts a run of the season; ignored while another start is still in flight. */
+  /**
+   * Starts a run of the season. Ignored while a start is in flight and once a run has
+   * started, so each hook instance opens at most one run; a failed start can be retried.
+   */
   start: (seasonId: string, options?: StartRunOptions) => void;
   isPending: boolean;
   /** The `ApiError` of the last failed start, cleared by the next start. */
@@ -33,8 +36,10 @@ export function useStartRun(): StartRun {
   const gameApi = useGameApi();
   const runTokenStore = useRunTokenStore();
   const queryClient = useQueryClient();
-  // Two taps in the same frame both see `isPending === false`; the ref closes that gap.
-  const inFlight = useRef(false);
+  // Set from the first start until it fails: two taps in the same frame both see
+  // `isPending === false`, and a tap after success must not open a second run while the
+  // screen navigates away.
+  const locked = useRef(false);
 
   const { mutate, isPending, error, data } = useMutation({
     mutationFn: (seasonId: string) => gameApi.startRun({ seasonId }),
@@ -46,12 +51,12 @@ export function useStartRun(): StartRun {
 
   const start = useCallback(
     (seasonId: string, options: StartRunOptions = {}) => {
-      if (inFlight.current) return;
-      inFlight.current = true;
+      if (locked.current) return;
+      locked.current = true;
       mutate(seasonId, {
         onSuccess: ({ run }) => options.onStarted?.(run.runId),
-        onSettled: () => {
-          inFlight.current = false;
+        onError: () => {
+          locked.current = false;
         },
       });
     },
