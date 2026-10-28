@@ -76,6 +76,10 @@ class ClaudeParsingTest(unittest.TestCase):
         ])
         self.assertEqual([c.wait for c in au.parse_claude(path).calls], [True, False])
 
+    def test_command_that_runs_work_and_then_checks_ci_is_not_a_wait_call(self):
+        self.assertFalse(au.is_wait_call([("Bash", json.dumps({"command": "uv run pytest && gh pr checks 107"}))]))
+        self.assertTrue(au.is_wait_call([("Bash", json.dumps({"command": "cd /r && sleep 30 && gh pr checks 107 | tail -5"}))]))
+
 
 class CodexParsingTest(unittest.TestCase):
     def setUp(self):
@@ -107,6 +111,14 @@ class CodexParsingTest(unittest.TestCase):
             codex_token_count("2026-10-28T10:05:00Z", 3300, 1000, 900, 100),
         ])
         self.assertEqual([c.wait for c in session.calls], [True, True, False])
+
+    def test_exec_cell_with_work_and_a_ci_check_is_not_a_wait_call(self):
+        mixed = "await tools.exec_command({cmd: 'uv run pytest'}); await tools.exec_command({cmd: 'gh pr checks 107'})"
+        self.assertFalse(au.is_wait_call([("exec", json.dumps({"code": mixed}))]))
+        self.assertFalse(au.is_wait_call([("exec", json.dumps({"code": "await tools.exec_command({cmd: 'uv run pytest && gh pr checks 107'})"}))]))
+
+    def test_exec_cell_that_cannot_be_read_is_not_a_wait_call(self):
+        self.assertFalse(au.is_wait_call([("exec", json.dumps({"code": "const c = 'gh pr checks 7'; await run(c)"}))]))
 
     def test_quota_snapshots_come_from_the_rate_limits_codex_writes(self):
         session = self.rollout([codex_token_count("2026-10-28T10:00:00Z", 1100, 1000, 900, 100, used=42.0, resets=1793208210)])
@@ -158,6 +170,13 @@ class AttributionTest(unittest.TestCase):
     def test_several_tasks_in_the_prompt_are_split_and_flagged_as_estimate(self):
         a = au.attribute(self.session(prompt="Orquesta T4.4, T4.5 y T4.6a"), KNOWN)
         self.assertEqual((a["tasks"], a["attribution"]), (["T4.4", "T4.5", "T4.6"], "repartida"))
+
+    def test_tasks_from_later_user_turns_make_the_session_split(self):
+        s = self.session()
+        s.add_user_turn("Implementa T4.3")
+        s.add_user_turn("Ahora implementa T4.4")
+        a = au.attribute(s, KNOWN)
+        self.assertEqual((a["tasks"], a["attribution"], a["source"]), (["T4.3", "T4.4"], "repartida", "prompt"))
 
     def test_session_without_evidence_is_unknown_not_assigned(self):
         a = au.attribute(self.session(prompt="Quiero quitar un MCP"), KNOWN)
@@ -265,6 +284,25 @@ class CollectLogicTest(unittest.TestCase):
         task = au.aggregate_tasks(rows, prs, {"T4.4": "M"})[0]
         self.assertEqual((task["state"], task["review_verdicts"], task["ci_failures"], task["size"]), ("integrada", 2, 1, "M"))
         self.assertEqual((task["hours_to_pr"], task["hours_to_merge"]), (1.0, 3.0))
+
+    def test_missing_github_data_is_unavailable_not_zero(self):
+        rows = [{"tasks": ["T4.4"], "attribution": "directa", "role": "Implementación", "total": 1, "tool": "claude", "start": "2026-10-28T10:00:00+00:00"}]
+        task = au.aggregate_tasks(rows, None, {})[0]
+        self.assertEqual((task["state"], task["prs"], task["review_verdicts"], task["ci_failures"], task["hours_to_pr"]), (None, None, None, None, None))
+
+    def test_failed_ci_query_leaves_ci_failures_unknown(self):
+        raw = [{"number": 7, "headRefName": "task/T4.4-x", "createdAt": "2026-10-28T11:00:00Z", "mergedAt": None, "state": "OPEN", "body": "", "comments": []}]
+        self.assertIsNone(au.pr_rows(raw, None, set())[0]["ci_failures"])
+        self.assertEqual(au.pr_rows(raw, [], set())[0]["ci_failures"], 0)
+        self.assertIsNone(au.pr_rows(None, [], set()))
+        rows = [{"tasks": ["T4.4"], "attribution": "directa", "role": "Implementación", "total": 1, "tool": "claude", "start": "2026-10-28T10:00:00+00:00"}]
+        task = au.aggregate_tasks(rows, au.pr_rows(raw, None, {"T4.4"}), {})[0]
+        self.assertEqual((task["state"], task["ci_failures"]), ("en revisión", None))
+
+    def test_pull_requests_in_a_window_are_unknown_without_github(self):
+        self.assertIsNone(au.prs_in_window(None, "Codex", "created", "2026-10-28T10:00:00+00:00", "2026-10-28T15:00:00+00:00"))
+        prs = [{"tool": "Codex", "created": "2026-10-28T11:00:00Z"}, {"tool": "Codex", "created": "2026-10-28T16:00:00Z"}]
+        self.assertEqual(au.prs_in_window(prs, "Codex", "created", "2026-10-28T10:00:00+00:00", "2026-10-28T15:00:00+00:00"), 1)
 
 
 if __name__ == "__main__":
