@@ -631,18 +631,24 @@ existen; los casos de uso de partida siguen pendientes.
 
 ### T3.5 · Casos de uso y replay
 - **Planificación de esta tanda (2026-10-28):** Sol contrastó código y contratos
-  sobre `2bf56b2`. División secuencial con propiedad exclusiva, dos PR y revisión
+  sobre `2bf56b2`. División con propiedad exclusiva, PR por subtarea y revisión
   independiente Sol de cada entrega. Este reparto no acredita implementación.
   - **T3.5a (Luna):** nuevos `game/application/{content_model,run_codec,block_codec,rules}.py`,
     `game/infrastructure/simulation_adapter.py` y ampliación compatible de
     `game/infrastructure/catalog_adapter.py`; nuevos tests
     `backend/tests/game/test_t35_{content_model,run_codec,block_codec,simulation_adapter,rules}.py`.
     Traducción a tipos Game, captura/restauración, reglas explícitas y codecs completos.
-  - **T3.5b (Luna, después de a):** nuevos `game/application/{use_cases,closure,replay}.py`,
-    `entrypoints/cli/replay.py` y nuevos tests propios
-    `backend/tests/game/test_t35_{use_cases,closure,replay}.py` y
+  - **T3.5b (Luna, después de a y CR):** nuevos
+    `game/application/{use_cases,closure}.py` y tests propios
+    `backend/tests/game/test_t35_{use_cases,closure}.py`.
+    Comandos, progreso de objetivos y transacciones. Expone funciones internas
+    compartidas de decisión y avance que no publican eventos por sí mismas.
+  - **T3.5c (otro Luna, después de b):** nuevos `game/application/replay.py`,
+    `entrypoints/cli/replay.py`, `backend/tests/game/test_t35_replay.py` y
     `backend/tests/entrypoints/cli/test_replay.py`.
-    Comandos, progreso de objetivos, transacciones, replay y entrada CLI inyectable.
+    Replay y entrada CLI inyectable. Reutiliza las funciones internas de b
+    sin duplicar efectos ni cierre. Puede prepararse en rama apilada tras fijar
+    firmas, pero su PR requiere b integrada. Revisión Sol separada de implementación.
   - **CR-T3.5-dated-squads (Luna, revisión Sol, previa a b):** los puertos
     actuales pierden altas/bajas intra bloque. Propiedad exclusiva de
     `game/application/ports.py`, `game/infrastructure/simulation_mapping.py`,
