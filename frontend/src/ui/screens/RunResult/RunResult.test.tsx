@@ -145,6 +145,11 @@ describe('RunResult', () => {
     expect(screen.getByText('Temporada terminada')).toBeVisible();
     expect(screen.getByText('Has llegado al final de la temporada.')).toBeVisible();
     expect(segmentStates(container)).toEqual(Array<string>(5).fill('played'));
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '5');
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuetext',
+      '5 de 5 bloques jugados',
+    );
   });
 
   it('identifies the user club with its generic crest and name', () => {
@@ -245,6 +250,11 @@ describe('RunResult', () => {
     expect(screen.getByText('Destituido en el bloque 3 de 5')).toBeVisible();
     expect(screen.queryByText('Temporada terminada')).not.toBeInTheDocument();
     expect(segmentStates(container)).toEqual(['played', 'played', 'sacked', 'pending', 'pending']);
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '3');
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuetext',
+      '3 de 5 bloques jugados',
+    );
   });
 
   it('names the month of the dismissal when the run knows it', () => {
