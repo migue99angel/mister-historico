@@ -7,7 +7,7 @@
 ## Contexto
 
 El estado de las tareas estaba repartido entre `TASKS.md`, las secciones fechadas de
-`HANDOFF.md` y las PR. GitHub no tenía issues, milestones ni Projects. Para saber qué
+`HANDOFF.md` y las PR. Antes de esta decisión, GitHub no tenía issues, milestones ni Projects. Para saber qué
 estaba listo, un agente tenía que leer documentos de 90 KB (`TASKS.md`) y 44 KB
 (`HANDOFF.md`) y contrastarlos con `gh pr list`, y aun así la foto se quedaba vieja:
 durante la auditoría de esta decisión se integraron cuatro PR (#74-#77) en menos de
@@ -21,7 +21,8 @@ GitHub Projects y [Kanvas](https://github.com/XMihura/Kanvas) 0.4.0.
 ## Decisión
 
 1. **TASKS.md especifica y el Project lleva el estado.** Cada tarea activa o pendiente
-   de los hitos A y B tiene una issue con su ID, un enlace a la especificación, sus
+   del hito A y del arranque de B tiene una issue; el resto de B se migra cuando se
+   acerque su turno, con la misma forma. Cada issue lleva su ID, un enlace a la especificación, sus
    dependencias, la propiedad de ficheros y un resumen de la aceptación. No se copia la
    especificación completa.
 2. **Project «Míster Histórico — Development»** (V2, vinculado al repositorio):
@@ -35,15 +36,15 @@ GitHub Projects y [Kanvas](https://github.com/XMihura/Kanvas) 0.4.0.
    «propuesta». D (temporada actual) sigue solo como roadmap en PLAN §3.4, sin milestone.
 4. **Dependencias** con la relación nativa «blocked by» entre issues.
 5. **Done = PR integrada en `main`.** La PR lleva `Closes #N`; si una tarea se reparte en
-   varias PR, solo la última cierra la issue y las demás usan `Refs`. Nadie mueve una
-   issue a Done a mano.
+   varias PR, solo la última cierra la issue y las demás usan `Refs`. Ninguna issue pasa
+   a Done antes de integrar; si la automatización nativa no la mueve, lo hace quien integra.
    Cada agente actualiza el Project en cada cambio de estado: estado, bloqueos
    nativos, comentario de cierre y desbloqueo de dependientes (tabla de `CLAUDE.md`).
 6. **Sin sincronizadores ni workflows propios.** Solo se usan las automatizaciones
    nativas del Project.
 7. **No se migra el histórico.** Las tareas integradas antes del 2026-10-28 se quedan en
-   las PR y en HANDOFF. HANDOFF conserva las decisiones y las verificaciones, no el
-   estado de las tareas.
+   las PR y en HANDOFF. HANDOFF conserva las decisiones y las verificaciones;
+   sus resúmenes de estado, como los de TASKS, son fotos fechadas: si discrepan, manda el Project.
 
 ## Alternativas consideradas
 
