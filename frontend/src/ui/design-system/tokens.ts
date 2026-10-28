@@ -57,7 +57,9 @@ export const textPairs: readonly TextPair[] = [
       background,
     })),
   ),
-  { foreground: 'on-accent', background: 'accent' },
-  { foreground: 'on-accent', background: 'accent-strong' },
+  ...(['accent', 'accent-strong', 'win', 'draw', 'loss'] as const).map((background) => ({
+    foreground: 'on-accent' as const,
+    background,
+  })),
   { foreground: 'on-gold', background: 'gold' },
 ];

@@ -41,12 +41,11 @@ describe('MiniStandings', () => {
     render(<MiniStandings competitionName="Liga Test" rows={rows} />);
 
     const table = screen.getByRole('table', { name: 'Liga Test' });
-    expect(within(table).getAllByRole('columnheader').map((cell) => cell.textContent)).toEqual([
-      'Pos.',
-      'Equipo',
-      'PJ',
-      'Pts',
-    ]);
+    expect(
+      within(table)
+        .getAllByRole('columnheader')
+        .map((cell) => cell.textContent),
+    ).toEqual(['Pos.', 'Equipo', 'PJ', 'Pts']);
   });
 
   it('lists one row per team in order', () => {
