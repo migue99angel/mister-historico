@@ -87,14 +87,17 @@ export type RunCommandFailure =
   | { kind: 'conflict'; code: string | undefined }
   /** The token no longer opens the run (401, 403 or 404); useRun turns unavailable. */
   | { kind: 'unavailable' }
-  /** Network or server failure: sending the same variables again retries the same attempt. */
+  /** Any other 4xx (e.g. 422 `invalid_option`): the attempt is dropped and the run reloaded. */
+  | { kind: 'rejected'; code: string | undefined }
+  /** Network, 5xx or 429: sending the same variables again retries the same attempt. */
   | { kind: 'failed'; error: Error };
 
 export interface RunCommand<Variables> {
   /**
    * Sends the command against the cached view's version. Sending the variables of the last
    * failed attempt again reuses its Idempotency-Key, so a retry never applies twice. Ignored
-   * (resolves `null`) while another attempt is in flight or before the run has loaded.
+   * (resolves `null`) while another attempt is in flight, while the run view is being
+   * (re)loaded, so a stale version is never sent, or before the run has loaded.
    * Resolves with the new run view, or `null` when ignored or failed (see `failure`).
    */
   send: (variables: Variables) => Promise<RunViewDto | null>;
@@ -128,12 +131,19 @@ function nextAttempt<Variables>(
   return { variables, fingerprint, expectedVersion: version, idempotencyKey: crypto.randomUUID() };
 }
 
+/** Only these may succeed when resent unchanged: no answer, a server error or a rate limit. */
+function isRetryable(error: unknown): boolean {
+  if (!(error instanceof ApiError) || error.status === undefined) return true;
+  return error.status === 429 || error.status >= 500 || error.status < 400;
+}
+
 function toFailure(error: unknown): RunCommandFailure {
-  if (error instanceof ApiError && error.status === 409) {
-    return { kind: 'conflict', code: error.code };
+  if (isRetryable(error)) {
+    return { kind: 'failed', error: error instanceof Error ? error : new Error(String(error)) };
   }
   if (isRunUnavailableError(error)) return { kind: 'unavailable' };
-  return { kind: 'failed', error: error instanceof Error ? error : new Error(String(error)) };
+  const { status, code } = error as ApiError;
+  return status === 409 ? { kind: 'conflict', code } : { kind: 'rejected', code };
 }
 
 /** Shared by useTakeDecision and useAdvanceBlock; see RunCommand. */
@@ -165,22 +175,27 @@ export function useRunCommand<Variables>(
 
   const send = useCallback(
     async (variables: Variables): Promise<RunViewDto | null> => {
-      const current = queryClient.getQueryData<RunViewDto>(runQueryKey(runId));
-      if (inFlight.current || !current) return null;
-      const attempt = nextAttempt(failedAttempt.current, variables, current.version);
+      const queryKey = runQueryKey(runId);
+      const current = queryClient.getQueryData<RunViewDto>(queryKey);
+      if (inFlight.current || !current || queryClient.isFetching({ queryKey }) > 0) return null;
       inFlight.current = true;
       setFailure(null);
+      let attempt: Attempt<Variables> | null = null;
       try {
+        // Inside the try: crypto.randomUUID throws outside a secure context.
+        attempt = nextAttempt(failedAttempt.current, variables, current.version);
         const run = await mutateAsync(attempt);
         failedAttempt.current = null;
-        queryClient.setQueryData(runQueryKey(runId), run);
+        // A reload started before this reply would overwrite it with an older view.
+        await queryClient.cancelQueries({ queryKey });
+        queryClient.setQueryData(queryKey, run);
         return run;
       } catch (error) {
         const reason = toFailure(error);
         failedAttempt.current = reason.kind === 'failed' ? attempt : null;
         setFailure(reason);
         if (reason.kind !== 'failed') {
-          void queryClient.invalidateQueries({ queryKey: runQueryKey(runId) });
+          void queryClient.invalidateQueries({ queryKey });
         }
         return null;
       } finally {
