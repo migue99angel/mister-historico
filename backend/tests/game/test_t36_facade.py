@@ -1,8 +1,10 @@
 """Published facade keeps private run failures behind stable public errors."""
 
+from dataclasses import replace
 from typing import TYPE_CHECKING, cast
 
 import pytest
+from tests.game.test_t35_use_cases import _setup
 
 from mister.game.application.api import (
     DilemmaAlreadyDecidedError,
@@ -12,8 +14,12 @@ from mister.game.application.api import (
     RunAlreadyFinishedError,
     SeasonQueries,
 )
+from mister.game.application.ports import RunNotFoundError
 from mister.game.application.presentation_types import Presented, Started
+from mister.game.application.use_cases import RunAccessDeniedError
 from mister.game.domain.errors import AlreadyDecidedError, InvalidRunTransitionError
+from mister.game.infrastructure.in_memory.run_repository import InMemoryUnitOfWork
+from mister.game.infrastructure.security.run_tokens import Sha256RunTokenHasher
 from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.ids import DilemmaId, OptionId, RunId
 
@@ -107,14 +113,38 @@ def test_invalid_decision_errors_are_translated_without_leaking_domain_codes(
         )
 
 
-def _api(*, take: _Noop | None = None, advance: _Noop | None = None) -> GameApi:
+def test_authenticate_checks_access_without_decoding_mutable_snapshot() -> None:
+    season, _, store, _, start, _, _ = _setup()
+    started = start.execute(season.id)
+    store.runs[started.run_id] = replace(
+        store.runs[started.run_id], snapshot={"not": "a run snapshot"}
+    )
+    api = _api(uow=InMemoryUnitOfWork(store), token_hasher=Sha256RunTokenHasher())
+
+    api.authenticate(started.run_id, started.token)
+
+    with pytest.raises(RunAccessDeniedError):
+        api.authenticate(started.run_id, "wrong-token")
+    with pytest.raises(RunNotFoundError):
+        api.authenticate(RunId.parse("00000000-0000-4000-8000-000000000002"), started.token)
+
+
+def _api(
+    *,
+    take: _Noop | None = None,
+    advance: _Noop | None = None,
+    uow: object | None = None,
+    token_hasher: object | None = None,
+) -> GameApi:
     return GameApi(
         start_run=cast("StartRun", _Noop()),
         get_run=cast("GetRun", _Noop()),
         take_decision=cast("TakeDecision", take or _Noop()),
         advance_block=cast("AdvanceBlock", advance or _Noop()),
-        uow=cast("ports.UnitOfWork", object()),
-        token_hasher=cast("ports.RunTokenHasher", _Hasher()),
+        uow=cast("ports.UnitOfWork", uow if uow is not None else object()),
+        token_hasher=cast(
+            "ports.RunTokenHasher", token_hasher if token_hasher is not None else _Hasher()
+        ),
         presentation=cast("GamePresentation", _Presentation()),
         seasons=cast("SeasonQueries", _Seasons()),
     )
