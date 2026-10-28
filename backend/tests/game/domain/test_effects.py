@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 from dataclasses import replace
 from datetime import date
+from typing import TYPE_CHECKING
 
 import pytest
 from hypothesis import given
@@ -32,6 +35,9 @@ from mister.game.domain.state import (
 from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.ids import ClubSeasonId, CompetitionId, PlayerId
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 OWN = ClubSeasonId("own-season")
 RIVAL = ClubSeasonId("rival-season")
 PLAYER = PlayerId("player-one")
@@ -61,6 +67,7 @@ def test_collective_effects_change_only_their_target(
     if isinstance(effect, MoraleEffect):
         assert result.team_morale == 55
         assert result.board_confidence == 50
+        assert result.players == state().players
     else:
         assert result.board_confidence == 45
         assert result.team_morale == 50
@@ -135,22 +142,51 @@ def test_injury_is_scheduled_without_premature_player_injury() -> None:
 
 @given(
     st.lists(
-        st.tuples(st.integers(-20, 20), st.integers(-25, 25), st.integers(-30, 30)),
+        st.tuples(
+            st.integers(-20, 20),
+            st.integers(-25, 25),
+            st.integers(-30, 30),
+            st.integers(-30, 30),
+        ),
         min_size=0,
         max_size=40,
     )
 )
 def test_morale_confidence_and_fitness_stay_bounded_after_any_effect_sequence(
-    deltas: list[tuple[int, int, int]],
+    deltas: list[tuple[int, int, int, int]],
 ) -> None:
     current = state()
-    for morale_delta, board_delta, fitness_delta in deltas:
+    for morale_delta, board_delta, fitness_delta, player_fitness_delta in deltas:
         current = apply(MoraleEffect(morale_delta), current)
         current = apply(BoardConfidenceEffect(board_delta), current)
         current = apply(FitnessEffect(fitness_delta), current)
+        current = apply(FitnessEffect(player_fitness_delta, PLAYER), current)
     assert 0 <= current.team_morale <= 100
     assert 0 <= current.board_confidence <= 100
     assert 0 <= current.players[0].fitness <= 100
+
+
+def test_effect_numeric_bounds_accept_their_endpoints() -> None:
+    assert MoraleEffect(-20).delta == -20
+    assert MoraleEffect(20).delta == 20
+    assert PlayerMoraleEffect(PLAYER, -30).delta == -30
+    assert PlayerMoraleEffect(PLAYER, 30).delta == 30
+    assert BoardConfidenceEffect(-25).delta == -25
+    assert BoardConfidenceEffect(25).delta == 25
+    assert FitnessEffect(-30).delta == -30
+    assert FitnessEffect(30).delta == 30
+    assert InjuryEffect(PLAYER, AS_OF, 365).days == 365
+    invalid_effects: tuple[Callable[[], object], ...] = (
+        lambda: MoraleEffect(True),
+        lambda: PlayerMoraleEffect(PLAYER, True),
+        lambda: BoardConfidenceEffect(False),
+        lambda: FitnessEffect(True),
+        lambda: InjuryEffect(PLAYER, AS_OF, True),
+        lambda: InjuryEffect(PLAYER, AS_OF, 366),
+    )
+    for invalid in invalid_effects:
+        with pytest.raises(InvalidValueError):
+            invalid()
 
 
 def test_effect_deltas_saturate_without_accepting_bool_as_number() -> None:
