@@ -408,3 +408,42 @@ no se cierra A, F2 ni F3.
 las tres rutas originales de `/tmp` ya no existían al comenzar (marcadas
 `prunable`), y no se han podado ni sustituido. El trabajo concurrente de T4.3
 queda intacto. Se reutilizan los entornos compartidos sin instalaciones nuevas.
+
+
+## 15. Cuarta tanda hacia A: casos de uso y replay (2026-10-28)
+
+**Planificación contrastada con código:** gpt-6.1-sol revisó los contratos y
+el agregado sobre `2bf56b2`. T3.5 se divide en a (captura, modelo privado,
+reglas y codecs) y b (comandos, cierre y replay), con propiedad exclusiva
+registrada en TASKS. Luna implementa y Sol independiente revisa. No se absorben
+T3.6, endpoints, pantallas, temporada actual, mercado económico ni RAG.
+
+**Dependencia descubierta:** los DTO de Catalog conservaban altas y bajas por
+fecha, pero el puerto hacia Simulation las descartaba y fijaba la plantilla
+para todo el bloque. Se preparó una CR separada, previa a b: intervalos inclusivos
+como `SquadRegistry` y pool completo de estados físicos. No se divide la llamada
+al motor por fechas: alteraría los cortes de clasificación y el calendario de
+minutos juveniles. Los seis módulos privados de dominio Game permanecen intactos.
+
+**Decisión del autor para A:** perfil provisional explícitamente aprobado en
+esta sesión, guardado íntegramente en `ReplayInputs` y seleccionado mediante
+`RulesConfiguration.a_profile()`. Confianza inicial 50; victoria/empate/derrota
++3/0/−3; objetivo cumplido/incumplido +10/−10; destitución estrictamente por debajo
+de 20. Moral inicial 50; resultados +2/0/−2; estrella con media ≥85, mínimo 90
+minutos por bloque y penalización −3. Solo es elegible quien pertenece al equipo
+al inicio y al cierre, hay partidos y está disponible en todos; se eximen las
+incorporaciones del bloque. Estado físico inicial 100, prioridad normal y fecha
+efectiva de decisión al inicio de su bloque. Los dilemas publicados no tienen
+fecha propia. Este perfil permite probar A; no acredita balance definitivo V1.
+
+**T3.5a integrada:** [PR #67](https://github.com/migue99angel/mister-historico/pull/67),
+rebase-merge con CI verde y revisión Sol sobre el código `181e282` y las pruebas
+adicionales `502c565`. Captura de una sola lectura, restauración a tipos privados,
+metadatos de rivales, diez efectos traducidos y codecs completos versionados.
+El codec de bloque conserva prórroga, penaltis, empates pendientes y la diferencia
+entre ausencia de información y colección vacía. El agregado conserva todos sus
+campos y los bytes exactos de cada cierre. La primera CI detectó cobertura
+insuficiente; se añadieron pruebas de rechazo reales sin tocar umbrales.
+
+**Pendiente de cierre de esta tanda:** CR fechada y T3.5b en curso; esta sección
+no acredita todavía casos de uso completos ni replay por caso de uso.
