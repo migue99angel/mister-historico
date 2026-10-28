@@ -179,6 +179,11 @@ class QuotaWindowTest(unittest.TestCase):
         self.assertEqual([(w["max_used"], w["snapshots"]) for w in windows], [(55.0, 2), (4.0, 1)])
         self.assertEqual(windows[0]["start"], "2026-10-28T12:23:20+00:00")
 
+    def test_window_records_when_the_limit_was_first_reached(self):
+        snaps = [{"ts": f"2026-10-28T13:{m:02d}:00Z", "limit_id": "codex", "plan": "plus", "used_percent": u, "window_minutes": 300, "resets_at": 1793208200}
+                 for m, u in ((0, 50.0), (10, 99.0), (20, 100.0))]
+        self.assertEqual(au.quota_windows(snaps)[0]["first_at_limit"], "2026-10-28T13:10:00Z")
+
 
 class GithubFieldsTest(unittest.TestCase):
     def test_tool_comes_from_the_pull_request_footer(self):
