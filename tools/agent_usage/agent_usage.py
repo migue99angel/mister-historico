@@ -19,6 +19,9 @@ from typing import Iterable, Iterator
 # Tools whose only purpose is waiting for something outside the model.
 WAIT_TOOLS = {"sleep", "wait", "wait_agent", "list_agents", "TaskOutput", "Monitor"}
 # Shell commands that wait for, or poll, a process outside the model.
+TASK_ID = re.compile(r"(?<![\w-])(CR-T\d+\.\d+[a-z]?|T\d+\.\d+[a-z]?)(?![\w.])")
+# Text a tool injects as a user turn, not written by the person.
+SYSTEM_TEXT = ("<local-command", "<command-name>", "<task-notification", "<system-reminder")
 POLL_COMMAND = re.compile(r"(?:^|[\s;&|(])sleep\s+\d|gh pr checks|gh run (?:watch|view|list)|statusCheckRollup")
 
 
@@ -54,6 +57,14 @@ class Session:
     prompt: str = ""
     agent: str = ""
     quota: list[dict] = field(default_factory=list)
+    user_turns: int = 0
+    mentioned: Counter = field(default_factory=Counter)
+
+    def add_user_turn(self, text: str) -> None:
+        if not self.prompt:
+            self.prompt = text
+        self.user_turns += 1
+        self.mentioned.update(TASK_ID.findall(text))
 
 
 def iter_jsonl(path: Path) -> Iterator[dict]:
@@ -94,10 +105,10 @@ def parse_claude(path: Path, session_id: str | None = None, parent: str | None =
         if row.get("cwd"):
             session.cwds[row["cwd"]] += 1
         message = row.get("message") or {}
-        if row.get("type") == "user" and not session.prompt:
+        if row.get("type") == "user" and not row.get("isMeta"):
             text = _text(message.get("content"))
-            if text.strip() and "<local-command" not in text and "<command-name>" not in text:
-                session.prompt = text
+            if text.strip() and not text.lstrip().startswith(SYSTEM_TEXT):
+                session.add_user_turn(text)
         if row.get("type") != "assistant" or message.get("model") == "<synthetic>":
             continue
         key = f"{message.get('id')}:{row.get('requestId')}"
@@ -150,10 +161,10 @@ def parse_codex(path: Path) -> Session:
             model = payload.get("model", model)
         elif kind == "response_item" and payload.get("type") in ("function_call", "custom_tool_call"):
             pending.append((payload.get("name", ""), str(payload.get("arguments") or payload.get("input") or "")))
-        elif kind == "response_item" and payload.get("type") == "message" and payload.get("role") == "user" and not session.prompt:
+        elif kind == "response_item" and payload.get("type") == "message" and payload.get("role") == "user":
             text = _text(payload.get("content"))
             if text.strip() and not text.lstrip().startswith("<") and "AGENTS.md" not in text[:200]:
-                session.prompt = text
+                session.add_user_turn(text)
         elif kind == "event_msg" and payload.get("type") == "token_count":
             limits = payload.get("rate_limits") or {}
             primary = limits.get("primary")
@@ -225,7 +236,6 @@ def session_metrics(session: Session) -> dict:
     }
 
 
-TASK_ID = re.compile(r"(?<![\w-])(CR-T\d+\.\d+[a-z]?|T\d+\.\d+[a-z]?)(?![\w.])")
 BRANCH_TASK = re.compile(r"^task/(CR-T\d+\.\d+[a-z]?|T\d+\.\d+[a-z]?)(?:-|$)")
 WORKTREE_TASK = re.compile(r"mister-historico-(CR-T\d+\.\d+[a-z]?|T\d+\.\d+[a-z]?)(?:-|$)")
 REVIEW_PROMPT = re.compile(r"\brevis(?:a|or|ión)\b|\breview(?:er)?\b|fact-checker|verificador", re.IGNORECASE)
@@ -346,3 +356,63 @@ def _log_quota(payload: dict, five: dict, week: dict, log_path: Path) -> None:
     with open(log_path, "a", encoding="utf-8") as fh:
         fh.write(json.dumps(row) + "\n")
     state.write_text(key)
+
+
+def period(start: str | None, end: str | None, cutoff: datetime) -> str | None:
+    """Whether a session ran before, after or across a workflow change."""
+    if not start:
+        return None
+    if datetime.fromisoformat(end) < cutoff:
+        return "antes"
+    return "después" if datetime.fromisoformat(start) >= cutoff else "cruza"
+
+
+def _hours(a: str | None, b: str | None) -> float | None:
+    if not a or not b:
+        return None
+    return round((parse_ts(b) - parse_ts(a)).total_seconds() / 3600, 1)
+
+
+def aggregate_tasks(rows: list[dict], prs: list[dict], sizes: dict[str, str], board: dict[str, str] | None = None) -> list[dict]:
+    """Usage and delivery per task. Split sessions count as an estimate, apart from direct ones."""
+    board = board or {}
+    tasks: dict[str, dict] = {}
+
+    def entry(task_id: str) -> dict:
+        return tasks.setdefault(task_id, {
+            "task": task_id, "size": sizes.get(task_id), "sessions": 0, "tokens_directa": 0, "tokens_inferida": 0,
+            "tokens_repartida_est": 0, "tokens_by_role": Counter(), "tools": Counter(), "first_session": None, "prs": []})
+
+    for row in rows:
+        for task_id in row["tasks"]:
+            t = entry(task_id)
+            share = row["total"] / len(row["tasks"])
+            bucket = {"directa": "tokens_directa", "inferida": "tokens_inferida"}.get(row["attribution"], "tokens_repartida_est")
+            t[bucket] += share
+            t["tokens_by_role"][row["role"]] += share
+            t["tools"][row["tool"]] += share
+            t["sessions"] += 1
+            if row.get("start") and (t["first_session"] is None or row["start"] < t["first_session"]):
+                t["first_session"] = row["start"]
+    for pr in prs:
+        if pr.get("task"):
+            entry(pr["task"])["prs"].append(pr)
+    out = []
+    for t in tasks.values():
+        prs_t = sorted(t.pop("prs"), key=lambda p: p["created"])
+        states = {p["state"] for p in prs_t}
+        state = ("integrada" if "MERGED" in states else "en revisión" if "OPEN" in states
+                 else "cerrada sin integrar" if states else "sin PR")
+        if board.get(t["task"]) == "Blocked":
+            state = "bloqueada"
+        merged = [p["merged"] for p in prs_t if p.get("merged")]
+        t.update({
+            "tokens_by_role": dict(t["tokens_by_role"]), "tools": dict(t["tools"]),
+            "prs": [p["number"] for p in prs_t], "pr_tools": sorted({p["tool"] for p in prs_t if p.get("tool")}),
+            "state": state, "review_verdicts": sum(p.get("review_verdicts", 0) for p in prs_t),
+            "ci_failures": sum(p.get("ci_failures", 0) for p in prs_t),
+            "hours_to_pr": _hours(t["first_session"], prs_t[0]["created"]) if prs_t else None,
+            "hours_to_merge": _hours(t["first_session"], max(merged)) if merged else None,
+        })
+        out.append(t)
+    return sorted(out, key=lambda t: t["task"])
