@@ -8,6 +8,7 @@ import {
   renderWithRuntime,
 } from '../../../test/renderWithRuntime';
 
+import { playUntilEnd, startRunOnDevice } from '../../ui/screens/RunResult/testRuns';
 import { App } from '../App';
 import { NativeRouter } from '../nativeRouter';
 import type * as RunFinalRouteModule from './RunFinalRoute';
@@ -56,30 +57,10 @@ describe('RunFinalRoute mount point (/partida/:id/final)', () => {
     const { RunFinalRoute } = await vi.importActual<typeof RunFinalRouteModule>('./RunFinalRoute');
     const runtime = createTestRuntime();
     const { gameApi, runTokenStore } = runtime;
-    const started = await gameApi.startRun({ seasonId: mockFixtures.TEST_SEASON_ID });
+    const started = await startRunOnDevice(gameApi, runTokenStore, mockFixtures.TEST_SEASON_ID);
     const { runId } = started.run;
-    const { runToken } = started;
-    runTokenStore.save(runId, runToken);
     // Sack the manager in the first block: confront the board, then simulate.
-    let run = started.run;
-    for (const dilemma of started.run.pendingDilemmas) {
-      const option =
-        dilemma.options.find(({ id }) => id === mockFixtures.SACK_OPTION_ID) ?? dilemma.options[0];
-      run = await gameApi.takeDecision({
-        runId,
-        runToken,
-        idempotencyKey: `seed-${dilemma.id}`,
-        dilemmaId: dilemma.id,
-        optionId: option?.id ?? '',
-        expectedVersion: run.version,
-      });
-    }
-    await gameApi.advanceBlock({
-      runId,
-      runToken,
-      idempotencyKey: 'seed-advance',
-      expectedVersion: run.version,
-    });
+    await playUntilEnd(gameApi, started, mockFixtures.SACK_OPTION_ID);
 
     renderWithRuntime(
       <NativeRouter>
@@ -99,9 +80,12 @@ describe('RunFinalRoute mount point (/partida/:id/final)', () => {
   it('replaces the final page with the run page while the run is still in play', async () => {
     const { RunFinalRoute } = await vi.importActual<typeof RunFinalRouteModule>('./RunFinalRoute');
     const runtime = createTestRuntime();
-    const started = await runtime.gameApi.startRun({ seasonId: mockFixtures.TEST_SEASON_ID });
-    const { runId } = started.run;
-    runtime.runTokenStore.save(runId, started.runToken);
+    const { run } = await startRunOnDevice(
+      runtime.gameApi,
+      runtime.runTokenStore,
+      mockFixtures.TEST_SEASON_ID,
+    );
+    const { runId } = run;
     window.history.replaceState(null, '', `/partida/${runId}/final`);
     const historyLength = window.history.length;
 

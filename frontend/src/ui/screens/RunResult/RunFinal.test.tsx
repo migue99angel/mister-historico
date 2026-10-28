@@ -10,9 +10,10 @@ import {
   renderWithRuntime,
   type TestRuntime,
 } from '../../../../test/renderWithRuntime';
-import type { GameApi, RunViewDto } from '../../../application/ports';
+import type { RunViewDto } from '../../../application/ports';
 import { runQueryKey } from '../../../application/useRun';
 import { RunFinal } from './RunFinal';
+import { playUntilEnd, startRunOnDevice } from './testRuns';
 
 const UNKNOWN_RUN_ID = '00000000-0000-4000-8000-000000000000';
 const UNAVAILABLE = 'Esta partida no está disponible en este dispositivo.';
@@ -22,48 +23,14 @@ interface SeededRun {
   run: RunViewDto;
 }
 
-/**
- * Plays a Test FC run through the MSW handlers until it ends, taking each dilemma's first
- * option, or the option that gets the manager sacked when `sack` is set.
- */
-async function playUntilEnd(gameApi: GameApi, runId: string, runToken: string, sack: boolean) {
-  let run = await gameApi.getRun(runId, runToken);
-  for (let block = 0; run.status === 'in_progress'; block += 1) {
-    for (const dilemma of run.pendingDilemmas) {
-      const sackOption = dilemma.options.find(
-        (option) => option.id === mockFixtures.SACK_OPTION_ID,
-      );
-      const option = sack && sackOption ? sackOption : dilemma.options[0];
-      run = await gameApi.takeDecision({
-        runId,
-        runToken,
-        idempotencyKey: `seed-${dilemma.id}`,
-        dilemmaId: dilemma.id,
-        optionId: option?.id ?? '',
-        expectedVersion: run.version,
-      });
-    }
-    run = await gameApi.advanceBlock({
-      runId,
-      runToken,
-      idempotencyKey: `seed-advance-${String(block)}`,
-      expectedVersion: run.version,
-    });
-  }
-  return run;
-}
-
 /** Starts a run on this device (token in the store) and, unless `ending` is null, ends it. */
 async function seedRun(ending: 'finished' | 'sacked' | null): Promise<SeededRun> {
   const runtime = createTestRuntime();
-  const started = await runtime.gameApi.startRun({ seasonId: mockFixtures.TEST_SEASON_ID });
-  const { runId } = started.run;
-  runtime.runTokenStore.save(runId, started.runToken);
-  const run =
-    ending === null
-      ? started.run
-      : await playUntilEnd(runtime.gameApi, runId, started.runToken, ending === 'sacked');
-  return { runtime, run };
+  const { gameApi, runTokenStore } = runtime;
+  const started = await startRunOnDevice(gameApi, runTokenStore, mockFixtures.TEST_SEASON_ID);
+  if (ending === null) return { runtime, run: started.run };
+  const sackOptionId = ending === 'sacked' ? mockFixtures.SACK_OPTION_ID : null;
+  return { runtime, run: await playUntilEnd(gameApi, started, sackOptionId) };
 }
 
 /** Records every GET of a run; returning nothing lets the original handler answer. */
