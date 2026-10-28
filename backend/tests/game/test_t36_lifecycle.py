@@ -1,12 +1,13 @@
 """Real in-memory Game API lifecycle through the deterministic simulation engine."""
 
+from __future__ import annotations
+
 from dataclasses import replace
 from datetime import UTC, datetime
-from typing import cast
+from typing import TYPE_CHECKING, Protocol, cast
 
 from tests.game.test_t35_use_cases import _setup
 
-from mister.catalog.application.api import PlayableSeasonDTO
 from mister.game.application.api import GameApi
 from mister.game.application.rules import RulesConfiguration
 from mister.game.application.use_cases import AdvanceBlock
@@ -18,8 +19,37 @@ from mister.game.infrastructure.simulation_adapter import SimulationServiceAdapt
 from mister.settings import Settings
 from mister.shared_kernel.clock import FixedClock
 from mister.shared_kernel.events import InMemoryEventBus
-from mister.shared_kernel.ids import RunId
+from mister.shared_kernel.ids import PlayableSeasonId, RunId
 from mister.simulation.application.api import SimulationService
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from mister.catalog.application.api import (
+        PlayableSeasonDTO,
+        PlayableSeasonSummaryDTO,
+        SeasonContentProvider,
+    )
+
+
+class _MutableProvider(Protocol):
+    season: PlayableSeasonDTO
+
+
+class _RetirableProvider:
+    def __init__(self, provider: SeasonContentProvider) -> None:
+        self._provider = provider
+        self.retired = False
+
+    def list_playable_seasons(self) -> Sequence[PlayableSeasonSummaryDTO]:
+        if self.retired:
+            raise AssertionError("retired Catalog was queried")
+        return self._provider.list_playable_seasons()
+
+    def get_playable_season(self, season_id: PlayableSeasonId) -> PlayableSeasonDTO:
+        if self.retired:
+            raise AssertionError(f"retired Catalog was queried for {season_id}")
+        return self._provider.get_playable_season(season_id)
 
 
 def _version(value: object) -> int:
@@ -34,7 +64,7 @@ def _json_list(value: object) -> list[dict[str, object]]:
     return cast("list[dict[str, object]]", value)
 
 
-def _replace_live_catalog_with_b(provider: object, season: PlayableSeasonDTO) -> None:
+def _replace_live_catalog_with_b(provider: _MutableProvider, season: PlayableSeasonDTO) -> None:
     changed = replace(
         season,
         manager=replace(season.manager, display_name="Mister B", alias_name="Alias B"),
@@ -69,7 +99,7 @@ def _replace_live_catalog_with_b(provider: object, season: PlayableSeasonDTO) ->
     provider.season = changed
 
 
-def test_game_api_replays_original_advance_after_a_later_real_block() -> None:
+def test_game_api_replays_original_advance_after_a_later_real_block() -> None:  # noqa: PLR0915
     rules = RulesConfiguration.a_profile()
     rules = replace(rules, board=replace(rules.board, sacking_threshold=0))
     season, provider, store, _, start, get, take = _setup(rules)
@@ -84,7 +114,8 @@ def test_game_api_replays_original_advance_after_a_later_real_block() -> None:
         restore_game=CatalogRunContentAdapter.restore_game,
         simulator=simulator,
     )
-    presentation = CatalogPresentationAdapter(provider, Settings())
+    retirable_provider = _RetirableProvider(provider)
+    presentation = CatalogPresentationAdapter(retirable_provider, Settings())
     api = GameApi(
         start_run=start,
         get_run=get,
@@ -98,12 +129,14 @@ def test_game_api_replays_original_advance_after_a_later_real_block() -> None:
 
     started = api.start_run(season.id)
     assert set(started.to_json()) == {"runToken", "run"}
-    run_id = RunId.parse(str(started.view.value["runId"]))
+    run_id = RunId.parse(str(started.view.to_json()["runId"]))
     _replace_live_catalog_with_b(provider, season)
-    assert api.get_season(season.id).value["historicalManager"] == "Mister B"
+    assert api.get_season(season.id).to_json()["historicalManager"] == "Mister B"
+    retirable_provider.retired = True
 
     current = api.get_run(run_id, started.run_token)
-    initial_dilemmas = _json_list(current.value["pendingDilemmas"])
+    current_json = current.to_json()
+    initial_dilemmas = _json_list(current_json["pendingDilemmas"])
     assert initial_dilemmas
     assert all(not str(item["title"]).startswith("B ") for item in initial_dilemmas)
     assert all(not str(item["prompt"]).startswith("B ") for item in initial_dilemmas)
@@ -112,16 +145,18 @@ def test_game_api_replays_original_advance_after_a_later_real_block() -> None:
         for dilemma in initial_dilemmas
         for option in _json_list(dilemma["options"])
     )
-    assert all("effects" not in item and "historicalOption" not in item for item in initial_dilemmas)
-    squad = _json_object(current.value["squad"])
+    assert all("effects" not in item for item in initial_dilemmas)
+    assert all("historicalOption" not in item for item in initial_dilemmas)
+    squad = _json_object(current_json["squad"])
     players = _json_list(squad["players"])
     assert all(not str(item["displayName"]).startswith("B ") for item in players)
-    assert "seed" not in current.value and "runToken" not in current.value
+    assert "seed" not in current_json
+    assert "runToken" not in current_json
     first_block = season.blocks[0]
     first_decisions = [item for item in season.dilemmas if item.block_id == first_block.id]
     assert first_decisions
     first_choice_key = "decision-block-one-0001"
-    first_choice_version = _version(current.value)
+    first_choice_version = _version(current.to_json())
     first_choice = first_decisions[0]
     first_option = first_choice.options[0]
     current = api.take_decision(
@@ -138,11 +173,11 @@ def test_game_api_replays_original_advance_after_a_later_real_block() -> None:
             run_id,
             started.run_token,
             f"decision-block-one-{index + 1:04}",
-            _version(current.value),
+            _version(current.to_json()),
             dilemma.id,
             dilemma.options[0].id,
         )
-    first_advance_version = _version(current.value)
+    first_advance_version = _version(current.to_json())
     first_advance_key = "advance-block-one-0001"
     first_advance = api.advance_block(
         run_id,
@@ -150,12 +185,17 @@ def test_game_api_replays_original_advance_after_a_later_real_block() -> None:
         first_advance_key,
         first_advance_version,
     )
-    first_summary = _json_object(first_advance.value["lastBlockSummary"])
+    first_advance_json = first_advance.to_json()
+    first_summary = _json_object(first_advance_json["lastBlockSummary"])
     first_results = _json_list(first_summary["results"])
     assert first_summary["blockNumber"] == 1
     assert first_results
-    assert all(not str(item["home"]["name"]).startswith("B ") for item in first_results)
-    assert all(not str(item["away"]["name"]).startswith("B ") for item in first_results)
+    assert all(
+        not str(_json_object(item["home"])["name"]).startswith("B ") for item in first_results
+    )
+    assert all(
+        not str(_json_object(item["away"])["name"]).startswith("B ") for item in first_results
+    )
 
     current = first_advance
     second_block = season.blocks[1]
@@ -165,7 +205,7 @@ def test_game_api_replays_original_advance_after_a_later_real_block() -> None:
             run_id,
             started.run_token,
             f"decision-block-two-{index:04}",
-            _version(current.value),
+            _version(current.to_json()),
             dilemma.id,
             dilemma.options[0].id,
         )
@@ -173,7 +213,7 @@ def test_game_api_replays_original_advance_after_a_later_real_block() -> None:
         run_id,
         started.run_token,
         "advance-block-two-0001",
-        _version(current.value),
+        _version(current.to_json()),
     )
 
     original_choice_replay = api.take_decision(
@@ -191,8 +231,8 @@ def test_game_api_replays_original_advance_after_a_later_real_block() -> None:
         first_advance_version,
     )
 
-    assert original_choice_replay == first_choice_response
-    assert original_advance_replay == first_advance
-    assert first_advance.value["pendingDilemmas"]
-    pending = _json_list(first_advance.value["pendingDilemmas"])
+    assert original_choice_replay.to_json() == first_choice_response.to_json()
+    assert original_advance_replay.to_json() == first_advance_json
+    assert first_advance_json["pendingDilemmas"]
+    pending = _json_list(first_advance_json["pendingDilemmas"])
     assert all(not str(item["title"]).startswith("B ") for item in pending)

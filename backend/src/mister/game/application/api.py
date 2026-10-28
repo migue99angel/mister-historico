@@ -48,6 +48,12 @@ class InvalidOptionError(GameApiError):
     code = "invalid_option"
 
 
+class SeasonNotFoundError(GameApiError):
+    """The requested season isn't published as playable."""
+
+    code = "season_not_found"
+
+
 class SeasonQueries(Protocol):
     """Read-only season list and detail supplied by Game's infrastructure ACL."""
 
@@ -84,7 +90,12 @@ class GameApi:
         return self._seasons.list_seasons()
 
     def get_season(self, season_id: PlayableSeasonId) -> Presented:
-        return self._seasons.get_season(season_id)
+        try:
+            return self._seasons.get_season(season_id)
+        except DomainError as error:
+            if error.code == "season_not_found":
+                raise SeasonNotFoundError("playable season not found") from error
+            raise
 
     def authenticate(self, run_id: RunId, token: str) -> None:
         """Check existence and access without decoding mutable state or captured content."""
