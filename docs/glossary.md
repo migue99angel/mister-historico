@@ -29,6 +29,7 @@
 | Media | `Rating` | Valoración de 1 a 99 según la rúbrica del proyecto, con su justificación y sus fuentes. |
 | Corrección de la media | `rating_override` | Valor manual con `rationale` y fuentes que sustituye a la media calculada; limitado a 12 puntos de la fórmula. |
 | Jugador clave | `key` | Jugador marcado `key: true`, cuya media se revisa a mano. |
+| Portero · Defensa · Centrocampista · Delantero | `GK` · `DF` · `MF` · `FW` | Posiciones de un jugador (`PlayerPosition`) tal como se muestran en la interfaz. |
 | Nombre real / alias | `display_name` / `alias_name` | Nombre que se muestra según la política de nombres (`NamePolicy`). |
 | Rival agregado | `aggregate` | Rival sin plantilla (fuera de Primera) que solo tiene fuerza agregada. |
 | Competición | `Competition` | Liga, Copa, Supercopa, Champions o UEFA de una temporada, con sus participantes y reglas. |
