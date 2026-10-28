@@ -1,7 +1,7 @@
 # Míster Histórico: Plan de implementación
 
 > Fecha: 2026-10-22 · Parte de [`PRODUCT_BRIEF.md`](./PRODUCT_BRIEF.md) · Las tareas están en [`TASKS.md`](./TASKS.md).
-> Estado comprobado el **2026-10-27**, tras las PR #57/#58: motor y catálogo, estado y agregado Game, captura recuperable, persistencia SQL de runs y shell/adaptador web integrados con revisión Sol y CI. Siguen pendientes efectos/directiva, casos de uso/API de partida y pantallas del bucle; F2 histórica permanece abierta. No hay todavía una primera partida completa ni beta. El lanzamiento V1 de 3-5 equipos se mantiene y las decisiones de beta siguen en §5.4.
+> Estado comprobado el **2026-10-28**, tras integrar las PR #61/#62: motor y catálogo, estado y agregado Game, captura recuperable, persistencia SQL de runs y shell/adaptador web integrados con revisión Sol y CI. Efectos, directiva y moral también están integrados; siguen pendientes los casos de uso/API de partida y pantallas del bucle; F2 histórica permanece abierta. No hay todavía una primera partida completa ni beta. El lanzamiento V1 de 3-5 equipos se mantiene y las decisiones de beta siguen en §5.4.
 
 ---
 
@@ -133,12 +133,12 @@ sencillo, compras y ventas entre pocas opciones, tácticas, vestuario y objetivo
 de directiva. Se admitirá algo más de duración; no se pretende una gestión del
 nivel de Football Manager. No se implementa ahora.
 
-Auditoría iniciada sobre `8be8244` y actualizada tras las dos primeras tandas de A, conforme a ADR-003, 007 y 015:
+Auditoría iniciada sobre `8be8244` y actualizada tras las tres primeras tandas de A, conforme a ADR-003, 007 y 015:
 
 | Pieza | Qué permite hoy y qué limita la evolución | Acción antes del MVP / aplazamiento |
 |---|---|---|
 | `ClubSeason` / `PlayableSeason` | Separa plantillas de escenario y evita duplicar un rival jugable. `PlayableSeasonDTO` exige manager, dilemas con opción histórica, tablas y desenlaces reales; no representa todavía una temporada sin historia terminada. | Conservar ADR-015 y traducir por ACL. Aplazar un esquema de temporada actual con `as_of`, calendario y reglas propias hasta D; no rellenar historia falsa ni volver todos los campos opcionales ahora. |
-| `SquadRegistry` | La base privada de T3.1a está integrada (#53); conserva pertenencias y movimientos por fecha sin mutar Catalog. T3.1b (#58) incorpora ese estado al agregado; su modificación por efectos sigue pendiente. | Conectar movimientos y unicidad de pertenencia con los efectos históricos en T3.2/T3.5. Precios, salarios, contratos, monedas y restricciones de ventanas esperan a D. |
+| `SquadRegistry` | La base privada de T3.1a está integrada (#53); conserva pertenencias y movimientos por fecha sin mutar Catalog. T3.1b (#58) incorpora ese estado al agregado; T3.2 (#61) implementa los efectos; falta su conexión en T3.5. | Conectar movimientos y unicidad de pertenencia con los efectos históricos en T3.2/T3.5. Precios, salarios, contratos, monedas y restricciones de ventanas esperan a D. |
 | Catalog / Game / Simulation | Catalog aporta referencias; Game conserva decisiones y estado; Simulation recibe plantillas efectivas y devuelve resultados. El motor no lee dilemas. | Mantener esta separación y la traducción por IDs. Conservar los contratos integrados en CR-T3.0 y completar su traducción y orquestación en T3.5, sin crear `GameMode`, factorías ni jerarquías. |
 | `ExternalResultsPolicy` | Es una estrategia pura de acumulados **históricos**: petición con baseline y reemplazos; no recibe calendario global, plantillas ni RNG. `season.py` instancia `HistoricalExternalResults` para liga y grupos. | Mantener P2 para A/B/C. D necesitará CR de petición/coordinación, calendario completo y flujos derivados para resultados ajenos; añadir una clase no bastará. No anticipar inyección genérica ahora. |
 | Evaluation | Está separado de Game, pero su puerto actual es `HistoricalOutcomeProvider`; aún no existe el evaluador. | En T3.3/T5.1 mantener cálculo de objetivos separado de comparación histórica; Game puede terminar sin ejecutar esta última. En D decidir puntuación por objetivos y adaptar contratos por CR. No implementar un evaluador universal antes de B. |
@@ -332,7 +332,8 @@ no autoriza recortar datos de B.
 mapeo del simulador; (2) T3.1a, estado privado y `SquadRegistry` mínimos; (3) T4.2,
 shell/rutas/adaptador sobre contrato y MSW. Esta tanda ya está integrada y
 comprobada (HANDOFF §12). La segunda tanda integra T3.1b y T3.4 (HANDOFF §13),
-sin absorber efectos/directiva ni casos de uso. Siguen pendientes T3.2/T3.3 y
+sin absorber efectos/directiva ni casos de uso. La tercera tanda integra
+T3.2/T3.3 (HANDOFF §14), con revisión Sol y CI verde. Siguen T3.5/T3.6 y
 T4.1/T4.3, que alimentan el bucle. Oleadas de 2-3 agentes
 contando revisiones; no abrir todas las tareas de la tabla a la vez. F2 continúa
 por lotes sin consumir toda la capacidad reservada a A.

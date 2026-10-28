@@ -1,6 +1,6 @@
 # Traspaso de la orquestación (2026-10-26)
 
-> Las secciones 1–12 conservan las comprobaciones de su fecha. La sección 13 recoge la segunda tanda implementada hacia la partida interna: agregado y persistencia SQL. F2 y el hito A continúan abiertos. Léelo junto con `CLAUDE.md`, `docs/PLAN.md` y `docs/TASKS.md`. Las instrucciones del autor prevalecen sobre estos documentos.
+> Las secciones 1–13 conservan las comprobaciones de su fecha. La sección 14 recoge la tercera tanda hacia la partida interna: efectos, directiva y moral. F2 y el hito A continúan abiertos. Léelo junto con `CLAUDE.md`, `docs/PLAN.md` y `docs/TASKS.md`. Las instrucciones del autor prevalecen sobre estos documentos.
 
 ## 1. Rol y forma de trabajo
 
@@ -327,3 +327,84 @@ T4.4/T4.5/T4.6a con T4.7a real; no existe aún una partida completa jugable ni
 replay por caso de uso. No se cierra A, F2 ni F3. Las PR #45/#46/#49 permanecen
 en borrador, con sus worktrees preservados. Las decisiones de beta B, el modo
 actual, mercado económico y RAG quedan fuera de esta tanda.
+
+
+## 14. Tercera tanda hacia A: efectos y resolución del cierre (2026-10-28)
+
+**Tanda integrada por rebase-merge con revisión independiente y CI verde.**
+`main` limpia en `499cae3` tras #61/#62; el árbol integrado de código, pruebas,
+contratos, contenido y configuración coincide con el comprobado conjuntamente.
+Ambos checks finales de cada PR pasaron antes de integrar:
+[backend #61](https://github.com/migue99angel/mister-historico/actions/runs/40650889087),
+[Docker #61](https://github.com/migue99angel/mister-historico/actions/runs/40650889082),
+[backend #62](https://github.com/migue99angel/mister-historico/actions/runs/40651093033)
+y [Docker #62](https://github.com/migue99angel/mister-historico/actions/runs/40651092951).
+
+**Verificación conjunta final:** árbol combinado con `main` en `3ebab31`;
+`make test` completo: **2399 backend y 100 frontend**, incluidos los contratos
+PostgreSQL reales. `make lint` completo verde: Ruff, formato, mypy estricto,
+ocho contratos de capas backend y verificaciones frontend. Cobertura de
+dominio/aplicación: **98,77% líneas y 96,22% ramas**, sobre el 95% requerido.
+Escenario adicional entre los tres módulos y `Run`: tres bloques con final
+normal y destitución en cada uno, conservando cursor y estado inicial.
+La pasada interrumpida sobre el árbol anterior no cuenta como validación.
+
+
+**Planificación realizada:** gpt-6.1-sol contrastó el DSL cerrado, los objetivos
+publicados y `RunState`, `SquadRegistry` y `Run`. T3.2/T3.3 tienen dependencias
+integradas y propiedad separada. No necesitan una CR para sus tipos privados;
+no modifican contratos, estado ni agregado. Los casos de uso, persistencia,
+endpoints y pantallas no forman parte de esta tanda.
+
+**Implementación realizada e integrada:** dos agentes gpt-6-luna en ramas y worktrees
+separados, con revisión independiente por dos agentes gpt-6.1-sol:
+
+- **T3.2, [PR #61](https://github.com/migue99angel/mister-historico/pull/61):**
+  diez tipos privados de efectos y despacho exhaustivo con `assert_never`.
+  Moral colectiva e individual propia y fitness saturados; pertenencias
+  efectivas conservadas mediante traspasos fechados. Vender conserva el estado
+  del jugador para el rival. Las lesiones futuras solo añaden `ForcedInjury`.
+  Sol aprueba `6859414`, incluidos ajuste de moral colectiva con regresión
+  roja separada y formato; 20 pruebas dirigidas, tipos y formato verdes.
+- **T3.3, [PR #62](https://github.com/migue99angel/mister-historico/pull/62):**
+  objetivos `win`/`finish_top`/`reach_stage` por competición, progreso pendiente
+  neutral y reconocimiento de logros/incumplimientos una sola vez. Confianza
+  saturada y `ClosureOutcome.SACKED` estrictamente por debajo del umbral.
+  Moral por resultados y pocos minutos explícitos, con elegibilidad recibida.
+  Sol detectó un P2 que permitía regresar un objetivo final a pendiente y
+  cobrar otro premio; se corrigió junto a evidencia de posición final
+  incompleta mediante rojo `d3392b9` y verde `396aac7`. Sol aprueba esa punta;
+  53 pruebas dirigidas, Ruff y mypy estricto incluidos tests verdes.
+
+**Límites y decisiones de producto:** los pesos de resultados/objetivos,
+umbral de destitución, definición de estrella, minutos mínimos y penalización
+son parámetros obligatorios. Los números sintéticos de tests no son balance
+aprobado. La elegibilidad de lesionados y recién incorporados se recibe,
+no se deduce. T3.5 fijará una configuración explícita para A y la conservará
+en `ReplayInputs`, con revisión de reglas compatible. No crear modos genéricos
+ni cambiar el esquema de contenido para exponer estos parámetros sin CR.
+
+**Handoff técnico para T3.5:** traducir desde el contenido capturado a los tipos
+privados de Game, nunca importar DTOs de Catalog desde dominio. Precargar todos
+los jugadores conocidos, incluidos mercado/rivales; normalizar mercado y exterior
+a propietario `None`. `apply(..., on=fecha_decisión)` resuelve pertenencias;
+los traspasos usan su `effective_on`. Ninguno adelanta `state_as_of`.
+El registro rechaza dos movimientos del mismo jugador en la misma fecha.
+Aportar minutos del bloque, elegibilidad y progreso anterior/actual de objetivos;
+los estados finales son irreversibles. La resolución entrega estado y outcome;
+T3.5 construye `BlockResolution` con cursor del cierre, y `Run` conserva el bloque de destitución, el cursor del cierre y los eventos.
+La destitución no ocurre al aplicar un dilema.
+
+**Siguiente trabajo planificado, sin implementar aquí:** T3.5 une estas piezas,
+captura/restaura la partida, decide idempotentemente, simula y ofrece replay;
+continuación y replay siempre leen la captura de la partida, incluso después
+de publicar B o retirar Catalog. Después T3.6, T3.7a y pantallas/E2E reales.
+T4.3 tiene una PR #60 y un worktree ajenos a esta tanda; verificar su estado
+antes de planificar frontend. No existe todavía una partida web completa;
+no se cierra A, F2 ni F3.
+
+**Estado observado:** `main` estaba limpia en `9e976bb`; #57/#58/#59 integradas.
+#45/#46/#49 siguen en borrador. Sus ramas y registros de worktree se conservan;
+las tres rutas originales de `/tmp` ya no existían al comenzar (marcadas
+`prunable`), y no se han podado ni sustituido. El trabajo concurrente de T4.3
+queda intacto. Se reutilizan los entornos compartidos sin instalaciones nuevas.
