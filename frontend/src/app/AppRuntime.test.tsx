@@ -1,10 +1,12 @@
 import { render, screen } from '@testing-library/react';
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
-import type { GameApi } from '../application/ports';
-import { AppRuntime } from './AppRuntime';
 import { useGameApi } from '../application/gameApi';
+import type { GameApi, RunTokenStore } from '../application/ports';
+import { useRunTokenStore } from '../application/runTokenStore';
+import { RUN_TOKEN_KEY_PREFIX } from '../infrastructure/storage/localStorageRunTokenStore';
+import { AppRuntime } from './AppRuntime';
 
 const unusedApi: GameApi = {
   listSeasons: () => Promise.resolve({ items: [] }),
@@ -26,7 +28,17 @@ function RuntimeProbe() {
   );
 }
 
+function SaveTokenProbe() {
+  const runTokenStore = useRunTokenStore();
+  runTokenStore.save('run-1', 'token-1');
+  return <p>{runTokenStore.read('run-1')}</p>;
+}
+
 describe('AppRuntime', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
   it('provides the GameApi port and TanStack Query client to the application shell', () => {
     render(
       <AppRuntime gameApi={unusedApi}>
@@ -35,5 +47,32 @@ describe('AppRuntime', () => {
     );
 
     expect(screen.getByText('function:cache-ready')).toBeInTheDocument();
+  });
+
+  it('provides the RunTokenStore given by the caller', () => {
+    const tokens = new Map<string, string>();
+    const runTokenStore: RunTokenStore = {
+      save: (runId, runToken) => tokens.set(runId, runToken),
+      read: (runId) => tokens.get(runId) ?? null,
+    };
+
+    render(
+      <AppRuntime gameApi={unusedApi} runTokenStore={runTokenStore}>
+        <SaveTokenProbe />
+      </AppRuntime>,
+    );
+
+    expect(screen.getByText('token-1')).toBeInTheDocument();
+    expect(tokens.get('run-1')).toBe('token-1');
+  });
+
+  it('keeps run tokens in localStorage by default so a reload resumes the run', () => {
+    render(
+      <AppRuntime gameApi={unusedApi}>
+        <SaveTokenProbe />
+      </AppRuntime>,
+    );
+
+    expect(window.localStorage.getItem(`${RUN_TOKEN_KEY_PREFIX}run-1`)).toBe('token-1');
   });
 });
