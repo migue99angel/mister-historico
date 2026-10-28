@@ -67,7 +67,8 @@ def test_collective_effects_change_only_their_target(
     if isinstance(effect, MoraleEffect):
         assert result.team_morale == 55
         assert result.board_confidence == 50
-        assert result.players == state().players
+        assert result.players[0].morale == 55
+        assert result.players[1].morale == 40
     else:
         assert result.board_confidence == 45
         assert result.team_morale == 50
@@ -169,6 +170,7 @@ def test_morale_confidence_and_fitness_stay_bounded_after_any_effect_sequence(
         current = apply(FitnessEffect(player_fitness_delta, PLAYER), current)
     assert 0 <= current.team_morale <= 100
     assert 0 <= current.board_confidence <= 100
+    assert 0 <= current.players[0].morale <= 100
     assert 0 <= current.players[0].fitness <= 100
 
 
