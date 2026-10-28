@@ -19,7 +19,7 @@ def build_replay_command(replay_run: ReplayRun) -> Callable[[str, str], ReplayRe
 
     def replay_command(run_id: str, token: str) -> ReplayResult:
         result = replay_run.execute(RunId.parse(run_id), token)
-        echo(f"Replay verified: {result.run_id}")
+        echo(f"Partida reproducida y verificada: {result.run_id}")
         return result
 
     return replay_command
