@@ -1,6 +1,15 @@
+import { lazy, Suspense } from 'react';
+
 import { HomeScreen } from '../ui/screens/HomeScreen';
 import { NativeRouter, RouterLink } from './nativeRouter';
 import { useCurrentRoute } from './routerHooks';
+
+// Statically false in production builds, so the showcase chunk is never emitted there.
+const DesignShowcase = import.meta.env.DEV
+  ? lazy(() =>
+      import('../ui/design-system/Showcase').then((module) => ({ default: module.Showcase })),
+    )
+  : null;
 
 export function AppRoutes() {
   return (
@@ -24,6 +33,14 @@ function RouteContent() {
       return <MinimalRoute title="Resultado de la partida" identifier={route.runId} />;
     case 'shared-run':
       return <MinimalRoute title="Partida compartida" identifier={route.runId} />;
+    case 'design-showcase':
+      return DesignShowcase ? (
+        <Suspense fallback={<p role="status">Cargando el sistema de diseño…</p>}>
+          <DesignShowcase />
+        </Suspense>
+      ) : (
+        <MinimalRoute title="Página no encontrada" />
+      );
     case 'not-found':
       return <MinimalRoute title="Página no encontrada" />;
   }
