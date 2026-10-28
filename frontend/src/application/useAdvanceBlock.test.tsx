@@ -1,3 +1,4 @@
+import type { QueryClient } from '@tanstack/react-query';
 import { act, waitFor } from '@testing-library/react';
 import { HttpResponse, http } from 'msw';
 import { describe, expect, it } from 'vitest';
@@ -55,8 +56,10 @@ async function renderRunReadyToAdvance() {
   return { ...rendered, runId };
 }
 
-function cachedRun(queryClient: { getQueryData: (key: unknown) => unknown }, runId: string) {
-  return queryClient.getQueryData(runQueryKey(runId)) as RunViewDto;
+function cachedRun(queryClient: QueryClient, runId: string) {
+  const run = queryClient.getQueryData<RunViewDto>(runQueryKey(runId));
+  if (!run) throw new Error('The run is not cached.');
+  return run;
 }
 
 describe('useAdvanceBlock', () => {
