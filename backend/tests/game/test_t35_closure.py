@@ -1,5 +1,6 @@
 """T3.5 application closure and history mapping."""
 
+from dataclasses import replace
 from datetime import UTC, datetime
 
 from tests.contracts.suites.expected_test_fc import build_expected_test_fc_season
@@ -116,6 +117,40 @@ def test_test_fc_closure_runs_through_real_simulation_service() -> None:
 
     assert len(result.run.block_records) == 1
     assert decode_block(result.run.block_records[0].payload).block_id == captured.blocks[0].id
+
+
+def test_sacking_closes_the_current_block_and_keeps_terminal_status() -> None:
+    captured, snapshot = _captured()
+    low_confidence = replace(snapshot.run.run_state, board_confidence=10)
+    snapshot = replace(snapshot, run=replace(snapshot.run, run_state=low_confidence))
+    simulator = ScriptedSeasonSimulator()
+    simulator.script(
+        BlockSimulationResult(
+            captured.blocks[0].id,
+            (),
+            (),
+            (),
+            (),
+            (),
+            tuple(
+                PlayerOutcome(player.player_id, player.fitness, player.injured_until, 0)
+                for player in snapshot.run.run_state.players
+            ),
+        )
+    )
+
+    result, events = advance_snapshot(
+        snapshot,
+        captured,
+        simulator,
+        RulesConfiguration.a_profile(),
+        datetime(2026, 10, 28, tzinfo=UTC),
+    )
+
+    assert result.run.status.value == "sacked"
+    assert result.run.block_index == 0
+    assert len(result.run.block_records) == 1
+    assert [type(event).__name__ for event in events] == ["BlockSimulated", "ManagerSacked"]
 
 
 def test_advancing_from_semifinal_marks_final_stage_reached() -> None:
