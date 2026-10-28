@@ -262,6 +262,24 @@ def test_get_run_rejects_snapshot_seed_mismatch() -> None:
         get.execute(created.run_id, created.token)
 
 
+def test_get_run_rejects_snapshot_blocks_that_differ_from_captured_content() -> None:
+    season, _, store, _, start, get, _ = _setup()
+    created = start.execute(season.id)
+    record = store.runs[created.run_id]
+    snapshot = RunSnapshot.decode(record.snapshot)
+    changed_run = replace(
+        snapshot.run,
+        blocks=(replace(snapshot.run.blocks[0], dilemmas=()), *snapshot.run.blocks[1:]),
+    )
+    store.runs[created.run_id] = replace(
+        record,
+        snapshot=replace(snapshot, run=changed_run).encode(),
+    )
+
+    with pytest.raises(InvalidValueError, match="captured content"):
+        get.execute(created.run_id, created.token)
+
+
 def test_get_run_rejects_invalid_initial_state_envelope() -> None:
     season, _, store, _, start, get, _ = _setup()
     created = start.execute(season.id)
