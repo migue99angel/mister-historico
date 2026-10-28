@@ -110,9 +110,7 @@ def _simulation_request(
         if club.id != state.managed_club_season_id and club.has_squad
     )
     prior_results = tuple(
-        match
-        for item in snapshot.run.block_records
-        for match in decode_block(item.payload).matches
+        match for item in snapshot.run.block_records for match in decode_block(item.payload).matches
     )
     priorities = {
         item.competition_id: ports.Priority(item.priority.value)
@@ -170,9 +168,7 @@ def _effective_memberships(state: RunState) -> tuple[ports.SquadMembership, ...]
         for item in registry.base_memberships:
             if item.player_id == player_id and item.left_on is not None and item.left_on < date.max:
                 cuts.add(item.left_on + timedelta(days=1))
-        cuts.update(
-            item.effective_on for item in registry.transfers if item.player_id == player_id
-        )
+        cuts.update(item.effective_on for item in registry.transfers if item.player_id == player_id)
         ordered = sorted(cuts)
         for index, start in enumerate(ordered):
             end = ordered[index + 1] - timedelta(days=1) if index + 1 < len(ordered) else date.max
@@ -180,20 +176,14 @@ def _effective_memberships(state: RunState) -> tuple[ports.SquadMembership, ...]
             if owner is None:
                 continue
             interval = ports.SquadMembership(player_id, owner, start, end)
-            if (
-                output
-                and output[-1].player_id == player_id
-                and output[-1].club_season_id == owner
-            ):
+            if output and output[-1].player_id == player_id and output[-1].club_season_id == owner:
                 previous = output[-1]
                 if (
                     previous.left_on is not None
                     and previous.left_on < date.max
                     and previous.left_on + timedelta(days=1) == start
                 ):
-                    output[-1] = ports.SquadMembership(
-                        player_id, owner, previous.joined_on, end
-                    )
+                    output[-1] = ports.SquadMembership(player_id, owner, previous.joined_on, end)
                     continue
             output.append(interval)
     return tuple(output)
@@ -229,9 +219,7 @@ def _validate_player_outcomes(
         raise InvalidValueError("simulation must return state for every player in the pool")
 
 
-def _apply_physical_result(
-    state: RunState, result: ports.BlockSimulationResult
-) -> RunState:
+def _apply_physical_result(state: RunState, result: ports.BlockSimulationResult) -> RunState:
     outcomes = {item.player_id: item for item in result.player_states}
     players = tuple(
         replace(
@@ -274,9 +262,7 @@ def _player_minutes(
         eligible = (
             (not rules.eligibility.require_membership_at_block_start or start_member)
             and (not rules.eligibility.require_membership_at_block_end or end_member)
-            and (
-                not rules.eligibility.exempt_players_signed_during_block or not signed_during
-            )
+            and (not rules.eligibility.exempt_players_signed_during_block or not signed_during)
             and len(own_fixtures) >= rules.eligibility.minimum_team_fixtures
             and (
                 not rules.eligibility.require_availability_for_all_fixtures
@@ -307,9 +293,8 @@ def _available_for_fixtures(
             if injury.player_id != player.player_id:
                 continue
             if (
-                (injury.date < fixture.date or (injury.forced and injury.date == fixture.date))
-                and injury.date + timedelta(days=injury.days) > fixture.date
-            ):
+                injury.date < fixture.date or (injury.forced and injury.date == fixture.date)
+            ) and injury.date + timedelta(days=injury.days) > fixture.date:
                 return False
     return True
 
@@ -319,15 +304,11 @@ def _resolve_goals(
     captured: CapturedSeason,
     current: ports.BlockSimulationResult,
 ) -> tuple[GoalProgress, ...]:
-    summaries = [
-        decode_block(item.payload)
-        for item in snapshot.run.block_records
-    ]
+    summaries = [decode_block(item.payload) for item in snapshot.run.block_records]
     summaries.append(current)
     competition_ids = tuple(dict.fromkeys(goal.competition_id for goal in captured.goals))
     facts = tuple(
-        _goal_facts(captured, summaries, competition_id)
-        for competition_id in competition_ids
+        _goal_facts(captured, summaries, competition_id) for competition_id in competition_ids
     )
     evaluated = evaluate_goals(captured.goals, facts)
     previous = {item.goal_id: item.status for item in snapshot.goals}
@@ -364,12 +345,11 @@ def _goal_facts(
         match.stage_id
         for summary in summaries
         for match in summary.matches
-        if match.competition_id.value == competition_id
-        and match.stage_id is not None
+        if match.competition_id.value == competition_id and match.stage_id is not None
     }
-    reached_set = {
-        item.stage_id for item in events if item.stage_id in stage_order
-    } | (stage_matches & set(stage_order))
+    reached_set = {item.stage_id for item in events if item.stage_id in stage_order} | (
+        stage_matches & set(stage_order)
+    )
     for event in events:
         if event.kind is not ports.EventKind.ADVANCED or event.stage_id not in stage_order:
             continue
@@ -388,16 +368,12 @@ def _goal_facts(
         return GoalFacts(competition_id, championship, None, None, stage_order, reached)
     table = max(matching_tables, key=lambda item: item.as_of)
     row = next(
-        item
-        for item in table.rows
-        if item.club_season_id == captured.managed_club_season_id
+        item for item in table.rows if item.club_season_id == captured.managed_club_season_id
     )
     final = _table_is_final(captured, summaries, table)
     if final and competition.kind == "league":
         championship = (
-            ChampionshipStatus.CONFIRMED
-            if row.position == 1
-            else ChampionshipStatus.ELIMINATED
+            ChampionshipStatus.CONFIRMED if row.position == 1 else ChampionshipStatus.ELIMINATED
         )
     return GoalFacts(
         competition_id,
@@ -430,13 +406,11 @@ def _table_is_final(
     )
     if not fixtures:
         return False
-    played = {
-        match.fixture_id.value
-        for summary in summaries
-        for match in summary.matches
-    }
+    played = {match.fixture_id.value for summary in summaries for match in summary.matches}
     expected_played = len(fixtures)
     rows = table.rows
-    return bool(rows) and all(row.played == expected_played for row in rows) and all(
-        item.id in played for item in fixtures
+    return (
+        bool(rows)
+        and all(row.played == expected_played for row in rows)
+        and all(item.id in played for item in fixtures)
     )

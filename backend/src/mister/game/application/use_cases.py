@@ -98,12 +98,10 @@ def _validate_record_snapshot(
     ):
         raise InvalidValueError("run snapshot identity or status does not match its record")
     run_log = tuple(
-        (item.sequence, item.block_id, item.dilemma_id, item.option_id)
-        for item in run.decisions
+        (item.sequence, item.block_id, item.dilemma_id, item.option_id) for item in run.decisions
     )
     stored_log = tuple(
-        (item.sequence, item.block_id, item.dilemma_id, item.option_id)
-        for item in record.decisions
+        (item.sequence, item.block_id, item.dilemma_id, item.option_id) for item in record.decisions
     )
     if run_log != stored_log:
         raise InvalidValueError("run snapshot decisions do not match the append-only log")
@@ -182,19 +180,13 @@ def apply_choice(
     detailed_club_ids = {club.id for club in captured.clubs if club.has_squad}
     for effect in option.effects:
         if isinstance(effect, effects.SellPlayerEffect) and (
-            effect.to_club_season is not None
-            and effect.to_club_season not in detailed_club_ids
+            effect.to_club_season is not None and effect.to_club_season not in detailed_club_ids
         ):
-            raise InvalidValueError(
-                "cannot transfer a player to a club without a captured squad"
-            )
+            raise InvalidValueError("cannot transfer a player to a club without a captured squad")
         if isinstance(effect, effects.SignPlayerEffect) and (
-            effect.from_club_season is not None
-            and effect.from_club_season not in detailed_club_ids
+            effect.from_club_season is not None and effect.from_club_season not in detailed_club_ids
         ):
-            raise InvalidValueError(
-                "cannot sign a player from a club without a captured squad"
-            )
+            raise InvalidValueError("cannot sign a player from a club without a captured squad")
         resulting_state = effects.apply(effect, resulting_state, on=current_block.start)
     changed = replace(validated, run_state=resulting_state)
     return RunSnapshot(changed, snapshot.goals), cast("tuple[DomainEvent, ...]", events)
@@ -253,9 +245,7 @@ def _record_status(run: Run) -> ports.RunStatus:
     return ports.RunStatus(run.status.value)
 
 
-def _request_hash(
-    dilemma_id: DilemmaId, option_id: OptionId, expected_version: int
-) -> str:
+def _request_hash(dilemma_id: DilemmaId, option_id: OptionId, expected_version: int) -> str:
     payload = _canonical_json(
         {
             "operation": "take_decision",
@@ -268,9 +258,7 @@ def _request_hash(
 
 
 def _advance_request_hash(expected_version: int) -> str:
-    payload = _canonical_json(
-        {"operation": "advance_block", "expected_version": expected_version}
-    )
+    payload = _canonical_json({"operation": "advance_block", "expected_version": expected_version})
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
@@ -425,9 +413,7 @@ class TakeDecision:
         try:
             result, events = self._execute_once(command)
         except (ports.ConcurrencyError, ports.IdempotencyKeyExistsError):
-            stored = self._read_idempotency(
-                command.run_id, command.token, command.idempotency_key
-            )
+            stored = self._read_idempotency(command.run_id, command.token, command.idempotency_key)
             if stored is None:
                 raise
             if stored.request_hash != command.request_hash:
@@ -585,14 +571,10 @@ class AdvanceBlock:
             existing = uow.runs.get_idempotent(command.run_id, command.idempotency_key)
             if existing is not None:
                 if existing.request_hash != command.request_hash:
-                    raise IdempotencyConflictError(
-                        "idempotency key belongs to a different command"
-                    )
+                    raise IdempotencyConflictError("idempotency key belongs to a different command")
                 return _view_from_response(existing.response), ()
             if record.version != command.expected_version:
-                raise ports.ConcurrencyError(
-                    command.run_id, expected=command.expected_version
-                )
+                raise ports.ConcurrencyError(command.run_id, expected=command.expected_version)
             from mister.game.application.closure import advance_snapshot  # noqa: PLC0415 - break module cycle
 
             updated_snapshot, events = advance_snapshot(
