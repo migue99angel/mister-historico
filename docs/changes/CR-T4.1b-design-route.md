@@ -33,7 +33,7 @@ No toca contratos, dependencias, `application/`, `domain/` ni `infrastructure/`.
   desde el árbol CSS que importa `tailwindcss`. No cambia los estilos actuales de `body`
   ni de las pantallas existentes; las pantallas T4.4-T4.6 adoptarán los tokens.
 - **Coste en CSS.** Tailwind escanea todo `src/`, también la página de muestra, así que el
-  CSS de producción incluye sus clases: pasa de 4,52 a 5,39 KB gzip. El presupuesto
+  CSS de producción incluye sus clases: pasa de 4,52 a 5,43 KB gzip. El presupuesto
   bloqueante (`size-limit`) es de JS y no cambia (79,5 KB). Excluir la página con
   `@source not` también la dejaría sin estilos en desarrollo, así que no se hace.
 
