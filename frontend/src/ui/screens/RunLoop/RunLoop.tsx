@@ -24,7 +24,7 @@ export function RunLoop({ runId, onRunEnded }: RunLoopProps) {
 
   switch (state.kind) {
     case 'ready':
-      return <RunInPlay key={runId} run={state.run} />;
+      return <RunInPlay key={runId} run={state.run} isRefreshing={state.isRefreshing} />;
     case 'unavailable':
       return (
         <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-4 px-gutter py-12 text-center">
@@ -32,7 +32,10 @@ export function RunLoop({ runId, onRunEnded }: RunLoopProps) {
           <p className="text-body text-ink-muted">
             Esta partida no está disponible en este dispositivo.
           </p>
-          <a href="/" className="font-semibold text-ink underline underline-offset-4">
+          <a
+            href="/"
+            className="inline-flex min-h-touch items-center font-semibold text-ink underline underline-offset-4"
+          >
             Volver al inicio
           </a>
         </main>
