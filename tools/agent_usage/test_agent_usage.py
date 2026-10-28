@@ -225,5 +225,42 @@ class StatuslineTest(unittest.TestCase):
         self.assertFalse(log.exists())
 
 
+class CollectLogicTest(unittest.TestCase):
+    cutoff = datetime(2026, 10, 28, 15, 32, 1, tzinfo=timezone.utc)
+
+    def test_period_uses_timestamps_not_the_day(self):
+        self.assertEqual(au.period("2026-10-28T09:00:00+00:00", "2026-10-28T12:00:00+00:00", self.cutoff), "antes")
+        self.assertEqual(au.period("2026-10-28T16:00:00+00:00", "2026-10-28T17:00:00+00:00", self.cutoff), "después")
+        self.assertEqual(au.period("2026-10-28T14:00:00+00:00", "2026-10-28T17:00:00+00:00", self.cutoff), "cruza")
+
+    def test_tasks_mentioned_in_later_user_turns_are_collected(self):
+        d = Path(tempfile.mkdtemp())
+        rows = [
+            {"type": "user", "timestamp": "2026-10-28T10:00:00Z", "message": {"content": "Implementa T4.3"}},
+            claude_assistant("m1", "2026-10-28T10:01:00Z"),
+            {"type": "user", "timestamp": "2026-10-28T11:00:00Z", "message": {"content": [{"type": "text", "text": "Ahora sigue con T4.4"}]}},
+            {"type": "user", "timestamp": "2026-10-28T11:00:01Z", "message": {"content": [{"type": "tool_result", "content": "T9.9"}]}},
+        ]
+        session = au.parse_claude(write_jsonl(d / "s.jsonl", rows))
+        self.assertEqual((session.user_turns, sorted(session.mentioned)), (2, ["T4.3", "T4.4"]))
+
+    def test_split_tokens_are_kept_apart_from_direct_ones(self):
+        rows = [
+            {"tasks": ["T4.4"], "attribution": "directa", "role": "Implementación", "total": 100, "tool": "claude", "start": "2026-10-28T10:00:00+00:00"},
+            {"tasks": ["T4.4", "T4.5"], "attribution": "repartida", "role": "Revisión", "total": 50, "tool": "codex", "start": "2026-10-28T09:00:00+00:00"},
+        ]
+        tasks = {t["task"]: t for t in au.aggregate_tasks(rows, [], {})}
+        self.assertEqual((tasks["T4.4"]["tokens_directa"], tasks["T4.4"]["tokens_repartida_est"]), (100, 25))
+        self.assertEqual(tasks["T4.4"]["first_session"], "2026-10-28T09:00:00+00:00")
+
+    def test_task_state_and_review_rounds_come_from_its_pull_requests(self):
+        prs = [{"task": "T4.4", "number": 72, "state": "MERGED", "created": "2026-10-28T11:00:00Z", "merged": "2026-10-28T13:00:00Z",
+                "review_verdicts": 2, "ci_failures": 1, "tool": "Claude Code"}]
+        rows = [{"tasks": ["T4.4"], "attribution": "directa", "role": "Implementación", "total": 1, "tool": "claude", "start": "2026-10-28T10:00:00+00:00"}]
+        task = au.aggregate_tasks(rows, prs, {"T4.4": "M"})[0]
+        self.assertEqual((task["state"], task["review_verdicts"], task["ci_failures"], task["size"]), ("integrada", 2, 1, "M"))
+        self.assertEqual((task["hours_to_pr"], task["hours_to_merge"]), (1.0, 3.0))
+
+
 if __name__ == "__main__":
     unittest.main()
