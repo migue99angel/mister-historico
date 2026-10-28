@@ -1,5 +1,7 @@
 import { useId, type ReactNode } from 'react';
 
+import { cx } from './styles';
+
 export type CardTone = 'default' | 'highlight';
 
 export interface CardProps {
@@ -18,7 +20,7 @@ const TONE_CLASSES: Record<CardTone, string> = {
 
 export function Card({ title, headingLevel = 2, eyebrow, tone = 'default', children }: CardProps) {
   const titleId = useId();
-  const className = `rounded-card border p-gutter ${TONE_CLASSES[tone]}`;
+  const className = cx('rounded-card border p-gutter', TONE_CLASSES[tone]);
 
   if (title === undefined) return <div className={className}>{children}</div>;
 
