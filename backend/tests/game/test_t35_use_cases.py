@@ -33,9 +33,10 @@ from mister.game.application.use_cases import (
     RunView,
     StartRun,
     TakeDecision,
+    apply_choice,
 )
 from mister.game.domain.board import GoalProgress, GoalStatus
-from mister.game.domain.effects import PlayerMoraleEffect
+from mister.game.domain.effects import PlayerMoraleEffect, SellPlayerEffect
 from mister.game.domain.errors import AlreadyDecidedError
 from mister.game.domain.events import DecisionTaken, RunStarted
 from mister.game.infrastructure.catalog_adapter import CatalogRunContentAdapter
@@ -851,6 +852,62 @@ def test_advance_block_persists_next_closure_and_is_idempotent() -> None:
     assert len(simulator.requests) == 1
     assert len(events) == 1 + len(captured.blocks[0].dilemmas)
     assert len(advance_events) == 1
+
+
+def test_advance_validates_expected_version_after_authentication() -> None:
+    season, _, store, _, start, _, _ = _setup()
+    created = start.execute(season.id)
+    advance = AdvanceBlock(
+        uow=InMemoryUnitOfWork(store),
+        clock=FixedClock(datetime(2026, 10, 28, tzinfo=UTC)),
+        event_bus=InMemoryEventBus(),
+        token_hasher=Sha256RunTokenHasher(),
+        restore_game=CatalogRunContentAdapter.restore_game,
+        simulator=ScriptedSeasonSimulator(),
+    )
+
+    with pytest.raises(RunNotFoundError):
+        advance.execute(
+            RunId.parse("00000000-0000-4000-8000-000000000099"),
+            created.token,
+            "advance-key-0001",
+            True,
+        )
+    with pytest.raises(RunAccessDeniedError):
+        advance.execute(created.run_id, "wrong-token", "advance-key-0001", True)
+    with pytest.raises(InvalidValueError, match="expected_version"):
+        advance.execute(created.run_id, created.token, "advance-key-0001", True)
+
+
+def test_choice_rejects_sale_to_club_without_captured_squad() -> None:
+    season, _, store, _, start, _, _ = _setup()
+    created = start.execute(season.id)
+    record = store.runs[created.run_id]
+    captured = CatalogRunContentAdapter.restore_game(
+        record.replay_inputs.content, RulesConfiguration.a_profile()
+    )
+    aggregate = next(club for club in captured.clubs if not club.has_squad)
+    player = captured.initial_state.players[0]
+    block = captured.blocks[0]
+    dilemma = block.dilemmas[0]
+    option = dilemma.options[0]
+    changed_option = replace(
+        option,
+        effects=(SellPlayerEffect(player.player_id, aggregate.id, block.start),),
+    )
+    changed_dilemma = replace(dilemma, options=(changed_option, *dilemma.options[1:]))
+    changed_block = replace(block, dilemmas=(changed_dilemma, *block.dilemmas[1:]))
+    changed_captured = replace(captured, blocks=(changed_block, *captured.blocks[1:]))
+    snapshot = RunSnapshot.decode(record.snapshot)
+
+    with pytest.raises(InvalidValueError, match="without a captured squad"):
+        apply_choice(
+            snapshot,
+            changed_captured,
+            dilemma.id,
+            option.id,
+            datetime(2026, 10, 28, tzinfo=UTC),
+        )
 
 
 def test_invalid_idempotency_key_is_rejected_before_version_check() -> None:

@@ -179,7 +179,22 @@ def apply_choice(
         raise InvalidValueError("option does not belong to the selected dilemma")
     validated, events = snapshot.run.take_decision(dilemma_id, option_id, occurred_at)
     resulting_state: RunState = snapshot.run.run_state
+    detailed_club_ids = {club.id for club in captured.clubs if club.has_squad}
     for effect in option.effects:
+        if isinstance(effect, effects.SellPlayerEffect) and (
+            effect.to_club_season is not None
+            and effect.to_club_season not in detailed_club_ids
+        ):
+            raise InvalidValueError(
+                "cannot transfer a player to a club without a captured squad"
+            )
+        if isinstance(effect, effects.SignPlayerEffect) and (
+            effect.from_club_season is not None
+            and effect.from_club_season not in detailed_club_ids
+        ):
+            raise InvalidValueError(
+                "cannot sign a player from a club without a captured squad"
+            )
         resulting_state = effects.apply(effect, resulting_state, on=current_block.start)
     changed = replace(validated, run_state=resulting_state)
     return RunSnapshot(changed, snapshot.goals), cast("tuple[DomainEvent, ...]", events)
@@ -212,6 +227,15 @@ class _DecisionCommand:
     option_id: OptionId
 
 
+@dataclass(frozen=True, slots=True)
+class _AdvanceCommand:
+    run_id: RunId
+    token: str
+    idempotency_key: str
+    request_hash: str
+    expected_version: int
+
+
 def _canonical_json(value: object) -> str:
     return json.dumps(
         value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
@@ -241,6 +265,21 @@ def _request_hash(
         }
     )
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _advance_request_hash(expected_version: int) -> str:
+    payload = _canonical_json(
+        {"operation": "advance_block", "expected_version": expected_version}
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _validate_idempotency_key(key: str) -> None:
+    if (
+        not isinstance(key, str)
+        or not ports.MIN_IDEMPOTENCY_KEY_LENGTH <= len(key) <= ports.MAX_IDEMPOTENCY_KEY_LENGTH
+    ):
+        raise InvalidValueError("idempotency key must have 8 to 128 characters")
 
 
 class StartRun:
@@ -413,15 +452,7 @@ class TakeDecision:
             self._require_token(command.token, record)
             if type(command.expected_version) is not int or command.expected_version < 0:
                 raise InvalidValueError("expected_version must be a non-negative integer")
-            if (
-                not isinstance(command.idempotency_key, str)
-                or not ports.MIN_IDEMPOTENCY_KEY_LENGTH
-                <= len(command.idempotency_key)
-                <= ports.MAX_IDEMPOTENCY_KEY_LENGTH
-            ):
-                raise InvalidValueError(
-                    "idempotency key must have 8 to 128 characters"
-                )
+            _validate_idempotency_key(command.idempotency_key)
             snapshot, captured, _ = _load_snapshot(record, self._restore_game)
             existing = uow.runs.get_idempotent(run_id, command.idempotency_key)
             if existing is not None:
@@ -485,6 +516,125 @@ class TakeDecision:
     def _require_token(self, token: str, record: ports.RunRecord) -> None:
         if not self._token_hasher.verify(token, record.run_token_hash):
             raise RunAccessDeniedError("invalid run token")
+
+
+class AdvanceBlock:
+    """Simulate and close one block with idempotent optimistic concurrency."""
+
+    def __init__(  # noqa: PLR0913 - explicit injected application dependencies
+        self,
+        *,
+        uow: ports.UnitOfWork,
+        clock: Clock,
+        event_bus: EventBus,
+        token_hasher: ports.RunTokenHasher,
+        restore_game: Callable[[RunContentSnapshot, RulesConfiguration], CapturedSeason],
+        simulator: ports.SeasonSimulator,
+    ) -> None:
+        self._uow = uow
+        self._clock = clock
+        self._event_bus = event_bus
+        self._token_hasher = token_hasher
+        self._restore_game = restore_game
+        self._simulator = simulator
+
+    def execute(
+        self,
+        run_id: RunId,
+        token: str,
+        idempotency_key: str,
+        expected_version: int,
+    ) -> RunView:
+        command = _AdvanceCommand(
+            run_id,
+            token,
+            idempotency_key,
+            _advance_request_hash(expected_version),
+            expected_version,
+        )
+        try:
+            result, events = self._execute_once(command)
+        except (ports.ConcurrencyError, ports.IdempotencyKeyExistsError):
+            stored = self._read_idempotency(run_id, token, idempotency_key)
+            if stored is None:
+                raise
+            if stored.request_hash != command.request_hash:
+                raise IdempotencyConflictError(
+                    "idempotency key belongs to a different command"
+                ) from None
+            return _view_from_response(stored.response)
+        for event in events:
+            self._event_bus.publish(event)
+        return result
+
+    def _execute_once(
+        self,
+        command: _AdvanceCommand,
+    ) -> tuple[RunView, tuple[DomainEvent, ...]]:
+        now = self._clock.now()
+        with self._uow as uow:
+            record = uow.runs.get(command.run_id)
+            if record is None:
+                raise ports.RunNotFoundError(command.run_id)
+            if not self._token_hasher.verify(command.token, record.run_token_hash):
+                raise RunAccessDeniedError("invalid run token")
+            _validate_idempotency_key(command.idempotency_key)
+            if type(command.expected_version) is not int or command.expected_version < 0:
+                raise InvalidValueError("expected_version must be a non-negative integer")
+            snapshot, captured, rules = _load_snapshot(record, self._restore_game)
+            existing = uow.runs.get_idempotent(command.run_id, command.idempotency_key)
+            if existing is not None:
+                if existing.request_hash != command.request_hash:
+                    raise IdempotencyConflictError(
+                        "idempotency key belongs to a different command"
+                    )
+                return _view_from_response(existing.response), ()
+            if record.version != command.expected_version:
+                raise ports.ConcurrencyError(
+                    command.run_id, expected=command.expected_version
+                )
+            from mister.game.application.closure import advance_snapshot  # noqa: PLC0415 - break module cycle
+
+            updated_snapshot, events = advance_snapshot(
+                snapshot, captured, self._simulator, rules, now
+            )
+            updated = ports.RunRecord(
+                record.run_id,
+                record.playable_season_id,
+                record.seed,
+                record.run_token_hash,
+                record.version + 1,
+                _record_status(updated_snapshot.run),
+                updated_snapshot.encode(),
+                record.decisions,
+                record.created_at,
+                now,
+                record.replay_inputs,
+            )
+            response = _response_json(updated)
+            uow.runs.save(updated, record.version)
+            uow.runs.put_idempotent(
+                ports.IdempotencyRecord(
+                    command.run_id,
+                    command.idempotency_key,
+                    command.request_hash,
+                    response,
+                    now,
+                )
+            )
+            uow.commit()
+        return _view(updated), events
+
+    def _read_idempotency(
+        self, run_id: RunId, token: str, key: str
+    ) -> ports.IdempotencyRecord | None:
+        with self._uow as uow:
+            record = uow.runs.get(run_id)
+            if record is None:
+                raise ports.RunNotFoundError(run_id)
+            if not self._token_hasher.verify(token, record.run_token_hash):
+                raise RunAccessDeniedError("invalid run token")
+            return uow.runs.get_idempotent(run_id, key)
 
 
 def _response_json(record: ports.RunRecord) -> Mapping[str, object]:
