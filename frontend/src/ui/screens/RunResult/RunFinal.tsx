@@ -20,10 +20,29 @@ function isPlainClick(event: MouseEvent<HTMLAnchorElement>): boolean {
 const LINK_CLASSES =
   'inline-flex min-h-touch items-center font-semibold text-ink underline underline-offset-4';
 
-function Notice({ title, children }: { title: string; children: ReactNode }) {
+interface NoticeProps {
+  title: string;
+  /** Moves the focus to the title on mount, as RunResult does, so screen readers start there. */
+  focusTitle?: boolean;
+  children: ReactNode;
+}
+
+function Notice({ title, focusTitle = false, children }: NoticeProps) {
+  const titleRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    if (focusTitle) titleRef.current?.focus();
+  }, [focusTitle]);
+
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-4 px-gutter py-12 text-center">
-      <h1 className="font-display text-headline font-extrabold">{title}</h1>
+      <h1
+        ref={titleRef}
+        tabIndex={focusTitle ? -1 : undefined}
+        className="font-display text-headline font-extrabold focus:outline-none"
+      >
+        {title}
+      </h1>
       {children}
     </main>
   );
@@ -49,7 +68,7 @@ export function RunFinal({ runId, onPlayAgain, onRunInPlay }: RunFinalProps) {
   switch (state.kind) {
     case 'unavailable':
       return (
-        <Notice title="Partida no disponible">
+        <Notice title="Partida no disponible" focusTitle>
           <p className="text-body text-ink-muted">
             Esta partida no está disponible en este dispositivo.
           </p>
