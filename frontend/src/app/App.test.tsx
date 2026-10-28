@@ -9,32 +9,13 @@ describe('<App/>', () => {
     window.history.replaceState(null, '', '/');
   });
 
-  it('shows the game title as the main heading', async () => {
-    render(<App />);
-
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'Míster Histórico' }),
-    ).toBeInTheDocument();
-  });
-
-  it('shows the tagline', async () => {
-    render(<App />);
-
-    expect(await screen.findByText('¿Lo habrías hecho mejor que el míster?')).toBeInTheDocument();
-  });
-
-  it.each([
-    ['/equipo/test-fc-2000-01', 'Contexto del equipo', 'test-fc-2000-01'],
-    ['/partida/123', 'Partida', '123'],
-    ['/partida/123/final', 'Resultado de la partida', '123'],
-    ['/r/abc-123', 'Partida compartida', 'abc-123'],
-  ])('mounts the minimal route for %s', async (pathname, heading, identifier) => {
-    window.history.replaceState(null, '', pathname);
+  it('mounts the shared run route with its identifier', async () => {
+    window.history.replaceState(null, '', '/r/abc-123');
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: heading })).toBeInTheDocument();
-    expect(screen.getByText(`Identificador: ${identifier}`)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Partida compartida' })).toBeInTheDocument();
+    expect(screen.getByText('Identificador: abc-123')).toBeInTheDocument();
   });
 
   it.each(['/missing', '/r/%E0%A4%A'])('shows a 404 for invalid route %s', async (pathname) => {
@@ -48,19 +29,20 @@ describe('<App/>', () => {
   });
 
   it('navigates with History API links and follows browser back events', async () => {
-    window.history.replaceState(null, '', '/equipo/test-fc-2000-01');
+    window.history.replaceState(null, '', '/r/abc-123');
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: 'Contexto del equipo' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Partida compartida' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('link', { name: 'Inicio' }));
-    expect(await screen.findByRole('heading', { name: 'Míster Histórico' })).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/');
+    expect(screen.queryByRole('heading', { name: 'Partida compartida' })).not.toBeInTheDocument();
 
     await act(async () => {
       window.history.back();
       await new Promise((resolve) => window.setTimeout(resolve, 0));
     });
 
-    expect(await screen.findByRole('heading', { name: 'Contexto del equipo' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Partida compartida' })).toBeInTheDocument();
   });
 
   it('shows loading, reports a worker failure, and retries startup', async () => {
@@ -68,13 +50,14 @@ describe('<App/>', () => {
       .fn<() => Promise<void>>()
       .mockRejectedValueOnce(new Error('worker unavailable'))
       .mockResolvedValueOnce(undefined);
+    window.history.replaceState(null, '', '/r/abc-123');
     render(<App startMocks={startMocks} />);
 
     expect(screen.getByRole('status')).toHaveTextContent('Preparando la partida');
     expect(await screen.findByRole('alert')).toHaveTextContent('worker unavailable');
     fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
 
-    expect(await screen.findByRole('heading', { name: 'Míster Histórico' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Partida compartida' })).toBeInTheDocument();
     expect(startMocks).toHaveBeenCalledTimes(2);
   });
 
