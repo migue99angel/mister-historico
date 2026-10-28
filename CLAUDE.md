@@ -18,9 +18,17 @@ Míster Histórico es un juego de navegador, gratuito y sin registro: entrenas a
 No leas enteros `PLAN.md`, `TASKS.md`, `HANDOFF.md` ni los ADR. Amplía el contexto por niveles:
 
 1. **Al arrancar:** este fichero, `make status N=<N>` (Status, «blocked by», PR y últimos comentarios) y el cuerpo de la issue (`gh issue view <N>`), que da el ID, el enlace a la especificación, las dependencias, la propiedad y la aceptación.
-2. **Para implementar:** solo la sección de tu tarea en TASKS (`awk -v id="<ID>" '/^#{1,4} /{f=(index($0,"### "id" ")==1||index($0,"#### "id" ")==1)} f' docs/TASKS.md`; para una subentrega como T3.7a, usa el ID padre, T3.7), los contratos y ADR que cite, y el código que vas a tocar o del que dependes.
+2. **Para implementar:** solo la sección de tu tarea en TASKS (`awk -v id="<ID>" '/^#{1,4} /{f=(index($0,"### "id" ")==1||index($0,"#### "id" ")==1)} f' docs/TASKS.md`; para una subentrega como T3.7a, usa el ID padre, T3.7; para una entrada agrupada, el ID completo del encabezado, como T6.1-T6.4), los contratos y ADR que cite, y el código que vas a tocar o del que dependes.
 3. **Bajo demanda:** el resto de PLAN, ADR o HANDOFF solo si surge un conflicto de arquitectura, un cambio de contrato, una dependencia ambigua o un comportamiento sin documentar, o si la revisión lo pide. Busca con `grep` y lee rangos.
 4. **Al reanudar:** si la herramienta lo permite, reanuda la sesión original (`claude --resume`, `codex resume`). Si no, parte de lo persistido: `make status N=<N>`, `git status` y `git log --oneline origin/main..HEAD` en el worktree, y la PR con su CI (`gh pr checks <rama>`). Sigue desde ahí, sin volver a planificar.
+
+Mantén cortas las salidas de las herramientas, porque cada llamada posterior vuelve a leerlas:
+
+- Para conocer el alcance de un cambio, `git diff --stat`; el diff completo, solo de lo que vas a revisar o tocar.
+- `rg -l` o `rg -m <n>` antes de volcar resultados, y rangos (`sed -n`) en vez de ficheros enteros.
+- En rojo, verde y refactor, tests dirigidos con salida breve (`-q`); la salida completa, solo cuando un fallo la necesita.
+- No vuelvas a imprimir un fichero o un diff que ya tienes en el contexto.
+- **No esperes con llamadas sucesivas** (`sleep`, `gh pr checks` repetido, `list_agents`): usa una espera bloqueante o termina el turno (PLAN §6, «Esperas»).
 
 ## Cómo trabajar una tarea
 
@@ -121,6 +129,7 @@ Punto de entrada único: el `Makefile` raíz (no hay `just`).
 | `make validate-content` | Valida `content/` (desde T2.20). |
 | `make calibrate SEASON=<slug>` | Calibración del motor (desde T2.7). |
 | `make status [N=<issue>]` | Tareas abiertas del Project, o el estado, los bloqueos, las PR y los últimos comentarios de una issue. |
+| `make usage` | Auditoría local del consumo de Claude Code y Codex por sesión, tarea y ventana de cuota ([`docs/agent-usage.md`](docs/agent-usage.md)). |
 
 - Backend: `cd backend && uv run pytest -m unit` (marcadores: `unit`, `integration`, `contract`, `calibration`, `content`, `e2e`; `calibration` se excluye por defecto). Gestiona dependencias con `uv`, nunca con `pip`.
 - Frontend: `cd frontend && npm run test | lint | build | e2e | size`. Playwright emula Pixel 7 e iPhone 14 sobre Chromium.
