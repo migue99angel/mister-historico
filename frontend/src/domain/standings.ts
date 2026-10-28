@@ -1,3 +1,5 @@
+import { countable } from './countable';
+
 /** Structural subset of a standings row; `previousPosition` is absent or null in the first block. */
 export interface StandingRowInput {
   position: number;
@@ -27,10 +29,6 @@ export interface UserStandingViewModel {
   change: PositionChangeViewModel;
 }
 
-function placesText(places: number): string {
-  return places === 1 ? '1 puesto' : `${String(places)} puestos`;
-}
-
 export function describePositionChange(row: StandingRowInput): PositionChangeViewModel {
   const { position, previousPosition } = row;
   if (previousPosition === undefined || previousPosition === null) {
@@ -43,7 +41,7 @@ export function describePositionChange(row: StandingRowInput): PositionChangeVie
       direction: 'up',
       places,
       symbol: `▲${String(places)}`,
-      text: `Sube ${placesText(places)}`,
+      text: `Sube ${countable(places, 'puesto', 'puestos')}`,
     };
   }
   if (position > previousPosition) {
@@ -53,7 +51,7 @@ export function describePositionChange(row: StandingRowInput): PositionChangeVie
       direction: 'down',
       places,
       symbol: `▼${String(places)}`,
-      text: `Baja ${placesText(places)}`,
+      text: `Baja ${countable(places, 'puesto', 'puestos')}`,
     };
   }
   return { position, direction: 'same', places: 0, symbol: '=', text: 'Mantiene el puesto' };
