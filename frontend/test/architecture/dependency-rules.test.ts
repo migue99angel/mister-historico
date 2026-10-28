@@ -74,12 +74,23 @@ describe('frontend layer rules (dependency-cruiser, PLAN §3.2)', () => {
         to: 'src/ui/Badge.ts',
       },
       {
+        rule: 'only-tests-import-test-harness',
+        from: 'src/ui/usesTestHarness.ts',
+        to: 'test/harness.ts',
+      },
+      {
         rule: 'no-circular',
         from: 'src/domain/cycleA.ts',
         to: 'src/domain/cycleB.ts',
       },
     ])('flag $rule for $from', (expected) => {
       expect(fixtureViolations).toContainEqual(expect.objectContaining(expected));
+    });
+
+    it('let a test file import the test harness', () => {
+      expect(fixtureViolations).not.toContainEqual(
+        expect.objectContaining({ from: 'src/ui/Badge.test.ts' }),
+      );
     });
   });
 });
