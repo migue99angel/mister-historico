@@ -788,3 +788,19 @@ def test_take_decision_rejects_a_stale_expected_version() -> None:
             second_dilemma.options[0].id,
         )
 
+
+def test_invalid_idempotency_key_is_rejected_before_version_check() -> None:
+    season, _, _, _, start, _, take = _setup()
+    created = start.execute(season.id)
+    dilemma = season.dilemmas[0]
+
+    with pytest.raises(InvalidValueError, match="idempotency key"):
+        take.execute(
+            created.run_id,
+            created.token,
+            "",
+            99,
+            dilemma.id,
+            dilemma.options[0].id,
+        )
+
