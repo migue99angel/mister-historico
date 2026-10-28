@@ -72,7 +72,13 @@ export function MiniStandings({ competitionName, rows }: MiniStandingsProps) {
               )}
               {row.change?.text && <span className="sr-only">{row.change.text}</span>}
             </td>
-            <th scope="row" className="truncate py-2 text-left font-[inherit]">
+            <th
+              scope="row"
+              className={cx(
+                'py-2 pr-2 text-left leading-tight break-words',
+                row.isUser ? 'font-bold' : 'font-normal',
+              )}
+            >
               {row.teamName}
             </th>
             <td className="py-2 text-right tabular-nums">{row.played}</td>
