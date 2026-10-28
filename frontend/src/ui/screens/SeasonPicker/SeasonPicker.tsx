@@ -34,6 +34,16 @@ export function SeasonPicker({ onSeasonChosen }: SeasonPickerProps) {
 function SeasonList({ onSeasonChosen }: SeasonPickerProps) {
   const seasons = useSeasons();
 
+  if (seasons.data) {
+    return (
+      <SeasonListContent
+        seasons={seasons.data}
+        failedToRefresh={seasons.isError}
+        onSeasonChosen={onSeasonChosen}
+      />
+    );
+  }
+
   if (seasons.isPending) {
     return (
       <p role="status" className="text-ink-muted">
@@ -42,33 +52,48 @@ function SeasonList({ onSeasonChosen }: SeasonPickerProps) {
     );
   }
 
-  if (seasons.isError) {
-    return (
-      <div role="alert" className="flex flex-col items-start gap-3">
-        <p>No hemos podido cargar las temporadas.</p>
-        <Button
-          variant="secondary"
-          loading={seasons.isFetching}
-          onClick={() => void seasons.refetch()}
-        >
-          Reintentar
-        </Button>
-      </div>
-    );
-  }
-
-  if (seasons.data.length === 0) {
-    return <p className="text-ink-muted">Todavía no hay temporadas disponibles.</p>;
-  }
-
+  // No data and not pending: the first load failed.
   return (
-    <ul className="flex flex-col gap-3">
-      {seasons.data.map((season) => (
-        <li key={season.id}>
-          <SeasonCard season={season} onChoose={onSeasonChosen} />
-        </li>
-      ))}
-    </ul>
+    <div role="alert" className="flex flex-col items-start gap-3">
+      <p>No hemos podido cargar las temporadas.</p>
+      <Button
+        variant="secondary"
+        loading={seasons.isFetching}
+        onClick={() => void seasons.refetch()}
+      >
+        Reintentar
+      </Button>
+    </div>
+  );
+}
+
+function SeasonListContent({
+  seasons,
+  failedToRefresh,
+  onSeasonChosen,
+}: {
+  seasons: SeasonSummaryDto[];
+  failedToRefresh: boolean;
+} & SeasonPickerProps) {
+  return (
+    <>
+      {failedToRefresh && (
+        <p role="alert" className="text-caption text-ink-muted">
+          No hemos podido actualizar las temporadas.
+        </p>
+      )}
+      {seasons.length === 0 ? (
+        <p className="text-ink-muted">Todavía no hay temporadas disponibles.</p>
+      ) : (
+        <ul className="flex flex-col gap-3">
+          {seasons.map((season) => (
+            <li key={season.id}>
+              <SeasonCard season={season} onChoose={onSeasonChosen} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
   );
 }
 

@@ -25,6 +25,18 @@ const PAGE_CLASSES = 'mx-auto flex min-h-dvh w-full max-w-md flex-col gap-4 px-g
 export function SeasonIntro({ seasonId, onRunStarted, onBackHome }: SeasonIntroProps) {
   const season = useSeason(seasonId);
 
+  // Data first: a failed refetch keeps the loaded season (and a started run) on screen.
+  if (season.data) {
+    return (
+      <SeasonContext
+        season={season.data}
+        failedToRefresh={season.isError}
+        onRunStarted={onRunStarted}
+        onBackHome={onBackHome}
+      />
+    );
+  }
+
   if (season.isPending) {
     return (
       <main className={PAGE_CLASSES}>
@@ -35,41 +47,40 @@ export function SeasonIntro({ seasonId, onRunStarted, onBackHome }: SeasonIntroP
     );
   }
 
-  if (season.isError) {
-    if (season.error instanceof ApiError && season.error.status === 404) {
-      return (
-        <main className={PAGE_CLASSES}>
-          <h1 className="font-display text-headline font-extrabold">Temporada no encontrada</h1>
-          <p className="text-ink-muted">Esta temporada no existe o ya no se puede jugar.</p>
-          <Button onClick={onBackHome}>Volver al inicio</Button>
-        </main>
-      );
-    }
+  if (season.error instanceof ApiError && season.error.status === 404) {
     return (
       <main className={PAGE_CLASSES}>
-        <div role="alert" className="flex flex-col items-start gap-3">
-          <p>No hemos podido cargar la temporada.</p>
-          <Button
-            variant="secondary"
-            loading={season.isFetching}
-            onClick={() => void season.refetch()}
-          >
-            Reintentar
-          </Button>
-        </div>
+        <h1 className="font-display text-headline font-extrabold">Temporada no encontrada</h1>
+        <p className="text-ink-muted">Esta temporada no existe o ya no se puede jugar.</p>
+        <Button onClick={onBackHome}>Volver al inicio</Button>
       </main>
     );
   }
 
-  return <SeasonContext season={season.data} onRunStarted={onRunStarted} onBackHome={onBackHome} />;
+  return (
+    <main className={PAGE_CLASSES}>
+      <div role="alert" className="flex flex-col items-start gap-3">
+        <p>No hemos podido cargar la temporada.</p>
+        <Button
+          variant="secondary"
+          loading={season.isFetching}
+          onClick={() => void season.refetch()}
+        >
+          Reintentar
+        </Button>
+      </div>
+    </main>
+  );
 }
 
 function SeasonContext({
   season,
+  failedToRefresh,
   onRunStarted,
   onBackHome,
 }: {
   season: SeasonDetailDto;
+  failedToRefresh: boolean;
   onRunStarted: (runId: string) => void;
   onBackHome: () => void;
 }) {
@@ -86,6 +97,12 @@ function SeasonContext({
           </p>
         </div>
       </header>
+
+      {failedToRefresh && (
+        <p role="alert" className="text-caption text-ink-muted">
+          No hemos podido actualizar la temporada.
+        </p>
+      )}
 
       <p>{season.presentation}</p>
 
