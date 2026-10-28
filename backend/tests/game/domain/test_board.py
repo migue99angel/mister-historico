@@ -97,10 +97,55 @@ def test_open_objectives_are_neutral_and_new_miss_is_penalized_once() -> None:
     assert repeated.state.board_confidence == 50
 
 
+@pytest.mark.parametrize(
+    ("before", "after"),
+    [
+        (GoalStatus.MET, GoalStatus.PENDING),
+        (GoalStatus.MISSED, GoalStatus.PENDING),
+        (GoalStatus.MET, GoalStatus.MISSED),
+        (GoalStatus.MISSED, GoalStatus.MET),
+    ],
+)
+def test_final_goal_status_cannot_change(
+    before: GoalStatus, after: GoalStatus
+) -> None:
+    rules = BoardRules(1, 0, 0, 0, 7, -4)
+    with pytest.raises(InvalidValueError):
+        rules.resolve(
+            _state(), BlockResults(0, 0, 0),
+            (GoalProgress("goal", before),), (GoalProgress("goal", after),),
+        )
+
+
 def test_provisional_top_position_stays_pending_until_final() -> None:
     goal = (GoalDefinition("top", "league", GoalKind.FINISH_TOP, 2),)
     provisional = (GoalFacts("league", ChampionshipStatus.OPEN, 1, None, (), ()),)
     assert evaluate_goals(goal, provisional) == (GoalProgress("top", GoalStatus.PENDING),)
+
+
+def test_final_position_requires_final_position_fact() -> None:
+    with pytest.raises(InvalidValueError):
+        GoalFacts(
+            "league", ChampionshipStatus.OPEN, 1, None, (), (),
+            position_status=PositionStatus.FINAL,
+        )
+
+
+def test_confirmed_win_and_final_top_goal_are_met() -> None:
+    goals = (
+        GoalDefinition("winner", "cup", GoalKind.WIN),
+        GoalDefinition("top", "league", GoalKind.FINISH_TOP, 2),
+    )
+    facts = (
+        GoalFacts("cup", ChampionshipStatus.CONFIRMED, None, None, ("final",), ("final",)),
+        GoalFacts(
+            "league", ChampionshipStatus.OPEN, 1, 1, (), (),
+            position_status=PositionStatus.FINAL,
+        ),
+    )
+    assert evaluate_goals(goals, facts) == (
+        GoalProgress("winner", GoalStatus.MET), GoalProgress("top", GoalStatus.MET),
+    )
 
 
 def test_elimination_misses_a_future_stage_but_keeps_reached_stage_met() -> None:
