@@ -12,7 +12,7 @@ export interface VerdictBannerProps {
   description?: string | undefined;
   /** Manager score (0-100); omitted while there is none. */
   score?: number | null | undefined;
-  headingLevel?: 1 | 2 | 3;
+  headingLevel?: 1 | 2 | 3 | 4;
 }
 
 const KIND_STYLES: Record<VerdictKind, { banner: string; icon: string; iconPath: string }> = {
@@ -47,7 +47,7 @@ export function VerdictBanner({
 }: VerdictBannerProps) {
   const titleId = useId();
   const styles = KIND_STYLES[kind];
-  const Heading = `h${String(headingLevel)}` as 'h1' | 'h2' | 'h3';
+  const Heading = `h${String(headingLevel)}` as 'h1' | 'h2' | 'h3' | 'h4';
 
   return (
     <section
