@@ -1,7 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { act, waitFor } from '@testing-library/react';
 import { HttpResponse, http } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   createTestRuntime,
@@ -204,5 +204,152 @@ describe('useTakeDecision', () => {
 
     expect(returned).toBeNull();
     expect(sent).toEqual([]);
+  });
+
+  it('ignores a decision while the run view is being reloaded, so it never sends a stale version', async () => {
+    const { result, queryClient, runId } = await renderLoadedRun();
+    const sent = spyOnDecisions();
+    let releaseGet: () => void = () => undefined;
+    const getHeld = new Promise<void>((resolve) => {
+      releaseGet = resolve;
+    });
+    mockServer.use(
+      http.get('*/api/runs/:runId', async () => {
+        await getHeld;
+      }),
+    );
+    void queryClient.refetchQueries({ queryKey: runQueryKey(runId) });
+    await waitFor(() => {
+      expect(queryClient.isFetching({ queryKey: runQueryKey(runId) })).toBe(1);
+    });
+
+    let returned: RunViewDto | null = cachedRun(queryClient, runId);
+    await act(async () => {
+      returned = await result.current.decision.send(BOARD_MEETING);
+    });
+
+    expect(returned).toBeNull();
+    expect(sent).toEqual([]);
+    releaseGet();
+  });
+
+  it('keeps the reply of a decision over an older reload that answers after it', async () => {
+    const { result, queryClient, runId } = await renderLoadedRun();
+    const staleView = cachedRun(queryClient, runId);
+    let releaseGet: () => void = () => undefined;
+    const getHeld = new Promise<void>((resolve) => {
+      releaseGet = resolve;
+    });
+    mockServer.use(
+      http.get('*/api/runs/:runId', async () => {
+        await getHeld;
+        return HttpResponse.json(staleView);
+      }),
+    );
+
+    await act(async () => {
+      const sending = result.current.decision.send(BOARD_MEETING);
+      void queryClient.refetchQueries({ queryKey: runQueryKey(runId) });
+      await sending;
+    });
+    releaseGet();
+    await act(() => new Promise((resolve) => setTimeout(resolve, 20)));
+
+    expect(cachedRun(queryClient, runId).version).toBe(1);
+  });
+
+  it.each([500, 503, 429])(
+    'retries a decision the API failed with %i with the same Idempotency-Key',
+    async (status) => {
+      mockServer.use(
+        http.post(
+          '*/api/runs/:runId/decisions',
+          () =>
+            HttpResponse.json(
+              { type: 'about:blank', title: 'Unavailable', status },
+              { status, headers: { 'Content-Type': 'application/problem+json' } },
+            ),
+          { once: true },
+        ),
+      );
+      const sent = spyOnDecisions();
+      const { result } = await renderLoadedRun();
+
+      await act(async () => {
+        await result.current.decision.send(BOARD_MEETING);
+      });
+      expect(result.current.decision.failure?.kind).toBe('failed');
+      await act(async () => {
+        await result.current.decision.send(BOARD_MEETING);
+      });
+
+      expect(sent[1]?.idempotencyKey).toBe(sent[0]?.idempotencyKey);
+    },
+  );
+
+  it('drops a decision the API rejects with another 4xx instead of retrying it with the same key', async () => {
+    mockServer.use(
+      http.post(
+        '*/api/runs/:runId/decisions',
+        () =>
+          HttpResponse.json(
+            {
+              type: 'about:blank',
+              title: 'Invalid option',
+              status: 422,
+              code: 'invalid_option',
+            },
+            { status: 422, headers: { 'Content-Type': 'application/problem+json' } },
+          ),
+        { once: true },
+      ),
+    );
+    const sent = spyOnDecisions();
+    const { result } = await renderLoadedRun();
+
+    await act(async () => {
+      await result.current.decision.send(BOARD_MEETING);
+    });
+    expect(result.current.decision.failure).toEqual({ kind: 'rejected', code: 'invalid_option' });
+    await act(async () => {
+      await result.current.decision.send(BOARD_MEETING);
+    });
+
+    expect(sent).toHaveLength(2);
+    expect(sent[1]?.idempotencyKey).not.toBe(sent[0]?.idempotencyKey);
+  });
+
+  it('reports a failure instead of throwing when no Idempotency-Key can be generated', async () => {
+    const { result } = await renderLoadedRun();
+    const randomUUID = vi.spyOn(crypto, 'randomUUID').mockImplementationOnce(() => {
+      throw new Error('crypto.randomUUID needs a secure context');
+    });
+
+    let returned: RunViewDto | null | undefined;
+    await act(async () => {
+      returned = await result.current.decision.send(BOARD_MEETING);
+    });
+    randomUUID.mockRestore();
+
+    expect(returned).toBeNull();
+    expect(result.current.decision.failure?.kind).toBe('failed');
+  });
+
+  it('accepts a new decision after one that could not generate its Idempotency-Key', async () => {
+    const { result } = await renderLoadedRun();
+    const randomUUID = vi.spyOn(crypto, 'randomUUID').mockImplementationOnce(() => {
+      throw new Error('crypto.randomUUID needs a secure context');
+    });
+    await act(async () => {
+      await result.current.decision.send(BOARD_MEETING).catch(() => null);
+    });
+    randomUUID.mockRestore();
+
+    let returned: RunViewDto | null = null;
+    await act(async () => {
+      returned = await result.current.decision.send(BOARD_MEETING);
+    });
+
+    expect(returned).not.toBeNull();
   });
 });
