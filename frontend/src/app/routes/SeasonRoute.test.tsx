@@ -18,7 +18,7 @@ vi.mock('./SeasonRoute', () => ({
           onRunStarted('run-1');
         }}
       >
-        Continuar
+        Empezar la partida
       </button>
     </section>
   ),
@@ -39,7 +39,7 @@ describe('SeasonRoute mount point (/equipo/:id)', () => {
     render(<App startMocks={() => Promise.resolve()} />);
     const historyLength = window.history.length;
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Continuar' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Empezar la partida' }));
 
     expect(window.location.pathname).toBe('/partida/run-1');
     expect(window.history.length).toBe(historyLength + 1);

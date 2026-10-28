@@ -18,7 +18,7 @@ vi.mock('./RunRoute', () => ({
           onRunEnded('run-1');
         }}
       >
-        Continuar
+        Terminar la partida
       </button>
     </section>
   ),
@@ -39,7 +39,7 @@ describe('RunRoute mount point (/partida/:id)', () => {
     render(<App startMocks={() => Promise.resolve()} />);
     const historyLength = window.history.length;
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Continuar' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Terminar la partida' }));
 
     expect(window.location.pathname).toBe('/partida/run-1/final');
     expect(window.history.length).toBe(historyLength);
