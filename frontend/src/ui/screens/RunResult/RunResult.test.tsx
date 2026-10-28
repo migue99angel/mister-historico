@@ -262,7 +262,7 @@ describe('RunResult', () => {
   it('titles the standings of a sacked run as the table at the dismissal', () => {
     renderResult(sackedRun);
 
-    expect(screen.getByRole('region', { name: 'Clasificación al ser destituido' })).toBeVisible();
+    expect(screen.getByRole('region', { name: 'Clasificación en la destitución' })).toBeVisible();
     expect(screen.queryByRole('region', { name: 'Clasificación final' })).not.toBeInTheDocument();
   });
 
