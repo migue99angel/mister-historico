@@ -55,7 +55,10 @@ def state(*, as_of: date | None = AS_OF) -> RunState:
         SquadRegistry((Membership(PLAYER, OWN), Membership(RIVAL_PLAYER, RIVAL))),
         players,
         Tactic(TacticStyle.BALANCED, (4, 4, 2)),
-        (), 50, 50, as_of,
+        (),
+        50,
+        50,
+        as_of,
     )
 
 
@@ -99,9 +102,7 @@ def test_sign_from_rival_moves_ownership_at_effective_date() -> None:
 def test_explicit_resolution_date_sees_future_transfer_without_advancing_cursor() -> None:
     initial = state()
     effective = date(2000, 9, 1)
-    transferred = apply(
-        SignPlayerEffect(RIVAL_PLAYER, RIVAL, effective), initial, on=effective
-    )
+    transferred = apply(SignPlayerEffect(RIVAL_PLAYER, RIVAL, effective), initial, on=effective)
     changed = apply(PlayerMoraleEffect(RIVAL_PLAYER, 5), transferred, on=effective)
     assert next(p for p in changed.players if p.player_id == RIVAL_PLAYER).morale == 45
     assert changed.state_as_of == AS_OF

@@ -74,9 +74,7 @@ class SellPlayerEffect:
 
     def __post_init__(self) -> None:
         _player_id(self.player_id)
-        if self.to_club_season is not None and not isinstance(
-            self.to_club_season, ClubSeasonId
-        ):
+        if self.to_club_season is not None and not isinstance(self.to_club_season, ClubSeasonId):
             raise InvalidValueError("to_club_season must be a ClubSeasonId or None")
         _date(self.effective_on, "effective_on")
 
@@ -195,7 +193,19 @@ def apply(  # noqa: PLR0911, PLR0912 - exhaustive union dispatch
     Transfers always validate their origin at their own ``effective_on`` date.
     """
     if isinstance(effect, MoraleEffect):
-        return replace(state, team_morale=_clamp(state.team_morale, effect.delta))
+        membership_date = _as_of(state, on)
+        own_ids = set(state.squad_registry.squad_on(state.managed_club_season_id, membership_date))
+        players = tuple(
+            replace(player, morale=_clamp(player.morale, effect.delta))
+            if player.player_id in own_ids
+            else player
+            for player in state.players
+        )
+        return replace(
+            state,
+            team_morale=_clamp(state.team_morale, effect.delta),
+            players=players,
+        )
     if isinstance(effect, PlayerMoraleEffect):
         player = _require_own_player(state, effect.player_id, _as_of(state, on))
         return _replace_player(state, replace(player, morale=_clamp(player.morale, effect.delta)))
@@ -204,14 +214,18 @@ def apply(  # noqa: PLR0911, PLR0912 - exhaustive union dispatch
         if owner != effect.from_club_season:
             raise InvalidValueError("Sign effect origin does not own the player on effective date")
         registry = state.squad_registry.transfer(
-            effect.player_id, effect.from_club_season, state.managed_club_season_id,
+            effect.player_id,
+            effect.from_club_season,
+            state.managed_club_season_id,
             effect.effective_on,
         )
         return replace(state, squad_registry=registry)
     if isinstance(effect, SellPlayerEffect):
         _require_own_player(state, effect.player_id, effect.effective_on)
         registry = state.squad_registry.transfer(
-            effect.player_id, state.managed_club_season_id, effect.to_club_season,
+            effect.player_id,
+            state.managed_club_season_id,
+            effect.to_club_season,
             effect.effective_on,
         )
         return replace(state, squad_registry=registry)
@@ -220,8 +234,11 @@ def apply(  # noqa: PLR0911, PLR0912 - exhaustive union dispatch
     if isinstance(effect, CompetitionPriorityEffect):
         priority = CompetitionPriority(effect.competition_id, effect.priority)
         existing = next(
-            (i for i, item in enumerate(state.competition_priorities)
-             if item.competition_id == effect.competition_id),
+            (
+                i
+                for i, item in enumerate(state.competition_priorities)
+                if item.competition_id == effect.competition_id
+            ),
             None,
         )
         priorities = list(state.competition_priorities)
@@ -245,12 +262,11 @@ def apply(  # noqa: PLR0911, PLR0912 - exhaustive union dispatch
             player = _require_own_player(state, effect.player_id, membership_date)
             updated = replace(player, fitness=_clamp(player.fitness, effect.delta))
             return _replace_player(state, updated)
-        own_ids = set(
-            state.squad_registry.squad_on(state.managed_club_season_id, membership_date)
-        )
+        own_ids = set(state.squad_registry.squad_on(state.managed_club_season_id, membership_date))
         players = tuple(
             replace(player, fitness=_clamp(player.fitness, effect.delta))
-            if player.player_id in own_ids else player
+            if player.player_id in own_ids
+            else player
             for player in state.players
         )
         return replace(state, players=players)
