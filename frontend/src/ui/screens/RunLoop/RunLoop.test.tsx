@@ -253,9 +253,10 @@ describe('RunLoop', () => {
     const sent = spyOnCommands();
     renderRunLoop(await startRun());
     await chooseFirstBlock();
+    const simulateButton = screen.getByRole('button', SIMULATE);
 
-    simulate();
-    simulate();
+    fireEvent.click(simulateButton);
+    fireEvent.click(simulateButton);
 
     await screen.findByRole('region', { name: 'Resumen del bloque' });
     expect(sent).toHaveLength(3);
