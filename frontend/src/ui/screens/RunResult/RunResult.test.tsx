@@ -125,6 +125,12 @@ function renderResult(view: TerminalRunView, onPlayAgain = vi.fn()) {
   return render(<RunResult run={view} onPlayAgain={onPlayAgain} />);
 }
 
+function screenHeader(): HTMLElement {
+  const header = screen.getByRole('heading', { level: 1 }).closest('header');
+  if (!header) throw new Error('The screen title belongs in a header.');
+  return header;
+}
+
 function segmentStates(container: HTMLElement): (string | undefined)[] {
   return [...container.querySelectorAll<HTMLElement>('[data-segment]')].map(
     (segment) => segment.dataset.segment,
@@ -139,6 +145,29 @@ describe('RunResult', () => {
     expect(screen.getByText('Temporada terminada')).toBeVisible();
     expect(screen.getByText('Has llegado al final de la temporada.')).toBeVisible();
     expect(segmentStates(container)).toEqual(Array<string>(5).fill('played'));
+  });
+
+  it('identifies the user club with its generic crest and name', () => {
+    renderResult(run());
+
+    const header = screenHeader();
+    expect(within(header).getByText('Test FC')).toBeVisible();
+    expect(header.querySelector('svg')).toBeInTheDocument();
+  });
+
+  it('takes the user club from the standings when no result of the last block has it', () => {
+    const otherMatch = match({ home: RIVAL, away: ATLETICO });
+    renderResult(run({ lastBlockSummary: summary({ results: [otherMatch] }) }));
+
+    expect(within(screenHeader()).getByText('Test FC')).toBeVisible();
+  });
+
+  it('leaves out the club identity when the run has no last block summary', () => {
+    renderResult(run({ lastBlockSummary: null }));
+
+    const header = screenHeader();
+    expect(within(header).queryByText('Test FC')).not.toBeInTheDocument();
+    expect(header.querySelector('svg')).not.toBeInTheDocument();
   });
 
   it('shows the last block results of a finished run', () => {
