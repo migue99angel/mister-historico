@@ -1,4 +1,9 @@
-import { formatMatchResult, type MatchResultInput, type MatchResultViewModel } from './matchResult';
+import {
+  formatMatchResult,
+  type MatchOutcome,
+  type MatchResultInput,
+  type MatchResultViewModel,
+} from './matchResult';
 import { findUserStanding, type StandingsInput, type UserStandingViewModel } from './standings';
 
 /** Structural subset of a match report in a block summary. */
@@ -16,6 +21,12 @@ export interface BlockSummaryInput {
   events: { date: string; text: string }[];
   injuries: { playerName: string; daysOut: number }[];
 }
+
+const RECORD_KEYS: Record<MatchOutcome, keyof BlockRecord> = {
+  win: 'won',
+  draw: 'drawn',
+  loss: 'lost',
+};
 
 export type BlockTone = 'positive' | 'neutral' | 'negative';
 
@@ -66,11 +77,8 @@ function tone(record: BlockRecord): BlockTone {
 }
 
 export function describeBlock(summary: BlockSummaryInput): BlockNarrativeViewModel {
-  const record: BlockRecord = {
-    won: summary.results.filter((match) => match.userResult === 'win').length,
-    drawn: summary.results.filter((match) => match.userResult === 'draw').length,
-    lost: summary.results.filter((match) => match.userResult === 'loss').length,
-  };
+  const record: BlockRecord = { won: 0, drawn: 0, lost: 0 };
+  for (const match of summary.results) record[RECORD_KEYS[match.userResult]] += 1;
 
   const keyMatches = summary.results
     .filter((match) => match.isKeyMatch)

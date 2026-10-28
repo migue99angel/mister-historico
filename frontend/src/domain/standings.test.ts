@@ -41,7 +41,13 @@ describe('describePositionChange', () => {
     {
       case: 'keeps the same place',
       input: row(3, 3),
-      expected: { position: 3, direction: 'same', places: 0, symbol: '=', text: 'Mantiene el puesto' },
+      expected: {
+        position: 3,
+        direction: 'same',
+        places: 0,
+        symbol: '=',
+        text: 'Mantiene el puesto',
+      },
     },
     {
       case: 'has no previous position in the first block',
