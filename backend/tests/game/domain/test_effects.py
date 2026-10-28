@@ -2,17 +2,32 @@ from dataclasses import replace
 from datetime import date
 
 import pytest
-from hypothesis import given, strategies as st
+from hypothesis import given
+from hypothesis import strategies as st
 
 from mister.game.domain.effects import (
-    BoardConfidenceEffect, CompetitionPriorityEffect, FitnessEffect, InjuryEffect,
-    MoraleEffect, PlayerMoraleEffect, SellPlayerEffect, SetTacticEffect,
-    SignPlayerEffect, YouthMinutesEffect, apply,
+    BoardConfidenceEffect,
+    CompetitionPriorityEffect,
+    FitnessEffect,
+    InjuryEffect,
+    MoraleEffect,
+    PlayerMoraleEffect,
+    SellPlayerEffect,
+    SetTacticEffect,
+    SignPlayerEffect,
+    YouthMinutesEffect,
+    apply,
 )
 from mister.game.domain.squad_registry import Membership, SquadRegistry
 from mister.game.domain.state import (
-    CompetitionPriority, ForcedInjury, PlayerState, Position, Priority, RunState,
-    Tactic, TacticStyle,
+    CompetitionPriority,
+    ForcedInjury,
+    PlayerState,
+    Position,
+    Priority,
+    RunState,
+    Tactic,
+    TacticStyle,
 )
 from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.ids import ClubSeasonId, CompetitionId, PlayerId
@@ -71,6 +86,18 @@ def test_sign_from_rival_moves_ownership_at_effective_date():
     assert initial.squad_registry.owner_on(RIVAL_PLAYER, date(2000, 9, 1)) == RIVAL
 
 
+def test_explicit_resolution_date_sees_future_transfer_without_advancing_cursor():
+    initial = state()
+    effective = date(2000, 9, 1)
+    transferred = apply(
+        SignPlayerEffect(RIVAL_PLAYER, RIVAL, effective), initial, on=effective
+    )
+    changed = apply(PlayerMoraleEffect(RIVAL_PLAYER, 5), transferred, on=effective)
+    assert next(p for p in changed.players if p.player_id == RIVAL_PLAYER).morale == 45
+    assert changed.state_as_of == AS_OF
+    assert initial.state_as_of == AS_OF
+
+
 def test_sign_from_market_requires_player_to_be_unowned():
     free = replace(state(), squad_registry=SquadRegistry((Membership(PLAYER, OWN),)))
     signed = apply(SignPlayerEffect(RIVAL_PLAYER, None, date(2000, 9, 1)), free)
@@ -104,11 +131,39 @@ def test_injury_is_scheduled_without_premature_player_injury():
     assert result.players[0].injured_until is None
 
 
-@given(st.lists(st.tuples(st.integers(-20, 20), st.integers(-25, 25)), min_size=0, max_size=40))
-def test_morale_and_confidence_stay_bounded_after_any_effect_sequence(deltas):
+@given(
+    st.lists(
+        st.tuples(st.integers(-20, 20), st.integers(-25, 25), st.integers(-30, 30)),
+        min_size=0,
+        max_size=40,
+    )
+)
+def test_morale_confidence_and_fitness_stay_bounded_after_any_effect_sequence(deltas):
     current = state()
-    for morale_delta, board_delta in deltas:
+    for morale_delta, board_delta, fitness_delta in deltas:
         current = apply(MoraleEffect(morale_delta), current)
         current = apply(BoardConfidenceEffect(board_delta), current)
+        current = apply(FitnessEffect(fitness_delta), current)
     assert 0 <= current.team_morale <= 100
     assert 0 <= current.board_confidence <= 100
+    assert 0 <= current.players[0].fitness <= 100
+
+
+def test_effect_deltas_saturate_without_accepting_bool_as_number():
+    current = replace(state(), team_morale=95, board_confidence=5)
+    assert apply(MoraleEffect(20), current).team_morale == 100
+    assert apply(BoardConfidenceEffect(-25), current).board_confidence == 0
+    changed_player = replace(current.players[0], fitness=95)
+    current = replace(current, players=(changed_player, current.players[1]))
+    assert apply(FitnessEffect(30, PLAYER), current).players[0].fitness == 100
+    with pytest.raises(InvalidValueError):
+        MoraleEffect(True)
+    with pytest.raises(InvalidValueError):
+        FitnessEffect(False)
+
+
+def test_individual_membership_requires_state_date_and_rejects_unknown_or_rival():
+    with pytest.raises(InvalidValueError):
+        apply(PlayerMoraleEffect(PLAYER, 1), state(as_of=None))
+    with pytest.raises(InvalidValueError):
+        apply(PlayerMoraleEffect(RIVAL_PLAYER, 1), state())
