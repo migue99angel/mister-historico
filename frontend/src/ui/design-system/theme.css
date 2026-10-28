@@ -1,6 +1,7 @@
 /*
  * Míster Histórico design tokens for Tailwind v4. The app stylesheet imports this file
- * after `@import 'tailwindcss'`. tokens.ts mirrors every value (tokens.test.ts).
+ * after `@import 'tailwindcss'`. tokens.ts mirrors the colours, type scale and spacing
+ * (tokens.test.ts); the display font and radii live only here.
  */
 @theme {
   --color-canvas: #0b1210;
