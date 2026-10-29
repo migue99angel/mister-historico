@@ -3,8 +3,7 @@ import { useId, type Ref } from 'react';
 import type { BlockSummaryDto, MatchReportDto } from '../../../application/ports';
 import type { BlockNarrativeViewModel } from '../../../domain/blockNarrative';
 import { formatMatchResult } from '../../../domain/matchResult';
-import { describePositionChange } from '../../../domain/standings';
-import { Card, MatchLine, MiniStandings, type MiniStandingsRow } from '../../design-system';
+import { Card, MatchLine } from '../../design-system';
 
 export interface BlockSummaryProps {
   summary: BlockSummaryDto;
@@ -64,27 +63,6 @@ export function BlockSummary({ summary, narrative, headingRef }: BlockSummaryPro
           )}
         </Card>
       </section>
-
-      {summary.standings.length > 0 && (
-        <Card title="Clasificación" headingLevel={2}>
-          <div className="flex flex-col gap-4">
-            {summary.standings.map((table) => (
-              <MiniStandings
-                key={[table.competitionId, table.stageId, table.groupId].join('/')}
-                competitionName={table.competitionName}
-                rows={table.rows.map((row): MiniStandingsRow => ({
-                  position: row.position,
-                  teamName: row.team.name,
-                  played: row.played,
-                  points: row.points,
-                  isUser: row.team.isUser,
-                  change: describePositionChange(row),
-                }))}
-              />
-            ))}
-          </div>
-        </Card>
-      )}
     </>
   );
 }
