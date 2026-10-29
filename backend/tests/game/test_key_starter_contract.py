@@ -12,16 +12,36 @@ from mister.game.infrastructure.simulation_mapping import (
     to_key_starter_selection,
 )
 from mister.shared_kernel.errors import InvalidValueError
-from mister.shared_kernel.ids import BlockId, FixtureId, PlayerId
+from mister.shared_kernel.ids import BlockId, ClubSeasonId, CompetitionId, FixtureId, PlayerId
 from mister.simulation.application import api
 
 DAY = date(2000, 9, 3)
 PLAYER = PlayerId("test-player")
 FIXTURE = FixtureId("test-fixture")
+OTHER = PlayerId("other-player")
+BLOCK = BlockId("block-1")
+
+
+def _offer(
+    candidates: tuple[PlayerId, ...] = (PLAYER, OTHER),
+    selected: PlayerId | None = None,
+    block: BlockId = BLOCK,
+) -> ports.KeyStarterOffer:
+    return ports.KeyStarterOffer(
+        block,
+        FIXTURE,
+        DAY,
+        candidates,
+        ClubSeasonId("test-rovers-2000-01"),
+        CompetitionId("liga-test"),
+        "home",
+        "Derbi de prueba",
+        selected,
+    )
 
 
 def test_offer_captures_candidates_and_selection_without_mutation() -> None:
-    offer = ports.KeyStarterOffer(BlockId("block-1"), FIXTURE, DAY, (PLAYER,))
+    offer = _offer()
     assert offer.selected_player_id is None
     with pytest.raises(FrozenInstanceError):
         offer.fixture_id = FixtureId("other")  # type: ignore[misc]
@@ -30,12 +50,12 @@ def test_offer_captures_candidates_and_selection_without_mutation() -> None:
 @pytest.mark.parametrize("candidates", [(), (PLAYER, PLAYER), [PLAYER]])
 def test_offer_requires_nonempty_distinct_immutable_candidates(candidates: object) -> None:
     with pytest.raises(InvalidValueError):
-        ports.KeyStarterOffer(BlockId("block-1"), FIXTURE, DAY, candidates)  # type: ignore[arg-type]
+        _offer(candidates)  # type: ignore[arg-type]
 
 
 def test_offer_rejects_selection_outside_captured_candidates() -> None:
     with pytest.raises(InvalidValueError):
-        ports.KeyStarterOffer(BlockId("block-1"), FIXTURE, DAY, (PLAYER,), PlayerId("outsider"))
+        _offer(selected=PlayerId("outsider"))
 
 
 @pytest.mark.parametrize("module", [ports, api])
@@ -86,10 +106,10 @@ def test_application_requires_typed_starter_ids(module: ModuleType) -> None:
 
 def test_offer_requires_typed_block_and_candidates() -> None:
     with pytest.raises(InvalidValueError):
-        ports.KeyStarterOffer("block-1", FIXTURE, DAY, (PLAYER,))  # type: ignore[arg-type]
+        _offer(block="block-1")  # type: ignore[arg-type]
     with pytest.raises(InvalidValueError):
-        ports.KeyStarterOffer(BlockId("block-1"), FIXTURE, DAY, ("player",))  # type: ignore[arg-type]
-    chosen = ports.KeyStarterOffer(BlockId("block-1"), FIXTURE, DAY, (PLAYER,), PLAYER)
+        _offer(("player", OTHER))  # type: ignore[arg-type]
+    chosen = _offer(selected=PLAYER)
     assert chosen.selected_player_id == PLAYER
 
 
@@ -109,7 +129,4 @@ def test_acl_preserves_actual_starters_and_absence_reason() -> None:
 @pytest.mark.parametrize("count", [1, 4])
 def test_offer_limits_the_choice_to_two_or_three_candidates(count: int) -> None:
     with pytest.raises(InvalidValueError):
-        ports.KeyStarterOffer(
-            BlockId("block-1"), FIXTURE, DAY,
-            tuple(PlayerId(f"candidate-{i}") for i in range(count)),
-        )
+        _offer(tuple(PlayerId(f"candidate-{i}") for i in range(count)))
