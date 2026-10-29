@@ -593,7 +593,7 @@ export interface components {
             playerId: components["schemas"]["Slug"];
             expectedVersion: number;
         };
-        /** @description Captured once at block entry. At most one per block. Candidates are player summaries resolved from the captured content. No match outcome is exposed before advance. selectedPlayerId is null until chosen and must match a candidate ID when set. Two or three available reserves outside projectedStarterIds, ordered by descending captured effective rating and then ID. projectedStarterIds is a deterministic forecast computed at block entry without required players or RNG, never the actual future lineup. projectedStarters carries the captured player metadata in the same ID order, even after squad changes. No future injuries or match results are used. Advance without a choice explicitly skips the offer; it never blocks older clients. */
+        /** @description Captured once at block entry. At most one per block. Candidates carry captured squad state resolved from the captured content. No match outcome is exposed before advance. selectedPlayerId is null until chosen and must match a candidate ID when set. Two or three available reserves outside projectedStarterIds, ordered by descending captured effective rating and then ID. projectedStarterIds is a deterministic forecast computed at block entry without required players or RNG, never the actual future lineup. projectedStarters carries the captured player metadata in the same ID order, even after squad changes. Candidates and projected starters carry morale, fitness and injury from the same captured entry state; neither is recomputed from the current squad when read. No future injuries or match results are used. Advance without a choice explicitly skips the offer; it never blocks older clients. */
         KeyStarterOffer: {
             blockId: components["schemas"]["Slug"];
             fixtureId: components["schemas"]["Slug"];
@@ -604,7 +604,7 @@ export interface components {
             /** @description Home, away or neutral relative to the managed team, not the opponent. */
             venue: components["schemas"]["Venue"];
             keyMatchLabel: string | null;
-            candidates: components["schemas"]["PlayerSummary"][];
+            candidates: components["schemas"]["SquadMember"][];
             /** @description Eleven unique predicted starter IDs captured at block entry. Candidates are outside this list. Known state only, without RNG; later injuries, transfers, fitness or decisions can change the actual lineup. This forecast is not participation evidence. */
             projectedStarterIds: components["schemas"]["Slug"][];
             /** @description Captured player details for projectedStarterIds in the same order, with unique IDs. Rating, position, morale, fitness and injury state are the known state at block entry, not predictions of future changes. Runtime validates agreement with projectedStarterIds. */

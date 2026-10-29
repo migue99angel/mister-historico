@@ -140,7 +140,9 @@ describe('comparable candidate state', () => {
     const current = view.squad.players.find((player) => player.id === candidate?.id);
     if (!current || !candidate) throw new Error('expected captured candidate');
     expect(candidate).toMatchObject({
-      morale: current.morale, fitness: current.fitness, injury: current.injury,
+      morale: current.morale,
+      fitness: current.fitness,
+      injury: current.injury,
     });
     const capturedFitness = candidate.fitness;
     current.fitness = 1;
@@ -154,11 +156,17 @@ describe('comparable candidate state', () => {
       keyStarter: {
         ...view.keyStarter,
         candidates: view.keyStarter?.candidates.map((player) => ({
-          id: player.id, displayName: player.displayName, position: player.position,
-          age: player.age, rating: player.rating, key: player.key,
+          id: player.id,
+          displayName: player.displayName,
+          position: player.position,
+          age: player.age,
+          rating: player.rating,
+          key: player.key,
         })),
       },
     };
-    expect(validateResponse('POST', PATH, 200, invalid, 'application/json').length).toBeGreaterThan(0);
+    expect(validateResponse('POST', PATH, 200, invalid, 'application/json').length).toBeGreaterThan(
+      0,
+    );
   });
 });

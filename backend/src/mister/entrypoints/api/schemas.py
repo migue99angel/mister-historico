@@ -297,7 +297,7 @@ class KeyStarterOffer(BaseModel):
         json_schema_extra={"uniqueItems": True},
     )
     key_match_label: str | None = Field(..., alias="keyMatchLabel")
-    candidates: list[PlayerSummary] = Field(
+    candidates: list[SquadMember] = Field(
         min_length=2, max_length=3, json_schema_extra={"uniqueItems": True}
     )
     selected_player_id: Slug | None = Field(..., alias="selectedPlayerId")
