@@ -529,6 +529,7 @@ def test_openapi_exposes_only_the_six_f3_operations() -> None:
         "getRun",
         "takeDecision",
         "advanceBlock",
+        "selectKeyStarter",
     }
 
 
@@ -546,6 +547,7 @@ def test_openapi_f3_shape_matches_authored_operation_contract() -> None:
             "/runs/{runId}",
             "/runs/{runId}/decisions",
             "/runs/{runId}/advance",
+            "/runs/{runId}/key-starter",
         )
     }
     implemented = {
