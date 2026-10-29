@@ -16,6 +16,7 @@ from mister.game.application.content_model import CapturedSeason
 from mister.game.application.ports import (
     BlockSimulationRequest,
     BlockSimulationResult,
+    LineupProjection,
     PlayerOutcome,
     RunNotFoundError,
 )
@@ -48,6 +49,11 @@ class _UnusedSimulator:
     def simulate_block(self, request: BlockSimulationRequest) -> BlockSimulationResult:
         raise AssertionError("an open block must not be simulated during replay")
 
+    def project_lineup(
+        self, request: BlockSimulationRequest, fixture_id: FixtureId
+    ) -> LineupProjection | None:
+        return None
+
 
 class _OutcomeSimulator:
     def __init__(self) -> None:
@@ -68,6 +74,11 @@ class _OutcomeSimulator:
                 for player in request.player_pool
             ),
         )
+
+    def project_lineup(
+        self, request: BlockSimulationRequest, fixture_id: FixtureId
+    ) -> LineupProjection | None:
+        return None
 
 
 class _SackAfterLossSimulator:
@@ -114,6 +125,11 @@ class _SackAfterLossSimulator:
                 for player in request.player_pool
             ),
         )
+
+    def project_lineup(
+        self, request: BlockSimulationRequest, fixture_id: FixtureId
+    ) -> LineupProjection | None:
+        return None
 
 
 def _replay(

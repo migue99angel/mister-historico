@@ -74,6 +74,7 @@ _OUTFIELD_PLAYERS = 10
 _MIN_UNRESOLVED_TIE_SIZE = 2
 _KNOCKOUT_CLUB_COUNT = 2
 _MAX_TIE_FIXTURES = 2
+_STARTERS = 11
 
 # ----------------------------------------------------------------------------- errors
 
@@ -655,8 +656,11 @@ class BlockSimulationRequest:
     state_as_of: date | None = None
     squad_memberships: tuple[SquadMembership, ...] | None = None
     player_pool: tuple[SquadPlayerState, ...] | None = None
+    key_starter: KeyStarterSelection | None = None
 
     def __post_init__(self) -> None:
+        if self.key_starter is not None and not isinstance(self.key_starter, KeyStarterSelection):
+            raise InvalidValueError("key starter must be a typed selection")
         if not isinstance(self.captured_content, RunContentSnapshot):
             raise InvalidValueError("simulation request needs captured content")
         if self.captured_content.playable_season_id != self.playable_season_id:
@@ -715,8 +719,13 @@ class BlockSimulationResult:
     injuries: tuple[InjuryOutcome, ...]
     player_states: tuple[PlayerOutcome, ...]
     unresolved_knockout_ties: tuple[UnresolvedKnockoutTie, ...] | None = None
+    key_starter_outcome: KeyStarterOutcome | None = None
 
     def __post_init__(self) -> None:
+        if self.key_starter_outcome is not None and not isinstance(
+            self.key_starter_outcome, KeyStarterOutcome
+        ):
+            raise InvalidValueError("key starter evidence must be a typed outcome")
         if self.unresolved_knockout_ties is None:
             return
         if not isinstance(self.unresolved_knockout_ties, tuple):
@@ -742,6 +751,31 @@ class BlockSimulationResult:
                     raise InvalidValueError("a played result contradicts unresolved tie identity")
 
 
+@dataclass(frozen=True, slots=True)
+class LineupProjection:
+    """Default eleven forecast at block entry and the remaining available reserves.
+
+    Reserves come ordered by descending effective rating, then ID. It is a forecast from
+    the known entry state, never evidence of who will actually play.
+    """
+
+    starter_ids: tuple[PlayerId, ...]
+    reserve_ids: tuple[PlayerId, ...]
+
+    def __post_init__(self) -> None:
+        for values in (self.starter_ids, self.reserve_ids):
+            if (
+                not isinstance(values, tuple)
+                or any(not isinstance(player, PlayerId) for player in values)
+                or len(set(values)) != len(values)
+            ):
+                raise InvalidValueError("projected players must be distinct typed IDs")
+        if len(self.starter_ids) != _STARTERS or not set(self.starter_ids).isdisjoint(
+            self.reserve_ids
+        ):
+            raise InvalidValueError("projection needs eleven starters outside the reserves")
+
+
 class SeasonSimulator(Protocol):
     """Game's port towards the engine (PLAN §3.1).
 
@@ -751,3 +785,13 @@ class SeasonSimulator(Protocol):
     """
 
     def simulate_block(self, request: BlockSimulationRequest) -> BlockSimulationResult: ...
+
+    def project_lineup(
+        self, request: BlockSimulationRequest, fixture_id: FixtureId
+    ) -> LineupProjection | None:
+        """Default eleven of an unplayed managed fixture of the block, without RNG.
+
+        Raises `InvalidValueError` for a fixture outside the block; `None` when fewer than
+        eleven players are available.
+        """
+        ...

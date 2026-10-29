@@ -10,7 +10,7 @@ from dataclasses import fields, is_dataclass
 from datetime import date, datetime
 from enum import Enum
 from types import UnionType
-from typing import Any, Literal, Union, cast, get_args, get_origin, get_type_hints
+from typing import Any, Literal, TypeAliasType, Union, cast, get_args, get_origin, get_type_hints
 
 from mister.game.application import ports
 from mister.game.domain import run, squad_registry, state
@@ -19,7 +19,7 @@ from mister.shared_kernel.errors import InvalidValueError
 
 _FORMAT_VERSION = 1
 _TUPLE_VARIADIC_ARITY = 2
-_FORMAT1_SCHEMA_FINGERPRINT = "8238fcfc2a8090c2805ac8fc1c3259a1055967be54e95615b2606487f5c75893"
+_FORMAT1_SCHEMA_FINGERPRINT = "2d5d8b5068c9276a925ff1cf70b28ee24dc9bd75b930eb378fbe2112d617a521"
 _TYPES = (
     run.Run,
     run.RunStatus,
@@ -63,8 +63,14 @@ _TYPES = (
     ports.StandingRow,
     ports.Standings,
     ports.UnresolvedKnockoutTie,
+    ports.KeyStarterOutcome,
 )
 _TYPE_BY_NAME = {f"{item.__module__}.{item.__qualname__}": item for item in _TYPES}
+# Optional fields added after format 1 shipped: omitted while None, so payloads written
+# before them keep their exact canonical bytes. An explicit null is noncanonical.
+_OMITTED_WHEN_NONE: dict[type, frozenset[str]] = {
+    ports.BlockSimulationResult: frozenset({"key_starter_outcome"}),
+}
 
 
 def _encode(value: object) -> object:  # noqa: PLR0911 - tagged scalar formats are explicit
@@ -89,9 +95,14 @@ def _encode(value: object) -> object:  # noqa: PLR0911 - tagged scalar formats a
         name = f"{type(value).__module__}.{type(value).__qualname__}"
         if name not in _TYPE_BY_NAME:
             raise InvalidValueError(f"unsupported run value {name}")
+        omitted = _OMITTED_WHEN_NONE.get(type(value), frozenset())
         return {
             "$type": name,
-            "fields": {field.name: _encode(getattr(value, field.name)) for field in fields(value)},
+            "fields": {
+                field.name: _encode(getattr(value, field.name))
+                for field in fields(value)
+                if field.name not in omitted or getattr(value, field.name) is not None
+            },
         }
     raise InvalidValueError(f"unsupported value in run codec: {type(value).__name__}")
 
@@ -156,10 +167,14 @@ def _decode(value: object) -> object:  # noqa: PLR0911, PLR0912, PLR0915 - stric
         if cls is None or not is_dataclass(cls) or not isinstance(raw_fields, dict):
             raise InvalidValueError("unknown type in run codec")
         expected = {field.name for field in fields(cls)}
-        if set(raw_fields) != expected:
+        omitted = _OMITTED_WHEN_NONE.get(cls, frozenset())
+        if not expected - omitted <= set(raw_fields) <= expected or any(
+            raw_fields[key] is None for key in omitted & set(raw_fields)
+        ):
             raise InvalidValueError("run codec fields do not match the versioned schema")
         try:
             decoded_fields = {key: _decode(item) for key, item in raw_fields.items()}
+            decoded_fields.update((key, None) for key in omitted - set(raw_fields))
             hints = get_type_hints(cls)
             if any(not _matches(decoded_fields[key], hints[key]) for key in expected):
                 raise InvalidValueError("run codec field types do not match the versioned schema")
@@ -204,11 +219,15 @@ def decode_run(value: object) -> run.Run:
 
 def assert_format1_schema_supported() -> None:
     """Fail loudly if a private dataclass changed without a format migration review."""
-    schema = {
+    schema: dict[str, object] = {
         name: [[field.name, str(field.type)] for field in fields(cls)]
         for name, cls in sorted(_TYPE_BY_NAME.items())
         if is_dataclass(cls)
     }
+    schema["$omitted_when_none"] = [
+        [f"{cls.__module__}.{cls.__qualname__}", sorted(names)]
+        for cls, names in _OMITTED_WHEN_NONE.items()
+    ]
     encoded = json.dumps(schema, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     if hashlib.sha256(encoded.encode("utf-8")).hexdigest() != _FORMAT1_SCHEMA_FINGERPRINT:
         raise InvalidValueError("run codec format 1 schema changed; review and version the codec")
@@ -217,6 +236,8 @@ def assert_format1_schema_supported() -> None:
 def _matches(value: object, annotation: object) -> bool:  # noqa: PLR0911, PLR0912
     if annotation is Any or annotation is object:
         return True
+    if isinstance(annotation, TypeAliasType):
+        return _matches(value, annotation.__value__)
     origin = get_origin(annotation)
     args = get_args(annotation)
     if origin in (UnionType, Union):

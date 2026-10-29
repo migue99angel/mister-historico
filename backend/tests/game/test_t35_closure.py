@@ -792,6 +792,9 @@ def test_closure_rejects_invalid_simulator_result_without_closing(result_kind: s
             self.requests.append(request)
             return result
 
+        def project_lineup(self, request: object, fixture_id: object) -> None:
+            return None
+
     simulator = ResultSimulator()
 
     with pytest.raises(InvalidValueError):

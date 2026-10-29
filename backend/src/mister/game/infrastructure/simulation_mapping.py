@@ -312,6 +312,7 @@ def to_simulation_request(request: g.BlockSimulationRequest) -> s.BlockSimReques
             )
             for player in request.player_pool
         ),
+        None if request.key_starter is None else to_key_starter_selection(request.key_starter),
     )
 
 
@@ -418,7 +419,15 @@ def from_simulation_result(result: s.BlockSummaryDTO) -> g.BlockSimulationResult
             for state in result.player_states
         ),
         ties,
+        None
+        if result.key_starter_outcome is None
+        else from_key_starter_outcome(result.key_starter_outcome),
     )
+
+
+def from_lineup_projection(projection: s.LineupProjectionDTO) -> g.LineupProjection:
+    """Keep the engine's starter order and its reserve ranking."""
+    return g.LineupProjection(projection.starter_ids, projection.reserve_ids)
 
 
 def to_key_starter_selection(selection: g.KeyStarterSelection) -> s.KeyStarterSelection:
