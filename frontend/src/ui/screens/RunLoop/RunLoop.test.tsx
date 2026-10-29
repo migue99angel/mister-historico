@@ -161,6 +161,21 @@ function problem(status: number, code: string) {
 }
 
 describe('RunLoop', () => {
+  it('hides closure spoilers until skipping and then exposes the complete summary', async () => {
+    renderRunLoop(await startRun());
+    await chooseFirstBlock();
+    simulate();
+    const skip = await screen.findByRole('button', { name: 'Mostrar todos' });
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Estado del equipo' })).not.toBeInTheDocument();
+    expect(screen.queryByText('August · 1 victoria y 1 empate')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Captain complaint' })).not.toBeInTheDocument();
+    fireEvent.click(skip);
+    expect(screen.getByRole('table', { name: 'Liga Test' })).toBeInTheDocument();
+    expect(screen.getByText('August · 1 victoria y 1 empate')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Resumen del bloque' })).toHaveFocus();
+  });
+
   it('requires confirmation of every dilemma before simulation, even when all options are selected', async () => {
     const sent = spyOnCommands();
     renderRunLoop(await startRun());
