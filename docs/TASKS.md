@@ -848,8 +848,9 @@ tarea amplía los dos ADR.
   aprobó el autor:
   - Un sorteo final como **regla del motor**, no como criterio de contenido, para no
     cambiar el esquema. Se aplica solo cuando un empate simulado cruza la clasificación.
-  - Un flujo hoja nuevo `("draw", competition_id, stage_id, group_id)`, añadido a la tabla
-    de ADR-005.
+  - Un flujo `("draw", competition_id, stage_id, group_id)` en ADR-005, como subclave de
+    la fila de sorteos `("draw", competition_id, stage_id)`. Esa fila deja de ser hoja:
+    el ADR fija que el sorteo de grupo nunca extrae del flujo de la etapa.
   - Una enmienda de ADR-007: el empate se sigue preservando en la presentación y en el
     orden, pero la plaza se decide por sorteo. Es sintético y no afirma normativa histórica.
 - **Tests primero:** un test de dominio con un grupo empatado en todos los criterios en la
@@ -882,6 +883,8 @@ T4.7a y la «salida por destitución» del hito A (PLAN §5).
   termina en `sacked` en el bloque esperado y sigue siendo legible tras la recarga.
 - **Aceptación:** golden de «primera opción» sin cambios; contenido válido; ruta de
   destitución reproducible.
+- **Estimación:** hacen falta más de −30 de confianza, y hoy las opciones que no son la
+  primera suman −12. Probablemente haya que cambiar los efectos de varios dilemas.
 
 ---
 
@@ -1080,14 +1083,13 @@ Recogidos en las revisiones de CR-T4.B y T4.4-T4.6a. No bloquean T4.7a.
 ### T4.7 · E2E real y rendimiento móvil (dos entregas)
 - **Propiedad:** `frontend/e2e/**`, `lighthouserc.json` y configuración de `size-limit`.
 - **T4.7a (A):** depende de T4.4/T4.5/T4.6a, T3.6/T3.7a y, para la ruta de
-  destitución, T3.7a-sacking. Playwright juega
-  Test FC de principio a fin contra backend, motor y SQL reales; recarga la
-  página y conserva la partida. Incluye ruta de destitución y vista móvil sin
-  scroll horizontal. No sustituir el backend por MSW en esta aceptación.
-  El servidor del E2E usa la
-  composición de producción con la semilla fijada, como el E2E del backend, y para
-  levantarlo modifica `playwright.config.ts` y `.github/workflows/frontend.yml`
-  (Postgres y uv), con autorización del autor.
+  destitución, T3.7a-sacking. Playwright juega Test FC de principio a fin contra
+  backend, motor y SQL reales; recarga la página y conserva la partida. Incluye ruta
+  de destitución y vista móvil sin scroll horizontal. No sustituir el backend por MSW
+  en esta aceptación. El servidor del E2E usa la composición de producción con la
+  semilla del golden fijada, como el E2E del backend. Para levantarlo y comprobar su
+  lanzador, modifica `playwright.config.ts`, `.github/workflows/frontend.yml` (uv y
+  Docker) y el objetivo `lint-frontend` del `Makefile`, con autorización del autor.
 - **T4.7b (B):** depende de T4.7a, T3.7b y T5.6a. Conserva E2E RM real,
   evaluación, compartir/abrir enlace y presupuestos: Lighthouse ≥90 en
   rendimiento/accesibilidad, JS inicial <100 KB gz. Primero A permite medir
