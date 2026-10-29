@@ -8,17 +8,11 @@ export function keyStarterRun(): components['schemas']['RunView'] {
   const run = startRun(TEST_SEASON_ID).run;
   const template = run.squad.players[0];
   if (!template) throw new Error('expected Test FC squad');
-  const projected = Array.from({ length: 11 }, (_, i) => ({
+  const projected = Array.from({ length: 11 }, (_, i): components['schemas']['SquadMember'] => ({
     ...template,
     id: `starter-${String(i)}`,
     displayName: `Titular ${String(i + 1)}`,
-    position: (i === 0
-      ? 'GK'
-      : i < 5
-        ? 'DF'
-        : i < 9
-          ? 'MF'
-          : 'FW') as components['schemas']['PlayerPosition'],
+    position: i === 0 ? 'GK' : i < 5 ? 'DF' : i < 9 ? 'MF' : 'FW',
     rating: 90,
   }));
   return {
