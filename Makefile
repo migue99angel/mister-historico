@@ -54,4 +54,4 @@ usage-test: ## Tests of the usage audit tool
 	python3 -m unittest discover -s tools/agent_usage -p 'test_*.py'
 
 clean-branches: ## Remove local branches and worktrees of merged PRs (dry run; APPLY=1 to remove)
-	tools/clean_branches.sh $(if $(APPLY),--apply)
+	tools/clean_branches.sh $(if $(filter 1,$(APPLY)),--apply)
