@@ -84,6 +84,17 @@ describe('BlockSummary', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it('names a key match even when the response supplies no special label', () => {
+    const summary = mixedSummary();
+    summary.results = summary.results.map((match) => ({
+      ...match,
+      isKeyMatch: true,
+      keyMatchLabel: null,
+    }));
+    render(<BlockSummary summary={summary} narrative={describeBlock(summary)} />);
+    expect(screen.getAllByText('Partido clave')).toHaveLength(summary.results.length);
+  });
+
   it('shows a complete, empty block without a skip control', () => {
     const summary = { ...mixedSummary(), results: [] };
     render(<BlockSummary summary={summary} narrative={describeBlock(summary)} />);
