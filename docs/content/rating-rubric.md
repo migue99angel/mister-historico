@@ -276,7 +276,7 @@ El calculador (T1.8) rechaza un override sin `rationale` o fuera de estos límit
 
 ## 8. Procedimiento ligero para los rivales (P6)
 
-Aplica a las plantillas de los **rivales con plantilla**. Tu equipo propio usa la misma fórmula, con todos sus jugadores y revisión manual de todos los `key`. Los rivales de fuera de Primera, sin datos fiables, van como `aggregate.yaml` (8.6).
+Aplica a las plantillas de los **rivales con plantilla**. Tu equipo propio usa la misma fórmula, con todos sus jugadores y revisión manual de todos los `key`. Los rivales de fuera de Primera, incluidos los de Champions, van como `aggregate.yaml` (8.6; [CR-T2.16](../changes/CR-T2.16-aggregate-rivals.md)).
 
 ### 8.1 Qué jugadores entran
 
@@ -321,7 +321,7 @@ La media de cada jugador de un rival no se valida una por una, sino **en conjunt
 
 ### 8.6 Rivales sin plantilla (`aggregate`)
 
-Si no hay datos fiables de minutos y jugadores (típicamente clubes de fuera de Primera en las primeras rondas de Copa), el rival va como `aggregate.yaml`: no lleva medias individuales sino una fuerza fija: `attack` y `defense`, que son los índices `A` y `C` del ADR-004 (sección 2), en puntos de media (con una `defense` alta, mejor defensa). Elige los valores como la media que tendría el once de ese club según las bandas de la sección 6, y anota la fuente y por qué no hay plantilla. Si no puedes justificar el nivel, `attack` y `defense` van en `null` con `verify: pending`.
+Todo rival que no juegue la liga de la temporada jugable (los de Copa ajenos a Primera y los de Champions) va como `aggregate.yaml`: no lleva medias individuales sino una fuerza fija: `attack` y `defense`, que son los índices `A` y `C` del ADR-004 (sección 2), en puntos de media (con una `defense` alta, mejor defensa). Elige los valores como la media que tendría el once de ese club según las bandas de la sección 6, y anota la fuente. Si no puedes justificar el nivel, `attack` y `defense` van en `null` con `verify: pending`.
 
 ## 9. Calibración de la fórmula
 

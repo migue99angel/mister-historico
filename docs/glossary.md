@@ -31,7 +31,7 @@
 | Jugador clave | `key` | Jugador marcado `key: true`, cuya media se revisa a mano. |
 | Portero · Defensa · Centrocampista · Delantero | `GK` · `DF` · `MF` · `FW` | Posiciones de un jugador (`PlayerPosition` en el contrato) tal como se muestran en la interfaz. |
 | Nombre real / alias | `display_name` / `alias_name` | Nombre que se muestra según la política de nombres (`NamePolicy`). |
-| Rival agregado | `aggregate` | Rival sin plantilla (fuera de Primera) que solo tiene fuerza agregada. |
+| Rival agregado | `aggregate` | Rival sin plantilla (fuera de la liga jugable: Copa ajena a Primera o Champions) que solo tiene fuerza agregada. |
 | Competición | `Competition` | Liga, Copa, Supercopa, Champions o UEFA de una temporada, con sus participantes y reglas. |
 | Partido del calendario | `Fixture` | Partido real: fecha, competición, rival, local o visitante, resultado real y fuente. |
 | Clasificación real | `standings` | Clasificación histórica de liga (y de cada grupo) en cada fecha de corte de bloque, más el cuadro real de las eliminatorias. |
