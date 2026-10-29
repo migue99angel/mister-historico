@@ -43,31 +43,12 @@ antes del 2026-10-28 no se migraron: su registro son las PR y HANDOFF.
   propiedad de archivos se integran en secuencia. Ningún cambio de contrato se
   cuela dentro de una tarea normal.
 
-## Revisión de visión posterior a A (propuesta, 2026-10-29)
+### DOC · Visión de carrera y comparación de alternativas
 
-La dirección principal es la carrera del entrenador. [PLAN §5.5](PLAN.md#55-propuesta-evolutiva-posterior-a-a-2026-10-29)
-y [PRODUCT_EVOLUTION](PRODUCT_EVOLUTION.md) proponen la secuencia B–E.
-**No cambian la prioridad, propiedad, dependencias ni aceptación de ninguna tarea
-actual de A**, ni autorizan recortar F2 o migrar tareas en ejecución.
-Las etiquetas B/C/D anteriores se conservan como referencia hasta decidir el
-alcance: no son nuevas órdenes de ejecución. No se crea un board B todavía.
-CR-T5.B sigue propuesta; la carrera y el segundo protagonista no tienen tareas
-implementables ni contratos aprobados con esta revisión.
-
-### DOC · Visión y roadmap de carrera
-
-- **Seguimiento:** [issue #118](https://github.com/migue99angel/mister-historico/issues/118).
-
-- **Tipo:** documentación; encargo directo del autor, independiente de A.
-- **Propiedad:** `docs/PRODUCT_BRIEF.md`, `docs/PLAN.md`, esta entrada de
-  `docs/TASKS.md` y `docs/PRODUCT_EVOLUTION.md`.
-- **Depende de:** lectura de brief/plan/tareas/traspaso/ADR y contraste con código,
-  PR abiertas y trabajo activo. No depende de terminar A.
-- **Aceptación:** visión, comparación de cinco alternativas, límites técnicos,
-  hitos con validación y decisiones pendientes; ninguna modificación de código,
-  contratos o especificaciones de A; PR independiente sin integrar.
-- **Validación:** coherencia con fuentes, enlaces locales, diff documental y
-  conservación literal de las especificaciones previas de A; checks del repositorio.
+- **Seguimiento:** [#118](https://github.com/migue99angel/mister-historico/issues/118).
+- **Propiedad:** `docs/PRODUCT_BRIEF.md`, `docs/PLAN.md`, esta entrada y `docs/PRODUCT_EVOLUTION.md`.
+- **Aceptación:** visión a largo plazo, comparación breve de MVP, límites técnicos y decisiones pendientes; sin cambios de A, código o contratos. La reducción de plantillas pertenece a CR #121 y no se ejecuta aquí.
+- **Validación:** coherencia con código y revisión, enlaces y diff documental; PR independiente sin integrar.
 
 ## Resumen de paralelismo
 

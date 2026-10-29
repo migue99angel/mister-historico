@@ -1,7 +1,7 @@
 # Míster Histórico: Product Brief
 
 > **Nombre provisional.** Documento de idea y alcance para un juego de navegador de fútbol.
-> Fecha: 2026-10-22 · Autor de la idea: Miguel Ángel Posadas · Estado: **producto en desarrollo; visión revisada el 2026-10-29**. Alcance aprobado y ejecución: [PLAN](PLAN.md); propuestas posteriores a A: [revisión de producto](PRODUCT_EVOLUTION.md).
+> Fecha: 2026-10-22 · Autor de la idea: Miguel Ángel Posadas · Estado: **producto en desarrollo; visión revisada el 2026-10-29**.
 
 ---
 
@@ -16,15 +16,12 @@
 
 ## 1. Resumen
 
-Míster Histórico es un juego de navegador **gratuito, sin registro obligatorio**, cuya dirección principal es que el jugador construya **su propia carrera como entrenador**. El jugador es un nuevo entrenador que sustituye al técnico histórico; no interpreta a Mourinho, Guardiola ni a otro personaje real. La historia proporciona el contexto inicial y una referencia para comparar, sin fijar el destino de su trayectoria.
+Míster Histórico es un juego de navegador **gratuito y sin registro obligatorio** cuya dirección a largo plazo es que el jugador construya **su propia carrera como entrenador**. El jugador es él mismo: un nuevo entrenador que sustituye al técnico histórico, sin interpretar a Mourinho, Guardiola ni a otro personaje real. La historia aporta el contexto inicial y la comparación; las decisiones deben permitir construir otra trayectoria. La fantasía «Conviértete en entrenador, toma decisiones y construye tu propia leyenda» expresa esa dirección, sin adoptarla como nuevo lema ni cambiar el nombre. Se propone reservar «¿Lo habrías hecho mejor que el míster?» a los retos históricos; cualquier cambio de lema requiere aprobación.
 
-La fantasía de producto es **«Conviértete en entrenador, toma decisiones y construye tu propia leyenda»**. Describe la intención del autor; **no se adopta como nuevo lema**. El nombre se conserva. Se propone reservar *«¿Lo habrías hecho mejor que el míster?»* a los retos históricos; su uso como lema de modo y cualquier lema general requieren aprobación.
+Los **retos históricos** son la primera experiencia prevista: corta, rejugable y compartible, con decisiones de táctica, mercado y vestuario y comparación final con lo ocurrido. La **carrera** es una visión posterior a validar que ese juego divierte: objetivos por temporada, reputación, continuidad de decisiones, renovaciones, destituciones, ofertas y cambios de club, con guardado y recuperación sin registro obligatorio. **Una temporada puede durar 3–5 minutos sin que termine la carrera.** Los retos encadenados podrían validar historial y progresión con menor coste, sin comprometer otro modo ni simular todavía un mundo persistente. La inspiración de producto es la carrera y los retos históricos de F1 Glory, según la referencia aportada por el autor.
 
-Los **retos históricos** pueden ofrecer la primera experiencia corta, rejugable y compartible: tomar decisiones de táctica, fichajes, alineaciones, vestuario y dilemas y comparar el resultado con lo real. La **carrera**, a largo plazo, propone objetivos por temporada, reputación, renovaciones, destituciones, ofertas, cambios de club y consecuencias persistentes. Debe poder guardarse y retomarse sin registro obligatorio. **Una temporada puede durar 3–5 minutos; la carrera puede durar muchos años y varias sesiones.** No buscamos un Football Manager completo.
+**Prioridad inmediata: validar B manteniendo todas las competiciones, incluida Champions.** La reducción del coste de investigación de plantillas se tramita aparte en la [CR #121](https://github.com/migue99angel/mister-historico/issues/121): propone 20 plantillas completas de Primera y 40 rivales agregados con fuente, frente al inventario anterior de 48 plantillas y 12 agregados. El esquema y el motor ya admiten agregados; no elimina verificar calendarios, resultados y fuerzas ni demuestra un ahorro proporcional de tiempo. Esta visión **no modifica A**, el compromiso V1 ni las tareas en ejecución; tampoco aprueba arquitectura, nuevos hitos de implementación o cambios de contratos para la carrera. Su alcance se decidirá después del feedback de B.
 
-Los **retos encadenados**, con historial, reputación y desbloqueos sin universo persistente, son una alternativa de validación, no un tercer modo comprometido. La inspiración aportada por el autor es la carrera y los retos históricos de F1 Glory; no se presupone su arquitectura ni se actualizan aquí sus prestaciones externas.
-
-**Límite de esta revisión:** A conserva íntegros alcance, aceptación y tareas. La V1 aprobada de 3–5 equipos sigue vigente; las alternativas de beta y el roadmap posterior se proponen en [PRODUCT_EVOLUTION](PRODUCT_EVOLUTION.md), sin autorizar cambios de contratos ni implementación.
 
 ---
 
@@ -66,9 +63,9 @@ No hemos encontrado ningún juego de **"entrenador de un club histórico real en
 
 ## 5. Principios de diseño
 
-1. **De 3 a 5 minutos por temporada como objetivo de ritmo.** El reto termina; una futura carrera puede continuar y retomarse en otra sesión.
+1. **De 3 a 5 minutos por temporada.** El reto histórico termina; la futura carrera podrá continuar y retomarse en otra sesión.
 2. **Cero fricción:** sin registro, sin descarga y jugable desde el primer toque.
-3. **La historia como referencia.** El reto histórico compara con lo ocurrido; la carrera se orienta a la trayectoria y los objetivos, sin imponer resultados históricos futuros.
+3. **La historia real es el rival en los retos históricos.** La futura carrera se valorará también por objetivos y trayectoria propia.
 4. **Debate antes que realismo.** Los dilemas tienen que generar opinión ("yo habría puesto a Casillas").
 5. **Todo se puede compartir:** cada final produce una imagen o tarjeta que quede bien en Twitter.
 6. **Fidelidad histórica:** las plantillas, fechas y resultados reales tienen que ser correctos. Un dato erróneo en Twitter fútbol se señala enseguida.
@@ -78,7 +75,7 @@ No hemos encontrado ningún juego de **"entrenador de un club histórico real en
 
 ## 6. Bucle de juego
 
-Este bucle describe el **reto histórico** del alcance actual. El entrenador real es la referencia del escenario que el jugador sustituye, no su identidad. La evolución hacia carrera se estudia en [PRODUCT_EVOLUTION §5](PRODUCT_EVOLUTION.md#5-carrera-persistente-límites-y-decisiones-técnicas-aplazadas).
+Describe el reto histórico actual. El jugador sustituye al técnico de referencia; no lo interpreta.
 
 ```
 Elegir equipo histórico → Contexto (presentación del míster, objetivos de la directiva)
@@ -209,10 +206,9 @@ Tiene que **aportar algo al juego y no dispararse en coste**. Si el juego se hac
 
 ## 16. Alcance
 
+El compromiso V1 se conserva. La visión de carrera no añade entregas al MVP; la [comparativa breve](PRODUCT_EVOLUTION.md) recoge alternativas posteriores a validar B.
+
 ### V1 (lanzamiento)
-
-**Compromiso vigente**, no sustituido por la visión futura. Cambiar cantidad de equipos, competiciones o calidad de rivales requiere aprobación expresa de las propuestas de [PRODUCT_EVOLUTION §8](PRODUCT_EVOLUTION.md#8-decisiones-pendientes-del-autor).
-
 - De 3 a 5 equipos históricos españoles.
 - Una temporada por partida, de 3 a 5 minutos, con unas 10 decisiones.
 - Motor de simulación con semilla y calibrado.
@@ -223,9 +219,6 @@ Tiene que **aportar algo al juego y no dispararse en coste**. Si el juego se hac
 - Textos de eventos escritos o pregenerados con IA y revisados.
 
 ### V2
-
-Lista histórica de posibilidades, **sin prioridad comprometida**. La propuesta posterior a A sitúa carrera como dirección principal y condiciona expansión, ranking e IA al feedback; véase [PLAN §5.5](PLAN.md#55-propuesta-evolutiva-posterior-a-a-2026-10-29).
-
 - Reto semanal con semilla compartida y ranking.
 - Ruedas de prensa con IA en vivo (con topes de coste).
 - Más equipos y temporadas; equipos internacionales; varias temporadas por partida.
@@ -239,7 +232,7 @@ Lista histórica de posibilidades, **sin prioridad comprometida**. La propuesta 
 
 ## 17. Plan orientativo
 
-La estimación inicial de seis semanas fue orientativa y **no es una previsión vigente**. El plan de ejecución es [PLAN §5](PLAN.md#5-entregas-verticales-y-fases); la propuesta evolutiva usa puertas de validación, sin fechas nuevas aprobadas.
+La estimación inicial de seis semanas no es una previsión vigente. La planificación operativa está en [PLAN §5](PLAN.md#5-entregas-verticales-y-fases); no se aprueban fechas nuevas con esta revisión.
 
 1. Esquema de datos, primer equipo completo con fuentes, y prototipo del motor de simulación con tests de calibración.
 2. API de partida (crear, decidir, avanzar, terminar) y estado en el servidor.
