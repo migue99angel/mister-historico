@@ -1,6 +1,7 @@
 """Backend E2E: play Test FC over HTTP with the production composition, PostgreSQL and the engine.
 
-Only the seed is pinned, so the season can be compared with the synthetic golden.
+Only the seed is pinned, in every test, so each season is reproducible and comparable with
+the synthetic golden.
 """
 
 from collections.abc import AsyncIterator, Iterator
@@ -59,9 +60,9 @@ def database_url() -> Iterator[str]:
         yield url
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def golden_seed(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Pin the server-side seed of new runs; everything else stays production wiring."""
+    """Pin the server-side seed of every run; everything else stays production wiring."""
     monkeypatch.setattr(composition, "secrets", SimpleNamespace(randbits=lambda _: GOLDEN_SEED))
 
 
@@ -77,7 +78,6 @@ async def _client(database_url: str) -> AsyncIterator[AsyncClient]:
 
 
 @pytest.mark.anyio
-@pytest.mark.usefixtures("golden_seed")
 async def test_full_season_over_http_and_sql_reproduces_the_synthetic_golden(
     database_url: str,
 ) -> None:
@@ -112,7 +112,6 @@ async def test_every_run_operation_requires_its_run_token(
 
 
 @pytest.mark.anyio
-@pytest.mark.usefixtures("golden_seed")
 async def test_retrying_every_command_with_its_key_leaves_the_golden_season_unchanged(
     database_url: str,
 ) -> None:
@@ -194,7 +193,6 @@ async def test_a_command_on_a_stale_version_conflicts_without_changing_the_run(
 
 
 @pytest.mark.anyio
-@pytest.mark.usefixtures("golden_seed")
 async def test_a_reloaded_client_recovers_the_run_and_finishes_the_golden_season(
     database_url: str,
 ) -> None:
