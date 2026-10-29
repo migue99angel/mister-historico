@@ -18,7 +18,9 @@ for (const width of [390, 412, 1280]) {
   test.describe(`coach layout at ${String(width)} px`, () => {
     test.use({ baseURL: 'http://localhost:5174', viewport: { width, height: 900 } });
 
-    test('consults the team and decides with keyboard, long text and enlarged type', async ({ page }) => {
+    test('consults the team and decides with keyboard, long text and enlarged type', async ({
+      page,
+    }) => {
       await startRun(page);
       const panel = page.getByRole('complementary', { name: 'Panel del equipo' });
       const decisions = page.getByRole('region', { name: 'Decisiones del bloque' });
@@ -28,23 +30,36 @@ for (const width of [390, 412, 1280]) {
       expect(panelBox).not.toBeNull();
       expect(decisionsBox).not.toBeNull();
       if (width === 1280) {
-        expect((panelBox?.x ?? 0) + (panelBox?.width ?? 0)).toBeLessThanOrEqual(decisionsBox?.x ?? 0);
+        expect((panelBox?.x ?? 0) + (panelBox?.width ?? 0)).toBeLessThanOrEqual(
+          decisionsBox?.x ?? 0,
+        );
       } else {
-        expect((panelBox?.y ?? 0) + (panelBox?.height ?? 0)).toBeLessThanOrEqual(decisionsBox?.y ?? 0);
+        expect((panelBox?.y ?? 0) + (panelBox?.height ?? 0)).toBeLessThanOrEqual(
+          decisionsBox?.y ?? 0,
+        );
       }
       const squad = panel.locator('summary').filter({ hasText: /^Plantilla/ });
       await toggleWithKeyboard(page, squad);
       await expect(panel.getByText(/Valoración:/).first()).toBeVisible();
       await page.keyboard.press('Space');
       await expect(squad).toBeFocused();
+      await expect(panel.getByText(/Valoración:/).first()).not.toBeVisible();
       await toggleWithKeyboard(page, panel.locator('summary').filter({ hasText: 'Clasificación' }));
       await expect(panel.getByText(/al cerrar el primer bloque/)).toBeVisible();
       await tabTo(page, panel.getByRole('button', { name: 'Volver a decisiones' }));
       await page.keyboard.press('Enter');
       await expect(page.getByRole('heading', { name: 'Decisiones del bloque' })).toBeFocused();
+      await expect(page.getByRole('heading', { name: 'Decisiones del bloque' })).toBeInViewport();
 
       while (await page.getByRole('group', { name: /^Opciones/ }).count()) {
-        await tabTo(page, page.getByRole('group', { name: /^Opciones/ }).first().getByRole('button').first());
+        await tabTo(
+          page,
+          page
+            .getByRole('group', { name: /^Opciones/ })
+            .first()
+            .getByRole('button')
+            .first(),
+        );
         await page.keyboard.press('Space');
         await tabTo(page, page.getByRole('button', { name: /^Confirmar:/ }).first());
         await page.keyboard.press('Enter');
@@ -58,25 +73,42 @@ for (const width of [390, 412, 1280]) {
       await tabTo(page, page.getByRole('button', { name: 'Ir a decisiones' }));
       await page.keyboard.press('Enter');
       await expect(page.getByRole('heading', { name: 'Decisiones del bloque' })).toBeFocused();
+      await expect(page.getByRole('heading', { name: 'Decisiones del bloque' })).toBeInViewport();
       await toggleWithKeyboard(page, panel.locator('summary').filter({ hasText: 'Clasificación' }));
       await expect(panel.getByRole('table', { name: 'Liga Test' })).toBeVisible();
-      await toggleWithKeyboard(page, panel.locator('summary').filter({ hasText: 'Estado y lesiones' }));
+      await toggleWithKeyboard(
+        page,
+        panel.locator('summary').filter({ hasText: 'Estado y lesiones' }),
+      );
       await expect(panel.getByRole('heading', { name: 'Lesiones actuales' })).toBeVisible();
       await toggleWithKeyboard(page, squad);
 
       // Stress only presentation with synthetic text; no real club content or API changes.
-      await panel.getByText(/Valoración:/).first().evaluate((node) => {
-        (node as unknown as { textContent: string }).textContent = 'JugadorSintético'.repeat(20);
-      });
-      await panel.getByRole('rowheader').first().evaluate((node) => {
-        (node as unknown as { textContent: string }).textContent = 'EquipoSintético'.repeat(20);
-      });
+      await panel
+        .getByText(/Valoración:/)
+        .first()
+        .evaluate((node) => {
+          (node as unknown as { textContent: string }).textContent = 'JugadorSintético'.repeat(20);
+        });
+      await panel
+        .getByRole('rowheader')
+        .first()
+        .evaluate((node) => {
+          (node as unknown as { textContent: string }).textContent = 'EquipoSintético'.repeat(20);
+        });
       await page.addStyleTag({ content: 'html { font-size: 200%; }' });
       await expectNoHorizontalScroll(page);
       await expectNoAxeViolations(page);
+      if (width === 1280) {
+        // A 1280 px desktop zoomed to 200% has 640 CSS pixels for reflow.
+        await page.addStyleTag({ content: 'html { font-size: 100%; }' });
+        await page.setViewportSize({ width: 640, height: 900 });
+        await expectNoHorizontalScroll(page);
+      }
       await tabTo(page, panel.getByRole('button', { name: 'Volver a decisiones' }));
       await page.keyboard.press('Enter');
       await expect(page.getByRole('heading', { name: 'Decisiones del bloque' })).toBeFocused();
+      await expect(page.getByRole('heading', { name: 'Decisiones del bloque' })).toBeInViewport();
     });
   });
 }

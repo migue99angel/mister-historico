@@ -178,174 +178,194 @@ export function RunInPlay({ run, isRefreshing, onRunEnded }: RunInPlayProps) {
       {userTeam && (
         <header
           aria-label="Tu equipo"
-          className="mx-auto flex w-full max-w-md items-center gap-3 border-b border-line px-gutter py-3"
+          className="mx-auto flex w-full max-w-6xl items-center gap-3 border-b border-line px-gutter py-3"
         >
           <GenericCrest colors={userTeam.colors} size={36} />
-          <p className="min-w-0 font-display text-title leading-tight font-bold">{userTeam.name}</p>
+          <p className="min-w-0 font-display text-title [overflow-wrap:anywhere] leading-tight font-bold">
+            {userTeam.name}
+          </p>
         </header>
       )}
-      <main className="mx-auto flex w-full max-w-md flex-col gap-4 px-gutter pt-4">
+      <main className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-gutter py-4 [overflow-wrap:anywhere]">
         <h1 className="sr-only">Partida</h1>
         {!reveal.revealing && <BlockProgress progress={viewModel.progress} status={run.status} />}
 
-        {run.lastBlockSummary && viewModel.lastBlock && (
-          <BlockSummary
-            summary={run.lastBlockSummary}
-            narrative={viewModel.lastBlock}
-            headingRef={summaryHeading}
-            visibleDates={reveal.visibleDates}
-            revealing={reveal.revealing}
-            onDecisions={
-              inProgress
-                ? () => {
-                    focusDecisions.current = true;
-                    reveal.complete();
-                  }
-                : undefined
-            }
-            onComplete={() => {
-              reveal.complete();
-              summaryHeading.current?.focus();
-            }}
-          />
-        )}
-
-        {showConfirmation && (
-          <section
-            aria-label="Última decisión"
-            aria-live="polite"
-            className="flex flex-col gap-2 rounded-card border border-line p-4"
-          >
-            <h2
-              ref={confirmationHeading}
-              tabIndex={-1}
-              className="font-display text-title font-bold"
-            >
-              {changes === null ? 'Estado actualizado' : 'Decisión confirmada'}
-            </h2>
-            {changes !== null ? (
-              <>
-                <p>{`${confirmed.title}: ${confirmed.label}`}</p>
-                <ul className="text-body">
-                  {changes.map((change) => (
-                    <li key={change}>{change}</li>
-                  ))}
-                </ul>
-                <p className="text-caption text-ink-muted">
-                  Diferencias visibles entre el estado anterior y la respuesta a esta decisión. El
-                  físico medio también depende de la composición de la plantilla; estos valores no
-                  identifican la causa de cada cambio. Un cambio cero indica que el valor publicado
-                  se mantiene.
-                </p>
-              </>
-            ) : (
-              <p>
-                No podemos aislar los cambios de esta confirmación. Consulta el estado actualizado
-                del equipo.
-              </p>
+        <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-start">
+          {!reveal.revealing && (
+            <aside aria-label="Panel del equipo" className="min-w-0">
+              <TeamPanel run={run} />
+              {inProgress && (
+                <div className="mt-2">
+                  <Button
+                    variant="ghost"
+                    fullWidth
+                    onClick={() => decisionsHeading.current?.focus()}
+                  >
+                    Volver a decisiones
+                  </Button>
+                </div>
+              )}
+            </aside>
+          )}
+          <div className={`flex min-w-0 flex-col gap-4 ${reveal.revealing ? 'lg:col-span-2' : ''}`}>
+            {run.lastBlockSummary && viewModel.lastBlock && (
+              <BlockSummary
+                summary={run.lastBlockSummary}
+                narrative={viewModel.lastBlock}
+                headingRef={summaryHeading}
+                visibleDates={reveal.visibleDates}
+                revealing={reveal.revealing}
+                onDecisions={
+                  inProgress
+                    ? () => {
+                        focusDecisions.current = true;
+                        reveal.complete();
+                      }
+                    : undefined
+                }
+                onComplete={() => {
+                  reveal.complete();
+                  summaryHeading.current?.focus();
+                }}
+              />
             )}
-            <p className="text-caption text-ink-muted">
-              Este detalle es temporal; tras recargar puedes consultar el estado y las decisiones
-              confirmadas.
-            </p>
-          </section>
-        )}
 
-        {!reveal.revealing && <TeamPanel run={run} />}
+            {showConfirmation && (
+              <section
+                aria-label="Última decisión"
+                aria-live="polite"
+                className="flex flex-col gap-2 rounded-card border border-line p-4"
+              >
+                <h2
+                  ref={confirmationHeading}
+                  tabIndex={-1}
+                  className="font-display text-title font-bold"
+                >
+                  {changes === null ? 'Estado actualizado' : 'Decisión confirmada'}
+                </h2>
+                {changes !== null ? (
+                  <>
+                    <p>{`${confirmed.title}: ${confirmed.label}`}</p>
+                    <ul className="text-body">
+                      {changes.map((change) => (
+                        <li key={change}>{change}</li>
+                      ))}
+                    </ul>
+                    <p className="text-caption text-ink-muted">
+                      Diferencias visibles entre el estado anterior y la respuesta a esta decisión.
+                      El físico medio también depende de la composición de la plantilla; estos
+                      valores no identifican la causa de cada cambio. Un cambio cero indica que el
+                      valor publicado se mantiene.
+                    </p>
+                  </>
+                ) : (
+                  <p>
+                    No podemos aislar los cambios de esta confirmación. Consulta el estado
+                    actualizado del equipo.
+                  </p>
+                )}
+                <p className="text-caption text-ink-muted">
+                  Este detalle es temporal; tras recargar puedes consultar el estado y las
+                  decisiones confirmadas.
+                </p>
+              </section>
+            )}
 
-        {!reveal.revealing && run.decisions.length > 0 && (
-          <section aria-label="Decisiones confirmadas">
-            <details>
-              <summary className="min-h-touch cursor-pointer py-3 font-semibold">
-                Ver decisiones confirmadas
-              </summary>
-              <ul className="text-body">
-                {run.decisions.map((made) => (
-                  <li key={`${String(made.blockNumber)}/${made.dilemmaId}`}>
-                    {`Bloque ${String(made.blockNumber)} · ${made.dilemmaId.replaceAll('-', ' ')} · ${made.optionId.replaceAll('-', ' ')}`}
-                  </li>
+            {!reveal.revealing && run.decisions.length > 0 && (
+              <section aria-label="Decisiones confirmadas">
+                <details>
+                  <summary className="min-h-touch cursor-pointer py-3 font-semibold">
+                    Ver decisiones confirmadas
+                  </summary>
+                  <ul className="text-body">
+                    {run.decisions.map((made) => (
+                      <li key={`${String(made.blockNumber)}/${made.dilemmaId}`}>
+                        {`Bloque ${String(made.blockNumber)} · ${made.dilemmaId.replaceAll('-', ' ')} · ${made.optionId.replaceAll('-', ' ')}`}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              </section>
+            )}
+
+            {inProgress && !reveal.revealing && (
+              <section aria-labelledby={dilemmasHeadingId} className="flex flex-col gap-4">
+                <h2
+                  ref={decisionsHeading}
+                  tabIndex={-1}
+                  id={dilemmasHeadingId}
+                  className="mt-2 font-display text-headline font-extrabold"
+                >
+                  Decisiones del bloque
+                </h2>
+                {pending.map((dilemma, index) => (
+                  <div key={dilemma.id} className="flex flex-col gap-2">
+                    <DilemmaCard
+                      dilemma={dilemma}
+                      eyebrow={`Dilema ${String(decidedInBlock + index + 1)} de ${String(dilemmasInBlock)}`}
+                      headingLevel={3}
+                      selectedOptionId={chosenOptionId(dilemma)}
+                      disabled={locked}
+                      onSelect={(optionId) => {
+                        setChoices((current) => ({ ...current, [dilemma.id]: optionId }));
+                      }}
+                    />
+                    <Button
+                      loading={decision.isPending && attempted?.dilemma.id === dilemma.id}
+                      disabled={locked || chosenOptionId(dilemma) === null}
+                      aria-label={`Confirmar: ${dilemma.title}`}
+                      onClick={() => {
+                        void confirmDecision(dilemma, chosenOptionId(dilemma));
+                      }}
+                    >
+                      Confirmar decisión
+                    </Button>
+                  </div>
                 ))}
-              </ul>
-            </details>
-          </section>
-        )}
+              </section>
+            )}
 
-        {inProgress && !reveal.revealing && (
-          <section aria-labelledby={dilemmasHeadingId} className="flex flex-col gap-4">
-            <h2
-              ref={decisionsHeading}
-              tabIndex={-1}
-              id={dilemmasHeadingId}
-              className="mt-2 font-display text-headline font-extrabold"
-            >
-              Decisiones del bloque
-            </h2>
-            {pending.map((dilemma, index) => (
-              <div key={dilemma.id} className="flex flex-col gap-2">
-                <DilemmaCard
-                  dilemma={dilemma}
-                  eyebrow={`Dilema ${String(decidedInBlock + index + 1)} de ${String(dilemmasInBlock)}`}
-                  headingLevel={3}
-                  selectedOptionId={chosenOptionId(dilemma)}
-                  disabled={locked}
-                  onSelect={(optionId) => {
-                    setChoices((current) => ({ ...current, [dilemma.id]: optionId }));
-                  }}
-                />
+            {inProgress && !reveal.revealing && (
+              <div className="border-t border-line bg-canvas py-3">
+                {failureMessage && (
+                  <p
+                    ref={failureAlert}
+                    role="alert"
+                    tabIndex={-1}
+                    className="mb-2 text-center text-body text-loss"
+                  >
+                    {failureMessage}
+                  </p>
+                )}
+                {uncertain && attempted && (
+                  <Button
+                    fullWidth
+                    disabled={submitting || isRefreshing}
+                    onClick={() => {
+                      void confirmDecision(attempted.dilemma, attempted.optionId);
+                    }}
+                  >
+                    Reintentar confirmación
+                  </Button>
+                )}
                 <Button
-                  loading={decision.isPending && attempted?.dilemma.id === dilemma.id}
-                  disabled={locked || chosenOptionId(dilemma) === null}
-                  aria-label={`Confirmar: ${dilemma.title}`}
+                  fullWidth
+                  disabled={pending.length > 0 || isRefreshing}
+                  loading={submitting && advance.isPending}
+                  aria-describedby={hintId}
                   onClick={() => {
-                    void confirmDecision(dilemma, chosenOptionId(dilemma));
+                    void simulateBlock();
                   }}
                 >
-                  Confirmar decisión
+                  {submitting && advance.isPending ? 'Simulando…' : 'Simular bloque'}
                 </Button>
+                <p id={hintId} className="mt-1.5 text-center text-caption text-ink-muted">
+                  {pendingDilemmasHint(pending.length)}
+                </p>
               </div>
-            ))}
-          </section>
-        )}
-
-        {inProgress && !reveal.revealing && (
-          <div className="sticky bottom-0 -mx-gutter border-t border-line bg-canvas/95 px-gutter py-3 backdrop-blur">
-            {failureMessage && (
-              <p
-                ref={failureAlert}
-                role="alert"
-                tabIndex={-1}
-                className="mb-2 text-center text-body text-loss"
-              >
-                {failureMessage}
-              </p>
             )}
-            {uncertain && attempted && (
-              <Button
-                fullWidth
-                disabled={submitting || isRefreshing}
-                onClick={() => {
-                  void confirmDecision(attempted.dilemma, attempted.optionId);
-                }}
-              >
-                Reintentar confirmación
-              </Button>
-            )}
-            <Button
-              fullWidth
-              disabled={pending.length > 0 || isRefreshing}
-              loading={submitting && advance.isPending}
-              aria-describedby={hintId}
-              onClick={() => {
-                void simulateBlock();
-              }}
-            >
-              {submitting && advance.isPending ? 'Simulando…' : 'Simular bloque'}
-            </Button>
-            <p id={hintId} className="mt-1.5 text-center text-caption text-ink-muted">
-              {pendingDilemmasHint(pending.length)}
-            </p>
           </div>
-        )}
+        </div>
       </main>
     </>
   );

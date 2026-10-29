@@ -61,7 +61,7 @@ export function BlockSummary({
           </p>
         )}
         {revealing && (
-          <div className="flex flex-col gap-2">
+          <div className="sticky top-0 z-10 flex flex-col gap-2 border-b border-line bg-surface py-2">
             <p className="text-body">Mostrando los resultados del bloque ya simulado.</p>
             <div className="flex flex-wrap gap-2">
               <Button onClick={onComplete}>Mostrar todos</Button>
@@ -74,7 +74,7 @@ export function BlockSummary({
             ? `${String(visibleCount)} de ${String(summary.results.length)} resultados mostrados.`
             : ''}
         </p>
-        <ul className="divide-y divide-line">
+        <ul className="divide-y divide-line [&_span]:min-w-0">
           {visibleGroups.map(({ date, matches }) => (
             <li key={date}>
               <h3 className="mt-3 text-caption font-semibold">
