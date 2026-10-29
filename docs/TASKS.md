@@ -847,12 +847,17 @@ tarea amplía los dos ADR.
   `goal_difference`. La Partida no puede avanzar y queda atascada. Regla que
   aprobó el autor:
   - Un sorteo final como **regla del motor**, no como criterio de contenido, para no
-    cambiar el esquema. Se aplica solo cuando un empate simulado cruza la clasificación.
-  - Un flujo `("draw", competition_id, stage_id, group_id)` en ADR-005, como subclave de
+    cambiar el esquema. Al cerrar un grupo con resultados simulados, resuelve **todos** los
+    empates residuales, también los que no cruzan la clasificación (ampliación aprobada por
+    el autor el 2026-10-29 en [#126](https://github.com/migue99angel/mister-historico/issues/126#issuecomment-6494985260)).
+  - Un flujo hoja `("draw", competition_id, stage_id, group_id, club_season_id)` en ADR-005,
+    con una extracción por club, como subclave de
     la fila de sorteos `("draw", competition_id, stage_id)`. Esa fila deja de ser hoja:
     el ADR fija que el sorteo de grupo nunca extrae del flujo de la etapa.
-  - Una enmienda de ADR-007: el empate se sigue preservando en la presentación y en el
-    orden, pero la plaza se decide por sorteo. Es sintético y no afirma normativa histórica.
+  - Una enmienda de ADR-007: al cerrar el grupo simulado, el sorteo ordena las filas y elimina
+    `unresolved_ties`, permitiendo que la tabla pase a FINAL si cumple las demás condiciones.
+    Antes del cierre se preservan los empates. La evidencia histórica sigue siendo estricta.
+    Es sintético y no afirma normativa histórica.
 - **Tests primero:** un test de dominio con un grupo empatado en todos los criterios en la
   frontera de clasificación: la plaza se resuelve de forma determinista con la semilla y
   cambiar la semilla puede cambiarla. Además, tests de regresión de `simulation` que cierran
