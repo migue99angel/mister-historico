@@ -1,6 +1,6 @@
 """Published starter DTOs reject ambiguous captures and false participation evidence."""
 
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, replace
 from datetime import date, datetime
 from types import ModuleType
 
@@ -130,3 +130,26 @@ def test_acl_preserves_actual_starters_and_absence_reason() -> None:
 def test_offer_limits_the_choice_to_two_or_three_candidates(count: int) -> None:
     with pytest.raises(InvalidValueError):
         _offer(tuple(PlayerId(f"candidate-{i}") for i in range(count)))
+
+
+def test_offer_captures_eleven_projected_starters_outside_the_candidates() -> None:
+    projected = tuple(PlayerId(f"starter-{i}") for i in range(11))
+    offer = replace(_offer(), projected_starter_ids=projected)
+    assert offer.projected_starter_ids == projected
+    assert set(offer.candidate_ids).isdisjoint(offer.projected_starter_ids)
+
+
+@pytest.mark.parametrize(
+    "projected",
+    [
+        tuple(PlayerId(f"starter-{i}") for i in range(10)),
+        tuple(PlayerId(f"starter-{i}") for i in range(12)),
+        (PlayerId("starter"),) * 11,
+        (PLAYER,) + tuple(PlayerId(f"starter-{i}") for i in range(10)),
+        [PlayerId(f"starter-{i}") for i in range(11)],
+        ("starter",) + tuple(PlayerId(f"starter-{i}") for i in range(10)),
+    ],
+)
+def test_offer_rejects_invalid_projection_or_a_candidate_already_starting(projected: object) -> None:
+    with pytest.raises(InvalidValueError):
+        replace(_offer(), projected_starter_ids=projected)
