@@ -1,7 +1,7 @@
 import type { components } from '../generated/schema';
 
 import { startRun } from './store';
-import { SQUAD_PLAYERS, TEST_SEASON_ID } from './fixtures';
+import { TEST_SEASON_ID } from './fixtures';
 
 /** Captured pre-match offer only; MSW does not claim to simulate starter selection. */
 export function keyStarterRun(): components['schemas']['RunView'] {
@@ -10,6 +10,7 @@ export function keyStarterRun(): components['schemas']['RunView'] {
   if (!template) throw new Error('expected Test FC squad');
   const projected = Array.from({ length: 11 }, (_, i): components['schemas']['SquadMember'] => ({
     ...template,
+    injury: template.injury ? { ...template.injury } : null,
     id: `starter-${String(i)}`,
     displayName: `Titular ${String(i + 1)}`,
     position: i === 0 ? 'GK' : i < 5 ? 'DF' : i < 9 ? 'MF' : 'FW',
@@ -31,7 +32,10 @@ export function keyStarterRun(): components['schemas']['RunView'] {
       competitionName: 'Liga Test',
       venue: 'home',
       keyMatchLabel: 'Derbi de prueba',
-      candidates: SQUAD_PLAYERS.slice(0, 2).map((player) => ({ ...player })),
+      candidates: run.squad.players.slice(0, 2).map((player) => ({
+        ...player,
+        injury: player.injury ? { ...player.injury } : null,
+      })),
       projectedStarterIds: projected.map((player) => player.id),
       projectedStarters: projected,
       selectedPlayerId: null,

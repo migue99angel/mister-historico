@@ -85,11 +85,15 @@ jugadores tienen fuerza equivalente. Los cambios posteriores pueden alterar la a
 Se capturan durablemente `projected_starter_ids`, candidatos, fecha de la oferta, estado
 conocido y metadatos de presentación. La oferta no se vuelve a calcular tras una decisión.
 HTTP publica `projectedStarterIds` (once IDs únicos) y `projectedStarters` (once `SquadMember`
-en el mismo orden y con los mismos IDs), además de `candidates` (dos o tres `PlayerSummary`).
-Los candidatos son disjuntos de `projectedStarterIds`, validado por el DTO. Los datos de los
-titulares previstos conservan media, posición, moral, físico y lesión del estado de entrada,
-con nombres de la publicación capturada y la misma política de nombres que RunView. Los de
-los candidatos conservan su media nominal inicial. Así una venta o una entrada por fecha
+en el mismo orden y con los mismos IDs), además de `candidates` (dos o tres `SquadMember`).
+Los candidatos son disjuntos de `projectedStarterIds`, validado por el DTO.
+Se mantienen ambos campos de previsión deliberadamente: `projectedStarterIds` es el dato
+pedido por el autor y capturado por Game; `projectedStarters` aporta la presentación durable.
+T3.9 debe validar que sus IDs coincidan exactamente y en orden, sin regenerar ninguna lista. Los datos de los
+titulares previstos y los candidatos conservan media nominal, posición, moral, físico y
+lesión del mismo estado de entrada, con nombres de la publicación capturada y la misma
+política de nombres que RunView. No se mezclan estados ni se recalculan moral, físico o
+lesión al consultar la oferta tras una decisión o recarga: se compara una captura común. Así una venta o una entrada por fecha
 no obliga a buscar los nombres o el estado de la previsión en la plantilla actual.
 
 La interfaz los rotula «Once previsto al inicio del bloque»: son una previsión con datos

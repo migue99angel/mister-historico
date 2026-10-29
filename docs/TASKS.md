@@ -1447,7 +1447,8 @@ RunLoop: secuencia T4.9 → T4.11 → T4.12 → T4.10; backend de titular indepe
 - **Propiedad/CR:** RunLoop, hooks/view models y tests; consume CR-T3.9.
 - **Aceptación/tests:** partido/fecha/estado del servidor; mostrar el once previsto al
   inicio del bloque con media, posición y estado capturado de cada jugador, distinguirlo
-  del once real y destacar los candidatos suplentes. Si se publica reemplazo por candidato,
+  del once real y destacar los candidatos suplentes con media, moral, físico y lesión
+  de la misma captura de entrada, para compararlos. Si se publica reemplazo por candidato,
   mostrarlo como previsión. Confirmar/recuperar selección y poder simular sin elegir,
   aplicación/fallback, teclado y foco. Componentes y E2E API real para doble toque,
   error, ausencia y recarga. Riesgo: promesa de victoria; comunicar selección efectiva.

@@ -1071,14 +1071,15 @@ components:
     KeyStarterOffer:
       type: object
       description: >-
-        Captured once at block entry. At most one per block. Candidates are player summaries
+        Captured once at block entry. At most one per block. Candidates carry captured squad state
         resolved from the captured content. No match outcome is exposed before advance.
         selectedPlayerId is null until chosen and must match a candidate ID when set.
         Two or three available reserves outside projectedStarterIds, ordered by descending
         captured effective rating and then ID. projectedStarterIds is a deterministic forecast
         computed at block entry without required players or RNG, never the actual future lineup.
         projectedStarters carries the captured player metadata in the same ID order, even after
-        squad changes. No future injuries or match results are used.
+        squad changes. Candidates and projected starters carry morale, fitness and injury from
+        the same captured entry state; neither is recomputed from the current squad when read. No future injuries or match results are used.
         Advance without a choice explicitly skips the offer; it never blocks older clients.
       required:
         [
@@ -1118,7 +1119,7 @@ components:
           maxItems: 3
           uniqueItems: true
           items:
-            $ref: "#/components/schemas/PlayerSummary"
+            $ref: "#/components/schemas/SquadMember"
         projectedStarterIds:
           type: array
           minItems: 11
