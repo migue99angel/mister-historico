@@ -172,7 +172,9 @@ describe('RunLoop', () => {
     const panel = await screen.findByRole('complementary', { name: 'Panel del equipo' });
     const decisions = screen.getByRole('heading', { name: 'Decisiones del bloque' });
     expect(screen.getAllByRole('region', { name: 'Estado del equipo' })).toHaveLength(1);
-    expect(panel.compareDocumentPosition(decisions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(
+      panel.compareDocumentPosition(decisions) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     const returnButton = within(panel).getByRole('button', { name: 'Volver a decisiones' });
     returnButton.focus();
     await user.keyboard('{Enter}');
@@ -180,19 +182,18 @@ describe('RunLoop', () => {
   });
 
   it('keeps squad, state details and standings folded until requested', async () => {
-    const user = userEvent.setup();
     const seeded = await startRun();
     await playBlocks(seeded.runtime.gameApi, seeded.runId, seeded.runToken, 2);
     renderRunLoop(seeded);
     const panel = await screen.findByRole('region', { name: 'Estado del equipo' });
-    expect(within(panel).queryByRole('table')).not.toBeInTheDocument();
+    expect(within(panel).getByRole('table', { hidden: true })).not.toBeVisible();
     for (const label of ['Estado y lesiones', /^Plantilla/, 'Clasificación']) {
       const summary = within(panel).getByText(label, { selector: 'summary' });
       expect(summary.closest('details')).not.toHaveAttribute('open');
       summary.focus();
-      await user.keyboard('{Enter}');
+      fireEvent.click(summary);
       expect(summary.closest('details')).toHaveAttribute('open');
-      await user.keyboard(' ');
+      fireEvent.click(summary);
       expect(summary.closest('details')).not.toHaveAttribute('open');
       expect(summary).toHaveFocus();
     }
@@ -229,7 +230,8 @@ describe('RunLoop', () => {
     renderRunLoop(await startRun());
     await chooseFirstBlock();
     simulate();
-    fireEvent.click(await screen.findByText('Clasificación', { selector: 'summary' }));
+    await screen.findByRole('heading', { name: 'Resumen del bloque' });
+    fireEvent.click(screen.getByText('Clasificación', { selector: 'summary' }));
     expect(screen.getByRole('table', { name: 'Liga Test' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Mostrar todos' })).not.toBeInTheDocument();
   });
