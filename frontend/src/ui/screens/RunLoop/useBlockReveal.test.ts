@@ -63,6 +63,23 @@ describe('useBlockReveal', () => {
     expect(result.current.revealing).toBe(false);
   });
 
+  it('finishes immediately when reduced motion is enabled during the reveal', () => {
+    vi.useFakeTimers();
+    const media = Object.assign(new EventTarget(), { matches: false });
+    vi.stubGlobal('matchMedia', () => media);
+    const { result } = renderHook(() => useBlockReveal(4, 2));
+    act(() => {
+      result.current.start(4, 2);
+    });
+    expect(result.current.revealing).toBe(true);
+    act(() => {
+      media.matches = true;
+      media.dispatchEvent(new Event('change'));
+    });
+    expect(result.current.revealing).toBe(false);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('abandons a sequence when the server supplies another version', () => {
     vi.useFakeTimers();
     const { result, rerender } = renderHook(({ version }) => useBlockReveal(version, 2), {
