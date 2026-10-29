@@ -78,7 +78,24 @@ test('Test FC is played to the end against the real API, surviving reloads, with
     await expect(progress).toHaveAttribute('aria-valuenow', String(played));
     await expectNoHorizontalScroll(page);
     await decideFirstOptions(page);
-    await simulate.click();
+    const advanced = page.waitForResponse(isAdvance);
+    if (played === 0) {
+      await simulate.evaluate((button) => {
+        (button as HTMLButtonElement).click();
+        (button as HTMLButtonElement).click();
+      });
+    } else {
+      await simulate.click();
+    }
+    expect((await advanced).status()).toBe(200);
+    const skip = page.getByRole('button', { name: 'Mostrar todos' });
+    await expect(skip).toBeVisible();
+    await expect(page.getByRole('table')).toHaveCount(0);
+    await expect(page.getByRole('region', { name: 'Estado del equipo' })).toHaveCount(0);
+    if (played === 1 || played === totalBlocks - 1) {
+      await expect(page).toHaveURL(runUrl);
+      await skip.click();
+    }
 
     if (played === 0) {
       await expect(page.getByRole('heading', { name: 'Resumen del bloque' })).toBeVisible();
@@ -86,6 +103,8 @@ test('Test FC is played to the end against the real API, surviving reloads, with
       await page.reload();
       await expect(page).toHaveURL(runUrl);
       await expect(progress).toHaveAttribute('aria-valuenow', '1');
+      await expect(skip).toHaveCount(0);
+      await expect(page.getByRole('table')).not.toHaveCount(0);
       await expect(page.getByRole('heading', { name: 'Resumen del bloque' })).toBeVisible();
     }
   }
@@ -150,6 +169,8 @@ test('the board sacks the Test FC manager in block two and the dismissal survive
         pendingDilemmas: [],
       });
       dismissed = view;
+      await expect(page).toHaveURL(runUrl);
+      await page.getByRole('button', { name: 'Mostrar todos' }).click();
     } else {
       expect(view).toMatchObject({ status: 'in_progress' });
     }

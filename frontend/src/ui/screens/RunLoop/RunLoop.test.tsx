@@ -1,7 +1,7 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import { HttpResponse, http } from 'msw';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   createTestRuntime,
@@ -11,6 +11,7 @@ import {
   type TestRuntime,
 } from '../../../../test/renderWithRuntime';
 import type { GameApi } from '../../../application/ports';
+import { runQueryKey } from '../../../application/useRun';
 import { RunLoop } from './RunLoop';
 
 const UNKNOWN_RUN_ID = '00000000-0000-4000-8000-000000000000';
@@ -161,6 +162,9 @@ function problem(status: number, code: string) {
 }
 
 describe('RunLoop', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
   it('hides closure spoilers until skipping and then exposes the complete summary', async () => {
     renderRunLoop(await startRun());
     await chooseFirstBlock();
@@ -173,6 +177,58 @@ describe('RunLoop', () => {
     fireEvent.click(skip);
     expect(screen.getByRole('table', { name: 'Liga Test' })).toBeInTheDocument();
     expect(screen.getByText('August · 1 victoria y 1 empate')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Resumen del bloque' })).toHaveFocus();
+  });
+
+  it('completes the reveal from the decisions shortcut and focuses the decisions heading', async () => {
+    renderRunLoop(await startRun());
+    await chooseFirstBlock();
+    simulate();
+    fireEvent.click(await screen.findByRole('button', { name: 'Ir a decisiones' }));
+    expect(screen.getByRole('heading', { name: 'Decisiones del bloque' })).toHaveFocus();
+    expect(screen.getByRole('table', { name: 'Liga Test' })).toBeInTheDocument();
+  });
+
+  it('shows closure immediately for reduced motion', async () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: true }));
+    renderRunLoop(await startRun());
+    await chooseFirstBlock();
+    simulate();
+    await screen.findByRole('table', { name: 'Liga Test' });
+    expect(screen.queryByRole('button', { name: 'Mostrar todos' })).not.toBeInTheDocument();
+  });
+
+  it('does not replay a completed reveal on refetch or remount', async () => {
+    const seeded = await startRun();
+    const rendered = renderRunLoop(seeded);
+    await chooseFirstBlock();
+    simulate();
+    fireEvent.click(await screen.findByRole('button', { name: 'Mostrar todos' }));
+    await act(async () => {
+      await seeded.runtime.queryClient.invalidateQueries({ queryKey: runQueryKey(seeded.runId) });
+    });
+    expect(screen.queryByRole('button', { name: 'Mostrar todos' })).not.toBeInTheDocument();
+    rendered.unmount();
+    renderRunLoop(seeded);
+    await screen.findByRole('table', { name: 'Liga Test' });
+    expect(screen.queryByRole('button', { name: 'Mostrar todos' })).not.toBeInTheDocument();
+  });
+
+  it('loads a previously simulated block completely without starting a reveal', async () => {
+    const seeded = await startRun();
+    await playBlocks(seeded.runtime.gameApi, seeded.runId, seeded.runToken, 1);
+    renderRunLoop(seeded);
+    await screen.findByRole('table', { name: 'Liga Test' });
+    expect(screen.queryByRole('button', { name: 'Mostrar todos' })).not.toBeInTheDocument();
+  });
+
+  it('keeps keyboard focus when the focused skip button disappears automatically', async () => {
+    renderRunLoop(await startRun());
+    await chooseFirstBlock();
+    simulate();
+    const skip = await screen.findByRole('button', { name: 'Mostrar todos' });
+    skip.focus();
+    await screen.findByRole('table', { name: 'Liga Test' });
     expect(screen.getByRole('heading', { name: 'Resumen del bloque' })).toHaveFocus();
   });
 
@@ -539,7 +595,10 @@ describe('RunLoop', () => {
 
     simulate();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Mostrar todos' }));
+    const skip = await screen.findByRole('button', { name: 'Mostrar todos' });
+    expect(onRunEnded).not.toHaveBeenCalled();
+    fireEvent.click(skip);
+    fireEvent.click(skip);
     await waitFor(() => {
       expect(onRunEnded).toHaveBeenCalledWith(seeded.runId);
     });
@@ -560,7 +619,10 @@ describe('RunLoop', () => {
 
     simulate();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Mostrar todos' }));
+    const skip = await screen.findByRole('button', { name: 'Mostrar todos' });
+    expect(onRunEnded).not.toHaveBeenCalled();
+    fireEvent.click(skip);
+    fireEvent.click(skip);
     await waitFor(() => {
       expect(onRunEnded).toHaveBeenCalledWith(seeded.runId);
     });
