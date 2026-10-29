@@ -1,0 +1,559 @@
+schema_version: 1
+slug: real-madrid-2012-13
+club_season: real-madrid-2012-13
+season: 2012-13
+manager:
+  display_name: José Mourinho
+  alias_name: El Técnico
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+initial_tactic:
+  style: balanced
+  system: 4-2-3-1
+blocks:
+- id: b1
+  label: Agosto y septiembre
+  start: 2012-08-01
+  end: 2012-09-30
+- id: b2
+  label: Octubre y noviembre
+  start: 2012-10-01
+  end: 2012-11-30
+- id: b3
+  label: Diciembre y enero
+  start: 2012-12-01
+  end: 2013-01-31
+- id: b4
+  label: Febrero y marzo
+  start: 2013-02-01
+  end: 2013-03-31
+- id: b5
+  label: Abril a junio
+  start: 2013-04-01
+  end: 2013-06-30
+competitions:
+- kind: league
+  tier: domestic_league
+  id: liga-bbva
+  name: Liga BBVA
+  participants:
+  - barcelona-2012-13
+  - real-madrid-2012-13
+  - atletico-madrid-2012-13
+  - real-sociedad-2012-13
+  - valencia-2012-13
+  - malaga-2012-13
+  - real-betis-2012-13
+  - rayo-vallecano-2012-13
+  - sevilla-2012-13
+  - getafe-2012-13
+  - levante-2012-13
+  - athletic-club-2012-13
+  - espanyol-2012-13
+  - valladolid-2012-13
+  - granada-2012-13
+  - osasuna-2012-13
+  - celta-vigo-2012-13
+  - mallorca-2012-13
+  - deportivo-coruna-2012-13
+  - zaragoza-2012-13
+  rounds: 2
+  points_per_win: 3
+  points_per_draw: 1
+  tiebreakers:
+  - head_to_head_points
+  - head_to_head_goal_difference
+  - goal_difference
+  - goals_for
+  league_stats:
+    matches: 380
+    home_goals: 641
+    away_goals: 450
+    sources:
+    - https://www.betexplorer.com/football/spain/primera-division-2012-2013/stats/
+    - https://www.besoccer.com/competition/info/primera_division/2013
+    verify: ok
+- kind: cup
+  tier: domestic_cup
+  id: copa-del-rey
+  name: Copa del Rey
+  participants:
+  - barcelona-2012-13
+  - real-madrid-2012-13
+  - atletico-madrid-2012-13
+  - real-sociedad-2012-13
+  - valencia-2012-13
+  - malaga-2012-13
+  - real-betis-2012-13
+  - rayo-vallecano-2012-13
+  - sevilla-2012-13
+  - getafe-2012-13
+  - levante-2012-13
+  - athletic-club-2012-13
+  - espanyol-2012-13
+  - valladolid-2012-13
+  - granada-2012-13
+  - osasuna-2012-13
+  - celta-vigo-2012-13
+  - mallorca-2012-13
+  - deportivo-coruna-2012-13
+  - zaragoza-2012-13
+  - alcoyano-2012-13
+  - llagostera-2012-13
+  - cacereno-2012-13
+  - alaves-2012-13
+  - eibar-2012-13
+  - real-jaen-2012-13
+  - melilla-2012-13
+  - las-palmas-2012-13
+  - sporting-gijon-2012-13
+  - almeria-2012-13
+  - cordoba-2012-13
+  - ponferradina-2012-13
+  goal_baseline:
+    from_league: liga-bbva
+  stages:
+  - id: round-of-32
+    name: Dieciseisavos
+    round: round_of_32
+    legs: 2
+    away_goals_rule: true
+    extra_time: true
+    penalties: true
+    away_goals_in_extra_time:
+      value: true
+      sources:
+      - https://www.arbitro10.com/sites/default/files/reglamento/2013/01/reglamento-rfef-20122013.pdf
+      verify: ok
+  - id: round-of-16
+    name: Octavos
+    round: round_of_16
+    legs: 2
+    away_goals_rule: true
+    extra_time: true
+    penalties: true
+    away_goals_in_extra_time:
+      value: true
+      sources:
+      - https://www.arbitro10.com/sites/default/files/reglamento/2013/01/reglamento-rfef-20122013.pdf
+      verify: ok
+  - id: quarter-final
+    name: Cuartos
+    round: quarter_final
+    legs: 2
+    away_goals_rule: true
+    extra_time: true
+    penalties: true
+    away_goals_in_extra_time:
+      value: true
+      sources:
+      - https://www.arbitro10.com/sites/default/files/reglamento/2013/01/reglamento-rfef-20122013.pdf
+      verify: ok
+  - id: semi-final
+    name: Semifinales
+    round: semi_final
+    legs: 2
+    away_goals_rule: true
+    extra_time: true
+    penalties: true
+    away_goals_in_extra_time:
+      value: true
+      sources:
+      - https://www.arbitro10.com/sites/default/files/reglamento/2013/01/reglamento-rfef-20122013.pdf
+      verify: ok
+  - id: final
+    name: Final
+    round: final
+    legs: 1
+    away_goals_rule: false
+    extra_time: true
+    penalties: true
+- kind: super_cup
+  tier: domestic_super_cup
+  id: supercopa-espana
+  name: Supercopa de España
+  participants:
+  - real-madrid-2012-13
+  - barcelona-2012-13
+  goal_baseline:
+    from_league: liga-bbva
+  stages:
+  - id: final
+    name: Final
+    round: final
+    legs: 2
+    away_goals_rule: true
+    extra_time: true
+    penalties: true
+    away_goals_in_extra_time:
+      value: true
+      sources:
+      - https://www.arbitro10.com/sites/default/files/reglamento/2013/01/reglamento-rfef-20122013.pdf
+      verify: ok
+- kind: continental_cup
+  tier: continental_primary
+  id: champions-league
+  name: Liga de Campeones
+  participants:
+  - barcelona-2012-13
+  - real-madrid-2012-13
+  - valencia-2012-13
+  - malaga-2012-13
+  - porto-2012-13
+  - dynamo-kyiv-2012-13
+  - paris-saint-germain-2012-13
+  - dinamo-zagreb-2012-13
+  - arsenal-2012-13
+  - schalke-04-2012-13
+  - olympiacos-2012-13
+  - montpellier-2012-13
+  - ac-milan-2012-13
+  - zenit-2012-13
+  - anderlecht-2012-13
+  - manchester-city-2012-13
+  - ajax-2012-13
+  - borussia-dortmund-2012-13
+  - chelsea-2012-13
+  - shakhtar-donetsk-2012-13
+  - juventus-2012-13
+  - nordsjaelland-2012-13
+  - bayern-munich-2012-13
+  - lille-2012-13
+  - bate-borisov-2012-13
+  - benfica-2012-13
+  - spartak-moscow-2012-13
+  - celtic-2012-13
+  - manchester-united-2012-13
+  - braga-2012-13
+  - galatasaray-2012-13
+  - cfr-cluj-2012-13
+  goal_baseline:
+    from_league: liga-bbva
+  stages:
+  - id: groups
+    name: Fase de grupos
+    round: group_stage
+    legs: 2
+    away_goals_rule: false
+    extra_time: false
+    penalties: false
+    groups:
+    - id: a
+      participants:
+      - porto-2012-13
+      - dynamo-kyiv-2012-13
+      - paris-saint-germain-2012-13
+      - dinamo-zagreb-2012-13
+    - id: b
+      participants:
+      - arsenal-2012-13
+      - schalke-04-2012-13
+      - olympiacos-2012-13
+      - montpellier-2012-13
+    - id: c
+      participants:
+      - ac-milan-2012-13
+      - zenit-2012-13
+      - anderlecht-2012-13
+      - malaga-2012-13
+    - id: d
+      participants:
+      - real-madrid-2012-13
+      - manchester-city-2012-13
+      - ajax-2012-13
+      - borussia-dortmund-2012-13
+    - id: e
+      participants:
+      - chelsea-2012-13
+      - shakhtar-donetsk-2012-13
+      - juventus-2012-13
+      - nordsjaelland-2012-13
+    - id: f
+      participants:
+      - bayern-munich-2012-13
+      - valencia-2012-13
+      - lille-2012-13
+      - bate-borisov-2012-13
+    - id: g
+      participants:
+      - barcelona-2012-13
+      - benfica-2012-13
+      - spartak-moscow-2012-13
+      - celtic-2012-13
+    - id: h
+      participants:
+      - manchester-united-2012-13
+      - braga-2012-13
+      - galatasaray-2012-13
+      - cfr-cluj-2012-13
+    points_per_win: 3
+    points_per_draw: 1
+    tiebreakers:
+    - head_to_head_points
+    - head_to_head_goal_difference
+    - head_to_head_goals_for
+    - head_to_head_away_goals
+    - goal_difference
+    - goals_for
+    - club_coefficient
+    advance_per_group: 2
+    reapply_head_to_head:
+      value: true
+      sources:
+      - https://www.eurocups.ru/docs/cl-12_13-rules.pdf
+      verify: ok
+    coefficients:
+    - club_season: porto-2012-13
+      milli_points: 98069
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: dynamo-kyiv-2012-13
+      milli_points: 62026
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: paris-saint-germain-2012-13
+      milli_points: 45835
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: dinamo-zagreb-2012-13
+      milli_points: 24774
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: arsenal-2012-13
+      milli_points: 113882
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: schalke-04-2012-13
+      milli_points: 78037
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: olympiacos-2012-13
+      milli_points: 61420
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: montpellier-2012-13
+      milli_points: 11835
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: ac-milan-2012-13
+      milli_points: 89996
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: zenit-2012-13
+      milli_points: 79066
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: anderlecht-2012-13
+      milli_points: 48480
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: malaga-2012-13
+      milli_points: 16837
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: real-madrid-2012-13
+      milli_points: 121837
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: manchester-city-2012-13
+      milli_points: 63882
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: ajax-2012-13
+      milli_points: 58103
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: borussia-dortmund-2012-13
+      milli_points: 31037
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: chelsea-2012-13
+      milli_points: 135882
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: shakhtar-donetsk-2012-13
+      milli_points: 84026
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: juventus-2012-13
+      milli_points: 46996
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: nordsjaelland-2012-13
+      milli_points: 8005
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: bayern-munich-2012-13
+      milli_points: 133037
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: valencia-2012-13
+      milli_points: 89837
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: lille-2012-13
+      milli_points: 38835
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: bate-borisov-2012-13
+      milli_points: 29641
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: barcelona-2012-13
+      milli_points: 157837
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: benfica-2012-13
+      milli_points: 87069
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: spartak-moscow-2012-13
+      milli_points: 46066
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: celtic-2012-13
+      milli_points: 32728
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: manchester-united-2012-13
+      milli_points: 141882
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: braga-2012-13
+      milli_points: 63069
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: galatasaray-2012-13
+      milli_points: 38310
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+    - club_season: cfr-cluj-2012-13
+      milli_points: 18764
+      sources:
+      - https://www.uefa.com/uefachampionsleague/news/01fe-0e7e4bbf672d-abefce7f49b8-1000--uefa-champions-league-list-of-participants/
+      verify: ok
+  - id: round-of-16
+    name: Octavos
+    round: round_of_16
+    legs: 2
+    away_goals_rule: true
+    extra_time: true
+    penalties: true
+    away_goals_in_extra_time:
+      value: true
+      sources:
+      - https://www.eurocups.ru/docs/cl-12_13-rules.pdf
+      verify: ok
+  - id: quarter-final
+    name: Cuartos
+    round: quarter_final
+    legs: 2
+    away_goals_rule: true
+    extra_time: true
+    penalties: true
+    away_goals_in_extra_time:
+      value: true
+      sources:
+      - https://www.eurocups.ru/docs/cl-12_13-rules.pdf
+      verify: ok
+  - id: semi-final
+    name: Semifinales
+    round: semi_final
+    legs: 2
+    away_goals_rule: true
+    extra_time: true
+    penalties: true
+    away_goals_in_extra_time:
+      value: true
+      sources:
+      - https://www.eurocups.ru/docs/cl-12_13-rules.pdf
+      verify: ok
+  - id: final
+    name: Final
+    round: final
+    legs: 1
+    away_goals_rule: false
+    extra_time: true
+    penalties: true
+forced_events: []
+board_objectives:
+- id: league-title
+  competition: liga-bbva
+  kind: finish_top
+  target_position: 1
+  text: Defender el título de Liga.
+- id: cup-final
+  competition: copa-del-rey
+  kind: reach_stage
+  target_stage: final
+  text: Llegar a la final de la Copa del Rey.
+- id: champions-final
+  competition: champions-league
+  kind: reach_stage
+  target_stage: final
+  text: Llegar a la final de la Liga de Campeones.
+historical_outcome:
+- competition: liga-bbva
+  champion: false
+  final_position: 2
+  eliminated_in: null
+  sources:
+  - https://memorias.laliga.es/2012-2013/es/clasificacion_liga_BBVA.html
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- competition: copa-del-rey
+  champion: false
+  final_position: null
+  eliminated_in: final
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  - https://rfef.es/es/noticias/internacionales-espanoles-del-atletico-madrid-se-coronan-copa-sm-rey
+  verify: ok
+- competition: supercopa-espana
+  champion: true
+  final_position: null
+  eliminated_in: null
+  sources:
+  - https://rfef.es/es/supercopa-de-espana
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- competition: champions-league
+  champion: false
+  final_position: null
+  eliminated_in: semi-final
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  - https://www.uefa.com/uefachampionsleague/history/seasons/2013/
+  verify: ok
