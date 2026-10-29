@@ -125,6 +125,8 @@ app/             # composition root: rutas, providers y cableado de puertos con 
 
 ### 3.4 Evolución: histórico primero, temporada actual después
 
+> **Lectura tras la revisión de visión (2026-10-29):** esta sección conserva la base técnica y la iniciativa anterior de temporada actual. La dirección principal pasa a ser la carrera del entrenador; la nueva secuencia **propuesta** está en §5.5 y el análisis en [PRODUCT_EVOLUTION](PRODUCT_EVOLUTION.md). Las menciones a D y a mantener P2 en B/C describen el roadmap anterior: no autorizan P2 para temporadas alternativas ni obligan a priorizar temporada actual antes que carrera. No se modifica ninguna decisión contractual aceptada.
+
 El MVP histórico mantiene temporadas reales, decisiones de fichajes, táctica,
 vestuario y acontecimientos de esa edición, comparación con la historia y
 partidas de 3-5 minutos. El **hito D**, posterior a validar el producto, podrá
@@ -262,6 +264,11 @@ Están en `CLAUDE.md` («Reglas de los tests»), que carga todo agente.
 
 ### 5.1 Hitos verificables
 
+**A queda congelado con su alcance y aceptación actuales.** La tabla conserva
+la referencia previa de B/C/D y el compromiso V1, para que puedan revisarse sin
+recortes implícitos. La propuesta de replanificación de los hitos posteriores,
+pendiente de aprobación, se encuentra en §5.5; no se ejecutan ambos planes en paralelo.
+
 F0-F7 se conservan como paquetes de trabajo y puertas de calidad. **No hay una
 barrera F2 completa → F3:** T3.1-T3.4 ya tenían dependencias de F1 y T3.5 necesita
 T2.6, integrado. F4.1-T4.3 también pueden empezar. El contenido real bloquea la
@@ -358,6 +365,30 @@ por lotes sin consumir toda la capacidad reservada a A.
 Ninguna de estas aprobaciones es necesaria para empezar A y sus tareas de
 backend/frontend. Esta revisión documental no implementa las CR propuestas ni
 convierte una propuesta de beta en una decisión ya firmada.
+
+### 5.5 Propuesta evolutiva posterior a A (2026-10-29)
+
+La carrera del entrenador es la dirección de producto indicada por el autor.
+La secuencia siguiente es **propuesta para revisión**, no sustituye todavía los
+milestones ni las especificaciones B/C vigentes. A no recibe nuevas dependencias.
+
+| Hito propuesto | Incremento y límite | Puerta de validación propuesta |
+|---|---|---|
+| **B · Validar el primer reto histórico** | Elegir explícitamente entre B completo de §5.1 y un reto RM acotado a Liga. Conservar motor, decisiones con efectos, comparación honesta, recuperación y compartir; sin ranking como dependencia si se aprueba CR-T5.B. No publicar contenido incompleto ni aprobar aquí el recorte. | Usuarios ajenos al desarrollo completan y repiten; entienden consecuencias y duración. Registrar también coste real de producir/verificar contenido. Protocolo y umbrales en PRODUCT_EVOLUTION §7. |
+| **C · Validar variedad y deseo de progresar** | Probar primero un segundo protagonista de la misma edición; si el coste editorial no compensa, comparar un segundo reto breve. Retos encadenados solo si los jugadores piden continuidad de historial. No prometer 20 clubes ni tres modos. | Medir elección del segundo reto, repetición y coste marginal; decidir si hay motivo para expandir contenido o pasar directamente a carrera. Un historial no valida persistencia del mundo. |
+| **D · Carrera mínima entre temporadas** | Dos temporadas sucesivas como prueba acotada en un club, con consecuencias en plantilla, objetivos, confianza/reputación, renovación o destitución y guardado sin registro. Segunda temporada alternativa, claramente identificada. | Continuar a la segunda temporada, recuperar tras cerrar navegador y observar una consecuencia anterior; transición determinista, coherencia deportiva y económica. Aprobar CR/ADR concretos antes de construir. |
+| **E · Trayectoria profesional** | Ofertas y cambio de club, historial de títulos/fracasos y más años solo tras validar D. | Cambio de club que conserva trayectoria y mundo, recuperación y retorno en otra sesión; ampliación guiada por uso y coste. |
+
+La temporada actual congelada se mantiene como **opción de ambientación posterior**,
+sin ser requisito de carrera. Ranking, expansión a 3–5 históricos, IA/RAG y
+capacidad avanzada conservan sus tareas: se propone revisar su prioridad, no
+eliminarlas ni iniciarlas. Para sustituir el compromiso V1 o reducir el piloto
+hace falta una decisión expresa del autor (§5.4 y PRODUCT_EVOLUTION §8).
+
+El [análisis de producto y técnico](PRODUCT_EVOLUTION.md) contiene las cinco
+alternativas de MVP, evidencia de código/PR, dependencias, métricas y decisiones.
+No se crea un board B, ni se mueve ninguna issue existente o tarea activa con esta PR.
+El desglose operativo de B se hará tras aprobar su variante; ADR-016 sigue vigente.
 
 ---
 

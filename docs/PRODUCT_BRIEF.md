@@ -1,7 +1,7 @@
 # Míster Histórico: Product Brief
 
 > **Nombre provisional.** Documento de idea y alcance para un juego de navegador de fútbol.
-> Fecha: 2026-10-22 · Autor de la idea: Miguel Ángel Posadas · Estado: **idea validada, sin planificar ni implementar**.
+> Fecha: 2026-10-22 · Autor de la idea: Miguel Ángel Posadas · Estado: **producto en desarrollo; visión revisada el 2026-10-29**. Alcance aprobado y ejecución: [PLAN](PLAN.md); propuestas posteriores a A: [revisión de producto](PRODUCT_EVOLUTION.md).
 
 ---
 
@@ -16,11 +16,15 @@
 
 ## 1. Resumen
 
-Un juego de navegador **gratuito, sin registro y con partidas de 3 a 5 minutos**. El jugador llega como **entrenador de un equipo histórico real**, con su plantilla de esa temporada (por ejemplo, el Real Madrid 2012-13), y toma decisiones a lo largo de la temporada: mercado, vestuario, táctica, rotaciones y **dilemas que ocurrieron de verdad**. Los partidos se simulan.
+Míster Histórico es un juego de navegador **gratuito, sin registro obligatorio**, cuya dirección principal es que el jugador construya **su propia carrera como entrenador**. El jugador es un nuevo entrenador que sustituye al técnico histórico; no interpreta a Mourinho, Guardiola ni a otro personaje real. La historia proporciona el contexto inicial y una referencia para comparar, sin fijar el destino de su trayectoria.
 
-Al final, el juego **compara tu temporada con lo que pasó en la realidad** ("Tú: Liga + Champions. Mourinho: Supercopa") y genera una **tarjeta para compartir** en redes. Es el gancho viral.
+La fantasía de producto es **«Conviértete en entrenador, toma decisiones y construye tu propia leyenda»**. Describe la intención del autor; **no se adopta como nuevo lema**. El nombre se conserva. Se propone reservar *«¿Lo habrías hecho mejor que el míster?»* a los retos históricos; su uso como lema de modo y cualquier lema general requieren aprobación.
 
-**Frase clave:** *"¿Lo habrías hecho mejor que el míster?"*
+Los **retos históricos** pueden ofrecer la primera experiencia corta, rejugable y compartible: tomar decisiones de táctica, fichajes, alineaciones, vestuario y dilemas y comparar el resultado con lo real. La **carrera**, a largo plazo, propone objetivos por temporada, reputación, renovaciones, destituciones, ofertas, cambios de club y consecuencias persistentes. Debe poder guardarse y retomarse sin registro obligatorio. **Una temporada puede durar 3–5 minutos; la carrera puede durar muchos años y varias sesiones.** No buscamos un Football Manager completo.
+
+Los **retos encadenados**, con historial, reputación y desbloqueos sin universo persistente, son una alternativa de validación, no un tercer modo comprometido. La inspiración aportada por el autor es la carrera y los retos históricos de F1 Glory; no se presupone su arquitectura ni se actualizan aquí sus prestaciones externas.
+
+**Límite de esta revisión:** A conserva íntegros alcance, aceptación y tareas. La V1 aprobada de 3–5 equipos sigue vigente; las alternativas de beta y el roadmap posterior se proponen en [PRODUCT_EVOLUTION](PRODUCT_EVOLUTION.md), sin autorizar cambios de contratos ni implementación.
 
 ---
 
@@ -62,9 +66,9 @@ No hemos encontrado ningún juego de **"entrenador de un club histórico real en
 
 ## 5. Principios de diseño
 
-1. **De 3 a 5 minutos por partida.** Si una partida pasa de 5 minutos, sobra contenido.
+1. **De 3 a 5 minutos por temporada como objetivo de ritmo.** El reto termina; una futura carrera puede continuar y retomarse en otra sesión.
 2. **Cero fricción:** sin registro, sin descarga y jugable desde el primer toque.
-3. **La historia real es el rival.** Toda partida termina comparada con lo que ocurrió.
+3. **La historia como referencia.** El reto histórico compara con lo ocurrido; la carrera se orienta a la trayectoria y los objetivos, sin imponer resultados históricos futuros.
 4. **Debate antes que realismo.** Los dilemas tienen que generar opinión ("yo habría puesto a Casillas").
 5. **Todo se puede compartir:** cada final produce una imagen o tarjeta que quede bien en Twitter.
 6. **Fidelidad histórica:** las plantillas, fechas y resultados reales tienen que ser correctos. Un dato erróneo en Twitter fútbol se señala enseguida.
@@ -73,6 +77,8 @@ No hemos encontrado ningún juego de **"entrenador de un club histórico real en
 ---
 
 ## 6. Bucle de juego
+
+Este bucle describe el **reto histórico** del alcance actual. El entrenador real es la referencia del escenario que el jugador sustituye, no su identidad. La evolución hacia carrera se estudia en [PRODUCT_EVOLUTION §5](PRODUCT_EVOLUTION.md#5-carrera-persistente-límites-y-decisiones-técnicas-aplazadas).
 
 ```
 Elegir equipo histórico → Contexto (presentación del míster, objetivos de la directiva)
@@ -204,6 +210,9 @@ Tiene que **aportar algo al juego y no dispararse en coste**. Si el juego se hac
 ## 16. Alcance
 
 ### V1 (lanzamiento)
+
+**Compromiso vigente**, no sustituido por la visión futura. Cambiar cantidad de equipos, competiciones o calidad de rivales requiere aprobación expresa de las propuestas de [PRODUCT_EVOLUTION §8](PRODUCT_EVOLUTION.md#8-decisiones-pendientes-del-autor).
+
 - De 3 a 5 equipos históricos españoles.
 - Una temporada por partida, de 3 a 5 minutos, con unas 10 decisiones.
 - Motor de simulación con semilla y calibrado.
@@ -214,6 +223,9 @@ Tiene que **aportar algo al juego y no dispararse en coste**. Si el juego se hac
 - Textos de eventos escritos o pregenerados con IA y revisados.
 
 ### V2
+
+Lista histórica de posibilidades, **sin prioridad comprometida**. La propuesta posterior a A sitúa carrera como dirección principal y condiciona expansión, ranking e IA al feedback; véase [PLAN §5.5](PLAN.md#55-propuesta-evolutiva-posterior-a-a-2026-10-29).
+
 - Reto semanal con semilla compartida y ranking.
 - Ruedas de prensa con IA en vivo (con topes de coste).
 - Más equipos y temporadas; equipos internacionales; varias temporadas por partida.
@@ -227,7 +239,7 @@ Tiene que **aportar algo al juego y no dispararse en coste**. Si el juego se hac
 
 ## 17. Plan orientativo
 
-Al ritmo de un proyecto personal de fines de semana, unas **6 semanas hasta la V1**. Es orientativo: la planificación real se hará después.
+La estimación inicial de seis semanas fue orientativa y **no es una previsión vigente**. El plan de ejecución es [PLAN §5](PLAN.md#5-entregas-verticales-y-fases); la propuesta evolutiva usa puertas de validación, sin fechas nuevas aprobadas.
 
 1. Esquema de datos, primer equipo completo con fuentes, y prototipo del motor de simulación con tests de calibración.
 2. API de partida (crear, decidir, avanzar, terminar) y estado en el servidor.
