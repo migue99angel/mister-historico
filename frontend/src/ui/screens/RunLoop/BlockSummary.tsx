@@ -11,9 +11,17 @@ export interface BlockSummaryProps {
   visibleDates?: number;
   revealing?: boolean;
   onComplete?: () => void;
+  onDecisions?: (() => void) | undefined;
   /** Focus target after simulation or skipping the reveal. */
   headingRef?: Ref<HTMLHeadingElement>;
 }
+
+const DATE_FORMAT = new Intl.DateTimeFormat('es', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
 
 function userSide(match: MatchReportDto): 'home' | 'away' | undefined {
   if (match.home.isUser) return 'home';
@@ -29,6 +37,7 @@ export function BlockSummary({
   visibleDates = Infinity,
   revealing = false,
   onComplete,
+  onDecisions,
 }: BlockSummaryProps) {
   const headingId = useId();
   const groups = groupResults(summary.results);
@@ -54,19 +63,22 @@ export function BlockSummary({
         {revealing && (
           <div className="flex flex-col gap-2">
             <p className="text-body">Mostrando los resultados del bloque ya simulado.</p>
-            <Button onClick={onComplete}>Mostrar todos</Button>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={onComplete}>Mostrar todos</Button>
+              {onDecisions && <Button onClick={onDecisions}>Ir a decisiones</Button>}
+            </div>
           </div>
         )}
         <p role="status" aria-live="polite" className="sr-only">
           {revealing
             ? `${String(visibleCount)} de ${String(summary.results.length)} resultados mostrados.`
-            : 'Resumen completo disponible.'}
+            : ''}
         </p>
         <ul className="divide-y divide-line">
           {visibleGroups.map(({ date, matches }) => (
             <li key={date}>
               <h3 className="mt-3 text-caption font-semibold">
-                <time dateTime={date}>{date}</time>
+                <time dateTime={date}>{DATE_FORMAT.format(new Date(`${date}T00:00:00Z`))}</time>
               </h3>
               <ul className="divide-y divide-line">
                 {matches.map((match) => (

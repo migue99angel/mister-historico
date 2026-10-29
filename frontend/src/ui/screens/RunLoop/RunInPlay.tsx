@@ -195,22 +195,19 @@ export function RunInPlay({ run, isRefreshing, onRunEnded }: RunInPlayProps) {
             headingRef={summaryHeading}
             visibleDates={reveal.visibleDates}
             revealing={reveal.revealing}
+            onDecisions={
+              inProgress
+                ? () => {
+                    focusDecisions.current = true;
+                    reveal.complete();
+                  }
+                : undefined
+            }
             onComplete={() => {
               reveal.complete();
               summaryHeading.current?.focus();
             }}
           />
-        )}
-
-        {reveal.revealing && inProgress && (
-          <Button
-            onClick={() => {
-              focusDecisions.current = true;
-              reveal.complete();
-            }}
-          >
-            Ir a decisiones
-          </Button>
         )}
 
         {showConfirmation && (
