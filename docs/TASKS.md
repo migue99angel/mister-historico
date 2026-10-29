@@ -772,6 +772,30 @@ T3.7a/T4.7a sigue pendiente y F3 continúa abierta.
   Compose o Makefile, abrir CR de cableado; esta tarea no adquiere esos archivos
   compartidos por cambiar la planificación.
 
+### CR-T3.6-r7-bootstrap · `SimulationService` en el composition root sin esquivar R7
+- **Origen:** recomendación 2 de la revisión de la PR #112 (T3.6). Issue
+  [#113](https://github.com/migue99angel/mister-historico/issues/113).
+- **Depende de:** T3.6 integrada. No bloquea A.
+- **Propiedad:** la línea de importación de `SimulationService` en `bootstrap.py`
+  y, según la opción elegida, el contrato R7 de `[tool.importlinter]` en
+  `backend/pyproject.toml` (A) o `game/infrastructure/simulation_adapter.py` (B);
+  además, los tests nuevos de `backend/tests/architecture/`.
+- **Qué hacer:** `bootstrap.py` obtiene `SimulationService` mediante la
+  reexportación implícita de `game/infrastructure/simulation_adapter.py`, con
+  `# type: ignore[attr-defined]`, de modo que `import-linter` no ve la arista real
+  composition root → Simulation. Elegir una opción:
+  - **A (preferida):** declarar en `ignore_imports` de R7, con comentario, la arista
+    `mister.bootstrap -> mister.simulation.application.api` e importar
+    `SimulationService` desde su API publicada.
+  - **B:** publicar en el adaptador una factoría (por ejemplo,
+    `build_simulation_adapter()`) que use `bootstrap.py`, sin cambiar R7.
+- **Tests primero:** un test de arquitectura que falle si `bootstrap.py` obtiene
+  `SimulationService` por un módulo distinto de `mister.simulation.application.api`
+  (A) o de la factoría publicada (B).
+- **Aceptación:** sin `# type: ignore` en esa importación; `lint-imports` declara la
+  arista de forma explícita; `make test` y `make lint` en verde. Sin cambios de
+  comportamiento, OpenAPI, dominio ni replay.
+
 ### T3.7 · E2E del backend y golden test (dos entregas)
 - **Propiedad:** `backend/tests/e2e/**` y `backend/tests/golden/**`.
 - **T3.7a (A):** depende de T3.6 y CR-T3.0/T3.4/T3.5 integradas. Jugar Test FC
