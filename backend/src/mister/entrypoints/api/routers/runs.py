@@ -128,7 +128,7 @@ async def _authenticate(
             return None, problem(
                 403, "run_token_invalid", "The run token is not valid for this run."
             )
-        return None, problem(500, "internal_error", "An internal error occurred.")
+        return None, await domain_error_handler(request, error)
     return token, None
 
 
@@ -172,7 +172,7 @@ async def start_run(request: Request, response: Response) -> Any:
         code = getattr(error, "code", "")
         if code == "season_not_found":
             return problem(404, code, "There is no playable season with that id.")
-        return problem(500, "internal_error", "An internal error occurred.")
+        return await domain_error_handler(request, error)
     payload = started.to_json()
     run_id = payload["run"]["runId"]
     response.headers["Location"] = f"/api/runs/{run_id}"
