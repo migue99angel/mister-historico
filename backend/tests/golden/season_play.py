@@ -14,7 +14,9 @@ from httpx import AsyncClient
 TEST_FC_SEASON = "test-fc-2000-01"
 GOLDEN_SEED = 2000
 # With the unchanged A profile, choosing the last option of every dilemma with seed
-# 2000 sacks the manager when block 2 closes (d04 rejects the board's cup priority).
+# 2000 sacks the manager when block 2 closes: d01 declines a signing, d03 clashes
+# with a veteran and d04 rejects the board's cup priority. Each confidence penalty
+# stays within the content schema's [-25, 25] range.
 # The frontend E2E can reuse this seed, policy and expected dismissal block.
 SACKING_SEED = 2000
 SACKING_OPTION_INDEX = -1
