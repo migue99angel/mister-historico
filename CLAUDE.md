@@ -129,6 +129,7 @@ Punto de entrada único: el `Makefile` raíz (no hay `just`).
 | `make validate-content` | Valida `content/` (desde T2.20). |
 | `make calibrate SEASON=<slug>` | Calibración del motor (desde T2.7). |
 | `make status [N=<issue>]` | Tareas abiertas del Project, o el estado, los bloqueos, las PR y los últimos comentarios de una issue. |
+| `make clean-branches [APPLY=1]` | Lista (o borra, con `APPLY=1`) las ramas locales y los worktrees de PR ya integradas; las ramas remotas las borra GitHub al integrar. |
 | `make usage` | Auditoría local del consumo de Claude Code y Codex por sesión, tarea y ventana de cuota ([`docs/agent-usage.md`](docs/agent-usage.md)). |
 
 - Backend: `cd backend && uv run pytest -m unit` (marcadores: `unit`, `integration`, `contract`, `calibration`, `content`, `e2e`; `calibration` se excluye por defecto). Gestiona dependencias con `uv`, nunca con `pip`.
