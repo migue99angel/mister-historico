@@ -69,7 +69,7 @@ function optionButton(title: string, optionLabel: string): HTMLElement {
   return within(dilemmaCard(title)).getByRole('button', { name: new RegExp(optionLabel) });
 }
 
-/** Chooses an option of a dilemma; nothing is sent until the block is simulated. */
+/** Selects locally; confirming is a separate action. */
 function choose(title: string, optionLabel: string) {
   fireEvent.click(optionButton(title, optionLabel));
 }
@@ -77,7 +77,19 @@ function choose(title: string, optionLabel: string) {
 async function chooseFirstBlock(boardOption = 'Back the board in public') {
   await screen.findByRole('heading', { name: 'Board meeting' });
   choose('Board meeting', boardOption);
+  confirm('Board meeting');
+  await waitFor(() => {
+    expect(screen.queryByRole('region', { name: 'Board meeting' })).not.toBeInTheDocument();
+  });
   choose('Summer striker', 'Sign the veteran striker');
+  confirm('Summer striker');
+  await waitFor(() => {
+    expect(screen.queryByRole('region', { name: 'Summer striker' })).not.toBeInTheDocument();
+  });
+}
+
+function confirm(title: string) {
+  fireEvent.click(screen.getByRole('button', { name: `Confirmar: ${title}` }));
 }
 
 function simulate() {
@@ -149,22 +161,104 @@ function problem(status: number, code: string) {
 }
 
 describe('RunLoop', () => {
-  it('shows the dilemmas of the block and keeps Simular bloque disabled until each has a choice', async () => {
+  it('requires confirmation of every dilemma before simulation, even when all options are selected', async () => {
+    const sent = spyOnCommands();
     renderRunLoop(await startRun());
     await screen.findByRole('heading', { name: 'Board meeting' });
-    const simulateButton = screen.getByRole('button', SIMULATE);
-    expect(simulateButton).toBeDisabled();
-    expect(screen.getByText('Te quedan 2 dilemas por decidir.')).toBeInTheDocument();
-
+    expect(screen.getByRole('button', { name: 'Confirmar: Board meeting' })).toBeDisabled();
     choose('Board meeting', 'Back the board in public');
-
-    expect(simulateButton).toBeDisabled();
-    expect(screen.getByText('Te queda 1 dilema por decidir.')).toBeInTheDocument();
-
     choose('Summer striker', 'Sign the veteran striker');
-
-    expect(simulateButton).toBeEnabled();
+    expect(screen.getByRole('button', SIMULATE)).toBeDisabled();
+    expect(sent).toEqual([]);
+    confirm('Board meeting');
+    await screen.findByRole('heading', { name: 'Decisión confirmada' });
+    expect(sent.map((c) => c.step)).toEqual(['decision:board-meeting']);
+    expect(screen.getByRole('button', SIMULATE)).toBeDisabled();
+    confirm('Summer striker');
+    await waitFor(() => {
+      expect(screen.getByRole('button', SIMULATE)).toBeEnabled();
+    });
     expect(screen.getByText('Todo decidido: simula el bloque.')).toBeInTheDocument();
+  });
+
+  it('shows real differences, explains the mean and focuses the confirmation', async () => {
+    renderRunLoop(await startRun());
+    await screen.findByRole('heading', { name: 'Board meeting' });
+    choose('Board meeting', 'Back the board in public');
+    confirm('Board meeting');
+    const heading = await screen.findByRole('heading', { name: 'Decisión confirmada' });
+    await waitFor(() => {
+      expect(heading).toHaveFocus();
+    });
+    const feedback = screen.getByRole('region', { name: 'Última decisión' });
+    expect(within(feedback).getByText(/Moral: .*→/)).toBeInTheDocument();
+    expect(within(feedback).getByText(/Confianza de la directiva: .*→/)).toBeInTheDocument();
+    expect(within(feedback).getByText(/Físico medio: .*→/)).toBeInTheDocument();
+    expect(within(feedback).getByText(/composición de la plantilla/)).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Resumen del bloque' })).not.toBeInTheDocument();
+  });
+
+  it('confirms a double tap once without simulating', async () => {
+    const sent = spyOnCommands();
+    renderRunLoop(await startRun());
+    await screen.findByRole('heading', { name: 'Board meeting' });
+    choose('Board meeting', 'Back the board in public');
+    const button = screen.getByRole('button', { name: 'Confirmar: Board meeting' });
+    fireEvent.click(button);
+    fireEvent.click(button);
+    await screen.findByRole('heading', { name: 'Decisión confirmada' });
+    expect(sent.map((c) => c.step)).toEqual(['decision:board-meeting']);
+  });
+
+  it('shows only current state for a nonconsecutive command response', async () => {
+    const seeded = await startRun();
+    const take = seeded.runtime.gameApi.takeDecision.bind(seeded.runtime.gameApi);
+    vi.spyOn(seeded.runtime.gameApi, 'takeDecision').mockImplementation(async (request) => {
+      const response = await take(request);
+      return { ...response, version: response.version + 1 };
+    });
+    renderRunLoop(seeded);
+    await screen.findByRole('heading', { name: 'Board meeting' });
+    choose('Board meeting', 'Back the board in public');
+    confirm('Board meeting');
+    await screen.findByRole('heading', { name: 'Estado actualizado' });
+    expect(screen.queryByText(/Moral: .*→/)).not.toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Estado del equipo' })).toBeInTheDocument();
+  });
+
+  it('shows current values and the available log after remount, without rebuilding differences', async () => {
+    const seeded = await startRun();
+    const first = renderRunLoop(seeded);
+    await chooseFirstBlock();
+    first.unmount();
+    renderRunLoop(seeded);
+    await screen.findByRole('region', { name: 'Estado del equipo' });
+    expect(screen.queryByRole('region', { name: 'Última decisión' })).not.toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Decisiones confirmadas' })).toHaveTextContent(
+      'support the board',
+    );
+    expect(screen.getByRole('button', SIMULATE)).toBeEnabled();
+  });
+
+  it('renders the published squad, injuries, tactic and league without inventing objectives', async () => {
+    const seeded = await startRun();
+    const run = await playBlocks(seeded.runtime.gameApi, seeded.runId, seeded.runToken, 2);
+    renderRunLoop(seeded);
+    const panel = await screen.findByRole('region', { name: 'Estado del equipo' });
+    expect(within(panel).getByText(`Moral: ${String(run.state.morale)}`)).toBeInTheDocument();
+    expect(
+      within(panel).getByText(`Físico medio: ${String(run.state.fitness)}`),
+    ).toBeInTheDocument();
+    expect(within(panel).getByText(/14 días de baja/)).toBeInTheDocument();
+    expect(within(panel).getByText(/4-4-2/)).toBeInTheDocument();
+    expect(within(panel).getByRole('table', { name: 'Liga Test' })).toBeInTheDocument();
+    expect(within(panel).queryByText(/Objetivos|Histórico|diferidos/)).not.toBeInTheDocument();
+  });
+
+  it('has no accessibility violations with a confirmed decision and current panel', async () => {
+    const { container } = renderRunLoop(await startRun());
+    await chooseFirstBlock();
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('shows the block progress of the run', async () => {
@@ -262,7 +356,7 @@ describe('RunLoop', () => {
     expect(sent).toHaveLength(3);
   });
 
-  it('resumes a series cut by the network with the Idempotency-Key of the failed step', async () => {
+  it('retries only the uncertain decision with the same Idempotency-Key and preserves earlier confirmations', async () => {
     let decisions = 0;
     mockServer.use(
       http.post('*/api/runs/:runId/decisions', () => {
@@ -272,82 +366,73 @@ describe('RunLoop', () => {
     );
     const sent = spyOnCommands();
     renderRunLoop(await startRun());
-    await chooseFirstBlock();
-
-    simulate();
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'No se pudo enviar la decisión. Comprueba la conexión y vuelve a intentarlo.',
-    );
-    expect(screen.queryByRole('region', { name: 'Board meeting' })).not.toBeInTheDocument();
-    simulate();
-
-    await screen.findByRole('region', { name: 'Resumen del bloque' });
-    expect(sent.map((command) => command.step)).toEqual([
-      'decision:board-meeting',
-      'decision:summer-striker',
-      'decision:summer-striker',
-      'advance',
-    ]);
-    expect(sent[2]?.idempotencyKey).toBe(sent[1]?.idempotencyKey);
-  });
-
-  it('moves the focus to the message when a failure cuts the series', async () => {
-    mockServer.use(
-      http.post('*/api/runs/:runId/decisions', () => HttpResponse.error(), { once: true }),
-    );
-    renderRunLoop(await startRun());
-    await chooseFirstBlock();
-
-    simulate();
-
+    await screen.findByRole('heading', { name: 'Board meeting' });
+    choose('Board meeting', 'Back the board in public');
+    confirm('Board meeting');
+    await screen.findByRole('heading', { name: 'Decisión confirmada' });
+    choose('Summer striker', 'Sign the veteran striker');
+    confirm('Summer striker');
     const alert = await screen.findByRole('alert');
     await waitFor(() => {
       expect(alert).toHaveFocus();
     });
+    expect(screen.getByRole('button', SIMULATE)).toBeDisabled();
+    expect(optionButton('Summer striker', 'Sign the veteran striker')).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar confirmación' }));
+    await screen.findByRole('heading', { name: 'Estado actualizado' });
+    expect(screen.queryByText(/Moral: .*→/)).not.toBeInTheDocument();
+    expect(sent.map((c) => c.step)).toEqual([
+      'decision:board-meeting',
+      'decision:summer-striker',
+      'decision:summer-striker',
+    ]);
+    expect(sent[2]?.idempotencyKey).toBe(sent[1]?.idempotencyKey);
+    expect(screen.getByRole('button', SIMULATE)).toBeEnabled();
   });
 
-  it('reloads the run and keeps the remaining choices when a 409 cuts the series', async () => {
-    let decisions = 0;
-    mockServer.use(
-      http.post('*/api/runs/:runId/decisions', () => {
-        decisions += 1;
-        if (decisions === 2) return problem(409, 'version_conflict');
-      }),
-    );
-    renderRunLoop(await startRun());
-    await chooseFirstBlock();
-
-    simulate();
-
+  it('reloads after a conflict, clears earlier differences and preserves remaining local choices', async () => {
+    const seeded = await startRun();
+    renderRunLoop(seeded);
+    await screen.findByRole('heading', { name: 'Board meeting' });
+    choose('Board meeting', 'Back the board in public');
+    confirm('Board meeting');
+    await screen.findByRole('heading', { name: 'Decisión confirmada' });
+    choose('Summer striker', 'Sign the veteran striker');
+    await decideInAnotherTab(seeded, 'summer-striker', 'sign-the-veteran');
+    const release = holdRunReloads();
+    confirm('Summer striker');
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'La partida ya había cambiado. Hemos recargado su estado.',
     );
+    expect(screen.getByRole('button', SIMULATE)).toBeDisabled();
+    expect(screen.queryByRole('heading', { name: 'Decisión confirmada' })).not.toBeInTheDocument();
+    release();
     await waitFor(() => {
       expect(screen.getByRole('button', SIMULATE)).toBeEnabled();
     });
-    expect(screen.queryByRole('region', { name: 'Board meeting' })).not.toBeInTheDocument();
-    expect(optionButton('Summer striker', 'Sign the veteran striker')).toHaveAttribute(
+  });
+
+  it('keeps the selected option after a rejected confirmation and blocks controls during reload', async () => {
+    mockServer.use(
+      http.post('*/api/runs/:runId/decisions', () => problem(409, 'version_conflict'), {
+        once: true,
+      }),
+    );
+    renderRunLoop(await startRun());
+    await screen.findByRole('heading', { name: 'Board meeting' });
+    choose('Board meeting', 'Back the board in public');
+    const release = holdRunReloads();
+    confirm('Board meeting');
+    await screen.findByRole('alert');
+    expect(screen.getByRole('button', { name: 'Confirmar: Board meeting' })).toBeDisabled();
+    release();
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Confirmar: Board meeting' })).toBeEnabled();
+    });
+    expect(optionButton('Board meeting', 'Back the board in public')).toHaveAttribute(
       'aria-pressed',
       'true',
     );
-  });
-
-  it('keeps Simular bloque disabled while the run reloads after a 409', async () => {
-    const seeded = await startRun();
-    renderRunLoop(seeded);
-    await chooseFirstBlock();
-    await decideInAnotherTab(seeded, 'board-meeting', 'support-the-board', 0);
-    const releaseReload = holdRunReloads();
-
-    simulate();
-
-    await screen.findByRole('alert');
-    const simulateButton = screen.getByRole('button', SIMULATE);
-    expect(simulateButton).toBeDisabled();
-    releaseReload();
-    await waitFor(() => {
-      expect(simulateButton).toBeEnabled();
-    });
   });
 
   it('shows a message and reloads the run when the simulation itself answers 409', async () => {
@@ -376,9 +461,10 @@ describe('RunLoop', () => {
       }),
     );
     renderRunLoop(await startRun());
-    await chooseFirstBlock();
+    await screen.findByRole('heading', { name: 'Board meeting' });
+    choose('Board meeting', 'Back the board in public');
 
-    simulate();
+    confirm('Board meeting');
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Esa opción ya no es válida. Hemos recargado la partida.',
@@ -388,10 +474,11 @@ describe('RunLoop', () => {
   it('says the run is not available when the API rejects the token of a command (403)', async () => {
     const seeded = await startRun();
     renderRunLoop(seeded);
-    await chooseFirstBlock();
+    await screen.findByRole('heading', { name: 'Board meeting' });
+    choose('Board meeting', 'Back the board in public');
     seeded.runtime.runTokenStore.save(seeded.runId, 'a-token-from-another-run');
 
-    simulate();
+    confirm('Board meeting');
 
     expect(
       await screen.findByText('Esta partida no está disponible en este dispositivo.'),
@@ -419,6 +506,10 @@ describe('RunLoop', () => {
     const { onRunEnded } = renderRunLoop(seeded);
     await screen.findByRole('heading', { name: 'Final rotation' });
     choose('Final rotation', 'Rotate the squad');
+    confirm('Final rotation');
+    await waitFor(() => {
+      expect(screen.getByRole('button', SIMULATE)).toBeEnabled();
+    });
 
     simulate();
 
@@ -448,7 +539,7 @@ describe('RunLoop', () => {
       }),
     );
 
-    simulate();
+    confirm('Final rotation');
 
     await waitFor(() => {
       expect(onRunEnded).toHaveBeenCalledWith(seeded.runId);
@@ -556,8 +647,9 @@ describe('RunLoop', () => {
       http.post('*/api/runs/:runId/decisions', () => HttpResponse.error(), { once: true }),
     );
     const { container } = renderRunLoop(await startRun());
-    await chooseFirstBlock();
-    simulate();
+    await screen.findByRole('heading', { name: 'Board meeting' });
+    choose('Board meeting', 'Back the board in public');
+    confirm('Board meeting');
     await screen.findByRole('alert');
 
     expect(await axe(container)).toHaveNoViolations();

@@ -47,9 +47,15 @@ for (const colorScheme of ['light', 'dark'] as const) {
       const finalTitle = page.getByRole('heading', { level: 1, name: 'Final de la partida' });
       for (let block = 1; block <= MAX_BLOCKS; block += 1) {
         const optionGroups = page.getByRole('group', { name: /^Opciones/ });
-        for (const group of await optionGroups.all()) {
+        while (await optionGroups.count()) {
+          const group = optionGroups.first();
+          const name = await group.getAttribute('aria-label');
           await tabTo(page, group.getByRole('button').first());
           await page.keyboard.press('Space');
+          await tabTo(page, page.getByRole('button', { name: /^Confirmar:/ }).first());
+          await page.keyboard.press('Enter');
+          await expect(page.getByRole('group', { name: name!, exact: true })).toHaveCount(0);
+          await expect(page.getByRole('heading', { name: 'Decisión confirmada' })).toBeFocused();
         }
         await tabTo(page, simulate);
         await page.keyboard.press('Enter');
