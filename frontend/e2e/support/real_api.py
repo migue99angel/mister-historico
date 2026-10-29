@@ -7,9 +7,10 @@ the season the browser plays is the golden one. Never a production entrypoint.
 """
 
 import os
+import signal
 import sys
 from pathlib import Path
-from types import SimpleNamespace
+from types import FrameType, SimpleNamespace
 
 import sqlalchemy as sa
 import uvicorn
@@ -43,14 +44,20 @@ def _prepare(database_url: str) -> None:
         engine.dispose()
 
 
+def _exit_on_sigterm(signum: int, frame: FrameType | None) -> None:
+    raise SystemExit(0)
+
+
 def main() -> None:
     port = int(os.environ.get("E2E_API_PORT", "8010"))
+    # uvicorn re-raises the SIGTERM it captured once it has shut down; without a handler of
+    # our own that kills the process before the `with` below removes the container.
+    signal.signal(signal.SIGTERM, _exit_on_sigterm)
     with PostgresContainer("postgres:16.15", driver="psycopg") as postgres:
         database_url = postgres.get_connection_url()
         _prepare(database_url)
         composition.secrets = SimpleNamespace(randbits=lambda _: GOLDEN_SEED)  # type: ignore[attr-defined,assignment]
         app = create_app(bootstrap(Settings(database_url=database_url)))
-        # uvicorn handles SIGTERM from Playwright and returns, so the container is removed.
         uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")
 
 
