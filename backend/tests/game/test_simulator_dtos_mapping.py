@@ -55,6 +55,7 @@ CORRESPONDENCE: dict[str, tuple[type, dict[str, str | None]]] = {
                 "prior_results",
                 "squad_memberships",
                 "player_pool",
+                "key_starter",
             ),
         },
     ),
@@ -119,9 +120,16 @@ CORRESPONDENCE: dict[str, tuple[type, dict[str, str | None]]] = {
                 "injuries",
                 "player_states",
                 "unresolved_knockout_ties",
+                "key_starter_outcome",
             ),
         },
     ),
+    "KeyStarterSelection": (ports.KeyStarterSelection, _same("fixture_id", "date", "player_id")),
+    "KeyStarterOutcome": (
+        ports.KeyStarterOutcome,
+        _same("fixture_id", "date", "player_id", "starter_ids", "absence_reason"),
+    ),
+    "LineupProjectionDTO": (ports.LineupProjection, _same("starter_ids", "reserve_ids")),
 }
 
 # Game fields with no engine field: the adapter uses them to build the engine call.
