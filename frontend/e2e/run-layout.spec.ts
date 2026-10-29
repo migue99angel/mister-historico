@@ -112,3 +112,36 @@ for (const width of [390, 412, 1280]) {
     });
   });
 }
+
+test.describe('reveal focus with enlarged text', () => {
+  test.use({ baseURL: 'http://localhost:5174', viewport: { width: 390, height: 700 } });
+
+  for (const completion of ['skip', 'automatic']) {
+    test(`keeps the summary in view after ${completion} completion restores the mobile panel`, async ({
+      page,
+    }) => {
+      await startRun(page);
+      while (await page.getByRole('group', { name: /^Opciones/ }).count()) {
+        await page
+          .getByRole('group', { name: /^Opciones/ })
+          .first()
+          .getByRole('button')
+          .first()
+          .click();
+        await page
+          .getByRole('button', { name: /^Confirmar:/ })
+          .first()
+          .click();
+        await expect(page.getByRole('heading', { name: 'Decisión confirmada' })).toBeFocused();
+      }
+      await page.addStyleTag({ content: 'html { font-size: 200%; }' });
+      await page.getByRole('button', { name: 'Simular bloque' }).click();
+      const skip = page.getByRole('button', { name: 'Mostrar todos' });
+      if (completion === 'skip') await skip.click();
+      else await expect(skip).toHaveCount(0);
+      const summary = page.getByRole('heading', { name: 'Resumen del bloque' });
+      await expect(summary).toBeFocused();
+      await expect(summary).toBeInViewport();
+    });
+  }
+});
