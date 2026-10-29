@@ -1,0 +1,825 @@
+schema_version: 1
+fixtures:
+- id: rm-liga-01
+  date: 2012-08-19
+  competition: liga-bbva
+  round: 1
+  opponent: valencia-2012-13
+  venue: home
+  key: false
+  result:
+    goals_for: 1
+    goals_against: 1
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-super-1
+  date: 2012-08-23
+  competition: supercopa-espana
+  stage: final
+  leg: 1
+  opponent: barcelona-2012-13
+  venue: away
+  key: true
+  result:
+    goals_for: 2
+    goals_against: 3
+  sources:
+  - https://rfef.es/es/supercopa-de-espana
+  verify: ok
+- id: rm-liga-02
+  date: 2012-08-26
+  competition: liga-bbva
+  round: 2
+  opponent: getafe-2012-13
+  venue: away
+  key: false
+  result:
+    goals_for: 1
+    goals_against: 2
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-super-2
+  date: 2012-08-29
+  competition: supercopa-espana
+  stage: final
+  leg: 2
+  opponent: barcelona-2012-13
+  venue: home
+  key: true
+  result:
+    goals_for: 2
+    goals_against: 1
+  sources:
+  - https://rfef.es/es/supercopa-de-espana
+  verify: ok
+- id: rm-liga-03
+  date: 2012-09-02
+  competition: liga-bbva
+  round: 3
+  opponent: granada-2012-13
+  venue: home
+  key: false
+  result:
+    goals_for: 3
+    goals_against: 0
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-04
+  date: 2012-09-15
+  competition: liga-bbva
+  round: 4
+  opponent: sevilla-2012-13
+  venue: away
+  key: false
+  result:
+    goals_for: 0
+    goals_against: 1
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-ucl-01
+  date: 2012-09-18
+  competition: champions-league
+  stage: groups
+  group: d
+  round: 1
+  opponent: manchester-city-2012-13
+  venue: home
+  key: true
+  result:
+    goals_for: 3
+    goals_against: 2
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-05
+  date: 2012-09-24
+  competition: liga-bbva
+  round: 5
+  opponent: rayo-vallecano-2012-13
+  venue: away
+  key: false
+  result:
+    goals_for: 2
+    goals_against: 0
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-06
+  date: 2012-09-30
+  competition: liga-bbva
+  round: 6
+  opponent: deportivo-coruna-2012-13
+  venue: home
+  key: false
+  result:
+    goals_for: 5
+    goals_against: 1
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-ucl-02
+  date: 2012-10-03
+  competition: champions-league
+  stage: groups
+  group: d
+  round: 2
+  opponent: ajax-2012-13
+  venue: away
+  key: true
+  result:
+    goals_for: 4
+    goals_against: 1
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-07
+  date: 2012-10-07
+  competition: liga-bbva
+  round: 7
+  opponent: barcelona-2012-13
+  venue: away
+  key: true
+  result:
+    goals_for: 2
+    goals_against: 2
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-08
+  date: 2012-10-20
+  competition: liga-bbva
+  round: 8
+  opponent: celta-vigo-2012-13
+  venue: home
+  key: false
+  result:
+    goals_for: 2
+    goals_against: 0
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-ucl-03
+  date: 2012-10-24
+  competition: champions-league
+  stage: groups
+  group: d
+  round: 3
+  opponent: borussia-dortmund-2012-13
+  venue: away
+  key: true
+  result:
+    goals_for: 1
+    goals_against: 2
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-09
+  date: 2012-10-28
+  competition: liga-bbva
+  round: 9
+  opponent: mallorca-2012-13
+  venue: away
+  key: false
+  result:
+    goals_for: 5
+    goals_against: 0
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-cup-01
+  date: 2012-10-31
+  competition: copa-del-rey
+  stage: round-of-32
+  leg: 1
+  opponent: alcoyano-2012-13
+  venue: away
+  key: true
+  result:
+    goals_for: 4
+    goals_against: 1
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-10
+  date: 2012-11-03
+  competition: liga-bbva
+  round: 10
+  opponent: zaragoza-2012-13
+  venue: home
+  key: false
+  result:
+    goals_for: 4
+    goals_against: 0
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-ucl-04
+  date: 2012-11-06
+  competition: champions-league
+  stage: groups
+  group: d
+  round: 4
+  opponent: borussia-dortmund-2012-13
+  venue: home
+  key: true
+  result:
+    goals_for: 2
+    goals_against: 2
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-11
+  date: 2012-11-11
+  competition: liga-bbva
+  round: 11
+  opponent: levante-2012-13
+  venue: away
+  key: false
+  result:
+    goals_for: 2
+    goals_against: 1
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-12
+  date: 2012-11-17
+  competition: liga-bbva
+  round: 12
+  opponent: athletic-club-2012-13
+  venue: home
+  key: false
+  result:
+    goals_for: 5
+    goals_against: 1
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-ucl-05
+  date: 2012-11-21
+  competition: champions-league
+  stage: groups
+  group: d
+  round: 5
+  opponent: manchester-city-2012-13
+  venue: away
+  key: true
+  result:
+    goals_for: 1
+    goals_against: 1
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-13
+  date: 2012-11-24
+  competition: liga-bbva
+  round: 13
+  opponent: real-betis-2012-13
+  venue: away
+  key: false
+  result:
+    goals_for: 0
+    goals_against: 1
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-cup-02
+  date: 2012-11-27
+  competition: copa-del-rey
+  stage: round-of-32
+  leg: 2
+  opponent: alcoyano-2012-13
+  venue: home
+  key: true
+  result:
+    goals_for: 3
+    goals_against: 0
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-14
+  date: 2012-12-01
+  competition: liga-bbva
+  round: 14
+  opponent: atletico-madrid-2012-13
+  venue: home
+  key: true
+  result:
+    goals_for: 2
+    goals_against: 0
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-ucl-06
+  date: 2012-12-04
+  competition: champions-league
+  stage: groups
+  group: d
+  round: 6
+  opponent: ajax-2012-13
+  venue: home
+  key: true
+  result:
+    goals_for: 4
+    goals_against: 1
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-15
+  date: 2012-12-08
+  competition: liga-bbva
+  round: 15
+  opponent: valladolid-2012-13
+  venue: away
+  key: false
+  result:
+    goals_for: 3
+    goals_against: 2
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-cup-03
+  date: 2012-12-12
+  competition: copa-del-rey
+  stage: round-of-16
+  leg: 1
+  opponent: celta-vigo-2012-13
+  venue: away
+  key: true
+  result:
+    goals_for: 1
+    goals_against: 2
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-16
+  date: 2012-12-16
+  competition: liga-bbva
+  round: 16
+  opponent: espanyol-2012-13
+  venue: home
+  key: false
+  result:
+    goals_for: 2
+    goals_against: 2
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-17
+  date: 2012-12-22
+  competition: liga-bbva
+  round: 17
+  opponent: malaga-2012-13
+  venue: away
+  key: false
+  result:
+    goals_for: 2
+    goals_against: 3
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-18
+  date: 2013-01-06
+  competition: liga-bbva
+  round: 18
+  opponent: real-sociedad-2012-13
+  venue: home
+  key: false
+  result:
+    goals_for: 4
+    goals_against: 3
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-cup-04
+  date: 2013-01-09
+  competition: copa-del-rey
+  stage: round-of-16
+  leg: 2
+  opponent: celta-vigo-2012-13
+  venue: home
+  key: true
+  result:
+    goals_for: 4
+    goals_against: 0
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-19
+  date: 2013-01-12
+  competition: liga-bbva
+  round: 19
+  opponent: osasuna-2012-13
+  venue: away
+  key: false
+  result:
+    goals_for: 0
+    goals_against: 0
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-cup-05
+  date: 2013-01-15
+  competition: copa-del-rey
+  stage: quarter-final
+  leg: 1
+  opponent: valencia-2012-13
+  venue: home
+  key: true
+  result:
+    goals_for: 2
+    goals_against: 0
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-20
+  date: 2013-01-20
+  competition: liga-bbva
+  round: 20
+  opponent: valencia-2012-13
+  venue: away
+  key: false
+  result:
+    goals_for: 5
+    goals_against: 0
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-cup-06
+  date: 2013-01-23
+  competition: copa-del-rey
+  stage: quarter-final
+  leg: 2
+  opponent: valencia-2012-13
+  venue: away
+  key: true
+  result:
+    goals_for: 1
+    goals_against: 1
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-21
+  date: 2013-01-27
+  competition: liga-bbva
+  round: 21
+  opponent: getafe-2012-13
+  venue: home
+  key: false
+  result:
+    goals_for: 4
+    goals_against: 0
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-cup-07
+  date: 2013-01-30
+  competition: copa-del-rey
+  stage: semi-final
+  leg: 1
+  opponent: barcelona-2012-13
+  venue: home
+  key: true
+  result:
+    goals_for: 1
+    goals_against: 1
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-22
+  date: 2013-02-02
+  competition: liga-bbva
+  round: 22
+  opponent: granada-2012-13
+  venue: away
+  key: false
+  result:
+    goals_for: 0
+    goals_against: 1
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-23
+  date: 2013-02-09
+  competition: liga-bbva
+  round: 23
+  opponent: sevilla-2012-13
+  venue: home
+  key: false
+  result:
+    goals_for: 4
+    goals_against: 1
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-ucl-07
+  date: 2013-02-13
+  competition: champions-league
+  stage: round-of-16
+  leg: 1
+  opponent: manchester-united-2012-13
+  venue: home
+  key: true
+  result:
+    goals_for: 1
+    goals_against: 1
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-24
+  date: 2013-02-17
+  competition: liga-bbva
+  round: 24
+  opponent: rayo-vallecano-2012-13
+  venue: home
+  key: false
+  result:
+    goals_for: 2
+    goals_against: 0
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-25
+  date: 2013-02-23
+  competition: liga-bbva
+  round: 25
+  opponent: deportivo-coruna-2012-13
+  venue: away
+  key: false
+  result:
+    goals_for: 2
+    goals_against: 1
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-cup-08
+  date: 2013-02-26
+  competition: copa-del-rey
+  stage: semi-final
+  leg: 2
+  opponent: barcelona-2012-13
+  venue: away
+  key: true
+  result:
+    goals_for: 3
+    goals_against: 1
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-26
+  date: 2013-03-02
+  competition: liga-bbva
+  round: 26
+  opponent: barcelona-2012-13
+  venue: home
+  key: true
+  result:
+    goals_for: 2
+    goals_against: 1
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-ucl-08
+  date: 2013-03-05
+  competition: champions-league
+  stage: round-of-16
+  leg: 2
+  opponent: manchester-united-2012-13
+  venue: away
+  key: true
+  result:
+    goals_for: 2
+    goals_against: 1
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-27
+  date: 2013-03-10
+  competition: liga-bbva
+  round: 27
+  opponent: celta-vigo-2012-13
+  venue: away
+  key: false
+  result:
+    goals_for: 2
+    goals_against: 1
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-28
+  date: 2013-03-16
+  competition: liga-bbva
+  round: 28
+  opponent: mallorca-2012-13
+  venue: home
+  key: false
+  result:
+    goals_for: 5
+    goals_against: 2
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-29
+  date: 2013-03-30
+  competition: liga-bbva
+  round: 29
+  opponent: zaragoza-2012-13
+  venue: away
+  key: false
+  result:
+    goals_for: 1
+    goals_against: 1
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-ucl-09
+  date: 2013-04-03
+  competition: champions-league
+  stage: quarter-final
+  leg: 1
+  opponent: galatasaray-2012-13
+  venue: home
+  key: true
+  result:
+    goals_for: 3
+    goals_against: 0
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-30
+  date: 2013-04-06
+  competition: liga-bbva
+  round: 30
+  opponent: levante-2012-13
+  venue: home
+  key: false
+  result:
+    goals_for: 5
+    goals_against: 1
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-ucl-10
+  date: 2013-04-09
+  competition: champions-league
+  stage: quarter-final
+  leg: 2
+  opponent: galatasaray-2012-13
+  venue: away
+  key: true
+  result:
+    goals_for: 2
+    goals_against: 3
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-31
+  date: 2013-04-14
+  competition: liga-bbva
+  round: 31
+  opponent: athletic-club-2012-13
+  venue: away
+  key: false
+  result:
+    goals_for: 3
+    goals_against: 0
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-32
+  date: 2013-04-20
+  competition: liga-bbva
+  round: 32
+  opponent: real-betis-2012-13
+  venue: home
+  key: false
+  result:
+    goals_for: 3
+    goals_against: 1
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-ucl-11
+  date: 2013-04-24
+  competition: champions-league
+  stage: semi-final
+  leg: 1
+  opponent: borussia-dortmund-2012-13
+  venue: away
+  key: true
+  result:
+    goals_for: 1
+    goals_against: 4
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-33
+  date: 2013-04-27
+  competition: liga-bbva
+  round: 33
+  opponent: atletico-madrid-2012-13
+  venue: away
+  key: true
+  result:
+    goals_for: 2
+    goals_against: 1
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-ucl-12
+  date: 2013-04-30
+  competition: champions-league
+  stage: semi-final
+  leg: 2
+  opponent: borussia-dortmund-2012-13
+  venue: home
+  key: true
+  result:
+    goals_for: 2
+    goals_against: 0
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-34
+  date: 2013-05-04
+  competition: liga-bbva
+  round: 34
+  opponent: valladolid-2012-13
+  venue: home
+  key: false
+  result:
+    goals_for: 4
+    goals_against: 3
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-36
+  date: 2013-05-08
+  competition: liga-bbva
+  round: 36
+  opponent: malaga-2012-13
+  venue: home
+  key: false
+  result:
+    goals_for: 6
+    goals_against: 2
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-35
+  date: 2013-05-11
+  competition: liga-bbva
+  round: 35
+  opponent: espanyol-2012-13
+  venue: away
+  key: false
+  result:
+    goals_for: 1
+    goals_against: 1
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-cup-09
+  date: 2013-05-17
+  competition: copa-del-rey
+  stage: final
+  opponent: atletico-madrid-2012-13
+  venue: home
+  key: true
+  result:
+    goals_for: 1
+    goals_against: 2
+    extra_time: true
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  - https://rfef.es/es/noticias/internacionales-espanoles-del-atletico-madrid-se-coronan-copa-sm-rey
+  verify: ok
+- id: rm-liga-37
+  date: 2013-05-26
+  competition: liga-bbva
+  round: 37
+  opponent: real-sociedad-2012-13
+  venue: away
+  key: false
+  result:
+    goals_for: 3
+    goals_against: 3
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
+- id: rm-liga-38
+  date: 2013-06-01
+  competition: liga-bbva
+  round: 38
+  opponent: osasuna-2012-13
+  venue: home
+  key: false
+  result:
+    goals_for: 4
+    goals_against: 2
+  sources:
+  - https://static.realmadrid.com/StaticFiles/RealMadrid/img/pdf/InformeRm12_13.pdf
+  verify: ok
