@@ -71,3 +71,35 @@ def test_application_rejects_more_than_eleven_starters(module: object) -> None:
     starters = tuple(PlayerId(f"player-{i}") for i in range(12))
     with pytest.raises(InvalidValueError):
         getattr(module, "KeyStarterOutcome")(FIXTURE, DAY, starters[0], starters)
+
+
+@pytest.mark.parametrize("module", [ports, api])
+def test_application_requires_typed_starter_ids(module: object) -> None:
+    with pytest.raises(InvalidValueError):
+        getattr(module, "KeyStarterOutcome")(FIXTURE, DAY, PLAYER, ("test-player",))
+
+
+def test_offer_requires_typed_block_and_candidates() -> None:
+    with pytest.raises(InvalidValueError):
+        ports.KeyStarterOffer("block-1", FIXTURE, DAY, (PLAYER,))  # type: ignore[arg-type]
+    with pytest.raises(InvalidValueError):
+        ports.KeyStarterOffer(BlockId("block-1"), FIXTURE, DAY, ("player",))  # type: ignore[arg-type]
+    chosen = ports.KeyStarterOffer(BlockId("block-1"), FIXTURE, DAY, (PLAYER,), PLAYER)
+    assert chosen.selected_player_id == PLAYER
+
+
+def test_acl_translates_selection_without_widening_its_fixture_scope() -> None:
+    from mister.game.infrastructure.simulation_mapping import to_key_starter_selection
+
+    source = ports.KeyStarterSelection(FIXTURE, DAY, PLAYER)
+    assert to_key_starter_selection(source) == api.KeyStarterSelection(FIXTURE, DAY, PLAYER)
+
+
+def test_acl_preserves_actual_starters_and_absence_reason() -> None:
+    from mister.game.infrastructure.simulation_mapping import from_key_starter_outcome
+
+    fallback = PlayerId("fallback")
+    source = api.KeyStarterOutcome(FIXTURE, DAY, PLAYER, (fallback,), "not_in_squad")
+    assert from_key_starter_outcome(source) == ports.KeyStarterOutcome(
+        FIXTURE, DAY, PLAYER, (fallback,), "not_in_squad"
+    )
