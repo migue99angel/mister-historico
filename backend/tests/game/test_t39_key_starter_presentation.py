@@ -127,8 +127,9 @@ def test_the_facade_selects_and_presents_the_run() -> None:
         game.run_id, game.token, "select-001", 0, SUPER_FINAL, candidate
     )
 
-    assert presented.to_json()["keyStarter"]["selectedPlayerId"] == candidate.value
-    assert presented.to_json()["version"] == 1
+    body: dict[str, Any] = presented.to_json()
+    assert body["keyStarter"]["selectedPlayerId"] == candidate.value
+    assert body["version"] == 1
 
 
 def test_the_facade_keeps_public_error_codes() -> None:

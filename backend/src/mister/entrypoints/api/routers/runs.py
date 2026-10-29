@@ -1,5 +1,5 @@
 import re
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Path, Request, Response
@@ -13,11 +13,19 @@ from mister.entrypoints.api.schemas import (
     AdvanceBody,
     Problem,
     RunView,
+    SelectKeyStarterBody,
     StartRunBody,
     StartRunResponse,
     TakeDecisionBody,
 )
-from mister.shared_kernel.ids import DilemmaId, OptionId, PlayableSeasonId, RunId
+from mister.shared_kernel.ids import (
+    DilemmaId,
+    FixtureId,
+    OptionId,
+    PlayableSeasonId,
+    PlayerId,
+    RunId,
+)
 
 router = APIRouter(prefix="/api/runs", tags=["Runs"])
 _UUID = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
@@ -48,6 +56,21 @@ _DECISION_BODY_SCHEMA = {
         "dilemmaId": _SLUG_SCHEMA,
         "optionId": _SLUG_SCHEMA,
     },
+}
+_KEY_STARTER_BODY_SCHEMA = {
+    "type": "object",
+    "required": ["fixtureId", "playerId", "expectedVersion"],
+    "additionalProperties": False,
+    "properties": {
+        "fixtureId": _SLUG_SCHEMA,
+        "playerId": _SLUG_SCHEMA,
+        "expectedVersion": {"type": "integer", "minimum": 0},
+    },
+}
+_BODIES = {
+    "decision": TakeDecisionBody,
+    "advance": AdvanceBody,
+    "key_starter": SelectKeyStarterBody,
 }
 _ADVANCE_BODY_SCHEMA = {
     "type": "object",
@@ -98,6 +121,8 @@ def _invalid(error: Exception) -> JSONResponse:
             "expected_version": "expectedVersion",
             "dilemma_id": "dilemmaId",
             "option_id": "optionId",
+            "fixture_id": "fixtureId",
+            "player_id": "playerId",
         }
         errors = [
             {
@@ -206,7 +231,12 @@ async def get_run(
         return await domain_error_handler(request, error)
 
 
-async def _command(run_id_value: str, request: Request, *, decision: bool) -> Any:  # noqa: PLR0911
+async def _command(  # noqa: PLR0911
+    run_id_value: str,
+    request: Request,
+    *,
+    kind: Literal["decision", "advance", "key_starter"],
+) -> Any:
     try:
         run_id = _run_id(run_id_value)
     except ValueError:
@@ -221,11 +251,21 @@ async def _command(run_id_value: str, request: Request, *, decision: bool) -> An
     if not _MIN_KEY_LENGTH <= len(key) <= _MAX_KEY_LENGTH:
         return problem(400, "validation_error", "The Idempotency-Key length is invalid.")
     try:
-        body = await _json_model(request, TakeDecisionBody if decision else AdvanceBody)
+        body = await _json_model(request, _BODIES[kind])
     except Exception as error:
         return _invalid(error)
     try:
-        if decision:
+        if kind == "key_starter":
+            value = await run_in_threadpool(
+                api.select_key_starter,
+                run_id,
+                token,
+                key,
+                body.expected_version,
+                FixtureId(body.fixture_id),
+                PlayerId(body.player_id),
+            )
+        elif kind == "decision":
             value = await run_in_threadpool(
                 api.take_decision,
                 run_id,
@@ -270,7 +310,7 @@ async def take_decision(
     _bearer: _BearerAuth,
     run_id: str = Path(alias="runId", json_schema_extra={"format": "uuid"}),
 ) -> Any:
-    return await _command(run_id, request, decision=True)
+    return await _command(run_id, request, kind="decision")
 
 
 @router.post(
@@ -299,4 +339,33 @@ async def advance_block(
     _bearer: _BearerAuth,
     run_id: str = Path(alias="runId", json_schema_extra={"format": "uuid"}),
 ) -> Any:
-    return await _command(run_id, request, decision=False)
+    return await _command(run_id, request, kind="advance")
+
+
+@router.post(
+    "/{runId}/key-starter",
+    operation_id="selectKeyStarter",
+    response_model=RunView,
+    response_model_exclude_unset=True,
+    responses=_problem_responses(400, 401, 403, 404, 409, 422, 429),
+    openapi_extra={
+        "parameters": [
+            {
+                "name": "Idempotency-Key",
+                "in": "header",
+                "required": True,
+                "schema": {"type": "string", "minLength": 8, "maxLength": 128},
+            }
+        ],
+        "requestBody": {
+            "required": True,
+            "content": {"application/json": {"schema": _KEY_STARTER_BODY_SCHEMA}},
+        },
+    },
+)
+async def select_key_starter(
+    request: Request,
+    _bearer: _BearerAuth,
+    run_id: str = Path(alias="runId", json_schema_extra={"format": "uuid"}),
+) -> Any:
+    return await _command(run_id, request, kind="key_starter")

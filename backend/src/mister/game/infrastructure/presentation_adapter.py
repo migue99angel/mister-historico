@@ -12,6 +12,7 @@ from mister.catalog.application.api import (
 from mister.game.application import ports
 from mister.game.application.api import SeasonQueries
 from mister.game.application.block_codec import BlockSimulationCodec
+from mister.game.application.key_starter_flow import KeyStarterEntry
 from mister.game.application.presentation import GamePresentation
 from mister.game.application.presentation_types import Presented
 from mister.game.application.run_content import RunContentSnapshot
@@ -151,7 +152,14 @@ class CatalogPresentationAdapter(GamePresentation, SeasonQueries):
         average_fitness = (
             round(sum(item.fitness for item in current) / len(current)) if current else 1
         )
+        entry = view.key_starters[-1] if view.key_starters and not terminal else None
+        key_starter = (
+            self._key_starter(entry, season, block_info.start, clubs, competitions, catalog_players)
+            if entry is not None and entry.offer is not None
+            else None
+        )
         return {
+            **({"keyStarter": key_starter} if key_starter is not None else {}),
             "runId": str(run.id.value),
             "seasonId": run.season_id.value,
             "status": run.status.value,
@@ -220,6 +228,39 @@ class CatalogPresentationAdapter(GamePresentation, SeasonQueries):
             "injury": {"daysOut": days} if days > 0 else None,
         }
 
+    def _key_starter(  # noqa: PLR0913, PLR0917 - all reference metadata is explicit
+        self,
+        entry: KeyStarterEntry,
+        season: PlayableSeasonDTO,
+        entered_on: date,
+        clubs: dict[ClubSeasonId, catalog.ClubSeasonDTO],
+        competitions: dict[CompetitionId, catalog.CompetitionDTO],
+        players: dict[PlayerId, catalog.PlayerDTO],
+    ) -> dict[str, object]:
+        """The captured offer, with the entry state of every player, never current state."""
+        offer = entry.offer
+        if offer is None:
+            raise ValueError("a presented key starter needs an offer")
+        captured = {
+            item.player_id: self._run_player(item, players[item.player_id], entered_on)
+            for item in entry.players
+        }
+        return {
+            "blockId": offer.block_id.value,
+            "fixtureId": offer.fixture_id.value,
+            "date": offer.date.isoformat(),
+            "opponent": _team(clubs[offer.opponent_id], season),
+            "competitionName": competitions[offer.competition_id].name,
+            "venue": offer.venue,
+            "keyMatchLabel": offer.key_match_label,
+            "candidates": [captured[player] for player in offer.candidate_ids],
+            "projectedStarterIds": [player.value for player in offer.projected_starter_ids],
+            "projectedStarters": [captured[player] for player in offer.projected_starter_ids],
+            "selectedPlayerId": None
+            if offer.selected_player_id is None
+            else offer.selected_player_id.value,
+        }
+
     def _block_summary(  # noqa: PLR0913, PLR0917 - all reference metadata is explicit
         self,
         result: ports.BlockSimulationResult,
@@ -231,14 +272,7 @@ class CatalogPresentationAdapter(GamePresentation, SeasonQueries):
         players: dict[PlayerId, catalog.PlayerDTO],
     ) -> dict[str, object]:
         def team(club_id: ClubSeasonId) -> dict[str, object]:
-            club = clubs[club_id]
-            return {
-                "clubSeasonId": club.id.value,
-                "name": club.name,
-                "shortName": club.short_name,
-                "colors": {"primary": club.primary_color, "secondary": club.secondary_color},
-                "isUser": club.id == season.club_season_id,
-            }
+            return _team(clubs[club_id], season)
 
         matches = []
         for item in result.matches:
@@ -338,6 +372,7 @@ class CatalogPresentationAdapter(GamePresentation, SeasonQueries):
             for item in result.injuries
         ]
         block = next(item for item in season.blocks if item.id == result.block_id)
+        outcome = result.key_starter_outcome
         return {
             "blockNumber": block_number,
             "label": block.label,
@@ -345,4 +380,27 @@ class CatalogPresentationAdapter(GamePresentation, SeasonQueries):
             "standings": standings,
             "events": events,
             "injuries": injuries,
+            **(
+                {
+                    "keyStarterOutcome": {
+                        "fixtureId": outcome.fixture_id.value,
+                        "date": outcome.date.isoformat(),
+                        "playerId": outcome.player_id.value,
+                        "starterIds": [player.value for player in outcome.starter_ids],
+                        "absenceReason": outcome.absence_reason,
+                    }
+                }
+                if outcome is not None
+                else {}
+            ),
         }
+
+
+def _team(club: catalog.ClubSeasonDTO, season: PlayableSeasonDTO) -> dict[str, object]:
+    return {
+        "clubSeasonId": club.id.value,
+        "name": club.name,
+        "shortName": club.short_name,
+        "colors": {"primary": club.primary_color, "secondary": club.secondary_color},
+        "isUser": club.id == season.club_season_id,
+    }
