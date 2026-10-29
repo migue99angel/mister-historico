@@ -89,7 +89,15 @@ export type RunCommandFailure =
   /** Network, 5xx or 429: sending the same variables again retries the same attempt. */
   | { kind: 'failed'; error: Error };
 
+export interface RunCommandTransition {
+  before: RunViewDto;
+  after: RunViewDto;
+  /** An earlier attempt had an uncertain outcome; do not attribute differences. */
+  retried: boolean;
+}
+
 export interface RunCommand<Variables> {
+  transition: RunCommandTransition | null;
   /**
    * Sends the command against the cached view's version. Sending the variables of the last
    * failed attempt again reuses its Idempotency-Key, so a retry never applies twice. Ignored
@@ -155,6 +163,7 @@ export function useRunCommand<Variables>(
   const inFlight = useRef(false);
   const failedAttempt = useRef<Attempt<Variables> | null>(null);
   const [failure, setFailure] = useState<RunCommandFailure | null>(null);
+  const [transition, setTransition] = useState<RunCommandTransition | null>(null);
 
   const { mutateAsync, isPending } = useMutation({
     mutationFn: async (attempt: Attempt<Variables>) =>
@@ -177,15 +186,18 @@ export function useRunCommand<Variables>(
       if (inFlight.current || !current || queryClient.isFetching({ queryKey }) > 0) return null;
       inFlight.current = true;
       setFailure(null);
+      setTransition(null);
       let attempt: Attempt<Variables> | null = null;
       try {
         // Inside the try: crypto.randomUUID throws outside a secure context.
         attempt = nextAttempt(failedAttempt.current, variables, current.version);
+        const retried = attempt === failedAttempt.current;
         const run = await mutateAsync(attempt);
         failedAttempt.current = null;
         // A reload started before this reply would overwrite it with an older view.
         await queryClient.cancelQueries({ queryKey });
         queryClient.setQueryData(queryKey, run);
+        setTransition({ before: current, after: run, retried });
         return run;
       } catch (error) {
         const reason = toFailure(error);
@@ -202,5 +214,5 @@ export function useRunCommand<Variables>(
     [mutateAsync, queryClient, runId],
   );
 
-  return { send, isPending, failure };
+  return { send, isPending, failure, transition };
 }
