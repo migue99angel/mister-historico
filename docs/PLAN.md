@@ -270,7 +270,7 @@ beta histórica y su calibración, no la primera partida sintética.
 | Hito | Entrega y aceptación | Tareas y límites |
 |---|---|---|
 | **A · Primera partida interna** | Desde la web: elegir Test FC, empezar, tomar decisiones con efectos observables, avanzar todos los bloques con el motor real, recuperar tras recargar y ver estado terminal y resultados del último bloque mediante `RunView`. Backend, frontend y SQL conectados; token, idempotencia, concurrencia y rollback probados; replay con entradas fijadas. Probar al menos una temporada completa y una salida por destitución. | CR-T3.0; T3.1-T3.6 y T3.7a; T4.1-T4.5, T4.6a, T4.7a y accesibilidad básica de T4.8. Test FC del YAML sintético existente mediante composición local/test, sin publicarlo como contenido histórico ni importar tests en código de producción. MSW sirve al desarrollo, pero no acredita A. Sin puntuación/percentil ficticios ni dependencia de F2 histórica o F5. |
-| **A1 · Gameplay y rejugabilidad** | Iteración solicitada por el autor el 2026-10-29, antes de B: consecuencias recuperables, panel real y una elección de titular por partido conocido; playtest con 3–5 personas. | CR-T3.8 → T3.8 → T4.9; CR-T3.9 → T3.9 → T4.10. [Diseño, límites y validación](GAMEPLAY_BACKLOG.md). No traslada evaluación/compartir de B ni amplía A/B/C/D; eventos contextuales posteriores al playtest. |
+| **A1 · Gameplay y rejugabilidad** | Iteración que se prueba antes de B con desarrollo paralelo: confirmar y explicar decisiones con RunView, panel actual, muestra editorial #88; revelado de resultados y layout responsive P1, más titular clave. Playtest por entrega con 3–5 personas. | T4.9 → T4.11 → T4.12 → T4.10; CR-T3.9 → T3.9 → T4.10. Recibos CR-T3.8/T3.8 opcionales tras validar necesidad. [Diseño y alcance](GAMEPLAY_BACKLOG.md). A1 completo no bloquea B, F2 ni evaluación/compartir. |
 | **B · Primera beta histórica (propuesta)** | RM 2012-13 y sus rivales completos, verificados y firmados; calibración y rendimiento del piloto; móvil, evaluación histórica y compartir con página/enlace recuperable. Medir duración de 3-5 minutos, finalización, puntos de abandono, comprensión de decisiones y feedback de diversión. | Cierre de F2; T3.7b; T4.6b/T4.7b/T4.8; T5.1/T5.3/T5.4 y T5.5a/T5.6a; CR-T5.B; T6.7 y partes operativas de F7 que requiera el entorno de beta. T7.8 puede adelantarse aquí; no espera cuatro equipos adicionales ni ranking. |
 | **C · Ampliación y V1** | Equipos históricos adicionales, ranking/percentiles, equilibrio y mejoras priorizadas con lo aprendido en A/B. | T5.2/T5.5b/T5.6b, T6.1-T6.4/T6.6 y endurecimiento/capacidad de F7 según uso. Se conserva la decisión de lanzar V1 con 3-5 equipos; B no se anuncia como ese lanzamiento. T6.5 es opcional, los textos pueden redactarse y verificarse sin generador. |
 | **D · Temporada actual** | Temporada congelada, presupuesto y mercado limitados, decisiones y objetivos, duración ajustada tras validar el producto. | Iniciativa futura de §3.4, sin implementación y sin bloquear A/B/C. Diseño y CR concretas tras validar el producto y priorizarlo; no exige terminar toda la ampliación C. |
@@ -289,13 +289,19 @@ flowchart LR
   Run --> A
   Data[F2: contenido y rivales RM] --> Sign[Verificación, firma y calibración]
   A --> A1[Hito A1: feedback y agencia]
-  A1 --> B[Hito B: beta RM]
+  A --> B[Hito B: beta RM]
+  A1 -. Feedback por entrega .-> B
   Sign --> B
   Final[Evaluación y compartir sin ranking] --> B
   Ops[Operación mínima de beta aprobada] --> B
   B --> C[Hito C: más equipos, ranking y equilibrio]
   B -. Validación y priorización .-> D[Hito D: temporada actual]
 ```
+
+Para las nuevas issues A1, Priority refleja urgencia de producto: P0 para comprender
+el bucle, P1 para agencia y mejoras visuales, P2 para profundidad condicionada a
+playtest. Las prioridades anteriores A/B se conservan; el P2 histórico de B no
+se reinterpreta. Cada P1 pendiente se registra y decide antes de exigirla para B.
 
 ### 5.2 Puertas de los paquetes existentes
 
