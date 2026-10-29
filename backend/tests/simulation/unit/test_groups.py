@@ -383,7 +383,7 @@ def test_simulated_residual_tie_uses_a_repeatable_seeded_draw() -> None:
 
     assert ranking.unresolved_ties == ()
     assert len(ranking.qualifiers) == 2
-    assert set(row.club_season_id for row in ranking.rows) == set(CLUBS)
+    assert {row.club_season_id for row in ranking.rows} == set(CLUBS)
     assert ranking == table.rank(rng=rng)
     assert ranking == replace(table, participants=CLUBS[::-1], rows=table.rows[::-1]).rank(rng=rng)
     assert (

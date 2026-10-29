@@ -1,4 +1,4 @@
-"""Four-club group ranking with explicit match evidence and unresolved residual ties."""
+"""Four-club ranking with explicit evidence and optional synthetic residual-tie draws."""
 
 from __future__ import annotations
 
@@ -14,6 +14,8 @@ from mister.simulation.domain.model import FixtureSpec, Score, Venue
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+    from mister.shared_kernel.randomness import RandomSource
 
 _GROUP_SIZE = 4
 _TWO_CLUBS = 2
@@ -244,8 +246,14 @@ class GroupTable:
             if fixture.home not in self.participants or fixture.away not in self.participants:
                 raise InvalidValueError("both evidence clubs must belong to this group")
 
-    def rank(self) -> GroupRanking:
-        """Points first, configured criteria next, stable IDs only for presentation."""
+    def rank(self, *, rng: RandomSource | None = None) -> GroupRanking:
+        """Apply points and configured criteria, then optionally draw residual simulated ties.
+
+        The final draw is a synthetic game rule, not a historical regulation. Historical
+        evidence callers omit rng and retain explicit unresolved ties. Each club has a
+        leaf in the competition/stage draw stream, making repeated rankings and input
+        permutations stable without consuming the parent source.
+        """
         rows = {row.club_season_id: row for row in self.rows}
         coefficients = dict(self.rules.coefficients)
         unresolved: list[tuple[ClubSeasonId, ...]] = []
@@ -255,8 +263,19 @@ class GroupTable:
                 return members
             if index == len(self.rules.tiebreakers):
                 stable = tuple(sorted(members, key=str))
-                unresolved.append(stable)
-                return stable
+                if rng is None:
+                    unresolved.append(stable)
+                    return stable
+                draw = rng.stream("draw", str(self.competition_id), self.stage_id)
+                return tuple(
+                    sorted(
+                        stable,
+                        key=lambda club: (
+                            draw.stream(self.group_id, str(club)).random(),
+                            str(club),
+                        ),
+                    )
+                )
             criterion = self.rules.tiebreakers[index]
             if criterion not in _HEAD_TO_HEAD:
                 partitions = _partition(

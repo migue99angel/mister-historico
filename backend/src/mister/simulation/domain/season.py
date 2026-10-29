@@ -835,13 +835,13 @@ class SeasonSimulation:
         )
         if original is not None and original.unknown_venues:
             self._require_group_venues(table, original, cutoff)
-        ranking = table.rank()
+        closed = self._group_closed(competition, stage, group_id, participants, cutoff)
+        # Only simulated groups draw at closure; historical evidence stays strict.
+        ranking = table.rank(rng=self.rng if own_group and replacements and closed else None)
         # Qualifier evaluation is deferred until closure, preserving intermediate unresolved tables.
         return RankedTable(
             replace(baseline, as_of=cutoff, rows=ranking.rows), ranking.unresolved_ties
-        ), ranking.qualifiers if self._group_closed(
-            competition, stage, group_id, participants, cutoff
-        ) else ()
+        ), ranking.qualifiers if closed else ()
 
     @staticmethod
     def _require_group_venues(
