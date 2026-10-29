@@ -277,15 +277,18 @@ allowed_importers = ["mister.simulation", "mister.simulation.**"]
 
 # R7 (CR of T0.2, T1.6): the rest of `simulation.application` is private too. Outside the
 # context only `mister.simulation.application.api` may be imported, and only from the
-# `infrastructure` layer of another context (the ACL, PLAN §3.2 rule 4). Same `protected`
-# technique as R6; the one allowed edge is carved out with `ignore_imports`. It matches
-# nothing until another context has an adapter, hence "none".
+# `infrastructure` layer of another context (the ACL, PLAN §3.2 rule 4) or bootstrap
+# (the composition root, CR-T3.6-r7-bootstrap). Same `protected` technique as R6;
+# allowed API edges are carved out with `ignore_imports`. Optional adapter edges may
+# be unmatched, hence "none".
 [[tool.importlinter.contracts]]
 name = "R7 only simulation.application.api is public"
 type = "protected"
 protected_modules = ["mister.simulation.application", "mister.simulation.application.**"]
 allowed_importers = ["mister.simulation", "mister.simulation.**"]
 ignore_imports = [
+    # The composition root constructs SimulationService through its published API.
+    "mister.bootstrap -> mister.simulation.application.api",
     "mister.*.infrastructure -> mister.simulation.application.api",
     "mister.*.infrastructure.** -> mister.simulation.application.api",
 ]

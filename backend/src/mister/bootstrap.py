@@ -28,15 +28,13 @@ from mister.game.infrastructure.security.run_tokens import (
     SecretsRunTokenGenerator,
     Sha256RunTokenHasher,
 )
-from mister.game.infrastructure.simulation_adapter import (  # type: ignore[attr-defined]
-    SimulationService,
-    SimulationServiceAdapter,
-)
+from mister.game.infrastructure.simulation_adapter import SimulationServiceAdapter
 from mister.game.infrastructure.sqlalchemy.uow import SqlUnitOfWork
 from mister.settings import Settings
 from mister.shared_kernel.clock import SystemClock
 from mister.shared_kernel.events import InMemoryEventBus
 from mister.shared_kernel.seed import Seed
+from mister.simulation.application.api import SimulationService
 
 
 @dataclass(frozen=True, slots=True)
