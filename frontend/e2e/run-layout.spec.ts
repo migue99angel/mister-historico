@@ -137,6 +137,7 @@ test.describe('reveal focus with enlarged text', () => {
       await page.addStyleTag({ content: 'html { font-size: 200%; }' });
       await page.getByRole('button', { name: 'Simular bloque' }).click();
       const skip = page.getByRole('button', { name: 'Mostrar todos' });
+      await expect(skip).toBeVisible();
       if (completion === 'skip') await skip.click();
       else await expect(skip).toHaveCount(0);
       const summary = page.getByRole('heading', { name: 'Resumen del bloque' });
