@@ -91,8 +91,15 @@ export function RunInPlay({ run, isRefreshing, onRunEnded }: RunInPlayProps) {
   }, [run.status, run.runId, submitting, reveal.revealing, onRunEnded]);
 
   useEffect(() => {
-    if (wasRevealing.current && !reveal.revealing && document.activeElement === document.body) {
+    if (
+      wasRevealing.current &&
+      !reveal.revealing &&
+      (document.activeElement === document.body ||
+        document.activeElement === summaryHeading.current)
+    ) {
       summaryHeading.current?.focus();
+      // The mobile panel returns before this heading and can push retained focus offscreen.
+      summaryHeading.current?.scrollIntoView?.({ block: 'nearest' });
     }
     wasRevealing.current = reveal.revealing;
     if (focusDecisions.current && !reveal.revealing) {
@@ -210,10 +217,7 @@ export function RunInPlay({ run, isRefreshing, onRunEnded }: RunInPlayProps) {
                     }
                   : undefined
               }
-              onComplete={() => {
-                reveal.complete();
-                summaryHeading.current?.focus();
-              }}
+              onComplete={reveal.complete}
             />
           )}
 
