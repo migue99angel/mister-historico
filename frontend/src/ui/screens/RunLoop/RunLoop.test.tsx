@@ -1,4 +1,5 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { axe } from 'jest-axe';
 import { HttpResponse, http } from 'msw';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -165,6 +166,38 @@ describe('RunLoop', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
+  it('offers one team landmark before the decisions and a keyboard return to them', async () => {
+    const user = userEvent.setup();
+    renderRunLoop(await startRun());
+    const panel = await screen.findByRole('complementary', { name: 'Panel del equipo' });
+    const decisions = screen.getByRole('heading', { name: 'Decisiones del bloque' });
+    expect(screen.getAllByRole('region', { name: 'Estado del equipo' })).toHaveLength(1);
+    expect(panel.compareDocumentPosition(decisions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const returnButton = within(panel).getByRole('button', { name: 'Volver a decisiones' });
+    returnButton.focus();
+    await user.keyboard('{Enter}');
+    expect(decisions).toHaveFocus();
+  });
+
+  it('keeps squad, state details and standings folded until requested', async () => {
+    const user = userEvent.setup();
+    const seeded = await startRun();
+    await playBlocks(seeded.runtime.gameApi, seeded.runId, seeded.runToken, 2);
+    renderRunLoop(seeded);
+    const panel = await screen.findByRole('region', { name: 'Estado del equipo' });
+    expect(within(panel).queryByRole('table')).not.toBeInTheDocument();
+    for (const label of ['Estado y lesiones', /^Plantilla/, 'Clasificación']) {
+      const summary = within(panel).getByText(label, { selector: 'summary' });
+      expect(summary.closest('details')).not.toHaveAttribute('open');
+      summary.focus();
+      await user.keyboard('{Enter}');
+      expect(summary.closest('details')).toHaveAttribute('open');
+      await user.keyboard(' ');
+      expect(summary.closest('details')).not.toHaveAttribute('open');
+      expect(summary).toHaveFocus();
+    }
+  });
+
   it('hides closure spoilers until skipping and then exposes the complete summary', async () => {
     renderRunLoop(await startRun());
     await chooseFirstBlock();
@@ -175,6 +208,7 @@ describe('RunLoop', () => {
     expect(screen.queryByText('August · 1 victoria y 1 empate')).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Captain complaint' })).not.toBeInTheDocument();
     fireEvent.click(skip);
+    fireEvent.click(screen.getByText('Clasificación', { selector: 'summary' }));
     expect(screen.getByRole('table', { name: 'Liga Test' })).toBeInTheDocument();
     expect(screen.getByText('August · 1 victoria y 1 empate')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Resumen del bloque' })).toHaveFocus();
@@ -186,6 +220,7 @@ describe('RunLoop', () => {
     simulate();
     fireEvent.click(await screen.findByRole('button', { name: 'Ir a decisiones' }));
     expect(screen.getByRole('heading', { name: 'Decisiones del bloque' })).toHaveFocus();
+    fireEvent.click(screen.getByText('Clasificación', { selector: 'summary' }));
     expect(screen.getByRole('table', { name: 'Liga Test' })).toBeInTheDocument();
   });
 
@@ -194,7 +229,8 @@ describe('RunLoop', () => {
     renderRunLoop(await startRun());
     await chooseFirstBlock();
     simulate();
-    await screen.findByRole('table', { name: 'Liga Test' });
+    fireEvent.click(await screen.findByText('Clasificación', { selector: 'summary' }));
+    expect(screen.getByRole('table', { name: 'Liga Test' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Mostrar todos' })).not.toBeInTheDocument();
   });
 
@@ -210,7 +246,8 @@ describe('RunLoop', () => {
     expect(screen.queryByRole('button', { name: 'Mostrar todos' })).not.toBeInTheDocument();
     rendered.unmount();
     renderRunLoop(seeded);
-    await screen.findByRole('table', { name: 'Liga Test' });
+    fireEvent.click(await screen.findByText('Clasificación', { selector: 'summary' }));
+    expect(screen.getByRole('table', { name: 'Liga Test' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Mostrar todos' })).not.toBeInTheDocument();
   });
 
@@ -218,7 +255,8 @@ describe('RunLoop', () => {
     const seeded = await startRun();
     await playBlocks(seeded.runtime.gameApi, seeded.runId, seeded.runToken, 1);
     renderRunLoop(seeded);
-    await screen.findByRole('table', { name: 'Liga Test' });
+    fireEvent.click(await screen.findByText('Clasificación', { selector: 'summary' }));
+    expect(screen.getByRole('table', { name: 'Liga Test' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Mostrar todos' })).not.toBeInTheDocument();
   });
 
@@ -228,7 +266,8 @@ describe('RunLoop', () => {
     simulate();
     const skip = await screen.findByRole('button', { name: 'Mostrar todos' });
     skip.focus();
-    await screen.findByRole('table', { name: 'Liga Test' });
+    fireEvent.click(await screen.findByText('Clasificación', { selector: 'summary' }));
+    expect(screen.getByRole('table', { name: 'Liga Test' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Resumen del bloque' })).toHaveFocus();
   });
 
@@ -322,6 +361,7 @@ describe('RunLoop', () => {
     ).toBeInTheDocument();
     expect(within(panel).getAllByText(/14 días de baja/).length).toBeGreaterThan(0);
     expect(within(panel).getByText(/4-4-2/)).toBeInTheDocument();
+    fireEvent.click(within(panel).getByText('Clasificación', { selector: 'summary' }));
     expect(within(panel).getByRole('table', { name: 'Liga Test' })).toBeInTheDocument();
     expect(within(panel).queryByText(/Objetivos|Histórico|diferidos/)).not.toBeInTheDocument();
   });
@@ -396,6 +436,7 @@ describe('RunLoop', () => {
     expect(within(summary).getByText('August · 1 victoria y 1 empate')).toBeInTheDocument();
     expect(within(summary).getAllByText('Rovers Prueba')).not.toHaveLength(0);
     expect(within(summary).getByText('Derby')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Clasificación', { selector: 'summary' }));
     const standings = screen.getByRole('table', { name: 'Liga Test' });
     expect(within(standings).getByRole('row', { current: true })).toHaveTextContent('Test FC');
     expect(screen.getByText('Bloque 2 de 5')).toBeInTheDocument();
