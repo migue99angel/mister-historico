@@ -1,6 +1,6 @@
 # Míster Histórico monorepo commands. Run `make help` to list targets.
 .DEFAULT_GOAL := help
-.PHONY: help test test-backend test-frontend lint lint-backend lint-frontend dev validate-content calibrate status usage usage-test
+.PHONY: help test test-backend test-frontend lint lint-backend lint-frontend dev validate-content calibrate status usage usage-test clean-branches
 
 REPO := migue99angel/mister-historico
 
@@ -52,3 +52,6 @@ usage: ## Local audit of Claude Code and Codex usage (writes outside the repo; s
 
 usage-test: ## Tests of the usage audit tool
 	python3 -m unittest discover -s tools/agent_usage -p 'test_*.py'
+
+clean-branches: ## Remove local branches and worktrees of merged PRs (dry run; APPLY=1 to remove)
+	tools/clean_branches.sh $(if $(APPLY),--apply)
