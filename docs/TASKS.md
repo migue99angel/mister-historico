@@ -830,43 +830,59 @@ Detectado en el E2E de T3.7a. No cambia el contrato: lo cumple.
 
 ### FIX-T2.4-group-tie · Empate de grupo sin resolver en la clasificación
 Detectado al preparar T4.7a. Bloquea el hito A, no T4.7a, que fija una semilla sana.
-- **Depende de:** T2.4 (integrada).
-- **Propiedad:** `backend/src/mister/simulation/domain/groups.py`, y
-  `simulation/domain/season.py` solo si el cierre del grupo necesita el desempate. Incluye
-  sus tests.
+**Necesita la aprobación del autor antes de implementar:** cambia una decisión aprobada.
+ADR-007 preserva el empate de las salidas simuladas sin resolver, y ADR-005 exige un ADR
+para cada convención nueva de flujos de `RandomSource`.
+- **Depende de:** T2.4 (integrada) y la decisión del autor sobre la regla final.
+- **Propiedad:** `backend/src/mister/simulation/domain/groups.py`,
+  `backend/src/mister/simulation/domain/season.py` (tiene el `RandomSource`, y
+  `_group_mapping` también rechaza estos empates), sus tests de `backend/tests/simulation/`,
+  y la ampliación de `docs/adr/005-determinismo.md` y `docs/adr/007-contenido-como-datos.md`.
 - **Qué hacer:** con el perfil A, Test FC y la política «primera opción» del golden, las
   semillas 2001 y 2004 hacen que `POST /api/runs/{id}/advance` devuelva un 500.
   `GroupRanking.qualifiers` lanza `InvalidValueError("qualification crosses an unresolved
-  group tie")` al cerrar un grupo cuyo empate, agotados todos los criterios, cruza la
-  línea de clasificación. La Partida no puede avanzar y queda atascada. Hace falta un
-  criterio final que siempre resuelva (por ejemplo, un sorteo con el `RandomSource` de la
-  simulación). Es sintético y está documentado en la regla, sin afirmar normativa
-  histórica. El rechazo actual solo debe conservarse para la evidencia histórica real.
-- **Tests primero:** un test de dominio con un grupo de Test FC empatado en todos los
-  criterios en la frontera de clasificación: la clasificación se resuelve de forma
-  determinista con la semilla. Además, un test de aplicación o de golden que avance las
-  semillas 2001 y 2004 hasta el final.
-- **Aceptación:** ninguna semilla de una muestra de, al menos, 200 termina en error con las
-  políticas «primera opción» y «última opción»; el golden de T3.7a no cambia o se
-  regenera con su diff revisado.
+  group tie")` al cerrar un grupo cuyo empate, agotados sus criterios, cruza la línea de
+  clasificación. El grupo de Test FC solo declara `head_to_head_points` y
+  `goal_difference`. La Partida no puede avanzar y queda atascada. Propuesta para que la
+  apruebe el autor:
+  - Un sorteo final como **regla del motor**, no como criterio de contenido, para no
+    cambiar el esquema. Se aplica solo cuando un empate simulado cruza la clasificación.
+  - Un flujo hoja nuevo `("draw", competition_id, stage_id, group_id)`, añadido a la tabla
+    de ADR-005.
+  - Una enmienda de ADR-007: el empate se sigue preservando en la presentación y en el
+    orden, pero la plaza se decide por sorteo. Es sintético y no afirma normativa histórica.
+  - Alternativa o complemento: ampliar los desempates del YAML sintético. Reduce los casos,
+    pero no garantiza la resolución y toca la propiedad de los fixtures.
+- **Tests primero:** un test de dominio con un grupo empatado en todos los criterios en la
+  frontera de clasificación: la plaza se resuelve de forma determinista con la semilla y
+  cambiar la semilla puede cambiarla. Además, tests de regresión de `simulation` que cierran
+  la temporada de Test FC con las semillas 2001 y 2004.
+- **Aceptación:** los tests de regresión pasan. Como evidencia en la PR, no en la CI, un
+  barrido de, al menos, 200 semillas con las políticas «primera opción» y «última opción»
+  sin errores. El golden de T3.7a (semilla 2000) no cambia; si cambiara, se coordina con
+  T3.7a-sacking, propietaria de `backend/tests/golden/**`.
 
 ### T3.7a-sacking · Destitución alcanzable con Test FC
 Detectado al preparar T4.7a: con el perfil A y Test FC no se llega a destituir. En 190
 semillas, incluso eligiendo siempre la última opción, todas las partidas terminan la
-temporada (confianza inicial 50, umbral 20 y cinco bloques). Bloquea la ruta de
-destitución de T4.7a y la «salida por destitución» del hito A (PLAN §5).
+temporada (confianza inicial 50, umbral 20 y cinco bloques). Los efectos negativos de
+`board_confidence` de los dilemas suman −12 como mucho. Bloquea la ruta de destitución de
+T4.7a y la «salida por destitución» del hito A (PLAN §5).
 - **Depende de:** T3.7a (integrada).
-- **Propiedad:** `backend/tests/fixtures/content/**` (Test FC sintético),
-  `backend/tests/golden/**` y `backend/tests/e2e/**`.
-- **Qué hacer:** dar a Test FC un camino de decisiones que, con una semilla fijada y el
-  perfil A sin cambios, destituya al Míster en un bloque intermedio. Por ejemplo, un
-  dilema de crisis con un efecto de `board_confidence` muy negativo. No cambia las reglas
-  ni el contrato. Documentar en `season_play.py` la semilla y la política de destitución
-  (por ejemplo, «última opción»), para que el E2E del frontend las reutilice.
-- **Tests primero:** un E2E HTTP del backend que juega esa política y semilla, termina en
-  `sacked` en el bloque esperado y sigue siendo legible tras la recarga.
-- **Aceptación:** golden de la política «primera opción» regenerado con su diff revisado o
-  sin cambios; contenido válido; ruta de destitución reproducible.
+- **Propiedad:** `backend/tests/fixtures/content/seasons/test-fc-2000-01/dilemmas.yaml`,
+  `backend/tests/golden/**` y `backend/tests/e2e/**`. También
+  `backend/tests/catalog/test_content_tree.py`, solo si cambia el número de dilemas.
+- **Qué hacer:** que la semilla del golden (`GOLDEN_SEED`, 2000) con una política distinta
+  de «primera opción» (por ejemplo, «última opción») destituya al Míster en un bloque
+  intermedio, con el perfil A sin cambios. Solo se tocan opciones que no son la primera
+  (sus efectos de `board_confidence` o de moral), para que el golden de «primera opción»
+  no cambie: también lo compara el E2E del frontend, que sirve las dos rutas con un único
+  servidor y esa semilla. No cambia las reglas ni el contrato. Documentar la política de
+  destitución en `season_play.py`.
+- **Tests primero:** un E2E HTTP del backend que juega esa política con `GOLDEN_SEED`,
+  termina en `sacked` en el bloque esperado y sigue siendo legible tras la recarga.
+- **Aceptación:** golden de «primera opción» sin cambios; contenido válido; ruta de
+  destitución reproducible.
 
 ---
 
@@ -1064,11 +1080,12 @@ Recogidos en las revisiones de CR-T4.B y T4.4-T4.6a. No bloquean T4.7a.
 
 ### T4.7 · E2E real y rendimiento móvil (dos entregas)
 - **Propiedad:** `frontend/e2e/**`, `lighthouserc.json` y configuración de `size-limit`.
-- **T4.7a (A):** depende de T4.4/T4.5/T4.6a y T3.6/T3.7a. Playwright juega
+- **T4.7a (A):** depende de T4.4/T4.5/T4.6a, T3.6/T3.7a y, para la ruta de
+  destitución, T3.7a-sacking. Playwright juega
   Test FC de principio a fin contra backend, motor y SQL reales; recarga la
   página y conserva la partida. Incluye ruta de destitución y vista móvil sin
   scroll horizontal. No sustituir el backend por MSW en esta aceptación.
-  La ruta de destitución depende de T3.7a-sacking. El servidor del E2E usa la
+  El servidor del E2E usa la
   composición de producción con la semilla fijada, como el E2E del backend, y para
   levantarlo modifica `playwright.config.ts` y `.github/workflows/frontend.yml`
   (Postgres y uv), con autorización del autor.
