@@ -1413,6 +1413,7 @@ RunLoop: secuencia T4.9 → T4.11 → T4.12 → T4.10; backend de titular indepe
   carga de confirmación. Persistencia solo si la pérdida de detalle resulta problemática.
 
 ### CR-T3.9 · Contrato de titular clave por partido
+- **Contrato:** [CR-T3.9 · Titular clave](changes/CR-T3.9-key-starter.md); define DTOs, comando, compatibilidad, política de fallback y propiedad de T3.9.
 - **Issue/hito/prioridad/tamaño:** [#158](https://github.com/migue99angel/mister-historico/issues/158), A1 entrega 2, P1, M (incertidumbre alta).
 - **Resultado:** elección auténtica en fixture conocido al inicio del bloque.
 - **Dependencias:** ninguna abierta; se elimina #155. Elección y acreditación propias
