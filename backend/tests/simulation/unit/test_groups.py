@@ -8,6 +8,8 @@ import pytest
 
 from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.ids import ClubSeasonId, CompetitionId, FixtureId
+from mister.shared_kernel.randomness import StdlibRandomSource
+from mister.shared_kernel.seed import Seed
 from mister.simulation.domain.groups import GroupEvidence, GroupMatch, GroupRules, GroupTable
 from mister.simulation.domain.league_types import LeagueRow
 from mister.simulation.domain.model import FixtureSpec, Score, Venue
@@ -372,3 +374,26 @@ def test_a_result_cannot_bypass_typed_venue_validation_by_matching_its_calendar(
     result = replace(match, fixture=untyped)
     with pytest.raises(InvalidValueError, match="venue"):
         GroupEvidence(CUTOFF, (typed,), (result,))
+
+
+def test_simulated_residual_tie_uses_a_repeatable_seeded_draw() -> None:
+    table = _table(_rules("head_to_head_points", "goal_difference"), evidence=_evidence())
+    rng = StdlibRandomSource(Seed(2001))
+    ranking = table.rank(rng=rng)
+
+    assert ranking.unresolved_ties == ()
+    assert len(ranking.qualifiers) == 2
+    assert set(row.club_season_id for row in ranking.rows) == set(CLUBS)
+    assert ranking == table.rank(rng=rng)
+    assert ranking == replace(table, participants=CLUBS[::-1], rows=table.rows[::-1]).rank(rng=rng)
+    assert (
+        len({table.rank(rng=StdlibRandomSource(Seed(seed))).qualifiers for seed in range(20)}) > 1
+    )
+
+
+def test_simulated_draw_preserves_positions_resolved_by_points() -> None:
+    rows = (_row(CLUBS[0], wins=3), *(_row(club) for club in CLUBS[1:]))
+    ranking = _table(_rules(), rows=rows).rank(rng=StdlibRandomSource(Seed(2001)))
+    assert ranking.rows[0] == rows[0]
+    assert ranking.qualifiers[0] == CLUBS[0]
+    assert ranking.unresolved_ties == ()

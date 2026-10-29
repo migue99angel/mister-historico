@@ -441,7 +441,7 @@ def test_complete_group_calendar_closes_before_a_later_snapshot_cutoff() -> None
     assert summary.results[-1].fixture_id == FixtureId("group-final")
 
 
-def test_a_residual_group_tie_cannot_assign_qualifying_positions_by_identifier() -> None:
+def test_a_simulated_residual_group_tie_assigns_repeatable_qualifying_positions() -> None:
     value = group_request()
     competition = value.season.competitions[0]
     group = replace(competition.stages[0], tiebreakers=())
@@ -456,8 +456,10 @@ def test_a_residual_group_tie_cannot_assign_qualifying_positions_by_identifier()
                 return MatchResult(Score(0, 0))
             return super().simulate(setup, rng, decisive=decisive)
 
-    with pytest.raises(InvalidValueError, match=r"tie|position|slot"):
-        play(replace(value, season=replace(value.season, competitions=(competition,))), SeedTie())
+    value = replace(value, season=replace(value.season, competitions=(competition,)))
+    summary = play(value, SeedTie())
+    assert summary == play(value, SeedTie())
+    assert summary.results[-1].fixture_id == FixtureId("group-final")
 
 
 def test_incomplete_group_entry_bijection_is_rejected() -> None:
