@@ -21,7 +21,7 @@ export function RunInPlay({ run, isRefreshing }: RunInPlayProps) {
   const decision = useTakeDecision(run.runId);
   const advance = useAdvanceBlock(run.runId);
   const [choices, setChoices] = useState<Partial<Record<string, string>>>({});
-  const [simulating, setSimulating] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [confirmed, setConfirmed] = useState<{
     dilemmaId: string;
     optionId: string;
@@ -53,7 +53,7 @@ export function RunInPlay({ run, isRefreshing }: RunInPlayProps) {
   const chosenOptionId = (dilemma: DilemmaDto): string | null =>
     dilemma.options.find((option) => option.id === choices[dilemma.id])?.id ?? null;
   const uncertain = failedStep === 'decision' && decision.failure?.kind === 'failed';
-  const locked = simulating || isRefreshing || uncertain;
+  const locked = submitting || isRefreshing || uncertain;
   const transition = decision.transition;
   const showConfirmation = confirmed !== null && confirmed.version === run.version && !isRefreshing;
   const changes =
@@ -89,7 +89,7 @@ export function RunInPlay({ run, isRefreshing }: RunInPlayProps) {
     }
   }, [run.version, focusRequest, showConfirmation]);
 
-  function stopSeries(step: RunLoopCommand) {
+  function reportFailure(step: RunLoopCommand) {
     setFailedStep(step);
     focusFailure.current = true;
     setFocusRequest((request) => request + 1);
@@ -98,14 +98,14 @@ export function RunInPlay({ run, isRefreshing }: RunInPlayProps) {
   async function confirmDecision(dilemma: DilemmaDto, optionId: string | null) {
     if (busy.current || isRefreshing || !inProgress || optionId === null) return;
     busy.current = true;
-    setSimulating(true);
+    setSubmitting(true);
     setConfirmed(null);
     setAttempted({ dilemma, optionId });
     setFailedStep(null);
     try {
       const decided = await decision.send({ dilemmaId: dilemma.id, optionId });
       if (!decided) {
-        stopSeries('decision');
+        reportFailure('decision');
         return;
       }
       setConfirmed({
@@ -119,27 +119,27 @@ export function RunInPlay({ run, isRefreshing }: RunInPlayProps) {
       setFocusRequest((request) => request + 1);
     } finally {
       busy.current = false;
-      setSimulating(false);
+      setSubmitting(false);
     }
   }
 
   async function simulateBlock() {
     if (busy.current || isRefreshing || !inProgress || pending.length > 0) return;
     busy.current = true;
-    setSimulating(true);
+    setSubmitting(true);
     setConfirmed(null);
     setFailedStep(null);
     try {
       const simulated = await advance.send();
       if (!simulated) {
-        stopSeries('advance');
+        reportFailure('advance');
         return;
       }
       focusSummaryFromVersion.current = simulated.version;
       setFocusRequest((request) => request + 1);
     } finally {
       busy.current = false;
-      setSimulating(false);
+      setSubmitting(false);
     }
   }
 
@@ -273,7 +273,7 @@ export function RunInPlay({ run, isRefreshing }: RunInPlayProps) {
             {uncertain && attempted && (
               <Button
                 fullWidth
-                disabled={simulating || isRefreshing}
+                disabled={submitting || isRefreshing}
                 onClick={() => {
                   void confirmDecision(attempted.dilemma, attempted.optionId);
                 }}
@@ -284,13 +284,13 @@ export function RunInPlay({ run, isRefreshing }: RunInPlayProps) {
             <Button
               fullWidth
               disabled={pending.length > 0 || isRefreshing}
-              loading={simulating && advance.isPending}
+              loading={submitting && advance.isPending}
               aria-describedby={hintId}
               onClick={() => {
                 void simulateBlock();
               }}
             >
-              {simulating && advance.isPending ? 'Simulando…' : 'Simular bloque'}
+              {submitting && advance.isPending ? 'Simulando…' : 'Simular bloque'}
             </Button>
             <p id={hintId} className="mt-1.5 text-center text-caption text-ink-muted">
               {pendingDilemmasHint(pending.length)}
