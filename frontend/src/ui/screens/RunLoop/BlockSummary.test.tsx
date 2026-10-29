@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react';
+import { axe } from 'jest-axe';
 import { describe, expect, it } from 'vitest';
 
 import { mockFixtures } from '../../../../test/renderWithRuntime';
@@ -65,6 +66,22 @@ describe('BlockSummary', () => {
     expect(screen.getByText('Cierre de la directiva')).toBeInTheDocument();
     expect(screen.getByText(/Parte médico: Jugador Test/)).toBeInTheDocument();
     expect(summary.results.map((match) => match.fixtureId)).toEqual(originalOrder);
+  });
+
+  it('keeps the partial reveal accessible without exposing the closing narrative', async () => {
+    const summary = mixedSummary();
+    const { container } = render(
+      <main>
+        <h1>Partida</h1>
+        <BlockSummary
+          summary={summary}
+          narrative={describeBlock(summary)}
+          revealing
+          visibleDates={2}
+        />
+      </main>,
+    );
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('shows a complete, empty block without a skip control', () => {

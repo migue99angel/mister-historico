@@ -61,9 +61,13 @@ for (const colorScheme of ['light', 'dark'] as const) {
         await page.keyboard.press('Enter');
         // The block summary (or the final page) takes the focus once the block is simulated.
         await expect(page.locator(':focus')).toHaveRole('heading');
-        // «Simular bloque» only renders while the run goes on: without it, the run is over and
-        // the final page is on its way, so this screen is not the one to audit.
-        if (!(await simulate.isVisible())) break;
+        const skip = page.getByRole('button', { name: 'Mostrar todos' });
+        await expect(skip).toBeVisible();
+        await tabTo(page, skip);
+        await page.keyboard.press('Enter');
+        await expect(skip).toHaveCount(0);
+        await expect(simulate.or(finalTitle)).toBeVisible();
+        if (await finalTitle.isVisible()) break;
         await expectAccessibleScreen(page);
       }
 
