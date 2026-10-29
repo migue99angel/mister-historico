@@ -538,8 +538,7 @@ def test_replay_reproduces_selections_omissions_and_evidence() -> None:
     game.choose(candidate)
     game.advance_block()
     game.advance_block()
-    game.advance_block()
-    game.choose(game.entry().offer.candidate_ids[1])  # type: ignore[union-attr]
+    game.choose(game.entry().offer.candidate_ids[1], key="select-b3")  # type: ignore[union-attr]
 
     result = game.replay.execute(game.run_id, game.token)
 

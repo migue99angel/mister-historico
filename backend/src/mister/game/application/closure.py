@@ -4,11 +4,17 @@ from __future__ import annotations
 
 from dataclasses import replace
 from datetime import date, datetime, timedelta
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, cast
 
 from mister.game.application import ports
 from mister.game.application.block_codec import decode_block, encode_block
-from mister.game.application.use_cases import RunSnapshot
+from mister.game.application.key_starter import KeyStarterOffer
+from mister.game.application.key_starter_flow import (
+    KEY_MATCH_LABEL,
+    MAX_CANDIDATES,
+    MIN_CANDIDATES,
+    KeyStarterEntry,
+)
 from mister.game.domain.board import (
     BlockResults,
     ChampionshipStatus,
@@ -22,23 +28,39 @@ from mister.game.domain.errors import InvalidRunTransitionError
 from mister.game.domain.morale import MoraleRules, PlayerMinutes
 from mister.game.domain.run import BlockResolution, RunStatus
 from mister.shared_kernel.errors import InvalidValueError
+from mister.shared_kernel.ids import FixtureId
 
 if TYPE_CHECKING:
-    from mister.game.application.content_model import CapturedBlock, CapturedClub, CapturedSeason
+    from collections.abc import Callable
+
+    from mister.game.application.content_model import (
+        CapturedBlock,
+        CapturedClub,
+        CapturedSeason,
+        FixtureMetadata,
+    )
     from mister.game.application.rules import RulesConfiguration
+    from mister.game.application.use_cases import RunSnapshot
     from mister.game.domain.state import PlayerState, RunState, Tactic
     from mister.shared_kernel.events import DomainEvent
     from mister.shared_kernel.ids import PlayerId
 
 
-def advance_snapshot(
+def advance_snapshot(  # noqa: PLR0913 - replay injects stored entries by keyword
     snapshot: RunSnapshot,
     captured: CapturedSeason,
     simulator: ports.SeasonSimulator,
     rules: RulesConfiguration,
     occurred_at: datetime,
+    *,
+    next_entry: Callable[[RunSnapshot], KeyStarterEntry] | None = None,
 ) -> tuple[RunSnapshot, tuple[DomainEvent, ...]]:
-    """Run the next block, resolve its objectives and morale, then advance the Run aggregate."""
+    """Run the next block, resolve its objectives and morale, then advance the Run aggregate.
+
+    With the key starter interaction, the block's selection reaches the engine, its evidence
+    must answer it, an unselected offer is closed as omitted and the next block captures its
+    own entry: `next_entry` (replay reuses stored offers) or a fresh projection.
+    """
     run = snapshot.run
     if run.status is not RunStatus.IN_PROGRESS:
         raise InvalidRunTransitionError("terminal runs reject commands")
@@ -49,10 +71,13 @@ def advance_snapshot(
     if run.run_state.managed_club_season_id != captured.managed_club_season_id:
         raise InvalidValueError("run state managed club does not match captured content")
     block = captured.blocks[run.block_index]
-    request = _simulation_request(snapshot, captured, block, rules)
+    entry = snapshot.key_starter
+    selection = _selection(entry)
+    request = replace(_simulation_request(snapshot, captured, block, rules), key_starter=selection)
     result = simulator.simulate_block(request)
     if result.block_id != block.id:
         raise InvalidValueError("simulator returned a result for another block")
+    _validate_evidence(selection, result)
     _validate_player_outcomes(run.run_state.players, result)
 
     goals = _resolve_goals(snapshot, captured, result)
@@ -86,7 +111,107 @@ def advance_snapshot(
         block.end,
     )
     advanced, events = run.advance_block(resolution, occurred_at)
-    return RunSnapshot(advanced, goals), tuple(events)
+    closed = replace(snapshot, run=advanced, goals=goals)
+    if entry is None:
+        return closed, tuple(events)
+    closed = closed.with_key_starter(entry.close())
+    if advanced.status is RunStatus.IN_PROGRESS:
+        following = (
+            next_entry(closed)
+            if next_entry is not None
+            else enter_block(closed, captured, simulator, rules)
+        )
+        closed = replace(closed, key_starters=(*(closed.key_starters or ()), following))
+    return closed, tuple(events)
+
+
+def _selection(entry: KeyStarterEntry | None) -> ports.KeyStarterSelection | None:
+    offer = None if entry is None else entry.offer
+    if offer is None or offer.selected_player_id is None:
+        return None
+    return ports.KeyStarterSelection(offer.fixture_id, offer.date, offer.selected_player_id)
+
+
+def _validate_evidence(
+    selection: ports.KeyStarterSelection | None, result: ports.BlockSimulationResult
+) -> None:
+    outcome = result.key_starter_outcome
+    if selection is None:
+        if outcome is not None:
+            raise InvalidValueError("simulator reported a starter that was never selected")
+        return
+    if outcome is None or (outcome.fixture_id, outcome.date, outcome.player_id) != (
+        selection.fixture_id,
+        selection.date,
+        selection.player_id,
+    ):
+        raise InvalidValueError("simulator evidence does not answer the selected starter")
+
+
+def enter_block(
+    snapshot: RunSnapshot,
+    captured: CapturedSeason,
+    simulator: ports.SeasonSimulator,
+    rules: RulesConfiguration,
+) -> KeyStarterEntry:
+    """Capture the block's single offer from the known entry state, or its absence.
+
+    The fixture is the first key match of the block (by date, then ID) that is still to be
+    played in a competition the club has not left. Candidates are the best two or three
+    available reserves outside the projected eleven, as ranked by the engine.
+    """
+    block = captured.blocks[snapshot.run.block_index]
+    fixture = _key_fixture(snapshot, captured, block)
+    if fixture is None:
+        return KeyStarterEntry(block.id)
+    request = _simulation_request(snapshot, captured, block, rules)
+    projection = simulator.project_lineup(request, FixtureId(fixture.id))
+    if projection is None or len(projection.reserve_ids) < MIN_CANDIDATES:
+        return KeyStarterEntry(block.id)
+    candidates = projection.reserve_ids[:MAX_CANDIDATES]
+    offer = KeyStarterOffer(
+        block.id,
+        FixtureId(fixture.id),
+        fixture.date,
+        candidates,
+        fixture.opponent,
+        fixture.competition_id,
+        cast("Literal['home', 'away', 'neutral']", fixture.venue),
+        KEY_MATCH_LABEL,
+        projection.starter_ids,
+    )
+    players = {player.player_id: player for player in snapshot.run.run_state.players}
+    return KeyStarterEntry(
+        block.id,
+        offer,
+        tuple(players[player] for player in (*projection.starter_ids, *candidates)),
+    )
+
+
+def _key_fixture(
+    snapshot: RunSnapshot, captured: CapturedSeason, block: CapturedBlock
+) -> FixtureMetadata | None:
+    summaries = [decode_block(item.payload) for item in snapshot.run.block_records]
+    played = {match.fixture_id.value for summary in summaries for match in summary.matches}
+    left = {
+        event.competition_id
+        for summary in summaries
+        for event in summary.events
+        if event.kind is ports.EventKind.ELIMINATED
+        and event.club_season_id == captured.managed_club_season_id
+    }
+    eligible = sorted(
+        (
+            item
+            for item in captured.fixtures
+            if item.key
+            and block.start <= item.date <= block.end
+            and item.id not in played
+            and item.competition_id not in left
+        ),
+        key=lambda item: (item.date, item.id),
+    )
+    return eligible[0] if eligible else None
 
 
 def _simulation_request(

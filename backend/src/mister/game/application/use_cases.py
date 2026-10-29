@@ -9,6 +9,12 @@ from datetime import datetime
 from typing import TYPE_CHECKING, cast
 
 from mister.game.application import ports
+from mister.game.application.key_starter_flow import (
+    InvalidKeyStarterError,
+    KeyStarterEntry,
+    decode_entry,
+    encode_entry,
+)
 from mister.game.application.replay_inputs import ReplayInputs
 from mister.game.application.rules import RulesConfiguration
 from mister.game.application.run_codec import decode_run, encode_run
@@ -17,7 +23,14 @@ from mister.game.domain.board import GoalProgress, GoalStatus
 from mister.game.domain.errors import InvalidRunTransitionError
 from mister.game.domain.run import Run, RunStatus
 from mister.shared_kernel.errors import DomainError, InvalidValueError
-from mister.shared_kernel.ids import DilemmaId, OptionId, PlayableSeasonId, RunId
+from mister.shared_kernel.ids import (
+    DilemmaId,
+    FixtureId,
+    OptionId,
+    PlayableSeasonId,
+    PlayerId,
+    RunId,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -29,7 +42,9 @@ if TYPE_CHECKING:
     from mister.shared_kernel.events import DomainEvent, EventBus
     from mister.shared_kernel.seed import Seed
 
-_SNAPSHOT_FORMAT = 1
+_LEGACY_SNAPSHOT_FORMAT = 1
+# Format 2 adds the per-block key starter interaction (T3.9); format 1 never gains it.
+_SNAPSHOT_FORMAT = 2
 _ENGINE_REVISION = "simulation-v1"
 _SUPPORTED_ENGINE_REVISIONS = {_ENGINE_REVISION}
 _SUPPORTED_RULES_REVISIONS = {"a-provisional-1"}
@@ -49,26 +64,60 @@ class RunAccessDeniedError(DomainError):
 
 @dataclass(frozen=True, slots=True)
 class RunSnapshot:
-    """Versioned mutable snapshot envelope, including objective progress outside RunState."""
+    """Versioned mutable snapshot envelope, including objective progress outside RunState.
+
+    `key_starters` is `None` for runs without the key starter interaction (format 1, kept
+    byte-identical) and holds one entry per entered block otherwise (format 2).
+    """
 
     run: Run
     goals: tuple[GoalProgress, ...]
+    key_starters: tuple[KeyStarterEntry, ...] | None = None
 
     def encode(self) -> dict[str, object]:
-        return {
-            "format_version": _SNAPSHOT_FORMAT,
+        envelope: dict[str, object] = {
+            "format_version": _LEGACY_SNAPSHOT_FORMAT,
             "run": encode_run(self.run),
             "goals": [
                 {"goal_id": item.goal_id, "status": item.status.value} for item in self.goals
             ],
         }
+        if self.key_starters is not None:
+            envelope["format_version"] = _SNAPSHOT_FORMAT
+            envelope["key_starters"] = [encode_entry(item) for item in self.key_starters]
+        return envelope
+
+    @property
+    def key_starter(self) -> KeyStarterEntry | None:
+        """The entry of the current block, if the run captures the interaction."""
+        if not self.key_starters or self.run.status is not RunStatus.IN_PROGRESS:
+            return None
+        return self.key_starters[-1]
+
+    def with_key_starter(self, entry: KeyStarterEntry) -> RunSnapshot:
+        """Replace the current block's entry."""
+        if not self.key_starters:
+            raise InvalidKeyStarterError("this run has no key starter interaction")
+        return replace(self, key_starters=(*self.key_starters[:-1], entry))
 
     @classmethod
     def decode(cls, value: object) -> RunSnapshot:
-        if not isinstance(value, dict) or set(value) != {"format_version", "run", "goals"}:
+        if not isinstance(value, dict) or "format_version" not in value:
             raise InvalidValueError("invalid run snapshot envelope")
-        if type(value["format_version"]) is not int or value["format_version"] != _SNAPSHOT_FORMAT:
+        version = value["format_version"]
+        keys = {"format_version", "run", "goals"}
+        if type(version) is not int or version not in {_LEGACY_SNAPSHOT_FORMAT, _SNAPSHOT_FORMAT}:
             raise InvalidValueError("unsupported run snapshot format")
+        if version == _SNAPSHOT_FORMAT:
+            keys.add("key_starters")
+        if set(value) != keys:
+            raise InvalidValueError("invalid run snapshot envelope")
+        key_starters = None
+        if version == _SNAPSHOT_FORMAT:
+            raw_entries = value["key_starters"]
+            if not isinstance(raw_entries, list) or not raw_entries:
+                raise InvalidValueError("format 2 snapshots need key starter entries")
+            key_starters = tuple(decode_entry(item) for item in raw_entries)
         raw_goals = value["goals"]
         if not isinstance(raw_goals, list):
             raise InvalidValueError("run snapshot goals must be a list")
@@ -82,7 +131,32 @@ class RunSnapshot:
                 raise InvalidValueError("invalid goal progress in run snapshot") from error
         if len({item.goal_id for item in goals}) != len(goals):
             raise InvalidValueError("goal progress IDs must be unique in a run snapshot")
-        return cls(decode_run(value["run"]), tuple(goals))
+        run = decode_run(value["run"])
+        if key_starters is not None:
+            _validate_entries(run, key_starters)
+        return cls(run, tuple(goals), key_starters)
+
+
+def _validate_entries(run: Run, entries: tuple[KeyStarterEntry, ...]) -> None:
+    """One entry per entered block, in order; only the open block may still be pending."""
+    entered = run.block_index + 1 if run.status is RunStatus.IN_PROGRESS else len(run.block_records)
+    if tuple(item.block_id for item in entries) != tuple(
+        block.id for block in run.blocks[:entered]
+    ):
+        raise InvalidValueError("key starter entries must follow the entered blocks")
+    closed = entries[: len(run.block_records)]
+    if any(
+        item.offer is not None and item.selected_player is None and not item.omitted
+        for item in closed
+    ):
+        raise InvalidValueError("a closed block offer must be selected or omitted")
+    if any(item.omitted for item in entries[len(run.block_records) :]):
+        raise InvalidValueError("an open block offer cannot be omitted")
+    if any(
+        item.selected_after is not None and item.selected_after > len(run.decisions)
+        for item in entries
+    ):
+        raise InvalidValueError("a selection cannot follow decisions that were never taken")
 
 
 def _validate_record_snapshot(
@@ -134,6 +208,11 @@ def _validate_record_snapshot(
         or initial_run.cursor is not None
         or tuple((item.goal_id, item.status) for item in initial.goals)
         != tuple((goal.goal_id, GoalStatus.PENDING) for goal in captured.goals)
+        or (initial.key_starters is None) != (snapshot.key_starters is None)
+        or (
+            initial.key_starters is not None
+            and initial.key_starters != (initial.key_starters[0].reopened(),)
+        )
     ):
         raise InvalidValueError("initial state snapshot does not match captured run inputs")
 
@@ -192,7 +271,7 @@ def apply_choice(
             raise InvalidValueError("cannot sign a player from a club without a captured squad")
         resulting_state = effects.apply(effect, resulting_state, on=current_block.start)
     changed = replace(validated, run_state=resulting_state)
-    return RunSnapshot(changed, snapshot.goals), cast("tuple[DomainEvent, ...]", events)
+    return replace(snapshot, run=changed), cast("tuple[DomainEvent, ...]", events)
 
 
 @dataclass(frozen=True, slots=True)
@@ -202,6 +281,7 @@ class RunView:
     version: int
     created_at: datetime
     updated_at: datetime
+    key_starters: tuple[KeyStarterEntry, ...] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -223,6 +303,17 @@ class _DecisionCommand:
 
 
 @dataclass(frozen=True, slots=True)
+class _KeyStarterCommand:
+    run_id: RunId
+    token: str
+    idempotency_key: str
+    request_hash: str
+    expected_version: int
+    fixture_id: FixtureId
+    player_id: PlayerId
+
+
+@dataclass(frozen=True, slots=True)
 class _AdvanceCommand:
     run_id: RunId
     token: str
@@ -238,9 +329,16 @@ def _canonical_json(value: object) -> str:
 
 
 def _view(record: ports.RunRecord) -> RunView:
-    snapshot = RunSnapshot.decode(record.snapshot)
+    return _snapshot_view(
+        RunSnapshot.decode(record.snapshot), record.version, record.created_at, record.updated_at
+    )
+
+
+def _snapshot_view(
+    snapshot: RunSnapshot, version: int, created_at: datetime, updated_at: datetime
+) -> RunView:
     return RunView(
-        snapshot.run, snapshot.goals, record.version, record.created_at, record.updated_at
+        snapshot.run, snapshot.goals, version, created_at, updated_at, snapshot.key_starters
     )
 
 
@@ -254,6 +352,20 @@ def _request_hash(dilemma_id: DilemmaId, option_id: OptionId, expected_version: 
             "operation": "take_decision",
             "dilemma_id": dilemma_id.value,
             "option_id": option_id.value,
+            "expected_version": expected_version,
+        }
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _key_starter_request_hash(
+    fixture_id: FixtureId, player_id: PlayerId, expected_version: int
+) -> str:
+    payload = _canonical_json(
+        {
+            "operation": "select_key_starter",
+            "fixture_id": fixture_id.value,
+            "player_id": player_id.value,
             "expected_version": expected_version,
         }
     )
@@ -288,6 +400,7 @@ class StartRun:
         seed_factory: Callable[[], Seed],
         run_id_factory: Callable[[], RunId] = RunId.new,
         rules: RulesConfiguration,
+        simulator: ports.SeasonSimulator | None = None,
     ) -> None:
         self._uow = uow
         self._capture_game = capture_game
@@ -297,6 +410,7 @@ class StartRun:
         self._token_hasher = token_hasher
         self._seed_factory = seed_factory
         self._run_id_factory = run_id_factory
+        self._simulator = simulator
         if rules.revision not in _SUPPORTED_RULES_REVISIONS:
             raise InvalidValueError("rules revision is not supported for new runs")
         self._rules = rules
@@ -319,6 +433,11 @@ class StartRun:
             run,
             tuple(GoalProgress(goal.goal_id, GoalStatus.PENDING) for goal in captured.goals),
         )
+        if self._simulator is not None:
+            from mister.game.application.closure import enter_block  # noqa: PLC0415 - module cycle
+
+            entry = enter_block(initial, captured, self._simulator, self._rules)
+            initial = replace(initial, key_starters=(entry,))
         initial_json = _canonical_json(initial.encode())
         replay_inputs = ReplayInputs(
             captured.snapshot,
@@ -371,9 +490,7 @@ class GetRun:
         if not self._token_hasher.verify(token, record.run_token_hash):
             raise RunAccessDeniedError("invalid run token")
         snapshot, _, _ = _load_snapshot(record, self._restore_game)
-        return RunView(
-            snapshot.run, snapshot.goals, record.version, record.created_at, record.updated_at
-        )
+        return _snapshot_view(snapshot, record.version, record.created_at, record.updated_at)
 
 
 class TakeDecision:
@@ -505,6 +622,112 @@ class TakeDecision:
     def _require_token(self, token: str, record: ports.RunRecord) -> None:
         if not self._token_hasher.verify(token, record.run_token_hash):
             raise RunAccessDeniedError("invalid run token")
+
+
+def apply_key_starter(
+    snapshot: RunSnapshot, fixture_id: FixtureId, player_id: PlayerId
+) -> RunSnapshot:
+    """Record the single selection of the current block's captured offer."""
+    if snapshot.run.status is not RunStatus.IN_PROGRESS:
+        raise InvalidRunTransitionError("terminal runs reject commands")
+    entry = snapshot.key_starter
+    if entry is None:
+        raise InvalidKeyStarterError("this run has no key starter offer")
+    return snapshot.with_key_starter(
+        entry.select(fixture_id, player_id, len(snapshot.run.decisions))
+    )
+
+
+class SelectKeyStarter:
+    """Store one captured candidate for the block's key fixture, idempotently."""
+
+    def __init__(
+        self,
+        *,
+        uow: ports.UnitOfWork,
+        clock: Clock,
+        token_hasher: ports.RunTokenHasher,
+        restore_game: Callable[[RunContentSnapshot, RulesConfiguration], CapturedSeason],
+    ) -> None:
+        self._uow = uow
+        self._clock = clock
+        self._token_hasher = token_hasher
+        self._restore_game = restore_game
+
+    def execute(  # noqa: PLR0913, PLR0917 - command fields mirror the durable request body
+        self,
+        run_id: RunId,
+        token: str,
+        idempotency_key: str,
+        expected_version: int,
+        fixture_id: FixtureId,
+        player_id: PlayerId,
+    ) -> RunView:
+        command = _KeyStarterCommand(
+            run_id,
+            token,
+            idempotency_key,
+            _key_starter_request_hash(fixture_id, player_id, expected_version),
+            expected_version,
+            fixture_id,
+            player_id,
+        )
+        try:
+            return self._execute_once(command)
+        except (ports.ConcurrencyError, ports.IdempotencyKeyExistsError):
+            stored = self._read_idempotency(command)
+            if stored is None:
+                raise
+            if stored.request_hash != command.request_hash:
+                raise IdempotencyConflictError(
+                    "idempotency key belongs to a different command"
+                ) from None
+            return _view_from_response(stored.response)
+
+    def _execute_once(self, command: _KeyStarterCommand) -> RunView:
+        now = self._clock.now()
+        with self._uow as uow:
+            record = uow.runs.get(command.run_id)
+            if record is None:
+                raise ports.RunNotFoundError(command.run_id)
+            if not self._token_hasher.verify(command.token, record.run_token_hash):
+                raise RunAccessDeniedError("invalid run token")
+            _validate_idempotency_key(command.idempotency_key)
+            if type(command.expected_version) is not int or command.expected_version < 0:
+                raise InvalidValueError("expected_version must be a non-negative integer")
+            existing = uow.runs.get_idempotent(command.run_id, command.idempotency_key)
+            if existing is not None:
+                if existing.request_hash != command.request_hash:
+                    raise IdempotencyConflictError("idempotency key belongs to a different command")
+                return _view_from_response(existing.response)
+            if record.version != command.expected_version:
+                raise ports.ConcurrencyError(command.run_id, expected=command.expected_version)
+            snapshot, _, _ = _load_snapshot(record, self._restore_game)
+            updated_snapshot = apply_key_starter(snapshot, command.fixture_id, command.player_id)
+            updated = replace(
+                record,
+                version=record.version + 1,
+                snapshot=updated_snapshot.encode(),
+                updated_at=now,
+            )
+            response = _response_json(updated)
+            uow.runs.save(updated, record.version)
+            uow.runs.put_idempotent(
+                ports.IdempotencyRecord(
+                    command.run_id, command.idempotency_key, command.request_hash, response, now
+                )
+            )
+            uow.commit()
+        return _view(updated)
+
+    def _read_idempotency(self, command: _KeyStarterCommand) -> ports.IdempotencyRecord | None:
+        with self._uow as uow:
+            record = uow.runs.get(command.run_id)
+            if record is None:
+                raise ports.RunNotFoundError(command.run_id)
+            if not self._token_hasher.verify(command.token, record.run_token_hash):
+                raise RunAccessDeniedError("invalid run token")
+            return uow.runs.get_idempotent(command.run_id, command.idempotency_key)
 
 
 class AdvanceBlock:
@@ -642,4 +865,4 @@ def _view_from_response(value: Mapping[str, object]) -> RunView:
         updated_at = datetime.fromisoformat(cast("str", value["updated_at"]))
     except (KeyError, TypeError, ValueError, InvalidValueError) as error:
         raise InvalidValueError("stored idempotent response is invalid") from error
-    return RunView(snapshot.run, snapshot.goals, version, created_at, updated_at)
+    return _snapshot_view(snapshot, version, created_at, updated_at)

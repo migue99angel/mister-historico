@@ -13,6 +13,7 @@ from mister.game.application.use_cases import (
     RunSnapshot,
     _load_snapshot,
     apply_choice,
+    apply_key_starter,
 )
 from mister.game.domain.run import RunStatus
 from mister.shared_kernel.errors import InvalidValueError
@@ -21,6 +22,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from mister.game.application.content_model import CapturedSeason
+    from mister.game.application.key_starter_flow import KeyStarterEntry
     from mister.game.application.rules import RulesConfiguration
     from mister.game.application.run_content import RunContentSnapshot
     from mister.shared_kernel.ids import BlockId, RunId
@@ -75,11 +77,12 @@ class ReplayRun:
             block_id = reconstructed.run.blocks[block_index].id
             if reconstructed.run.block_index != block_index:
                 raise InvalidValueError("replay block cursor does not match its closed prefix")
-            reconstructed = self._apply_logged_decisions(
+            reconstructed = self._apply_block_commands(
                 reconstructed,
                 captured,
                 decisions_by_block.get(block_id, ()),
                 applied_sequences,
+                target,
             )
             reconstructed, _events = advance_snapshot(
                 reconstructed,
@@ -87,17 +90,19 @@ class ReplayRun:
                 self._simulator,
                 rules,
                 record.updated_at,
+                next_entry=lambda closed: _stored_entry(target, closed),
             )
 
         if reconstructed.run.status is RunStatus.IN_PROGRESS:
             current_block = reconstructed.run.current_block
             if current_block is None:
                 raise InvalidValueError("an in-progress replay has no current block")
-            reconstructed = self._apply_logged_decisions(
+            reconstructed = self._apply_block_commands(
                 reconstructed,
                 captured,
                 decisions_by_block.get(current_block, ()),
                 applied_sequences,
+                target,
             )
 
         if applied_sequences != {decision.sequence for decision in record.decisions}:
@@ -105,6 +110,26 @@ class ReplayRun:
         if reconstructed != target:
             raise InvalidValueError("replayed run does not match the persisted snapshot")
         return ReplayResult(run_id, True, reconstructed)
+
+    @classmethod
+    def _apply_block_commands(
+        cls,
+        snapshot: RunSnapshot,
+        captured: CapturedSeason,
+        decisions: tuple[ports.DecisionRecord, ...] | list[ports.DecisionRecord],
+        applied_sequences: set[int],
+        target: RunSnapshot,
+    ) -> RunSnapshot:
+        """Apply the block's decisions and its starter selection in their original order."""
+        stored = _target_entry(target, snapshot)
+        player = None if stored is None else stored.selected_player
+        if stored is None or stored.offer is None or player is None:
+            return cls._apply_logged_decisions(snapshot, captured, decisions, applied_sequences)
+        before = [item for item in decisions if item.sequence <= (stored.selected_after or 0)]
+        after = [item for item in decisions if item.sequence > (stored.selected_after or 0)]
+        result = cls._apply_logged_decisions(snapshot, captured, before, applied_sequences)
+        result = apply_key_starter(result, stored.offer.fixture_id, player)
+        return cls._apply_logged_decisions(result, captured, after, applied_sequences)
 
     @staticmethod
     def _apply_logged_decisions(
@@ -126,3 +151,18 @@ class ReplayRun:
             )
             applied_sequences.add(decision.sequence)
         return result
+
+
+def _target_entry(target: RunSnapshot, current: RunSnapshot) -> KeyStarterEntry | None:
+    index = len(current.run.block_records)
+    if target.key_starters is None or index >= len(target.key_starters):
+        return None
+    return target.key_starters[index]
+
+
+def _stored_entry(target: RunSnapshot, closed: RunSnapshot) -> KeyStarterEntry:
+    """The captured offer of the next block, as it was on entry, without projecting again."""
+    stored = _target_entry(target, closed)
+    if stored is None:
+        raise InvalidValueError("replay reached a block without its captured key starter entry")
+    return stored.reopened()
