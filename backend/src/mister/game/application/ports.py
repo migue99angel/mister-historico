@@ -39,6 +39,18 @@ from enum import StrEnum
 from types import TracebackType
 from typing import Protocol, Self
 
+from mister.game.application.key_starter import (
+    KeyStarterOffer as KeyStarterOffer,
+)
+from mister.game.application.key_starter import (
+    KeyStarterOutcome as KeyStarterOutcome,
+)
+from mister.game.application.key_starter import (
+    KeyStarterSelection as KeyStarterSelection,
+)
+from mister.game.application.key_starter import (
+    StarterAbsenceReason as StarterAbsenceReason,
+)
 from mister.game.application.replay_inputs import ReplayInputs
 from mister.game.application.run_content import RunContentSnapshot
 from mister.shared_kernel.errors import DomainError, InvalidValueError
