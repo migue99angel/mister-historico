@@ -74,7 +74,9 @@ export function BlockSummary({
                     <MatchLine
                       match={formatMatchResult(match)}
                       competitionName={match.competitionName}
-                      keyMatchLabel={match.keyMatchLabel}
+                      keyMatchLabel={
+                        match.keyMatchLabel ?? (match.isKeyMatch ? 'Partido clave' : null)
+                      }
                       userSide={userSide(match)}
                     />
                   </li>
