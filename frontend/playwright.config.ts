@@ -39,7 +39,11 @@ export default defineConfig({
       command: 'uv run --project ../backend python e2e/support/real_api.py',
       url: `http://localhost:${String(API_PORT)}/health`,
       env: { E2E_API_PORT: String(API_PORT) },
-      reuseExistingServer: !isCI,
+      // Never reuse: an API left by another worktree would serve another backend.
+      reuseExistingServer: false,
+      // SIGTERM lets uvicorn return and remove the container; without it Playwright kills
+      // the process and only the testcontainers reaper (Ryuk) cleans up.
+      gracefulShutdown: { signal: 'SIGTERM', timeout: 15_000 },
       // First runs pull the PostgreSQL image and sync the backend environment.
       timeout: 300_000,
     },
@@ -50,7 +54,7 @@ export default defineConfig({
         API_PROXY_TARGET: `http://localhost:${String(API_PORT)}`,
         VITE_API_MOCKING: 'disabled',
       },
-      reuseExistingServer: !isCI,
+      reuseExistingServer: false,
       timeout: 60_000,
     },
     {
