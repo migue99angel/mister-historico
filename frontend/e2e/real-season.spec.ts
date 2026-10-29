@@ -42,8 +42,11 @@ async function decideFirstOptions(page: Page): Promise<void> {
     const group = page.getByRole('group', { name: /^Opciones/ }).first();
     const name = await group.getAttribute('aria-label');
     await group.getByRole('button').first().click();
-    await page.getByRole('button', { name: /^Confirmar:/ }).first().click();
-    await expect(page.getByRole('group', { name: name!, exact: true })).toHaveCount(0);
+    await page
+      .getByRole('button', { name: /^Confirmar:/ })
+      .first()
+      .click();
+    await expect(page.getByRole('group', { name: name ?? '', exact: true })).toHaveCount(0);
     await expect(page.getByRole('heading', { name: 'Decisión confirmada' })).toBeFocused();
   }
 }
@@ -127,8 +130,11 @@ test('the board sacks the Test FC manager in block two and the dismissal survive
     while (await dilemmas.count()) {
       const name = await dilemmas.first().getAttribute('aria-label');
       await dilemmas.first().getByRole('button').last().click();
-      await page.getByRole('button', { name: /^Confirmar:/ }).first().click();
-      await expect(page.getByRole('group', { name: name!, exact: true })).toHaveCount(0);
+      await page
+        .getByRole('button', { name: /^Confirmar:/ })
+        .first()
+        .click();
+      await expect(page.getByRole('group', { name: name ?? '', exact: true })).toHaveCount(0);
       await expect(page.getByRole('heading', { name: 'Decisión confirmada' })).toBeFocused();
     }
     const advanced = page.waitForResponse(isAdvance);
@@ -179,27 +185,42 @@ test('the board sacks the Test FC manager in block two and the dismissal survive
   await expectNoHorizontalScroll(page);
 });
 
-
-test('a confirmed decision shows real changes and reload preserves state and log without a receipt', async ({ page }) => {
+test('a confirmed decision shows real changes and reload preserves state and log without a receipt', async ({
+  page,
+}) => {
   await page.goto('/');
   await page.getByRole('button', { name: /^Elegir Test FC/ }).click();
   await page.getByRole('button', { name: 'Empezar' }).click();
   const group = page.getByRole('group', { name: /^Opciones/ }).first();
   await group.getByRole('button').first().click();
   await expect(page.getByRole('button', { name: 'Simular bloque' })).toBeDisabled();
-  const decided = page.waitForResponse(response => response.request().method() === 'POST' && response.url().endsWith('/decisions'));
-  await page.getByRole('button', { name: /^Confirmar:/ }).first().click();
+  const decided = page.waitForResponse(
+    (response) => response.request().method() === 'POST' && response.url().endsWith('/decisions'),
+  );
+  await page
+    .getByRole('button', { name: /^Confirmar:/ })
+    .first()
+    .click();
   const response = await decided;
   expect(response.fromServiceWorker()).toBe(false);
-  const view = await response.json() as { state: { morale: number; boardConfidence: number; fitness: number }; decisions: unknown[] };
+  const view = (await response.json()) as {
+    state: { morale: number; boardConfidence: number; fitness: number };
+    decisions: unknown[];
+  };
   const feedback = page.getByRole('region', { name: 'Última decisión' });
   await expect(feedback).toBeVisible();
   await expect(feedback.getByText(/^Moral:/)).toContainText(`→ ${String(view.state.morale)}`);
   const panel = page.getByRole('region', { name: 'Estado del equipo' });
-  await expect(panel.getByText(`Confianza de la directiva: ${String(view.state.boardConfidence)}`, { exact: true })).toBeVisible();
+  await expect(
+    panel.getByText(`Confianza de la directiva: ${String(view.state.boardConfidence)}`, {
+      exact: true,
+    }),
+  ).toBeVisible();
   await expectNoHorizontalScroll(page);
   await page.reload();
-  await expect(panel.getByText(`Moral: ${String(view.state.morale)}`, { exact: true })).toBeVisible();
+  await expect(
+    panel.getByText(`Moral: ${String(view.state.morale)}`, { exact: true }),
+  ).toBeVisible();
   await expect(page.getByRole('region', { name: 'Última decisión' })).toHaveCount(0);
   const log = page.getByRole('region', { name: 'Decisiones confirmadas' });
   await log.getByText('Ver decisiones confirmadas').click();

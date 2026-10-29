@@ -54,7 +54,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
           await page.keyboard.press('Space');
           await tabTo(page, page.getByRole('button', { name: /^Confirmar:/ }).first());
           await page.keyboard.press('Enter');
-          await expect(page.getByRole('group', { name: name!, exact: true })).toHaveCount(0);
+          await expect(page.getByRole('group', { name: name ?? '', exact: true })).toHaveCount(0);
           await expect(page.getByRole('heading', { name: 'Decisión confirmada' })).toBeFocused();
         }
         await tabTo(page, simulate);

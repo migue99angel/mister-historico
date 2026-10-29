@@ -3,9 +3,11 @@ import { useEffect, useId, useRef, useState } from 'react';
 import type { DilemmaDto, RunViewDto, TeamRefDto } from '../../../application/ports';
 import { useAdvanceBlock } from '../../../application/useAdvanceBlock';
 import { useTakeDecision } from '../../../application/useTakeDecision';
+import { describeDecisionChanges } from '../../../domain/decisionFeedback';
 import { toRunViewModel } from '../../../domain/runViewModel';
 import { BlockProgress, Button, DilemmaCard, GenericCrest } from '../../design-system';
 import { BlockSummary } from './BlockSummary';
+import { TeamPanel } from './TeamPanel';
 import { commandFailureMessage, pendingDilemmasHint, type RunLoopCommand } from './feedback';
 
 export interface RunInPlayProps {
@@ -14,16 +16,24 @@ export interface RunInPlayProps {
   isRefreshing: boolean;
 }
 
-/**
- * The run view while it can be played. The player chooses an option in every pending dilemma
- * (nothing is sent yet) and «Simular bloque» sends the decisions one by one, each against the
- * version the previous one returned, and then simulates the block.
- */
+/** Confirms each decision before allowing the block to be simulated. */
 export function RunInPlay({ run, isRefreshing }: RunInPlayProps) {
   const decision = useTakeDecision(run.runId);
   const advance = useAdvanceBlock(run.runId);
   const [choices, setChoices] = useState<Partial<Record<string, string>>>({});
   const [simulating, setSimulating] = useState(false);
+  const [confirmed, setConfirmed] = useState<{
+    dilemmaId: string;
+    optionId: string;
+    title: string;
+    label: string;
+    version: number;
+  } | null>(null);
+  const [attempted, setAttempted] = useState<{ dilemma: DilemmaDto; optionId: string } | null>(
+    null,
+  );
+  const confirmationHeading = useRef<HTMLHeadingElement>(null);
+  const focusConfirmation = useRef(false);
   const [failedStep, setFailedStep] = useState<RunLoopCommand | null>(null);
   const [focusRequest, setFocusRequest] = useState(0);
   // Refs: a second tap arrives before React re-renders the loading state.
@@ -42,7 +52,14 @@ export function RunInPlay({ run, isRefreshing }: RunInPlayProps) {
   const pending = run.pendingDilemmas;
   const chosenOptionId = (dilemma: DilemmaDto): string | null =>
     dilemma.options.find((option) => option.id === choices[dilemma.id])?.id ?? null;
-  const unchosen = pending.filter((dilemma) => chosenOptionId(dilemma) === null).length;
+  const uncertain = failedStep === 'decision' && decision.failure?.kind === 'failed';
+  const locked = simulating || isRefreshing || uncertain;
+  const transition = decision.transition;
+  const showConfirmation = confirmed !== null && confirmed.version === run.version && !isRefreshing;
+  const changes =
+    showConfirmation && transition && !transition.retried
+      ? describeDecisionChanges(transition.before, transition.after, confirmed)
+      : null;
   // Dilemmas keep their place in the block while earlier ones are decided.
   const decidedInBlock = run.decisions.filter(
     (made) => made.blockNumber === run.block.number,
@@ -62,11 +79,15 @@ export function RunInPlay({ run, isRefreshing }: RunInPlayProps) {
       focusSummaryFromVersion.current = null;
       summaryHeading.current?.focus();
     }
+    if (focusConfirmation.current && confirmationHeading.current) {
+      focusConfirmation.current = false;
+      confirmationHeading.current.focus();
+    }
     if (focusFailure.current) {
       focusFailure.current = false;
       failureAlert.current?.focus();
     }
-  }, [run.version, focusRequest]);
+  }, [run.version, focusRequest, showConfirmation]);
 
   function stopSeries(step: RunLoopCommand) {
     setFailedStep(step);
@@ -74,30 +95,46 @@ export function RunInPlay({ run, isRefreshing }: RunInPlayProps) {
     setFocusRequest((request) => request + 1);
   }
 
-  async function simulateBlock() {
-    const steps = pending.map((dilemma) => ({
-      dilemmaId: dilemma.id,
-      optionId: chosenOptionId(dilemma),
-    }));
-    if (busy.current || steps.some((step) => step.optionId === null)) return;
+  async function confirmDecision(dilemma: DilemmaDto, optionId: string | null) {
+    if (busy.current || isRefreshing || !inProgress || optionId === null) return;
     busy.current = true;
     setSimulating(true);
+    setConfirmed(null);
+    setAttempted({ dilemma, optionId });
     setFailedStep(null);
     try {
-      for (const { dilemmaId, optionId } of steps) {
-        if (optionId === null) return;
-        const decided = await decision.send({ dilemmaId, optionId });
-        if (!decided) {
-          stopSeries('decision');
-          return;
-        }
+      const decided = await decision.send({ dilemmaId: dilemma.id, optionId });
+      if (!decided) {
+        stopSeries('decision');
+        return;
       }
+      setConfirmed({
+        dilemmaId: dilemma.id,
+        optionId,
+        title: dilemma.title,
+        label: dilemma.options.find((option) => option.id === optionId)?.label ?? optionId,
+        version: decided.version,
+      });
+      focusConfirmation.current = true;
+      setFocusRequest((request) => request + 1);
+    } finally {
+      busy.current = false;
+      setSimulating(false);
+    }
+  }
+
+  async function simulateBlock() {
+    if (busy.current || isRefreshing || !inProgress || pending.length > 0) return;
+    busy.current = true;
+    setSimulating(true);
+    setConfirmed(null);
+    setFailedStep(null);
+    try {
       const simulated = await advance.send();
       if (!simulated) {
         stopSeries('advance');
         return;
       }
-      // After a simulation the button is disabled by the next block's dilemmas.
       focusSummaryFromVersion.current = simulated.version;
       setFocusRequest((request) => request + 1);
     } finally {
@@ -129,23 +166,94 @@ export function RunInPlay({ run, isRefreshing }: RunInPlayProps) {
           />
         )}
 
+        {showConfirmation && (
+          <section
+            aria-label="Última decisión"
+            aria-live="polite"
+            className="flex flex-col gap-2 rounded-card border border-line p-4"
+          >
+            <h2
+              ref={confirmationHeading}
+              tabIndex={-1}
+              className="font-display text-title font-bold"
+            >
+              {changes === null ? 'Estado actualizado' : 'Decisión confirmada'}
+            </h2>
+            {changes !== null ? (
+              <>
+                <p>{`${confirmed.title}: ${confirmed.label}`}</p>
+                <ul className="text-body">
+                  {changes.map((change) => (
+                    <li key={change}>{change}</li>
+                  ))}
+                </ul>
+                <p className="text-caption text-ink-muted">
+                  Diferencias visibles entre el estado anterior y la respuesta a esta decisión. El
+                  físico medio también depende de la composición de la plantilla; estos valores no
+                  identifican la causa de cada cambio. Un cambio cero indica que el valor publicado
+                  se mantiene.
+                </p>
+              </>
+            ) : (
+              <p>
+                No podemos aislar los cambios de esta confirmación. Consulta el estado actualizado
+                del equipo.
+              </p>
+            )}
+            <p className="text-caption text-ink-muted">
+              Este detalle es temporal; tras recargar puedes consultar el estado y las decisiones
+              confirmadas.
+            </p>
+          </section>
+        )}
+
+        <TeamPanel run={run} />
+
+        {run.decisions.length > 0 && (
+          <section aria-label="Decisiones confirmadas">
+            <details>
+              <summary className="min-h-touch cursor-pointer py-3 font-semibold">
+                Ver decisiones confirmadas
+              </summary>
+              <ul className="text-body">
+                {run.decisions.map((made) => (
+                  <li key={`${String(made.blockNumber)}/${made.dilemmaId}`}>
+                    {`Bloque ${String(made.blockNumber)} · ${made.dilemmaId.replaceAll('-', ' ')} · ${made.optionId.replaceAll('-', ' ')}`}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          </section>
+        )}
+
         {inProgress && (
           <section aria-labelledby={dilemmasHeadingId} className="flex flex-col gap-4">
             <h2 id={dilemmasHeadingId} className="mt-2 font-display text-headline font-extrabold">
               Decisiones del bloque
             </h2>
             {pending.map((dilemma, index) => (
-              <DilemmaCard
-                key={dilemma.id}
-                dilemma={dilemma}
-                eyebrow={`Dilema ${String(decidedInBlock + index + 1)} de ${String(dilemmasInBlock)}`}
-                headingLevel={3}
-                selectedOptionId={chosenOptionId(dilemma)}
-                disabled={simulating}
-                onSelect={(optionId) => {
-                  setChoices((current) => ({ ...current, [dilemma.id]: optionId }));
-                }}
-              />
+              <div key={dilemma.id} className="flex flex-col gap-2">
+                <DilemmaCard
+                  dilemma={dilemma}
+                  eyebrow={`Dilema ${String(decidedInBlock + index + 1)} de ${String(dilemmasInBlock)}`}
+                  headingLevel={3}
+                  selectedOptionId={chosenOptionId(dilemma)}
+                  disabled={locked}
+                  onSelect={(optionId) => {
+                    setChoices((current) => ({ ...current, [dilemma.id]: optionId }));
+                  }}
+                />
+                <Button
+                  loading={decision.isPending && attempted?.dilemma.id === dilemma.id}
+                  disabled={locked || chosenOptionId(dilemma) === null}
+                  aria-label={`Confirmar: ${dilemma.title}`}
+                  onClick={() => {
+                    void confirmDecision(dilemma, chosenOptionId(dilemma));
+                  }}
+                >
+                  Confirmar decisión
+                </Button>
+              </div>
             ))}
           </section>
         )}
@@ -162,19 +270,30 @@ export function RunInPlay({ run, isRefreshing }: RunInPlayProps) {
                 {failureMessage}
               </p>
             )}
+            {uncertain && attempted && (
+              <Button
+                fullWidth
+                disabled={simulating || isRefreshing}
+                onClick={() => {
+                  void confirmDecision(attempted.dilemma, attempted.optionId);
+                }}
+              >
+                Reintentar confirmación
+              </Button>
+            )}
             <Button
               fullWidth
-              disabled={unchosen > 0 || isRefreshing}
-              loading={simulating}
+              disabled={pending.length > 0 || isRefreshing}
+              loading={simulating && advance.isPending}
               aria-describedby={hintId}
               onClick={() => {
                 void simulateBlock();
               }}
             >
-              {simulating ? 'Simulando…' : 'Simular bloque'}
+              {simulating && advance.isPending ? 'Simulando…' : 'Simular bloque'}
             </Button>
             <p id={hintId} className="mt-1.5 text-center text-caption text-ink-muted">
-              {pendingDilemmasHint(unchosen)}
+              {pendingDilemmasHint(pending.length)}
             </p>
           </div>
         )}

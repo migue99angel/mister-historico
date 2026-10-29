@@ -249,7 +249,7 @@ describe('RunLoop', () => {
     expect(
       within(panel).getByText(`Físico medio: ${String(run.state.fitness)}`),
     ).toBeInTheDocument();
-    expect(within(panel).getByText(/14 días de baja/)).toBeInTheDocument();
+    expect(within(panel).getAllByText(/14 días de baja/).length).toBeGreaterThan(0);
     expect(within(panel).getByText(/4-4-2/)).toBeInTheDocument();
     expect(within(panel).getByRole('table', { name: 'Liga Test' })).toBeInTheDocument();
     expect(within(panel).queryByText(/Objetivos|Histórico|diferidos/)).not.toBeInTheDocument();

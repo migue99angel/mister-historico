@@ -118,7 +118,8 @@ describe('describeDecisionChanges', () => {
   it('reports individual morale, fitness and injuries without inferring causes', () => {
     const next = after();
     next.squad.players[0] = {
-      ...next.squad.players[0]!,
+      id: 'test-player',
+      displayName: 'Test Player',
       morale: 53,
       fitness: 68,
       injury: { daysOut: 7 },
@@ -134,7 +135,15 @@ describe('describeDecisionChanges', () => {
 
   it('shows recovery and removed priorities from received values', () => {
     const previous = before();
-    previous.squad.players[0]!.injury = { daysOut: 2 };
+    previous.squad.players = [
+      {
+        id: 'test-player',
+        displayName: 'Test Player',
+        morale: 50,
+        fitness: 70,
+        injury: { daysOut: 2 },
+      },
+    ];
     previous.competitionPriorities = [{ competitionId: 'test-league', priority: 'low' }];
     expect(describeDecisionChanges(previous, after(), choice)).toEqual(
       expect.arrayContaining([
