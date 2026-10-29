@@ -8,16 +8,25 @@ import { toRunViewModel } from '../../../domain/runViewModel';
 import { BlockProgress, Button, DilemmaCard, GenericCrest } from '../../design-system';
 import { BlockSummary } from './BlockSummary';
 import { TeamPanel } from './TeamPanel';
+import { useBlockReveal } from './useBlockReveal';
 import { commandFailureMessage, pendingDilemmasHint, type RunLoopCommand } from './feedback';
 
 export interface RunInPlayProps {
   run: RunViewDto;
   /** True while a newer view is loading (e.g. after a 409): the simulation waits for it. */
   isRefreshing: boolean;
+  onRunEnded: (runId: string) => void;
 }
 
 /** Confirms each decision before allowing the block to be simulated. */
-export function RunInPlay({ run, isRefreshing }: RunInPlayProps) {
+export function RunInPlay({ run, isRefreshing, onRunEnded }: RunInPlayProps) {
+  const reveal = useBlockReveal(
+    run.version,
+    new Set(run.lastBlockSummary?.results.map((match) => match.date)).size,
+  );
+  const notified = useRef(false);
+  const decisionsHeading = useRef<HTMLHeadingElement>(null);
+  const focusDecisions = useRef(false);
   const decision = useTakeDecision(run.runId);
   const advance = useAdvanceBlock(run.runId);
   const [choices, setChoices] = useState<Partial<Record<string, string>>>({});
@@ -74,6 +83,17 @@ export function RunInPlay({ run, isRefreshing }: RunInPlayProps) {
         );
 
   useEffect(() => {
+    if (run.status !== 'in_progress' && !submitting && !reveal.revealing && !notified.current) {
+      notified.current = true;
+      onRunEnded(run.runId);
+    }
+  }, [run.status, run.runId, submitting, reveal.revealing, onRunEnded]);
+
+  useEffect(() => {
+    if (focusDecisions.current && !reveal.revealing) {
+      focusDecisions.current = false;
+      decisionsHeading.current?.focus();
+    }
     const summaryVersion = focusSummaryFromVersion.current;
     if (summaryVersion !== null && run.version >= summaryVersion) {
       focusSummaryFromVersion.current = null;
@@ -87,7 +107,7 @@ export function RunInPlay({ run, isRefreshing }: RunInPlayProps) {
       focusFailure.current = false;
       failureAlert.current?.focus();
     }
-  }, [run.version, focusRequest, showConfirmation]);
+  }, [run.version, focusRequest, showConfirmation, reveal.revealing]);
 
   function reportFailure(step: RunLoopCommand) {
     setFailedStep(step);
@@ -124,7 +144,8 @@ export function RunInPlay({ run, isRefreshing }: RunInPlayProps) {
   }
 
   async function simulateBlock() {
-    if (busy.current || isRefreshing || !inProgress || pending.length > 0) return;
+    if (busy.current || reveal.revealing || isRefreshing || !inProgress || pending.length > 0)
+      return;
     busy.current = true;
     setSubmitting(true);
     setConfirmed(null);
@@ -135,6 +156,10 @@ export function RunInPlay({ run, isRefreshing }: RunInPlayProps) {
         reportFailure('advance');
         return;
       }
+      reveal.start(
+        simulated.version,
+        new Set(simulated.lastBlockSummary?.results.map((match) => match.date)).size,
+      );
       focusSummaryFromVersion.current = simulated.version;
       setFocusRequest((request) => request + 1);
     } finally {
@@ -156,14 +181,31 @@ export function RunInPlay({ run, isRefreshing }: RunInPlayProps) {
       )}
       <main className="mx-auto flex w-full max-w-md flex-col gap-4 px-gutter pt-4">
         <h1 className="sr-only">Partida</h1>
-        <BlockProgress progress={viewModel.progress} status={run.status} />
+        {!reveal.revealing && <BlockProgress progress={viewModel.progress} status={run.status} />}
 
         {run.lastBlockSummary && viewModel.lastBlock && (
           <BlockSummary
             summary={run.lastBlockSummary}
             narrative={viewModel.lastBlock}
             headingRef={summaryHeading}
+            visibleDates={reveal.visibleDates}
+            revealing={reveal.revealing}
+            onComplete={() => {
+              reveal.complete();
+              summaryHeading.current?.focus();
+            }}
           />
+        )}
+
+        {reveal.revealing && inProgress && (
+          <Button
+            onClick={() => {
+              focusDecisions.current = true;
+              reveal.complete();
+            }}
+          >
+            Ir a decisiones
+          </Button>
         )}
 
         {showConfirmation && (
@@ -207,9 +249,9 @@ export function RunInPlay({ run, isRefreshing }: RunInPlayProps) {
           </section>
         )}
 
-        <TeamPanel run={run} />
+        {!reveal.revealing && <TeamPanel run={run} />}
 
-        {run.decisions.length > 0 && (
+        {!reveal.revealing && run.decisions.length > 0 && (
           <section aria-label="Decisiones confirmadas">
             <details>
               <summary className="min-h-touch cursor-pointer py-3 font-semibold">
@@ -226,9 +268,14 @@ export function RunInPlay({ run, isRefreshing }: RunInPlayProps) {
           </section>
         )}
 
-        {inProgress && (
+        {inProgress && !reveal.revealing && (
           <section aria-labelledby={dilemmasHeadingId} className="flex flex-col gap-4">
-            <h2 id={dilemmasHeadingId} className="mt-2 font-display text-headline font-extrabold">
+            <h2
+              ref={decisionsHeading}
+              tabIndex={-1}
+              id={dilemmasHeadingId}
+              className="mt-2 font-display text-headline font-extrabold"
+            >
               Decisiones del bloque
             </h2>
             {pending.map((dilemma, index) => (
@@ -258,7 +305,7 @@ export function RunInPlay({ run, isRefreshing }: RunInPlayProps) {
           </section>
         )}
 
-        {inProgress && (
+        {inProgress && !reveal.revealing && (
           <div className="sticky bottom-0 -mx-gutter border-t border-line bg-canvas/95 px-gutter py-3 backdrop-blur">
             {failureMessage && (
               <p

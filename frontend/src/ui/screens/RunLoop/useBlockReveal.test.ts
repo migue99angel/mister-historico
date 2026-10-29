@@ -13,13 +13,19 @@ describe('useBlockReveal', () => {
     vi.useFakeTimers();
     const { result, rerender } = renderHook(() => useBlockReveal(4, 20));
     expect(result.current.revealing).toBe(false);
-    act(() => result.current.start(4, 20));
+    act(() => {
+      result.current.start(4, 20);
+    });
     expect(result.current.visibleDates).toBe(0);
-    act(() => vi.advanceTimersByTime(225));
+    act(() => {
+      vi.advanceTimersByTime(225);
+    });
     expect(result.current.visibleDates).toBe(1);
     rerender();
     expect(result.current.visibleDates).toBe(1);
-    act(() => vi.advanceTimersByTime(4775));
+    act(() => {
+      vi.advanceTimersByTime(4775);
+    });
     expect(result.current.revealing).toBe(false);
     rerender();
     expect(result.current.revealing).toBe(false);
@@ -28,12 +34,18 @@ describe('useBlockReveal', () => {
   it('skips immediately and cancels pending timers on skip and unmount', () => {
     vi.useFakeTimers();
     const { result, unmount } = renderHook(() => useBlockReveal(4, 2));
-    act(() => result.current.start(4, 2));
+    act(() => {
+      result.current.start(4, 2);
+    });
     expect(vi.getTimerCount()).toBeGreaterThan(0);
-    act(() => result.current.complete());
+    act(() => {
+      result.current.complete();
+    });
     expect(result.current.revealing).toBe(false);
     expect(vi.getTimerCount()).toBe(0);
-    act(() => result.current.start(4, 2));
+    act(() => {
+      result.current.start(4, 2);
+    });
     unmount();
     expect(vi.getTimerCount()).toBe(0);
   });
@@ -41,9 +53,13 @@ describe('useBlockReveal', () => {
   it('shows all with reduced motion or no results', () => {
     vi.stubGlobal('matchMedia', () => ({ matches: true }));
     const { result } = renderHook(() => useBlockReveal(4, 2));
-    act(() => result.current.start(4, 2));
+    act(() => {
+      result.current.start(4, 2);
+    });
     expect(result.current.revealing).toBe(false);
-    act(() => result.current.start(4, 0));
+    act(() => {
+      result.current.start(4, 0);
+    });
     expect(result.current.revealing).toBe(false);
   });
 
@@ -52,7 +68,9 @@ describe('useBlockReveal', () => {
     const { result, rerender } = renderHook(({ version }) => useBlockReveal(version, 2), {
       initialProps: { version: 4 },
     });
-    act(() => result.current.start(4, 2));
+    act(() => {
+      result.current.start(4, 2);
+    });
     rerender({ version: 5 });
     expect(result.current.revealing).toBe(false);
     expect(vi.getTimerCount()).toBe(0);
