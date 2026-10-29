@@ -42,12 +42,14 @@ from mister.simulation.domain.season import (
     Competition,
     GroupEntry,
     HistoricalEvidence,
+    KeyStarterChoice,
     PlayedMatch,
     SeasonFixture,
     SeasonSimulation,
     Stage,
     TableSnapshot,
 )
+from mister.simulation.domain.season import project_lineup as project_block_lineup
 
 if TYPE_CHECKING:
     from mister.shared_kernel.randomness import RandomSource
@@ -757,7 +759,41 @@ def _dated_squad_inputs(
     return memberships, cast("tuple[SimPlayer, ...]", pool_team.squad)
 
 
+def _block_fixture(
+    value: dto.BlockSimRequest, block: Block, fixture_id: FixtureId
+) -> SeasonFixture:
+    """An unplayed managed fixture of the season calendar dated inside the block."""
+    fixture = next((f for f in block.fixtures if f.spec.fixture_id == fixture_id), None)
+    if (
+        fixture is None
+        or not value.start <= fixture.spec.date <= value.end
+        or any(item.fixture.spec.fixture_id == fixture_id for item in block.prior)
+    ):
+        raise InvalidValueError("fixture must be an unplayed managed fixture of the block")
+    return fixture
+
+
+def _key_starter(value: dto.BlockSimRequest, block: Block) -> KeyStarterChoice | None:
+    selection = value.key_starter
+    if selection is None:
+        return None
+    if not isinstance(selection, dto.KeyStarterSelection):
+        raise InvalidValueError("key starter must be a typed selection")
+    fixture = _block_fixture(value, block, selection.fixture_id)
+    if fixture.spec.date != selection.date:
+        raise InvalidValueError("key starter date must match its fixture")
+    known = block.player_pool if block.player_pool is not None else block.managed_team.squad
+    if selection.player_id not in {p.player_id for p in known or ()}:
+        raise InvalidValueError("key starter refers to an unknown player")
+    return KeyStarterChoice(selection.fixture_id, selection.date, selection.player_id)
+
+
 def _map_request(value: dto.BlockSimRequest) -> Block:
+    block = _map_block(value)
+    return replace(block, key_starter=_key_starter(value, block))
+
+
+def _map_block(value: dto.BlockSimRequest) -> Block:
 
     season = value.season
     if not isinstance(value.block_id, BlockId):
@@ -938,9 +974,35 @@ def _simulate(
             )
             for t in outcome.unresolved
         ),
+        key_starter_outcome=(
+            dto.KeyStarterOutcome(
+                outcome.key_starter.choice.fixture_id,
+                outcome.key_starter.choice.date,
+                outcome.key_starter.choice.player_id,
+                outcome.key_starter.starter_ids,
+                cast("dto.StarterAbsenceReason | None", outcome.key_starter.absence_reason),
+            )
+            if outcome.key_starter is not None
+            else None
+        ),
     )
 
 
 def simulate_block(request: dto.BlockSimRequest, rng: RandomSource) -> dto.BlockSummaryDTO:
     """Simulate an inclusive block with stable root streams and immutable original baselines."""
     return _simulate(request, rng, PoissonMatchSimulator())
+
+
+def project_lineup(
+    request: dto.BlockSimRequest, fixture_id: FixtureId
+) -> dto.LineupProjectionDTO | None:
+    """Validate the whole request, then forecast without drawing from any random source."""
+    try:
+        block = _map_block(request)
+        fixture = _block_fixture(request, block, fixture_id)
+        projection = project_block_lineup(block, fixture.spec)
+    except (ValueError, TypeError, KeyError, AttributeError) as error:
+        raise InvalidValueError(f"invalid projection input: {error}") from error
+    if projection is None:
+        return None
+    return dto.LineupProjectionDTO(projection.starter_ids, projection.reserve_ids)
