@@ -9,7 +9,8 @@
 ## Entrega y propiedad
 
 Esta CR publica los DTO inmutables de Game y Simulation, el protocolo de comando de Game,
-la traducción ACL, OpenAPI, cliente generado y fixtures/tests de contrato MSW. No activa el
+la traducción ACL, OpenAPI, modelos de respuesta HTTP sincronizados, cliente generado y
+fixtures/tests de contrato MSW. No activa el
 endpoint ni cambia la simulación. Como en los contratos de endpoints posteriores existentes,
 OpenAPI describe la interfaz que debe implementar la entrega dependiente; el protocolo
 `KeyStarterCommands` aún no lo implementa `GameApi`. Los nuevos DTO no se añaden todavía a
@@ -115,8 +116,10 @@ el marcador difiera del obtenido sin elección.
 ## Acreditación y compatibilidad
 
 `KeyStarterOutcome(fixture_id, date, player_id, starter_ids, absence_reason=None)` contiene
-el once propio realmente usado, como IDs únicos (hasta once según disponibilidad), y la
-causa si el elegido no está. Si el partido no se disputa, la lista está vacía y la causa es
+el once propio realmente usado, como IDs únicos (con un máximo contractual de once), y la
+causa si el elegido no está. El motor conserva su requisito actual de once jugadores sanos;
+no inventa jugadores para completar una plantilla insuficiente. Si el partido no se disputa,
+la lista está vacía y la causa es
 `fixture_not_played`; para un partido disputado es no vacía. Ninguna otra causa admite una
 lista vacía. El elegido está en la lista exactamente cuando la causa es `None`.
 

@@ -274,8 +274,33 @@ class MatchReport(BaseModel):
     )
 
 
+class KeyStarterOffer(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    block_id: Slug = Field(alias="blockId")
+    fixture_id: Slug = Field(alias="fixtureId")
+    date_value: date = Field(alias="date")
+    candidate_ids: list[Slug] = Field(
+        alias="candidateIds", min_length=1, json_schema_extra={"uniqueItems": True}
+    )
+    selected_player_id: Slug | None = Field(..., alias="selectedPlayerId")
+
+
+class KeyStarterOutcome(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    fixture_id: Slug = Field(alias="fixtureId")
+    date_value: date = Field(alias="date")
+    player_id: Slug = Field(alias="playerId")
+    starter_ids: list[Slug] = Field(
+        alias="starterIds", max_length=11, json_schema_extra={"uniqueItems": True}
+    )
+    absence_reason: (
+        Literal["injured", "not_in_squad", "youth_conflict", "fixture_not_played"] | None
+    ) = Field(..., alias="absenceReason")
+
+
 class RunView(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    key_starter: KeyStarterOffer | None = Field(default=None, alias="keyStarter")
     run_id: UUID = Field(..., alias="runId")
     season_id: Slug = Field(..., alias="seasonId")
     status: Literal["in_progress", "finished", "sacked"] = Field(...)
@@ -398,6 +423,7 @@ class StartRunResponse(BaseModel):
 
 class BlockSummary(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    key_starter_outcome: KeyStarterOutcome | None = Field(default=None, alias="keyStarterOutcome")
     block_number: int = Field(..., ge=1, alias="blockNumber")
     label: str = Field(..., description="Period covered by the block.")
     results: list[MatchReport] = Field(...)
@@ -436,6 +462,9 @@ class Problem(BaseModel):
         "run_already_finished",
         "run_not_finished",
         "invalid_option",
+        "invalid_key_starter",
+        "key_starter_already_selected",
+        "pending_key_starter",
         "idempotency_key_conflict",
         "alias_rejected",
         "rate_limited",
