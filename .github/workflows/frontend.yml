@@ -1,5 +1,6 @@
 # Frontend CI: eslint + tsc + dependency-cruiser, Vitest with coverage, build, size-limit
-# and Playwright E2E (Pixel 7 and iPhone 14, both on Chromium).
+# and Playwright E2E (Pixel 7 and iPhone 14, both on Chromium). The real-backend E2E starts
+# the API with uv and a throwaway PostgreSQL container (Docker is available on the runner).
 name: frontend
 
 on:
@@ -7,10 +8,14 @@ on:
     branches: [main]
     paths:
       - "frontend/**"
+      # The real-backend E2E plays the backend with its golden.
+      - "backend/**"
       - ".github/workflows/frontend.yml"
   pull_request:
     paths:
       - "frontend/**"
+      # The real-backend E2E plays the backend with its golden.
+      - "backend/**"
       - ".github/workflows/frontend.yml"
 
 permissions:
@@ -67,6 +72,24 @@ jobs:
 
       - name: Bundle size
         run: npm run size
+
+      # The real-backend E2E serves the API from backend/ (e2e/support/real_api.py).
+      # Python and uv versions match backend.yml and infra/docker/api.Dockerfile.
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12.15"
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: "0.13.6"
+          python-version: "3.12.15"
+          working-directory: backend
+          enable-cache: true
+          cache-dependency-glob: uv.lock # relative to working-directory
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: uv sync --frozen
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
