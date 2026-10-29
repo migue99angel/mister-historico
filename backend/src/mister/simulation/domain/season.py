@@ -516,12 +516,13 @@ class SeasonSimulation:
         squad = cast("tuple[SimPlayer, ...]", self.team.squad)
         tactic = cast("Tactic", self.team.tactic)
         choice = self.block.key_starter
-        chosen = choice is not None and choice.fixture_id == spec.fixture_id
-        reason = self._key_starter_absence(squad, required) if chosen else None
-        if chosen and reason is None and choice is not None:
+        if choice is not None and choice.fixture_id != spec.fixture_id:
+            choice = None
+        reason = _key_starter_absence(choice, squad, required) if choice else None
+        if choice is not None and reason is None:
             required |= {choice.player_id}
         lineup = select_lineup(squad, tactic, priority=priority, required=required)
-        if chosen and choice is not None:
+        if choice is not None:
             self.key_starter = KeyStarterEvidence(
                 choice, tuple(p.player.player_id for p in lineup.starters), reason
             )
@@ -585,20 +586,6 @@ class SeasonSimulation:
         self.played[spec.fixture_id] = played
         self.results.append(played)
         return played
-
-    def _key_starter_absence(
-        self, squad: tuple[SimPlayer, ...], required: frozenset[PlayerId]
-    ) -> str | None:
-        """Membership and injury are checked again on the match date; youth keeps priority."""
-        choice = cast("KeyStarterChoice", self.block.key_starter)
-        player = next((p for p in squad if p.player_id == choice.player_id), None)
-        if player is None:
-            return "not_in_squad"
-        if player.injured:
-            return "injured"
-        if choice.player_id not in required and len(required) >= _STARTERS:
-            return "youth_conflict"
-        return None
 
     def _evidence(
         self,
@@ -1255,6 +1242,20 @@ class SeasonSimulation:
             tuple(unresolved),
             self.key_starter,
         )
+
+
+def _key_starter_absence(
+    choice: KeyStarterChoice, squad: tuple[SimPlayer, ...], required: frozenset[PlayerId]
+) -> str | None:
+    """Membership and injury are checked again on the match date; youth keeps priority."""
+    player = next((p for p in squad if p.player_id == choice.player_id), None)
+    if player is None:
+        return "not_in_squad"
+    if player.injured:
+        return "injured"
+    if choice.player_id not in required and len(required) >= _STARTERS:
+        return "youth_conflict"
+    return None
 
 
 def project_lineup(block: Block, fixture: FixtureSpec) -> LineupProjection | None:
