@@ -98,3 +98,74 @@ test('Test FC is played to the end against the real API, surviving reloads, with
   await expect(finalTitle).toBeVisible();
   await expect(page.getByText('Has llegado al final de la temporada.')).toBeVisible();
 });
+
+test('the board sacks the Test FC manager in block two and the dismissal survives a reload', async ({
+  page,
+}) => {
+  // Same profile A, seed 2000 and last-option policy as the backend dismissal E2E
+  // (backend/tests/golden/season_play.py). The real API launcher already pins this seed.
+  const dismissalBlock = 2;
+  await page.goto('/');
+  await page.getByRole('button', { name: /^Elegir Test FC/ }).click();
+  await page.getByRole('button', { name: 'Empezar' }).click();
+  await expect(page).toHaveURL(/\/partida\/[0-9a-f-]+$/);
+  const runUrl = page.url();
+  const progress = page.getByRole('progressbar', { name: 'Progreso de la temporada' });
+  const simulate = page.getByRole('button', { name: 'Simular bloque' });
+
+  let dismissed: unknown;
+  for (let played = 0; played < dismissalBlock; played += 1) {
+    await expect(progress).toHaveAttribute('aria-valuenow', String(played));
+    await expectNoHorizontalScroll(page);
+    const dilemmas = page.getByRole('group', { name: /^Opciones/ });
+    expect(await dilemmas.count()).toBeGreaterThan(0);
+    for (const group of await dilemmas.all()) {
+      await group.getByRole('button').last().click();
+    }
+    const advanced = page.waitForResponse(isAdvance);
+    await simulate.click();
+    const response = await advanced;
+    expect(response.status()).toBe(200);
+    expect(response.fromServiceWorker()).toBe(false);
+    const view: unknown = await response.json();
+    if (played + 1 === dismissalBlock) {
+      expect(view).toMatchObject({
+        status: 'sacked',
+        block: { number: dismissalBlock },
+        pendingDilemmas: [],
+      });
+      dismissed = view;
+    } else {
+      expect(view).toMatchObject({ status: 'in_progress' });
+    }
+  }
+
+  await expect(page).toHaveURL(`${runUrl}/final`);
+  const finalTitle = page.getByRole('heading', { level: 1, name: 'Final de la partida' });
+  const dismissal = page.getByText(/^La directiva te destituyó/);
+  const standings = page.getByRole('region', { name: 'Clasificación en la destitución' });
+  await expect(finalTitle).toBeVisible();
+  await expect(dismissal).toBeVisible();
+  await expect(standings).toBeVisible();
+  await expect(progress).toHaveAttribute('aria-valuenow', String(dismissalBlock));
+  expect(Number(await progress.getAttribute('aria-valuemax'))).toBeGreaterThan(dismissalBlock);
+  await expect(simulate).toHaveCount(0);
+  await expectNoHorizontalScroll(page);
+
+  const recovered = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'GET' && /\/api\/runs\/[^/]+$/.test(response.url()),
+  );
+  await page.reload();
+  const response = await recovered;
+  expect(response.status()).toBe(200);
+  expect(response.fromServiceWorker()).toBe(false);
+  expect(await response.json()).toEqual(dismissed);
+  await expect(page).toHaveURL(`${runUrl}/final`);
+  await expect(finalTitle).toBeVisible();
+  await expect(dismissal).toBeVisible();
+  await expect(standings).toBeVisible();
+  await expect(progress).toHaveAttribute('aria-valuenow', String(dismissalBlock));
+  await expect(simulate).toHaveCount(0);
+  await expectNoHorizontalScroll(page);
+});
