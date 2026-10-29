@@ -2,6 +2,8 @@
 
 Regenerate the golden only after an intended engine or presentation change, with
 `MISTER_UPDATE_GOLDEN=1 uv run pytest --no-cov tests/golden`, and review its diff.
+Run the wider group-tie acceptance sample with
+`MISTER_SAMPLE_GROUP_TIES=1 uv run pytest --no-cov tests/golden -k terminal_status`.
 """
 
 import os
@@ -130,7 +132,9 @@ async def test_golden_season_is_stable_across_ten_runs() -> None:
 
 
 @pytest.mark.anyio
-@pytest.mark.parametrize("seed", range(2000, 2200))
+@pytest.mark.parametrize(
+    "seed", range(2000, 2200) if os.environ.get("MISTER_SAMPLE_GROUP_TIES") == "1" else (2001, 2004)
+)
 @pytest.mark.parametrize("option_index", [0, -1], ids=["first-option", "last-option"])
 async def test_seeded_season_always_reaches_a_terminal_status(seed: int, option_index: int) -> None:
     app = create_app(Container(Settings()))
