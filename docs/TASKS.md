@@ -127,6 +127,15 @@ antes del 2026-10-28 no se migraron: su registro son las PR y HANDOFF.
   - Caché de uv y npm. Badges en el README.
 - **Aceptación:** una PR de prueba pasa. Una PR con una violación de capas falla.
 
+### CR-T0.4-pytest-parallel · Reducir el tiempo del CI del backend
+
+- **Seguimiento:** [#151](https://github.com/migue99angel/mister-historico/issues/151).
+- **Capa:** plataforma · **Tamaño:** S · **Depende de:** T0.2 y T0.4, integradas.
+- **Propiedad:** `backend/pyproject.toml`, `backend/uv.lock`, `.github/workflows/backend.yml` y esta entrada.
+- **Qué hacer:** añadir `pytest-xdist` con uv y ejecutar el backend de CI con dos procesos y `--dist loadfile`, manteniendo juntas las fixtures PostgreSQL de ámbito módulo. Publicar los 25 tests más lentos. Mantener la ejecución local secuencial por defecto.
+- **Validación:** comparar secuencial y paralelo sobre el mismo commit, repetir el paralelo y comprobar resultados y cobertura combinada, incluido `layer-coverage.sh`. Es infraestructura: no requiere tests que repliquen el YAML.
+- **Aceptación:** suite completa verde en ambos modos, calibración excluida, cobertura global ≥85 % y dominio/aplicación ≥95 % de líneas y ramas; `make test`, `make lint` y CI verdes. Registrar tiempos y límites en la PR, sin reducir la estabilidad del golden ni modificar contratos, semillas o política de cancelación de `main`.
+
 ### T0.5 · Entorno de desarrollo con Docker
 - **Capa:** plataforma · **Oleada:** F0-B · **Tamaño:** S · **Depende de:** T0.1
 - **Propiedad:** `infra/docker/**`, `docker-compose.yml`, `.env.example`, `backend/.dockerignore`, `frontend/.dockerignore`, `backend/alembic.ini`, `backend/migrations/**` y `backend/tests/integration/test_migrations.py`
