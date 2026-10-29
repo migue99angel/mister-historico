@@ -23,7 +23,14 @@ from mister.shared_kernel.errors import DomainError, InvalidValueError
 
 if TYPE_CHECKING:
     from mister.game.application.presentation import GamePresentation
-    from mister.shared_kernel.ids import DilemmaId, OptionId, PlayableSeasonId, RunId
+    from mister.shared_kernel.ids import (
+        DilemmaId,
+        FixtureId,
+        OptionId,
+        PlayableSeasonId,
+        PlayerId,
+        RunId,
+    )
 
 
 class GameApiError(DomainError):
@@ -60,6 +67,24 @@ class SeasonQueries(Protocol):
     def list_seasons(self) -> tuple[Presented, ...]: ...
 
     def get_season(self, season_id: PlayableSeasonId) -> Presented: ...
+
+
+class KeyStarterCommands(Protocol):
+    """Reserved command contract, implemented and exposed by T3.9 after this CR.
+
+    The existing GameApi does not advertise this capability until the aggregate,
+    persistence, replay and HTTP command are implemented together.
+    """
+
+    def select_key_starter(  # noqa: PLR0913, PLR0917 - public command fields
+        self,
+        run_id: RunId,
+        token: str,
+        idempotency_key: str,
+        expected_version: int,
+        fixture_id: FixtureId,
+        player_id: PlayerId,
+    ) -> Presented: ...
 
 
 class GameApi:

@@ -29,13 +29,13 @@ from mister.shared_kernel.ids import BlockId, ClubSeasonId, CompetitionId, Fixtu
 from mister.shared_kernel.randomness import RandomSource
 from mister.simulation.application import simulate_block
 from mister.simulation.application.key_starter import (
-    KeyStarterOutcome as KeyStarterOutcome,
+    KeyStarterOutcome as KeyStarterOutcome,  # noqa: PLC0414 - published contract re-export
 )
 from mister.simulation.application.key_starter import (
-    KeyStarterSelection as KeyStarterSelection,
+    KeyStarterSelection as KeyStarterSelection,  # noqa: PLC0414 - published contract re-export
 )
 from mister.simulation.application.key_starter import (
-    StarterAbsenceReason as StarterAbsenceReason,
+    StarterAbsenceReason as StarterAbsenceReason,  # noqa: PLC0414 - published contract re-export
 )
 
 # Vocabulary: exactly the values of the content schema, OpenAPI and the domain enums

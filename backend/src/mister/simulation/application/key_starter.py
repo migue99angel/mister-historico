@@ -7,6 +7,8 @@ from typing import Literal
 from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.ids import FixtureId, PlayerId
 
+_MAX_STARTERS = 11
+
 type StarterAbsenceReason = Literal[
     "injured", "not_in_squad", "youth_conflict", "fixture_not_played"
 ]
@@ -49,7 +51,7 @@ class KeyStarterOutcome:
             not isinstance(self.starter_ids, tuple)
             or any(not isinstance(player, PlayerId) for player in self.starter_ids)
             or len(set(self.starter_ids)) != len(self.starter_ids)
-            or len(self.starter_ids) > 11
+            or len(self.starter_ids) > _MAX_STARTERS
         ):
             raise InvalidValueError("starters must be at most eleven distinct typed IDs")
         if self.absence_reason not in {

@@ -2,10 +2,15 @@
 
 from dataclasses import FrozenInstanceError
 from datetime import date, datetime
+from types import ModuleType
 
 import pytest
 
 from mister.game.application import ports
+from mister.game.infrastructure.simulation_mapping import (
+    from_key_starter_outcome,
+    to_key_starter_selection,
+)
 from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.ids import BlockId, FixtureId, PlayerId
 from mister.simulation.application import api
@@ -34,8 +39,8 @@ def test_offer_rejects_selection_outside_captured_candidates() -> None:
 
 
 @pytest.mark.parametrize("module", [ports, api])
-def test_selection_requires_typed_identity_and_exact_date(module: object) -> None:
-    selection = getattr(module, "KeyStarterSelection")
+def test_selection_requires_typed_identity_and_exact_date(module: ModuleType) -> None:
+    selection = module.KeyStarterSelection
     assert selection(FIXTURE, DAY, PLAYER).player_id == PLAYER
     for values in [
         ("test-fixture", DAY, PLAYER),
@@ -47,8 +52,8 @@ def test_selection_requires_typed_identity_and_exact_date(module: object) -> Non
 
 
 @pytest.mark.parametrize("module", [ports, api])
-def test_application_proves_participation_or_explains_absence(module: object) -> None:
-    outcome = getattr(module, "KeyStarterOutcome")
+def test_application_proves_participation_or_explains_absence(module: ModuleType) -> None:
+    outcome = module.KeyStarterOutcome
     assert outcome(FIXTURE, DAY, PLAYER, (PLAYER,)).absence_reason is None
     fallback = PlayerId("fallback")
     assert outcome(FIXTURE, DAY, PLAYER, (fallback,), "injured").starter_ids == (fallback,)
@@ -67,16 +72,16 @@ def test_application_proves_participation_or_explains_absence(module: object) ->
 
 
 @pytest.mark.parametrize("module", [ports, api])
-def test_application_rejects_more_than_eleven_starters(module: object) -> None:
+def test_application_rejects_more_than_eleven_starters(module: ModuleType) -> None:
     starters = tuple(PlayerId(f"player-{i}") for i in range(12))
     with pytest.raises(InvalidValueError):
-        getattr(module, "KeyStarterOutcome")(FIXTURE, DAY, starters[0], starters)
+        module.KeyStarterOutcome(FIXTURE, DAY, starters[0], starters)
 
 
 @pytest.mark.parametrize("module", [ports, api])
-def test_application_requires_typed_starter_ids(module: object) -> None:
+def test_application_requires_typed_starter_ids(module: ModuleType) -> None:
     with pytest.raises(InvalidValueError):
-        getattr(module, "KeyStarterOutcome")(FIXTURE, DAY, PLAYER, ("test-player",))
+        module.KeyStarterOutcome(FIXTURE, DAY, PLAYER, ("test-player",))
 
 
 def test_offer_requires_typed_block_and_candidates() -> None:
@@ -89,15 +94,11 @@ def test_offer_requires_typed_block_and_candidates() -> None:
 
 
 def test_acl_translates_selection_without_widening_its_fixture_scope() -> None:
-    from mister.game.infrastructure.simulation_mapping import to_key_starter_selection
-
     source = ports.KeyStarterSelection(FIXTURE, DAY, PLAYER)
     assert to_key_starter_selection(source) == api.KeyStarterSelection(FIXTURE, DAY, PLAYER)
 
 
 def test_acl_preserves_actual_starters_and_absence_reason() -> None:
-    from mister.game.infrastructure.simulation_mapping import from_key_starter_outcome
-
     fallback = PlayerId("fallback")
     source = api.KeyStarterOutcome(FIXTURE, DAY, PLAYER, (fallback,), "not_in_squad")
     assert from_key_starter_outcome(source) == ports.KeyStarterOutcome(

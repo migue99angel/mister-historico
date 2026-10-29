@@ -419,3 +419,19 @@ def from_simulation_result(result: s.BlockSummaryDTO) -> g.BlockSimulationResult
         ),
         ties,
     )
+
+
+def to_key_starter_selection(selection: g.KeyStarterSelection) -> s.KeyStarterSelection:
+    """Translate the reserved starter contract without a global lineup override."""
+    return s.KeyStarterSelection(selection.fixture_id, selection.date, selection.player_id)
+
+
+def from_key_starter_outcome(outcome: s.KeyStarterOutcome) -> g.KeyStarterOutcome:
+    """Preserve observed starters and the engine's reason for a missing selection."""
+    return g.KeyStarterOutcome(
+        outcome.fixture_id,
+        outcome.date,
+        outcome.player_id,
+        outcome.starter_ids,
+        outcome.absence_reason,
+    )
