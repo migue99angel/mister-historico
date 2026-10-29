@@ -132,23 +132,11 @@ se adopta Kanvas, YOLO debe quedar prohibido o restringido a cadenas sin código
 
 Son pruebas pequeñas en una sola máquina, no métricas de productividad.
 
-
 ## Extensión A1 · Gameplay (2026-10-29)
 
-El autor solicita una iteración antes de B. Se añade el milestone A1 · Gameplay y
-rejugabilidad y la iniciativa DOC-GAMEPLAY, con issues de TASKS, relaciones nativas
-y el mismo Project; no otro tablero ni sistema de estado. A/B/C/D conservan sus
-alcances e issues. El detalle está en [GAMEPLAY_BACKLOG](../GAMEPLAY_BACKLOG.md).
-
-Para las nuevas issues A1, Priority refleja la urgencia de producto: P0 para
-comprensión del bucle básico y P1 para agencia deportiva. Phase conserva F3/F4
-según propiedad (la iniciativa documental usa F7). Las prioridades antiguas
-P0/P1 de A y P2 de B no se cambian ni se reinterpretan retroactivamente. P2 de
-producto significa profundidad adicional y Later sigue documentado sin issue;
-no se equipara automáticamente a la prioridad operativa P2 histórica de B.
-
-Las tareas nuevas quedan Backlog o Blocked por dependencias abiertas hasta
-aceptar su especificación documental; no se simula implementación en curso.
-La iniciativa documental pasa a In Review al abrir su PR y solo se cierra al
-integrarla. El avance y aceptación posterior de A1 se consulta en su milestone
-e issues, con resultados humanos en #123 y enlaces desde la iniciativa.
+Se añade el milestone A1 y se reutiliza la iniciativa DOC-GAMEPLAY con issues de
+TASKS, dependencias nativas y el mismo Project. [PLAN §5](../PLAN.md#5-entregas-verticales-y-fases)
+define alcance, prioridades y relación con B. Phase conserva el contexto propietario;
+la iniciativa documental usa F7. Las tareas quedan Backlog o Blocked según dependencias
+hasta aceptar su especificación. La iniciativa pasa a In Review con su PR y se cierra
+al integrarla; las entregas posteriores siguen en milestone/issues y #123/#124.
