@@ -30,9 +30,7 @@ def test_offer_requires_nonempty_distinct_immutable_candidates(candidates: objec
 
 def test_offer_rejects_selection_outside_captured_candidates() -> None:
     with pytest.raises(InvalidValueError):
-        ports.KeyStarterOffer(
-            BlockId("block-1"), FIXTURE, DAY, (PLAYER,), PlayerId("outsider")
-        )
+        ports.KeyStarterOffer(BlockId("block-1"), FIXTURE, DAY, (PLAYER,), PlayerId("outsider"))
 
 
 @pytest.mark.parametrize("module", [ports, api])

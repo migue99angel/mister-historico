@@ -28,6 +28,15 @@ from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.ids import BlockId, ClubSeasonId, CompetitionId, FixtureId, PlayerId
 from mister.shared_kernel.randomness import RandomSource
 from mister.simulation.application import simulate_block
+from mister.simulation.application.key_starter import (
+    KeyStarterOutcome as KeyStarterOutcome,
+)
+from mister.simulation.application.key_starter import (
+    KeyStarterSelection as KeyStarterSelection,
+)
+from mister.simulation.application.key_starter import (
+    StarterAbsenceReason as StarterAbsenceReason,
+)
 
 # Vocabulary: exactly the values of the content schema, OpenAPI and the domain enums
 # (`tests/simulation/unit/test_vocabulary.py` compares them).
