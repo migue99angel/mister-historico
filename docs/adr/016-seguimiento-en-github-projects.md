@@ -139,4 +139,4 @@ TASKS, dependencias nativas y el mismo Project. [PLAN §5](../PLAN.md#5-entregas
 define alcance, prioridades y relación con B. Phase conserva el contexto propietario;
 la iniciativa documental usa F7. Las tareas quedan Backlog o Blocked según dependencias
 hasta aceptar su especificación. La iniciativa pasa a In Review con su PR y se cierra
-al integrarla; las entregas posteriores siguen en milestone/issues y #123/#124.
+al integrarla; las entregas posteriores siguen en milestone/issues y #164/#124.

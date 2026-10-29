@@ -1354,21 +1354,22 @@ RunLoop: secuencia T4.9 → T4.11 → T4.12 → T4.10; backend de titular indepe
 - **Dependencias/CR:** ninguna para documentar; no bloquea circularmente las entregas.
 - **Aceptación/validación:** diagnóstico y matriz contrastados; tareas, prioridades y
   dependencias en Project; evaluación reutilizada; PR documental preparada para revisión.
-  Se cierra al integrar su PR; ejecución posterior en milestone y prueba humana #123.
+  Se cierra al integrar su PR; ejecución posterior en milestone y prueba humana #164.
   En este encargo se deja abierta. Riesgo: expansión del alcance; revisarlo en playtest.
 
 ### CR-T3.8 · Contrato de consecuencias y evolución del estado
 - **Issue/hito/prioridad/tamaño:** [#155](https://github.com/migue99angel/mister-historico/issues/155), A1 opcional, P2, M (incertidumbre media).
 - **Problema/resultado:** conservar detalle de efectos y tendencias tras recargar si
   T4.9 demuestra que se necesita; fuera del camino crítico de A1/B.
-- **Dependencias:** decisión explícita tras #123 en esta issue; es un criterio de
-  activación de backlog, no un bloqueo de T4.9. T4.9 funciona con contrato vigente.
+- **Dependencias:** bloqueada por T7.8a2 #164 hasta completar la prueba humana y
+  registrar aquí la decisión explícita de activación. Si se pospone, permanece en
+  backlog; cerrar #164 no basta para empezar. Este bloqueo no afecta a T4.9.
 - **Propiedad/CR:** propuesta CR, puertos/API Game, OpenAPI, generados/MSW y suites;
   formato compatible con ADR-009. Publicar contrato antes de funcionalidad.
 - **Aceptación/tests:** recibos por secuencia/versión y deltas reales; actual/programado
   con fecha; recuperación/idempotencia, muestras inicial/cierre; privacidad de opciones
   pendientes y compatibilidad de snapshots. Contratos, generados y lectura antigua.
-- **Valor/riesgo:** validar necesidad de recordar efectos con #123; limitar payload.
+- **Valor/riesgo:** validar necesidad de recordar efectos con #164; limitar payload.
 
 ### T3.8 · Consecuencias aplicadas e historial mínimo en Game
 - **Issue/hito/prioridad/tamaño:** [#156](https://github.com/migue99angel/mister-historico/issues/156), A1 opcional, P2, M (incertidumbre media).
@@ -1399,7 +1400,7 @@ RunLoop: secuencia T4.9 → T4.11 → T4.12 → T4.10; backend de titular indepe
 - **Tests:** componentes/hook para respuesta, límites, parcial/reintento, conflicto,
   recarga, doble toque y accesibilidad; E2E Test FC API real. El diff de valores es
   presentación de datos recibidos; UI no interpreta DSL ni recalcula fuerza.
-- **Valor/riesgo:** #123 pide explicar dos cambios/localizar lesión; medir ayuda y
+- **Valor/riesgo:** #164 pide explicar dos cambios/localizar lesión; medir ayuda y
   carga de confirmación. Persistencia solo si la pérdida de detalle resulta problemática.
 
 ### CR-T3.9 · Contrato de titular clave por partido
@@ -1437,7 +1438,7 @@ RunLoop: secuencia T4.9 → T4.11 → T4.12 → T4.10; backend de titular indepe
 - **Aceptación/tests:** partido/fecha/estado del servidor, confirmar/recuperar selección,
   aplicación/fallback, teclado y foco. Componentes y E2E API real para doble toque,
   error, ausencia y recarga. Riesgo: promesa de victoria; comunicar selección efectiva.
-- **Valor:** #123 compara control/diversión con una tarjeta y registra carga de lectura.
+- **Valor:** #164 compara control/diversión con una tarjeta y registra carga de lectura.
 
 ### T4.11 · Simulación visual progresiva de bloques
 - **Issue:** [#162](https://github.com/migue99angel/mister-historico/issues/162).
@@ -1481,8 +1482,24 @@ RunLoop: secuencia T4.9 → T4.11 → T4.12 → T4.10; backend de titular indepe
 - **Tests:** consultas/acciones de teclado y lector, abrir/cerrar y recuperar foco;
   viewports móvil (390 y 412) y escritorio (1280), zoom/textos largos y geometría de
   overflow, sin depender de clases o píxeles CSS exactos; E2E sintético decide/consulta.
-- **Valor/riesgos:** #123 mide ayuda, scroll y tiempo para consultar plantilla/posición/
+- **Valor/riesgos:** #164 mide ayuda, scroll y tiempo para consultar plantilla/posición/
   lesión y volver a decidir; evitar navegación que añada más pasos que el scroll.
+
+### T7.8a2 · Playtest A1 por entregas [HUMANO]
+- **Issue/hito/prioridad/tamaño:** [#164](https://github.com/migue99angel/mister-historico/issues/164), A1, P0, S por sesión/M conjunto; incertidumbre de agenda.
+- **Problema/resultado:** comprobar las mejoras de A1 con los mismos 3–5 testers;
+  #123, cerrada en A, se conserva solo como antecedente. #124 prueba la beta B.
+- **Dependencias:** comenzar tras T4.9 #157; probar #162/#163/#160 cuando estén
+  integradas. Las entregas posteriores no bloquean la primera sesión. Sin CR.
+- **Propiedad:** observaciones/decisiones en esta issue; correcciones en sus tareas.
+- **Aceptación/validación:** protocolo de GAMEPLAY_BACKLOG: comprensión, titular,
+  tensión/espera/salto, navegación/scroll, móvil/escritorio y deseo de repetir.
+  Registrar versión, observaciones individuales, ayuda y comparación con sesión
+  previa. Al cierre decidir activar o posponer #155/#156 y registrar razón en #155.
+  Enumerar entregas probadas y P1 explícitamente pospuestas, sin cerrar criterios
+  incumplidos. Solo el autor cierra esta prueba tras las sesiones acordadas/recorte.
+- **Riesgos:** muestra pequeña y mezclar cambios; probar incrementalmente, sin
+  inferencia estadística ni porcentajes inventados. Sin suite automatizada propia.
 
 ### Tareas existentes reutilizadas
 - **#88 (T2.13, B):** aporte editorial a A1 sin otra issue ni cambio de milestone:
@@ -1494,5 +1511,5 @@ RunLoop: secuencia T4.9 → T4.11 → T4.12 → T4.10; backend de titular indepe
 - **#97/#92/#136/#138:** comparación por competición/Liga (posición/puntos), nota,
   objetivos/directiva según contrato. **#133/#140:** veredicto principal, comparación,
   resumen factual y repetir/elegir; ejecución secuencial, sin pantalla/endpoint paralelo.
-- **#123/#124:** protocolo de GAMEPLAY_BACKLOG, incluidas las dos mejoras visuales;
+- **#164/#124:** protocolo de GAMEPLAY_BACKLOG, incluidas las dos mejoras visuales;
   registrar observaciones y decidir alcance. Los agentes no cierran pruebas humanas.
