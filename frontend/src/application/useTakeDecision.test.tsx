@@ -82,6 +82,37 @@ describe('useTakeDecision', () => {
     });
   });
 
+  it('takes the next baseline from the cache even before the caller rerenders', async () => {
+    const { result } = await renderLoadedRun();
+    await act(async () => {
+      const send = result.current.decision.send;
+      await send(BOARD_MEETING);
+      await send({ dilemmaId: 'summer-striker', optionId: 'sign-the-veteran' });
+    });
+    expect(result.current.decision.transition).toMatchObject({
+      before: { version: 1 },
+      after: { version: 2 },
+      retried: false,
+    });
+  });
+
+  it('clears the previous transition when a later command fails', async () => {
+    const { result } = await renderLoadedRun();
+    await act(async () => {
+      await result.current.decision.send(BOARD_MEETING);
+    });
+    mockServer.use(
+      http.post('*/api/runs/:runId/decisions', () => HttpResponse.error(), { once: true }),
+    );
+    await act(async () => {
+      await result.current.decision.send({
+        dilemmaId: 'summer-striker',
+        optionId: 'sign-the-veteran',
+      });
+    });
+    expect(result.current.decision.transition).toBeNull();
+  });
+
   it('sends the version of the current view and an Idempotency-Key the API accepts', async () => {
     const sent = spyOnDecisions();
     const { result } = await renderLoadedRun();
