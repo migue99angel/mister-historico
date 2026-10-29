@@ -37,7 +37,6 @@ const PROBLEM_TITLES: Record<ProblemCode, string> = {
   invalid_option: 'Invalid option',
   invalid_key_starter: 'Invalid key starter',
   key_starter_already_selected: 'Key starter already selected',
-  pending_key_starter: 'Pending key starter',
   idempotency_key_conflict: 'Idempotency-Key reused with another body',
   alias_rejected: 'Alias rejected',
   rate_limited: 'Too many requests',
