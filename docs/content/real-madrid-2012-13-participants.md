@@ -9,8 +9,9 @@ de Copa ni las eliminatorias de clasificación de Champions, que el Real Madrid
 no disputó.
 
 `Plantilla` y `agregado` son decisiones de representación del juego: los 20
-clubes de Primera y los 28 clubes adicionales de Champions llevan plantilla;
-los 12 participantes de Copa ajenos a Primera llevan fuerza agregada. La lista
+clubes de Primera llevan plantilla; los 28 clubes adicionales de Champions y
+los 12 participantes de Copa ajenos a Primera llevan fuerza agregada
+([CR-T2.16](../changes/CR-T2.16-aggregate-rivals.md)). La lista
 no afirma que los jugadores o las fuerzas estén ya investigados.
 
 ## Liga BBVA: 20 clubes
@@ -72,34 +73,34 @@ Liga. Los otros 28 son:
 
 | Grupo | Club | Club-season | Representación |
 |---|---|---|---|
-| A | FC Porto | `porto-2012-13` | Plantilla |
-| A | Dynamo Kyiv | `dynamo-kyiv-2012-13` | Plantilla |
-| A | Paris Saint-Germain | `paris-saint-germain-2012-13` | Plantilla |
-| A | Dinamo Zagreb | `dinamo-zagreb-2012-13` | Plantilla |
-| B | Arsenal | `arsenal-2012-13` | Plantilla |
-| B | Schalke 04 | `schalke-04-2012-13` | Plantilla |
-| B | Olympiacos | `olympiacos-2012-13` | Plantilla |
-| B | Montpellier | `montpellier-2012-13` | Plantilla |
-| C | AC Milan | `ac-milan-2012-13` | Plantilla |
-| C | Zenit | `zenit-2012-13` | Plantilla |
-| C | Anderlecht | `anderlecht-2012-13` | Plantilla |
-| D | Manchester City | `manchester-city-2012-13` | Plantilla |
-| D | Ajax | `ajax-2012-13` | Plantilla |
-| D | Borussia Dortmund | `borussia-dortmund-2012-13` | Plantilla |
-| E | Chelsea | `chelsea-2012-13` | Plantilla |
-| E | Shakhtar Donetsk | `shakhtar-donetsk-2012-13` | Plantilla |
-| E | Juventus | `juventus-2012-13` | Plantilla |
-| E | Nordsjælland | `nordsjaelland-2012-13` | Plantilla |
-| F | Bayern München | `bayern-munich-2012-13` | Plantilla |
-| F | Lille | `lille-2012-13` | Plantilla |
-| F | BATE Borisov | `bate-borisov-2012-13` | Plantilla |
-| G | Benfica | `benfica-2012-13` | Plantilla |
-| G | Spartak Moskva | `spartak-moscow-2012-13` | Plantilla |
-| G | Celtic | `celtic-2012-13` | Plantilla |
-| H | Manchester United | `manchester-united-2012-13` | Plantilla |
-| H | Braga | `braga-2012-13` | Plantilla |
-| H | Galatasaray | `galatasaray-2012-13` | Plantilla |
-| H | CFR Cluj | `cfr-cluj-2012-13` | Plantilla |
+| A | FC Porto | `porto-2012-13` | Agregado |
+| A | Dynamo Kyiv | `dynamo-kyiv-2012-13` | Agregado |
+| A | Paris Saint-Germain | `paris-saint-germain-2012-13` | Agregado |
+| A | Dinamo Zagreb | `dinamo-zagreb-2012-13` | Agregado |
+| B | Arsenal | `arsenal-2012-13` | Agregado |
+| B | Schalke 04 | `schalke-04-2012-13` | Agregado |
+| B | Olympiacos | `olympiacos-2012-13` | Agregado |
+| B | Montpellier | `montpellier-2012-13` | Agregado |
+| C | AC Milan | `ac-milan-2012-13` | Agregado |
+| C | Zenit | `zenit-2012-13` | Agregado |
+| C | Anderlecht | `anderlecht-2012-13` | Agregado |
+| D | Manchester City | `manchester-city-2012-13` | Agregado |
+| D | Ajax | `ajax-2012-13` | Agregado |
+| D | Borussia Dortmund | `borussia-dortmund-2012-13` | Agregado |
+| E | Chelsea | `chelsea-2012-13` | Agregado |
+| E | Shakhtar Donetsk | `shakhtar-donetsk-2012-13` | Agregado |
+| E | Juventus | `juventus-2012-13` | Agregado |
+| E | Nordsjælland | `nordsjaelland-2012-13` | Agregado |
+| F | Bayern München | `bayern-munich-2012-13` | Agregado |
+| F | Lille | `lille-2012-13` | Agregado |
+| F | BATE Borisov | `bate-borisov-2012-13` | Agregado |
+| G | Benfica | `benfica-2012-13` | Agregado |
+| G | Spartak Moskva | `spartak-moscow-2012-13` | Agregado |
+| G | Celtic | `celtic-2012-13` | Agregado |
+| H | Manchester United | `manchester-united-2012-13` | Agregado |
+| H | Braga | `braga-2012-13` | Agregado |
+| H | Galatasaray | `galatasaray-2012-13` | Agregado |
+| H | CFR Cluj | `cfr-cluj-2012-13` | Agregado |
 
 La [memoria anual del club][madrid] confirma que el Real Madrid jugó contra
 Manchester City, Ajax y Borussia Dortmund en el grupo D, eliminó a Manchester
@@ -109,8 +110,8 @@ externos. La [final UEFA][final-uefa] confirma a Bayern como vencedor real del
 otro camino; sería el rival de una final alternativa del Real Madrid.
 
 **Total de identificadores distintos:** 60: 20 de Liga, 12 adicionales de
-Copa y 28 adicionales de Champions. Para los lotes de T2.16: 47 plantillas
-rivales y 12 agregados; T2.11 es dueño de la plantilla propia.
+Copa y 28 adicionales de Champions. Para los lotes de T2.16: 19 plantillas
+rivales y 40 agregados; T2.11 es dueño de la plantilla propia.
 
 [liga]: https://memorias.laliga.es/2012-2013/es/clasificacion_liga_BBVA.html
 [liga-datos]: https://memorias.laliga.es/2012-2013/js/ddbb.js

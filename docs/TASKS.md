@@ -488,9 +488,9 @@ antes del 2026-10-28 no se migraron: su registro son las PR y HANDOFF.
   - Lote 1: los 6 primeros de la Liga (salvo el RM).
   - Lote 2: los clasificados del 7.º al 13.º.
   - Lote 3: los clasificados del 14.º al 20.º.
-  - Lote 4: los rivales de la Champions.
-  - Lote 5: los rivales de la Copa y la Supercopa (los de fuera de Primera van como `aggregate.yaml`).
-- **Qué hacer:** la plantilla de cada rival según P6: jugadores con minutos relevantes con sus `season_stats` y fuentes, `real_league` y medias calculadas con la CLI de T1.8. Revisión manual solo de los jugadores `key`.
+  - Lote 4: los 28 rivales de la Champions ajenos a Primera, como `aggregate.yaml` ([CR-T2.16](changes/CR-T2.16-aggregate-rivals.md)).
+  - Lote 5: los 12 rivales de la Copa ajenos a Primera, como `aggregate.yaml`. La Supercopa no añade clubes.
+- **Qué hacer:** la plantilla de cada rival de Primera según P6: jugadores con minutos relevantes con sus `season_stats` y fuentes, `real_league` y medias calculadas con la CLI de T1.8. Revisión manual solo de los jugadores `key`.
 - **Aceptación:** validación en verde para cada club-season. Ningún jugador aparece en dos plantillas de la misma fecha, salvo en los traspasos de invierno, que van con fecha.
 
 #### T2.14 · Verificación independiente del RM
@@ -1103,7 +1103,7 @@ Recogidos en las revisiones de CR-T4.B y T4.4-T4.6a. No bloquean T4.7a.
 - **Oleada:** F6-A (los cuatro en paralelo) · **Tamaño:** L cada uno · **Depende de:** T2.15 (pipeline RM); prioridad C tras recoger feedback de B
 - **Propiedad:** `content/seasons/<slug>/**` y los `content/club-seasons/<club>-<temporada>/**` de esa temporada
 - **Qué hacer:** repetir T2.10 → T2.16 → T2.15 para cada equipo, con subtareas `a` (temporada), `b` (plantilla propia), `c` (calendario, clasificaciones y lista de rivales), `d` (dilemas y textos), `r1`-`r5` (lotes de plantillas rivales, como en T2.16), `e` (verificación independiente), `f` [HUMANO] (firma) y `g` (calibración en verde con `make calibrate SEASON=<slug>`, incluida la de los rivales).
-- **Volumen:** inventariar cada temporada antes de estimar. El RM exige 60 club-seasons (48 plantillas contando la propia y 12 agregados), por todos los participantes de grupos/cuadros; la estimación anterior de 30 era insuficiente. Mantener lotes revisables con el límite de agentes de PLAN §6, sin abrir 20 investigadores que saturen la firma humana.
+- **Volumen:** inventariar cada temporada antes de estimar. El RM exige 60 club-seasons (20 plantillas contando la propia y 40 agregados, [CR-T2.16](changes/CR-T2.16-aggregate-rivals.md)), por todos los participantes de grupos/cuadros; la estimación anterior de 30 era insuficiente. Mantener lotes revisables con el límite de agentes de PLAN §6, sin abrir 20 investigadores que saturen la firma humana.
 - **Reutilización:** los `content/clubs/<club>.yaml` se comparten entre temporadas. Si una plantilla rival ya existe porque coincide la temporada, se reutiliza.
 - **Nota:** el Barça 2008-09 es el reto difícil. Las bandas de T1.3 tienen que permitir que el triplete sea posible pero poco probable.
 
