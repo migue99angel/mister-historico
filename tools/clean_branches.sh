@@ -11,6 +11,7 @@ set -euo pipefail
 apply=false
 [[ "${1:-}" == "--apply" ]] && apply=true
 
+# Prune stale remote-tracking refs on the way; the decision itself uses gh only.
 git fetch --prune --quiet
 
 current=$(git branch --show-current)
@@ -26,7 +27,7 @@ found=false
 while read -r branch; do
   [[ "$branch" == "main" || "$branch" == "$current" ]] && continue
   tip=$(git rev-parse "refs/heads/$branch")
-  grep -qx "$branch $tip" <<<"$merged" || continue
+  grep -qxF "$branch $tip" <<<"$merged" || continue
   found=true
   path=$(worktree_of "$branch")
   if ! $apply; then
@@ -34,7 +35,7 @@ while read -r branch; do
     continue
   fi
   if [[ -n "$path" ]] && ! git worktree remove "$path"; then
-    echo "skipped: $branch (worktree $path has local changes)" >&2
+    echo "skipped: $branch (could not remove worktree $path)" >&2
     continue
   fi
   git branch -D "$branch"
