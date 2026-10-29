@@ -113,6 +113,70 @@ for (const width of [390, 412, 1280]) {
   });
 }
 
+for (const width of [390, 412]) {
+  test.describe(`reveal controls while scrolling at ${String(width)} px`, () => {
+    test.use({ baseURL: 'http://localhost:5175', viewport: { width, height: 700 } });
+
+    test('keeps both controls fully visible while the result list grows and scrolls', async ({
+      page,
+    }) => {
+      await page.clock.install();
+      await startRun(page);
+      while (await page.getByRole('group', { name: /^Opciones/ }).count()) {
+        await page
+          .getByRole('group', { name: /^Opciones/ })
+          .first()
+          .getByRole('button')
+          .first()
+          .click();
+        await page
+          .getByRole('button', { name: /^Confirmar:/ })
+          .first()
+          .click();
+        await expect(page.getByRole('heading', { name: 'Decisión confirmada' })).toBeFocused();
+      }
+      await page.addStyleTag({ content: 'html { font-size: 200%; }' });
+      // Freeze before the advance: timers are stepped without racing the short reveal.
+      await page.clock.pauseAt(await page.evaluate(() => Date.now() + 100));
+      const advanced = page.waitForResponse((response) =>
+        /\/api\/runs\/[^/]+\/advance$/.test(response.url()),
+      );
+      await page.getByRole('button', { name: 'Simular bloque' }).click();
+      await advanced;
+      await page.clock.runFor(0);
+      const summary = page.getByRole('region', { name: 'Resumen del bloque' });
+      const dates = summary.getByRole('heading', { level: 3 });
+      const skip = summary.getByRole('button', { name: 'Mostrar todos' });
+      const decisions = summary.getByRole('button', { name: 'Ir a decisiones' });
+      await expect(dates).toHaveCount(0);
+      // The real synthetic season has five dates, so the list can grow while still revealing.
+      await page.clock.runFor(2100);
+      await expect(dates).toHaveCount(3);
+      const beforeScroll = await page.evaluate(
+        () => (globalThis as unknown as { scrollY: number }).scrollY,
+      );
+      await page.mouse.wheel(0, 700);
+      await page.clock.runFor(100);
+      await expect
+        .poll(() => page.evaluate(() => (globalThis as unknown as { scrollY: number }).scrollY))
+        .toBeGreaterThan(beforeScroll);
+      await expect(
+        summary.getByRole('heading', { name: 'Resumen del bloque' }),
+      ).not.toBeInViewport();
+      await expect(skip).toBeInViewport({ ratio: 1 });
+      await expect(decisions).toBeInViewport({ ratio: 1 });
+      await page.clock.runFor(600);
+      await expect(dates).toHaveCount(4);
+      await expect(skip).toBeInViewport({ ratio: 1 });
+      await expect(decisions).toBeInViewport({ ratio: 1 });
+      await expectNoHorizontalScroll(page);
+      await skip.click();
+      await expect(page.getByRole('heading', { name: 'Resumen del bloque' })).toBeFocused();
+      await expect(page.getByRole('heading', { name: 'Resumen del bloque' })).toBeInViewport();
+    });
+  });
+}
+
 test.describe('reveal focus with enlarged text', () => {
   test.use({ baseURL: 'http://localhost:5174', viewport: { width: 390, height: 700 } });
 

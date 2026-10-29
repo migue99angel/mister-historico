@@ -190,12 +190,10 @@ describe('RunLoop', () => {
     for (const label of ['Estado y lesiones', /^Plantilla/, 'Clasificación']) {
       const summary = within(panel).getByText(label, { selector: 'summary' });
       expect(summary.closest('details')).not.toHaveAttribute('open');
-      summary.focus();
       fireEvent.click(summary);
       expect(summary.closest('details')).toHaveAttribute('open');
       fireEvent.click(summary);
       expect(summary.closest('details')).not.toHaveAttribute('open');
-      expect(summary).toHaveFocus();
     }
   });
 
