@@ -270,7 +270,7 @@ describe('RunLoop', () => {
     expect(screen.getByText('Bloque 1 de 5')).toBeInTheDocument();
   });
 
-  it('lets the player change a choice before simulating, without sending anything', async () => {
+  it('lets the player change a choice before confirming, without sending anything', async () => {
     const sent = spyOnCommands();
     renderRunLoop(await startRun());
     await screen.findByRole('heading', { name: 'Board meeting' });
@@ -299,7 +299,7 @@ describe('RunLoop', () => {
     expect(within(card).getByText('Dilema 2 de 2')).toBeInTheDocument();
   });
 
-  it('sends each chosen decision once, in order, and then simulates the block', async () => {
+  it('simulates only after the individual decisions have been confirmed', async () => {
     const sent = spyOnCommands();
     renderRunLoop(await startRun());
     await chooseFirstBlock();
@@ -343,7 +343,7 @@ describe('RunLoop', () => {
     expect(screen.getByRole('button', SIMULATE)).toBeDisabled();
   });
 
-  it('runs a double tap on Simular bloque as a single series', async () => {
+  it('runs a double tap on Simular bloque as a single command', async () => {
     const sent = spyOnCommands();
     renderRunLoop(await startRun());
     await chooseFirstBlock();
@@ -388,6 +388,36 @@ describe('RunLoop', () => {
     ]);
     expect(sent[2]?.idempotencyKey).toBe(sent[1]?.idempotencyKey);
     expect(screen.getByRole('button', SIMULATE)).toBeEnabled();
+  });
+
+  it('recovers an applied decision whose acknowledgement was lost without applying it twice or attributing a delta', async () => {
+    const seeded = await startRun();
+    const take = seeded.runtime.gameApi.takeDecision.bind(seeded.runtime.gameApi);
+    const requests: string[] = [];
+    let first = true;
+    vi.spyOn(seeded.runtime.gameApi, 'takeDecision').mockImplementation(async (request) => {
+      requests.push(request.idempotencyKey);
+      const reply = await take(request);
+      if (first) {
+        first = false;
+        throw new Error('Reply lost after commit');
+      }
+      return reply;
+    });
+    renderRunLoop(seeded);
+    await screen.findByRole('heading', { name: 'Board meeting' });
+    choose('Board meeting', 'Back the board in public');
+    confirm('Board meeting');
+    await screen.findByRole('alert');
+    expect(screen.queryByRole('region', { name: 'Última decisión' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar confirmación' }));
+    await screen.findByRole('heading', { name: 'Estado actualizado' });
+    expect(requests).toHaveLength(2);
+    expect(requests[1]).toBe(requests[0]);
+    const actual = await seeded.runtime.gameApi.getRun(seeded.runId, seeded.runToken);
+    expect(actual.decisions).toHaveLength(1);
+    expect(actual.version).toBe(1);
+    expect(screen.queryByText(/Moral: .*→/)).not.toBeInTheDocument();
   });
 
   it('reloads after a conflict, clears earlier differences and preserves remaining local choices', async () => {
@@ -519,7 +549,7 @@ describe('RunLoop', () => {
     expect(screen.getByText('Temporada terminada')).toBeInTheDocument();
   });
 
-  it('ends the run when the series finds it already finished', async () => {
+  it('ends the run when confirmation finds it already finished', async () => {
     const seeded = await startRun();
     await playBlocks(seeded.runtime.gameApi, seeded.runId, seeded.runToken, 4);
     const { onRunEnded } = renderRunLoop(seeded);
