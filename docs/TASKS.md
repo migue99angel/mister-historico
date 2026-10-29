@@ -784,6 +784,26 @@ T3.7a/T4.7a sigue pendiente y F3 continúa abierta.
 - **Aceptación:** cada golden estable en 10 ejecuciones; pasar a B no vuelve a
   implementar los casos de uso. T3.7a no cierra la aceptación histórica de F3.
 
+### FIX-T3.5-finished-decision · Decisión sobre una Partida terminada
+Detectado en el E2E de T3.7a. No cambia el contrato: lo cumple.
+- **Depende de:** T3.6 (integrada). Si T3.7a ya está integrada, esta tarea retira su
+  `xfail`.
+- **Propiedad:** `backend/src/mister/game/application/use_cases.py` (`TakeDecision` y
+  `apply_choice`), sus tests de aplicación y, solo para retirar el `xfail` del caso
+  `/decisions`, `backend/tests/e2e/test_test_fc_season_http.py`.
+- **Qué hacer:** `TakeDecision` comprueba que el dilema pertenezca al bloque actual
+  antes de que el dominio rechace la Partida terminada. Por eso, una decisión sobre
+  una Partida terminada devuelve `422 invalid_option`, cuando OpenAPI fija
+  `409 run_already_finished`. Hay que comprobar el estado terminal antes de validar el
+  dilema y la opción, con la misma precedencia que `AdvanceBlock`. El test de la
+  fachada de T3.6 no lo detectaba porque su doble lanza directamente el error
+  terminal.
+- **Tests primero:** un test de aplicación con el motor real y Test FC: después de
+  cerrar la temporada, una decisión con cualquier dilema u opción (del primer bloque,
+  del último o inexistente) responde con el error terminal, y la versión no cambia.
+- **Aceptación:** el caso `/decisions` de
+  `test_a_finished_run_stays_readable_and_rejects_further_commands` pasa sin `xfail`.
+
 ---
 
 ## F4 · Frontend (`frontend/`): la oleada A empieza en cuanto cierra la F1
