@@ -209,9 +209,8 @@ class GameApi(KeyStarterCommands):
                 run_id, token, idempotency_key, expected_version, fixture_id, player_id
             )
         except InvalidRunTransitionError as error:
-            if str(error) == "terminal runs reject commands":
-                raise RunAlreadyFinishedError("the run has already finished") from error
-            raise
+            # Selection has a single transition guard: the run must still be in progress.
+            raise RunAlreadyFinishedError("the run has already finished") from error
         except key_starter_flow.InvalidKeyStarterError as error:
             raise InvalidKeyStarterError(str(error)) from error
         except key_starter_flow.KeyStarterAlreadySelectedError as error:
