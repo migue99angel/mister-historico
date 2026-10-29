@@ -1,0 +1,190 @@
+schema_version: 1
+cutoffs:
+- block: b5
+  competition: liga-bbva
+  date: 2013-06-30
+  table:
+  - club_season: barcelona-2012-13
+    position: 1
+    played: 38
+    won: 32
+    drawn: 4
+    lost: 2
+    goals_for: 115
+    goals_against: 40
+    points: 100
+  - club_season: real-madrid-2012-13
+    position: 2
+    played: 38
+    won: 26
+    drawn: 7
+    lost: 5
+    goals_for: 103
+    goals_against: 42
+    points: 85
+  - club_season: atletico-madrid-2012-13
+    position: 3
+    played: 38
+    won: 23
+    drawn: 7
+    lost: 8
+    goals_for: 65
+    goals_against: 31
+    points: 76
+  - club_season: real-sociedad-2012-13
+    position: 4
+    played: 38
+    won: 18
+    drawn: 12
+    lost: 8
+    goals_for: 70
+    goals_against: 49
+    points: 66
+  - club_season: valencia-2012-13
+    position: 5
+    played: 38
+    won: 19
+    drawn: 8
+    lost: 11
+    goals_for: 67
+    goals_against: 54
+    points: 65
+  - club_season: malaga-2012-13
+    position: 6
+    played: 38
+    won: 16
+    drawn: 9
+    lost: 13
+    goals_for: 53
+    goals_against: 50
+    points: 57
+  - club_season: real-betis-2012-13
+    position: 7
+    played: 38
+    won: 16
+    drawn: 8
+    lost: 14
+    goals_for: 57
+    goals_against: 56
+    points: 56
+  - club_season: rayo-vallecano-2012-13
+    position: 8
+    played: 38
+    won: 16
+    drawn: 5
+    lost: 17
+    goals_for: 50
+    goals_against: 66
+    points: 53
+  - club_season: sevilla-2012-13
+    position: 9
+    played: 38
+    won: 14
+    drawn: 8
+    lost: 16
+    goals_for: 58
+    goals_against: 54
+    points: 50
+  - club_season: getafe-2012-13
+    position: 10
+    played: 38
+    won: 13
+    drawn: 8
+    lost: 17
+    goals_for: 43
+    goals_against: 57
+    points: 47
+  - club_season: levante-2012-13
+    position: 11
+    played: 38
+    won: 12
+    drawn: 10
+    lost: 16
+    goals_for: 40
+    goals_against: 57
+    points: 46
+  - club_season: athletic-club-2012-13
+    position: 12
+    played: 38
+    won: 12
+    drawn: 9
+    lost: 17
+    goals_for: 44
+    goals_against: 65
+    points: 45
+  - club_season: espanyol-2012-13
+    position: 13
+    played: 38
+    won: 11
+    drawn: 11
+    lost: 16
+    goals_for: 43
+    goals_against: 52
+    points: 44
+  - club_season: valladolid-2012-13
+    position: 14
+    played: 38
+    won: 11
+    drawn: 10
+    lost: 17
+    goals_for: 49
+    goals_against: 58
+    points: 43
+  - club_season: granada-2012-13
+    position: 15
+    played: 38
+    won: 11
+    drawn: 9
+    lost: 18
+    goals_for: 37
+    goals_against: 54
+    points: 42
+  - club_season: osasuna-2012-13
+    position: 16
+    played: 38
+    won: 10
+    drawn: 9
+    lost: 19
+    goals_for: 33
+    goals_against: 50
+    points: 39
+  - club_season: celta-vigo-2012-13
+    position: 17
+    played: 38
+    won: 10
+    drawn: 7
+    lost: 21
+    goals_for: 37
+    goals_against: 52
+    points: 37
+  - club_season: mallorca-2012-13
+    position: 18
+    played: 38
+    won: 9
+    drawn: 9
+    lost: 20
+    goals_for: 43
+    goals_against: 72
+    points: 36
+  - club_season: deportivo-coruna-2012-13
+    position: 19
+    played: 38
+    won: 8
+    drawn: 11
+    lost: 19
+    goals_for: 47
+    goals_against: 70
+    points: 35
+  - club_season: zaragoza-2012-13
+    position: 20
+    played: 38
+    won: 9
+    drawn: 7
+    lost: 22
+    goals_for: 37
+    goals_against: 62
+    points: 34
+  sources:
+  - https://memorias.laliga.es/2012-2013/es/clasificacion_liga_BBVA.html
+  - https://memorias.laliga.es/2012-2013/js/ddbb.js
+  verify: ok
