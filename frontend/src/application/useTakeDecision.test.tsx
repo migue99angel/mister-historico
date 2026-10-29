@@ -72,9 +72,13 @@ describe('useTakeDecision', () => {
 
   it('captures the actual cached before and response views of the same command', async () => {
     const { result } = await renderLoadedRun();
-    await act(async () => { await result.current.decision.send(BOARD_MEETING); });
+    await act(async () => {
+      await result.current.decision.send(BOARD_MEETING);
+    });
     expect(result.current.decision.transition).toMatchObject({
-      before: { version: 0 }, after: { version: 1 }, retried: false,
+      before: { version: 0 },
+      after: { version: 1 },
+      retried: false,
     });
   });
 
