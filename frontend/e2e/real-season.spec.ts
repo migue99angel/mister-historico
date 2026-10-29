@@ -24,7 +24,9 @@ function goldenFinalView(): RunViewJson {
 }
 
 function isAdvance(response: Response): boolean {
-  return response.request().method() === 'POST' && /\/api\/runs\/[^/]+\/advance$/.test(response.url());
+  return (
+    response.request().method() === 'POST' && /\/api\/runs\/[^/]+\/advance$/.test(response.url())
+  );
 }
 
 /** Picks the first option of every dilemma, the decision policy of the backend golden. */
@@ -81,7 +83,9 @@ test('Test FC is played to the end against the real API, surviving reloads, with
 
   // The real engine with the golden seed and policy plays exactly the backend golden season.
   expect(advances).toHaveLength(totalBlocks);
-  const lastView = (await advances[advances.length - 1].json()) as RunViewJson;
+  const lastAdvance = advances.at(-1);
+  if (!lastAdvance) throw new Error('no block was advanced');
+  const lastView = (await lastAdvance.json()) as RunViewJson;
   const golden = goldenFinalView();
   expect(lastView.status).toBe(golden.status);
   expect(lastView.lastBlockSummary).toEqual(golden.lastBlockSummary);
