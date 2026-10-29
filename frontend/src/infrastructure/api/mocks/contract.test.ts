@@ -43,6 +43,7 @@ describe('OpenAPI contract', () => {
         'POST /runs',
         'GET /runs/{runId}',
         'POST /runs/{runId}/decisions',
+        'POST /runs/{runId}/key-starter',
         'POST /runs/{runId}/advance',
         'GET /runs/{runId}/result',
         'POST /runs/{runId}/alias',

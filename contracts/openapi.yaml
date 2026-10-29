@@ -228,6 +228,54 @@ paths:
         "429":
           $ref: "#/components/responses/TooManyRequests"
 
+  /runs/{runId}/key-starter:
+    post:
+      operationId: selectKeyStarter
+      tags: [Runs]
+      summary: Select the key starter
+      description: >-
+        Contract reserved for T3.9 execution; this CR does not activate the endpoint.
+        Selects one player from the current block's captured key-starter offer, for its
+        exact fixture and date. Requires the run token. Shares the run-wide idempotency
+        namespace with decisions and advance: authenticate, validate shape, replay the original
+        reply before checking expectedVersion, then validate the offer and selection.
+        A different command or body with the same key is 422 idempotency_key_conflict.
+        A fresh second selection is 409 key_starter_already_selected. Invalid candidates,
+        foreign, already played or mismatched fixtures are 422 invalid_key_starter.
+        The response captures the selection without any future outcome or lineup.
+      security:
+        - runToken: []
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SelectKeyStarterRequest"
+      responses:
+        "200":
+          description: The decision was recorded; the updated run.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunView"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
   /runs/{runId}/advance:
     post:
       operationId: advanceBlock
@@ -611,6 +659,9 @@ components:
             - run_already_finished
             - run_not_finished
             - invalid_option
+            - invalid_key_starter
+            - key_starter_already_selected
+            - pending_key_starter
             - idempotency_key_conflict
             - alias_rejected
             - rate_limited
@@ -998,6 +1049,74 @@ components:
                 priority: normal
             lastBlockSummary: null
             sackedMonth: null
+
+    SelectKeyStarterRequest:
+      type: object
+      required: [fixtureId, playerId, expectedVersion]
+      additionalProperties: false
+      properties:
+        fixtureId:
+          $ref: "#/components/schemas/Slug"
+        playerId:
+          $ref: "#/components/schemas/Slug"
+        expectedVersion:
+          type: integer
+          minimum: 0
+
+    KeyStarterOffer:
+      type: object
+      description: >-
+        Captured once at block entry. At most one per block. Candidates are player IDs
+        resolved from the captured content. No match outcome is exposed before advance.
+        selectedPlayerId is null until chosen and must belong to candidateIds when set.
+      required: [blockId, fixtureId, date, candidateIds, selectedPlayerId]
+      additionalProperties: false
+      properties:
+        blockId:
+          $ref: "#/components/schemas/Slug"
+        fixtureId:
+          $ref: "#/components/schemas/Slug"
+        date:
+          type: string
+          format: date
+        candidateIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/Slug"
+        selectedPlayerId:
+          oneOf:
+            - $ref: "#/components/schemas/Slug"
+            - type: "null"
+
+    KeyStarterOutcome:
+      type: object
+      description: >-
+        Evidence captured during simulation, only published after block closure. starterIds
+        is the actual managed-team lineup, including fallback. The selected player is in it
+        exactly when absenceReason is null. fixture_not_played requires an empty lineup;
+        every other outcome requires a nonempty lineup. Runtime validates these relations.
+      required: [fixtureId, date, playerId, starterIds, absenceReason]
+      additionalProperties: false
+      properties:
+        fixtureId:
+          $ref: "#/components/schemas/Slug"
+        date:
+          type: string
+          format: date
+        playerId:
+          $ref: "#/components/schemas/Slug"
+        starterIds:
+          type: array
+          maxItems: 11
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/Slug"
+        absenceReason:
+          type: [string, "null"]
+          enum:
+            [null, injured, not_in_squad, youth_conflict, fixture_not_played]
 
     TakeDecisionRequest:
       type: object
@@ -1592,6 +1711,11 @@ components:
       required: [blockNumber, label, results, standings, events, injuries]
       additionalProperties: false
       properties:
+        keyStarterOutcome:
+          description: Optional for legacy replies; null when no selection was applied.
+          oneOf:
+            - $ref: "#/components/schemas/KeyStarterOutcome"
+            - type: "null"
         blockNumber:
           type: integer
           minimum: 1
@@ -1695,6 +1819,11 @@ components:
         - sackedMonth
       additionalProperties: false
       properties:
+        keyStarter:
+          description: Optional for legacy replies; null means no interaction in this block.
+          oneOf:
+            - $ref: "#/components/schemas/KeyStarterOffer"
+            - type: "null"
         runId:
           type: string
           format: uuid

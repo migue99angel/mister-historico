@@ -104,6 +104,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/runs/{runId}/key-starter": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Select the key starter
+         * @description Contract reserved for T3.9 execution; this CR does not activate the endpoint. Selects one player from the current block's captured key-starter offer, for its exact fixture and date. Requires the run token. Shares the run-wide idempotency namespace with decisions and advance: authenticate, validate shape, replay the original reply before checking expectedVersion, then validate the offer and selection. A different command or body with the same key is 422 idempotency_key_conflict. A fresh second selection is 409 key_starter_already_selected. Invalid candidates, foreign, already played or mismatched fixtures are 422 invalid_key_starter. The response captures the selection without any future outcome or lineup.
+         */
+        post: operations["selectKeyStarter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/runs/{runId}/advance": {
         parameters: {
             query?: never;
@@ -247,7 +267,7 @@ export interface components {
              * @description Stable machine-readable error code. Clients branch on this value.
              * @enum {string}
              */
-            code: "validation_error" | "idempotency_key_required" | "run_token_required" | "run_token_invalid" | "alias_already_set" | "season_not_found" | "run_not_found" | "version_conflict" | "pending_dilemmas" | "dilemma_already_decided" | "run_already_finished" | "run_not_finished" | "invalid_option" | "idempotency_key_conflict" | "alias_rejected" | "rate_limited";
+            code: "validation_error" | "idempotency_key_required" | "run_token_required" | "run_token_invalid" | "alias_already_set" | "season_not_found" | "run_not_found" | "version_conflict" | "pending_dilemmas" | "dilemma_already_decided" | "run_already_finished" | "run_not_finished" | "invalid_option" | "invalid_key_starter" | "key_starter_already_selected" | "pending_key_starter" | "idempotency_key_conflict" | "alias_rejected" | "rate_limited";
             /** @description Human-readable explanation specific to this occurrence. */
             detail?: string;
             /**
@@ -567,6 +587,30 @@ export interface components {
             /** @description Secret bearer token: opaque, server-generated, at least 32 bytes encoded URL-safe. The client stores it; it is never returned again. */
             runToken: string;
             run: components["schemas"]["RunView"];
+        };
+        SelectKeyStarterRequest: {
+            fixtureId: components["schemas"]["Slug"];
+            playerId: components["schemas"]["Slug"];
+            expectedVersion: number;
+        };
+        /** @description Captured once at block entry. At most one per block. Candidates are player IDs resolved from the captured content. No match outcome is exposed before advance. selectedPlayerId is null until chosen and must belong to candidateIds when set. */
+        KeyStarterOffer: {
+            blockId: components["schemas"]["Slug"];
+            fixtureId: components["schemas"]["Slug"];
+            /** Format: date */
+            date: string;
+            candidateIds: components["schemas"]["Slug"][];
+            selectedPlayerId: components["schemas"]["Slug"] | null;
+        };
+        /** @description Evidence captured during simulation, only published after block closure. starterIds is the actual managed-team lineup, including fallback. The selected player is in it exactly when absenceReason is null. fixture_not_played requires an empty lineup; every other outcome requires a nonempty lineup. Runtime validates these relations. */
+        KeyStarterOutcome: {
+            fixtureId: components["schemas"]["Slug"];
+            /** Format: date */
+            date: string;
+            playerId: components["schemas"]["Slug"];
+            starterIds: components["schemas"]["Slug"][];
+            /** @enum {string|null} */
+            absenceReason: null | "injured" | "not_in_squad" | "youth_conflict" | "fixture_not_played";
         };
         /**
          * @description The option chosen for a pending dilemma.
@@ -1062,6 +1106,8 @@ export interface components {
          *     }
          */
         BlockSummary: {
+            /** @description Optional for legacy replies; null when no selection was applied. */
+            keyStarterOutcome?: components["schemas"]["KeyStarterOutcome"] | null;
             blockNumber: number;
             /** @description Period covered by the block. */
             label: string;
@@ -1137,6 +1183,8 @@ export interface components {
          *     }
          */
         RunView: {
+            /** @description Optional for legacy replies; null means no interaction in this block. */
+            keyStarter?: components["schemas"]["KeyStarterOffer"] | null;
             /** Format: uuid */
             runId: string;
             seasonId: components["schemas"]["Slug"];
@@ -1717,6 +1765,49 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["TakeDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description The decision was recorded; the updated run. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunView"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    selectKeyStarter: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description Client-generated unique key (a UUID is recommended) that makes the request safe to retry. Keep it stable across retries of the same user action.
+                 * @example 7d1c2f4e-5a6b-4c7d-8e9f-0a1b2c3d4e5f
+                 */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                /**
+                 * @description UUID of a run.
+                 * @example 0b6f3a52-6c0e-4d3e-8d0a-3f1f6e2b9c11
+                 */
+                runId: components["parameters"]["RunId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SelectKeyStarterRequest"];
             };
         };
         responses: {

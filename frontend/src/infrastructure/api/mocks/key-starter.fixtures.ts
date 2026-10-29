@@ -1,8 +1,10 @@
+import type { components } from '../generated/schema';
+
 import { startRun } from './store';
 import { TEST_SEASON_ID } from './fixtures';
 
 /** Captured pre-match offer only; MSW does not claim to simulate starter selection. */
-export function keyStarterRun() {
+export function keyStarterRun(): components['schemas']['RunView'] {
   return {
     ...startRun(TEST_SEASON_ID).run,
     keyStarter: {
