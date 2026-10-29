@@ -20,8 +20,9 @@ lint: lint-backend lint-frontend ## Lint, type checks and layer rules
 lint-backend: ## ruff, mypy and import-linter
 	cd backend && uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run lint-imports
 
-lint-frontend: ## eslint, tsc and dependency-cruiser
+lint-frontend: ## eslint, tsc and dependency-cruiser, plus ruff and mypy on the real-API E2E launcher
 	cd frontend && npm run lint
+	cd backend && uv run ruff check ../frontend/e2e/support && uv run ruff format --check ../frontend/e2e/support && uv run mypy --strict ../frontend/e2e/support
 
 dev: ## Start the development environment (Docker Compose)
 	docker compose up --build

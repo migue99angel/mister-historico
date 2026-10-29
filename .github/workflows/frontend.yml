@@ -8,14 +8,26 @@ on:
     branches: [main]
     paths:
       - "frontend/**"
-      # The real-backend E2E plays the backend with its golden.
-      - "backend/**"
+      # The real-backend E2E serves this backend and compares the browser with its golden.
+      - "backend/src/**"
+      - "backend/migrations/**"
+      - "backend/alembic.ini"
+      - "backend/tests/golden/**"
+      - "backend/tests/fixtures/content/**"
+      - "backend/pyproject.toml"
+      - "backend/uv.lock"
       - ".github/workflows/frontend.yml"
   pull_request:
     paths:
       - "frontend/**"
-      # The real-backend E2E plays the backend with its golden.
-      - "backend/**"
+      # The real-backend E2E serves this backend and compares the browser with its golden.
+      - "backend/src/**"
+      - "backend/migrations/**"
+      - "backend/alembic.ini"
+      - "backend/tests/golden/**"
+      - "backend/tests/fixtures/content/**"
+      - "backend/pyproject.toml"
+      - "backend/uv.lock"
       - ".github/workflows/frontend.yml"
 
 permissions:
@@ -90,6 +102,14 @@ jobs:
       - name: Install backend dependencies
         working-directory: backend
         run: uv sync --frozen
+
+      # Outside backend/, so the backend workflow does not check it.
+      - name: Lint the real-API launcher
+        working-directory: backend
+        run: |
+          uv run ruff check ../frontend/e2e/support
+          uv run ruff format --check ../frontend/e2e/support
+          uv run mypy --strict ../frontend/e2e/support
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
