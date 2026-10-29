@@ -20,23 +20,24 @@ info:
       fixture) is a lowercase slug.
     - Request validation errors (malformed JSON, missing or invalid fields, malformed ids) are
       always `400 validation_error`. `422` is reserved for well-formed requests that break a rule
-      (`invalid_option`, `idempotency_key_conflict`, `alias_rejected`). A backend framework that
-      defaults to 422 for validation must map it to 400.
+      (`invalid_option`, `invalid_key_starter`, `idempotency_key_conflict`, `alias_rejected`).
+      A backend framework that defaults to 422 for validation must map it to 400.
     - **Run token.** `POST /runs` returns a secret `runToken` (opaque, server-generated, at least
       32 bytes, URL-safe). The client keeps it and sends `Authorization: Bearer <runToken>` on
-      `GET /runs/{runId}`, `POST /runs/{runId}/decisions`, `POST /runs/{runId}/advance` and
+      `GET /runs/{runId}`, `POST /runs/{runId}/decisions`, `POST /runs/{runId}/key-starter`,
+      `POST /runs/{runId}/advance` and
       `POST /runs/{runId}/alias`. A missing token answers `401 run_token_required`, a wrong one
       `403 run_token_invalid`. `GET /runs/{runId}/result` stays public because the share link
       uses it.
-    - **Optimistic locking.** `decisions` and `advance` carry a mandatory `expectedVersion` in
-      the body (the last `RunView.version` the client saw); a mismatch answers
+    - **Optimistic locking.** `decisions`, `key-starter` and `advance` carry a mandatory
+      `expectedVersion` in the body (the last `RunView.version` the client saw); a mismatch answers
       `409 version_conflict`.
-    - **Idempotency.** `decisions` and `advance` require an `Idempotency-Key` header. The same
-      key with the same body returns the original reply even if `expectedVersion` is now stale
+    - **Idempotency.** `decisions`, `key-starter` and `advance` require an `Idempotency-Key`
+      header. The same key with the same body returns the original reply even if `expectedVersion` is now stale
       and records nothing twice; the same key with another body is
       `422 idempotency_key_conflict`.
-    - **Order of checks.** Every command on a run (`GET /runs/{runId}`, `decisions`, `advance`
-      and `alias`) evaluates, in this exact order, and stops at the first failure:
+    - **Order of checks.** Every command on a run (`GET /runs/{runId}`, `decisions`,
+      `key-starter`, `advance` and `alias`) evaluates, in this exact order, and stops at the first failure:
       1. malformed `runId` (not a UUID): `400 validation_error`.
       2. missing token (no `Authorization: Bearer` header): `401 run_token_required`.
       3. unknown run: `404 run_not_found`.
@@ -1116,9 +1117,10 @@ components:
           items:
             $ref: "#/components/schemas/Slug"
         absenceReason:
-          type: [string, "null"]
-          enum:
-            [null, injured, not_in_squad, youth_conflict, fixture_not_played]
+          oneOf:
+            - type: string
+              enum: [injured, not_in_squad, youth_conflict, fixture_not_played]
+            - type: "null"
 
     TakeDecisionRequest:
       type: object

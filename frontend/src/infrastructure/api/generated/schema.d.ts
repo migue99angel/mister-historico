@@ -609,8 +609,7 @@ export interface components {
             date: string;
             playerId: components["schemas"]["Slug"];
             starterIds: components["schemas"]["Slug"][];
-            /** @enum {string|null} */
-            absenceReason: null | "injured" | "not_in_squad" | "youth_conflict" | "fixture_not_played";
+            absenceReason: ("injured" | "not_in_squad" | "youth_conflict" | "fixture_not_played") | null;
         };
         /**
          * @description The option chosen for a pending dilemma.
