@@ -37,7 +37,8 @@ No se usa numpy en el shared kernel (el contrato R0 de `import-linter` lo prohí
 | Penaltis | `("match", fixture_id, "penalties")` |
 | Lesión de un jugador | `("match", fixture_id, "injury", player_id)` |
 | Eventos de un bloque | `("block", block_id, "events")` |
-| Sorteos simulados (si hacen falta) | `("draw", competition_id, stage_id)` |
+| Espacio de nombres de sorteos simulados (no es hoja) | `("draw", competition_id, stage_id)` |
+| Desempate final de un grupo simulado, una hoja por club | `("draw", competition_id, stage_id, group_id, club_season_id)` |
 
 **Regla:** nunca se hacen extracciones secuenciales sobre una colección de tamaño variable (por ejemplo, una por jugador en un bucle sobre el mismo flujo): cada elemento obtiene su flujo hoja (`injury`, `player_id`). Así, cambiar una alineación no desplaza el azar de nada más, y la prórroga no reutiliza los números de los 90 minutos. Una convención nueva se añade a esta tabla con un ADR.
 
@@ -55,3 +56,12 @@ No se usa numpy en el shared kernel (el contrato R0 de `import-linter` lo prohí
 - **Positivas:** replays y golden tests reproducibles; los partidos son independientes entre sí; el kernel sigue siendo solo stdlib; la API es pequeña y fácil de falsear en tests.
 - **Negativas y trade-offs:** hay que mantener nuestras distribuciones y probarlas estadísticamente; es más lento que numpy (irrelevante para una temporada de pocas decenas de partidos); el esquema de claves queda congelado.
 - **Seguimiento:** si la calibración (T2.7) necesita millones de partidos y el rendimiento duele, medir antes de cambiar; un adaptador alternativo en `shared_kernel/infrastructure` podría hacerlo sin tocar el dominio, pero con otro ADR.
+
+
+## Ampliación FIX-T2.4-group-tie · Sorteo final de grupos simulados
+
+**Aprobada por el autor el 2026-10-29** ([decisión en #126](https://github.com/migue99angel/mister-historico/issues/126#issuecomment-6494985260)). La ruta de sorteo por club es `("draw", competition_id, stage_id, group_id, club_season_id)`. El flujo `("draw", competition_id, stage_id)` deja de ser hoja: solo es un espacio de nombres y el sorteo de grupo nunca extrae directamente de él ni del prefijo de grupo.
+
+Cada club empatado obtiene una única extracción de `random()` desde su propia hoja. Los empates residuales se ordenan por ese valor ascendente, con el ID estable como último criterio si dos extracciones coinciden. La derivación parte de la semilla raíz de la Partida, sin consumirla: consultar otra vez el grupo, cambiar el orden de entrada o reconstruir la simulación en otro bloque conserva el sorteo. Los grupos y clubes tienen hojas independientes; los partidos mantienen sus flujos anteriores.
+
+Esta convención se aplica al cierre de los grupos simulados según la enmienda de ADR-007. No añade azar a la evidencia histórica ni cambia el esquema del contenido. Los replays que antes quedaban atascados en un empate residual ahora pueden continuar; las rutas existentes de goles, lesiones y eventos no cambian.

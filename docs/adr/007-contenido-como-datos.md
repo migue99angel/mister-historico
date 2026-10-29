@@ -82,3 +82,12 @@ Las competiciones publican calendarios históricos completos de slots y asignaci
 La sede H2H pasa a ser explícita y nullable. En neutral, el calendario decide los lados con los que se traduce el marcador relativo al gestionado; los partidos de grupos pueden tener sede neutral. La excepción estrecha de procedencia de la CR anterior comprende estos nuevos datos históricos. Las salidas simuladas sin resolver no llevan fuentes: preservan el empate y separan orden de presentación de posición deportiva. El productor T2.6 debe acreditar el agotamiento de una eliminatoria con el estado completo, incluso cuando sus partidos atraviesen bloques.
 
 La conexión posterior transformará las dos plazas de cada slot mediante una biyección de representantes históricos y ocupantes contrafactuales, actualizada por ronda. Se mantienen ID, fecha, orientación y sede para conservar las claves del ADR-005. Es una política de diseño del juego; esta CR no implementa el algoritmo de bloques ni inventa resultados externos.
+
+
+## Ampliación FIX-T2.4-group-tie · Cierre de empates simulados por sorteo
+
+**Aprobada por el autor el 2026-10-29** ([decisión en #126](https://github.com/migue99angel/mister-historico/issues/126#issuecomment-6494985260)). Esta enmienda sustituye, para el cierre de un grupo con resultados simulados, la preservación del empate de la ampliación CR-T2.6-competition-completion.
+
+Al cerrar el grupo del club gestionado, si contiene resultados simulados que sustituyen a los históricos, el motor sortea **todos los empates residuales** una vez agotados los puntos y criterios configurados, incluidos los que no cruzan la frontera de clasificación. Usa las hojas por club fijadas en ADR-005. La tabla queda ordenada según el sorteo, sin `unresolved_ties`; ese orden decide las plazas clasificatorias y la asignación de posiciones a los cruces. Así puede pasar a FINAL cuando cumpla las demás condiciones de cierre, sin que el empate residual la bloquee.
+
+Es una **regla sintética del motor**, no una afirmación sobre normativa histórica ni un criterio nuevo del contenido. No requiere cambiar `season.yaml` ni el esquema publicado. Antes del cierre, los empates se siguen preservando para su presentación. La evidencia histórica y los grupos sin sustituciones simuladas conservan sus empates explícitos y el rechazo cuando impiden clasificar o asignar posiciones; el sorteo no inventa resultados ni clasificaciones históricas.
