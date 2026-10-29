@@ -135,7 +135,7 @@ export interface paths {
         put?: never;
         /**
          * Simulate the current block
-         * @description Simulates the matches of the current block and returns the `RunView` with its `BlockSummary`. Answers `409 pending_dilemmas` while dilemmas are unresolved and `409 run_already_finished` once the run has ended. When the board confidence falls below the threshold the run ends with status `sacked`. Like decisions, it requires an `Idempotency-Key` (a replay returns the original reply and never simulates twice), a mandatory `expectedVersion` in the body and the run token.
+         * @description Simulates the matches of the current block and returns the `RunView` with its `BlockSummary`. Answers `409 pending_dilemmas` while dilemmas are unresolved, `409 pending_key_starter` while a captured starter offer is unresolved, and `409 run_already_finished` once the run has ended. When the board confidence falls below the threshold the run ends with status `sacked`. Like decisions, it requires an `Idempotency-Key` (a replay returns the original reply and never simulates twice), a mandatory `expectedVersion` in the body and the run token.
          */
         post: operations["advanceBlock"];
         delete?: never;
@@ -1811,7 +1811,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description The decision was recorded; the updated run. */
+            /** @description The starter selection was recorded; the updated run. */
             200: {
                 headers: {
                     [name: string]: unknown;

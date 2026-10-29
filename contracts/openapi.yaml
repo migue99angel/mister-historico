@@ -231,6 +231,7 @@ paths:
   /runs/{runId}/key-starter:
     post:
       operationId: selectKeyStarter
+      x-implementation-task: T3.9
       tags: [Runs]
       summary: Select the key starter
       description: >-
@@ -256,7 +257,7 @@ paths:
               $ref: "#/components/schemas/SelectKeyStarterRequest"
       responses:
         "200":
-          description: The decision was recorded; the updated run.
+          description: The starter selection was recorded; the updated run.
           content:
             application/json:
               schema:
@@ -283,7 +284,8 @@ paths:
       summary: Simulate the current block
       description: >-
         Simulates the matches of the current block and returns the `RunView` with its
-        `BlockSummary`. Answers `409 pending_dilemmas` while dilemmas are unresolved and
+        `BlockSummary`. Answers `409 pending_dilemmas` while dilemmas are unresolved,
+        `409 pending_key_starter` while a captured starter offer is unresolved, and
         `409 run_already_finished` once the run has ended. When the board confidence falls below
         the threshold the run ends with status `sacked`. Like decisions, it requires an
         `Idempotency-Key` (a replay returns the original reply and never simulates twice), a
