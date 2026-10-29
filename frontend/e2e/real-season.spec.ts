@@ -104,6 +104,7 @@ test('Test FC is played to the end against the real API, surviving reloads, with
       await expect(page).toHaveURL(runUrl);
       await expect(progress).toHaveAttribute('aria-valuenow', '1');
       await expect(skip).toHaveCount(0);
+      await page.locator('summary').filter({ hasText: 'Clasificación' }).click();
       await expect(page.getByRole('table')).not.toHaveCount(0);
       await expect(page.getByRole('heading', { name: 'Resumen del bloque' })).toBeVisible();
     }
