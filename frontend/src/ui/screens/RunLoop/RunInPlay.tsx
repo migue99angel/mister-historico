@@ -27,6 +27,7 @@ export function RunInPlay({ run, isRefreshing, onRunEnded }: RunInPlayProps) {
   const notified = useRef(false);
   const decisionsHeading = useRef<HTMLHeadingElement>(null);
   const focusDecisions = useRef(false);
+  const wasRevealing = useRef(false);
   const decision = useTakeDecision(run.runId);
   const advance = useAdvanceBlock(run.runId);
   const [choices, setChoices] = useState<Partial<Record<string, string>>>({});
@@ -90,6 +91,10 @@ export function RunInPlay({ run, isRefreshing, onRunEnded }: RunInPlayProps) {
   }, [run.status, run.runId, submitting, reveal.revealing, onRunEnded]);
 
   useEffect(() => {
+    if (wasRevealing.current && !reveal.revealing && document.activeElement === document.body) {
+      summaryHeading.current?.focus();
+    }
+    wasRevealing.current = reveal.revealing;
     if (focusDecisions.current && !reveal.revealing) {
       focusDecisions.current = false;
       decisionsHeading.current?.focus();

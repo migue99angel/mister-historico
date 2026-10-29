@@ -81,8 +81,8 @@ test('Test FC is played to the end against the real API, surviving reloads, with
     const advanced = page.waitForResponse(isAdvance);
     if (played === 0) {
       await simulate.evaluate((button) => {
-        (button as HTMLButtonElement).click();
-        (button as HTMLButtonElement).click();
+        (button as { click: () => void }).click();
+        (button as { click: () => void }).click();
       });
     } else {
       await simulate.click();
