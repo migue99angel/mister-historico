@@ -70,6 +70,14 @@ describe('useTakeDecision', () => {
     expect(result.current.decision.failure).toBeNull();
   });
 
+  it('captures the actual cached before and response views of the same command', async () => {
+    const { result } = await renderLoadedRun();
+    await act(async () => { await result.current.decision.send(BOARD_MEETING); });
+    expect(result.current.decision.transition).toMatchObject({
+      before: { version: 0 }, after: { version: 1 }, retried: false,
+    });
+  });
+
   it('sends the version of the current view and an Idempotency-Key the API accepts', async () => {
     const sent = spyOnDecisions();
     const { result } = await renderLoadedRun();
@@ -134,6 +142,7 @@ describe('useTakeDecision', () => {
     expect(sent[1]?.idempotencyKey).toBe(sent[0]?.idempotencyKey);
     expect(sent[1]?.body).toEqual(sent[0]?.body);
     expect(result.current.decision.failure).toBeNull();
+    expect(result.current.decision.transition?.retried).toBe(true);
     expect(cachedRun(queryClient, runId).decisions).toHaveLength(1);
   });
 
