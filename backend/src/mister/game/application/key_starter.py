@@ -85,6 +85,7 @@ class KeyStarterOffer:
     competition_id: CompetitionId
     venue: Literal["home", "away", "neutral"]
     key_match_label: str | None
+    projected_starter_ids: tuple[PlayerId, ...]
     selected_player_id: PlayerId | None = None
 
     def __post_init__(self) -> None:
@@ -106,6 +107,16 @@ class KeyStarterOffer:
             or (self.key_match_label is not None and not isinstance(self.key_match_label, str))
         ):
             raise InvalidValueError("starter offer needs captured opponent, competition and venue")
+        if (
+            not isinstance(self.projected_starter_ids, tuple)
+            or len(self.projected_starter_ids) != _MAX_STARTERS
+            or any(not isinstance(player, PlayerId) for player in self.projected_starter_ids)
+            or len(set(self.projected_starter_ids)) != _MAX_STARTERS
+            or not set(self.candidate_ids).isdisjoint(self.projected_starter_ids)
+        ):
+            raise InvalidValueError(
+                "projection needs eleven distinct typed starters outside candidates"
+            )
         KeyStarterSelection(self.fixture_id, self.date, self.candidate_ids[0])
         if (
             self.selected_player_id is not None

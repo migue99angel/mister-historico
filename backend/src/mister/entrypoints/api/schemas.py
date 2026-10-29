@@ -281,7 +281,21 @@ class KeyStarterOffer(BaseModel):
     date_value: date = Field(alias="date")
     opponent: TeamRef
     competition_name: str = Field(alias="competitionName")
-    venue: Venue
+    venue: Venue = Field(
+        description="Home, away or neutral relative to the managed team, not the opponent."
+    )
+    projected_starter_ids: list[Slug] = Field(
+        alias="projectedStarterIds",
+        min_length=11,
+        max_length=11,
+        json_schema_extra={"uniqueItems": True},
+    )
+    projected_starters: list[SquadMember] = Field(
+        alias="projectedStarters",
+        min_length=11,
+        max_length=11,
+        json_schema_extra={"uniqueItems": True},
+    )
     key_match_label: str | None = Field(..., alias="keyMatchLabel")
     candidates: list[PlayerSummary] = Field(
         min_length=2, max_length=3, json_schema_extra={"uniqueItems": True}
