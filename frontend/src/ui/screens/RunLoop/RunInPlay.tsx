@@ -99,7 +99,9 @@ export function RunInPlay({ run, isRefreshing, onRunEnded }: RunInPlayProps) {
     ) {
       summaryHeading.current?.focus();
       // The mobile panel returns before this heading and can push retained focus offscreen.
-      summaryHeading.current?.scrollIntoView({ block: 'nearest' });
+      if (typeof summaryHeading.current?.scrollIntoView === 'function') {
+        summaryHeading.current.scrollIntoView({ block: 'nearest' });
+      }
     }
     wasRevealing.current = reveal.revealing;
     if (focusDecisions.current && !reveal.revealing) {

@@ -2,7 +2,7 @@ import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import { axe } from 'jest-axe';
 import { HttpResponse, http } from 'msw';
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   createTestRuntime,
@@ -163,15 +163,6 @@ function problem(status: number, code: string) {
 }
 
 describe('RunLoop', () => {
-  // JSDOM does not implement browser scrolling; geometry is covered by Playwright.
-  const scrollIntoView = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollIntoView');
-  beforeAll(() => {
-    Element.prototype.scrollIntoView = vi.fn();
-  });
-  afterAll(() => {
-    if (scrollIntoView) Object.defineProperty(Element.prototype, 'scrollIntoView', scrollIntoView);
-    else Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
-  });
   afterEach(() => {
     vi.unstubAllGlobals();
   });
