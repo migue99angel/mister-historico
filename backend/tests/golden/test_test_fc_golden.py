@@ -35,8 +35,8 @@ from mister.shared_kernel.seed import Seed
 from mister.simulation.application.api import SimulationService
 from tests.golden.season_play import (
     GOLDEN_SEED,
-    advance,
     JsonObject,
+    advance,
     load_golden,
     play_to_the_end,
     start_run,
