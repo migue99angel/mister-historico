@@ -5,9 +5,11 @@ from datetime import date
 from typing import Literal
 
 from mister.shared_kernel.errors import InvalidValueError
-from mister.shared_kernel.ids import BlockId, FixtureId, PlayerId
+from mister.shared_kernel.ids import BlockId, ClubSeasonId, CompetitionId, FixtureId, PlayerId
 
 _MAX_STARTERS = 11
+_MIN_CANDIDATES = 2
+_MAX_CANDIDATES = 3
 
 type StarterAbsenceReason = Literal[
     "injured", "not_in_squad", "youth_conflict", "fixture_not_played"
@@ -79,6 +81,10 @@ class KeyStarterOffer:
     fixture_id: FixtureId
     date: date
     candidate_ids: tuple[PlayerId, ...]
+    opponent_id: ClubSeasonId
+    competition_id: CompetitionId
+    venue: Literal["home", "away", "neutral"]
+    key_match_label: str | None
     selected_player_id: PlayerId | None = None
 
     def __post_init__(self) -> None:
@@ -86,11 +92,20 @@ class KeyStarterOffer:
             raise InvalidValueError("starter offer needs a typed block ID")
         if (
             not isinstance(self.candidate_ids, tuple)
-            or not self.candidate_ids
+            or not _MIN_CANDIDATES <= len(self.candidate_ids) <= _MAX_CANDIDATES
             or any(not isinstance(player, PlayerId) for player in self.candidate_ids)
             or len(set(self.candidate_ids)) != len(self.candidate_ids)
         ):
-            raise InvalidValueError("starter candidates must be distinct immutable typed IDs")
+            raise InvalidValueError(
+                "starter offer needs two or three distinct immutable typed candidates"
+            )
+        if (
+            not isinstance(self.opponent_id, ClubSeasonId)
+            or not isinstance(self.competition_id, CompetitionId)
+            or self.venue not in ("home", "away", "neutral")
+            or (self.key_match_label is not None and not isinstance(self.key_match_label, str))
+        ):
+            raise InvalidValueError("starter offer needs captured opponent, competition and venue")
         KeyStarterSelection(self.fixture_id, self.date, self.candidate_ids[0])
         if (
             self.selected_player_id is not None

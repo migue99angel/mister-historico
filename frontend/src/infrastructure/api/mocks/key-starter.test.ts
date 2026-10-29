@@ -37,9 +37,9 @@ describe('key starter contract', () => {
   it('rejects duplicate captured candidates', () => {
     const view = keyStarterRun();
     if (!view.keyStarter) throw new Error('expected fixture');
-    const first = view.keyStarter.candidateIds[0];
+    const first = view.keyStarter.candidates[0];
     if (!first) throw new Error('expected a captured candidate');
-    view.keyStarter.candidateIds.push(first);
+    view.keyStarter.candidates.push(first);
     expect(validateResponse('POST', PATH, 200, view, 'application/json').length).toBeGreaterThan(0);
   });
 });
@@ -61,7 +61,12 @@ describe('reviewed starter offer', () => {
   it.each([1, 4])('rejects an offer with %i candidates', (count) => {
     const view = keyStarterRun();
     if (!view.keyStarter) throw new Error('expected fixture');
-    view.keyStarter.candidateIds = Array.from({ length: count }, (_, i) => `player-${String(i)}`);
+    const template = view.keyStarter.candidates[0];
+    if (!template) throw new Error('expected candidate');
+    view.keyStarter.candidates = Array.from({ length: count }, (_, i) => ({
+      ...template,
+      id: `player-${String(i)}`,
+    }));
     expect(validateResponse('POST', PATH, 200, view, 'application/json').length).toBeGreaterThan(0);
   });
 
@@ -73,7 +78,7 @@ describe('reviewed starter offer', () => {
         blockId: 'block-1',
         fixtureId: 'test-fixture',
         date: '2000-09-03',
-        candidateIds: ['player-one', 'player-two'],
+        candidates: keyStarterRun().keyStarter?.candidates,
         selectedPlayerId: null,
       },
     };

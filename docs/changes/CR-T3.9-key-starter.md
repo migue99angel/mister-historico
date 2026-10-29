@@ -38,26 +38,55 @@ Ni esta CR ni T3.9 autorizan cambiar la rúbrica, la normalización de fuerza o 
 
 ## Oferta y elección
 
-`KeyStarterOffer(block_id, fixture_id, date, candidate_ids, selected_player_id=None)` es una
+`KeyStarterOffer(block_id, fixture_id, date, candidate_ids, opponent_id, competition_id,
+venue, key_match_label, selected_player_id=None)` es una
 captura durable, no una consulta a Catalog vivo. El bloque tiene cero o una oferta. Se crea
 una sola vez al entrar en él, también para el primero. El fixture es el primero, ordenado por
 fecha e ID, de los partidos `key=true` del club propio dentro de las fechas del bloque, con
 fecha y participantes conocidos y sin resultado simulado previo. No se eligen slots con
 participantes todavía pendientes ni partidos de otro club; no se consulta el resultado real.
-Sin fixture elegible o sin candidatos, no hay oferta y avanzar funciona como antes.
+Sin fixture elegible o con menos de dos candidatos disponibles, no hay oferta y avanzar
+funciona como antes.
 
 Los candidatos son los jugadores de la plantilla efectiva en esa fecha según los intervalos
 capturados y los traspasos ya decididos. Se excluyen los lesionados cuyo `injured_until` actual
-sea posterior a esa fecha. El día de `injured_until` ya está disponible. El orden estable es
-por ID. No se ejecuta RNG ni se anticipan lesiones futuras forzadas o aleatorias al generar
-candidatos. Se guardan IDs, no copias mutables del jugador; los nombres se resuelven con la
-misma política y contenido capturado que el resto de RunView.
+sea posterior a esa fecha. El día de `injured_until` ya está disponible. Se ordenan por media
+nominal capturada descendente y, en empate, por ID ascendente; se conservan los tres primeros
+(o los dos si solo quedan dos). La oferta contiene exactamente dos o tres candidatos, nunca
+la plantilla completa. No se recalcula fuerza para ordenar. No se ejecuta RNG ni se
+anticipan lesiones futuras forzadas o aleatorias al generar candidatos. Se guardan IDs, no copias mutables del jugador; los nombres se resuelven con la
+misma política y contenido capturado que el resto de RunView. HTTP publica `candidates`
+como dos o tres `PlayerSummary`, en el orden de los IDs capturados, con nombres y medias
+nominales del contenido inicial. Esto permite mostrarlos aunque una venta o una entrada
+por fecha los deje fuera de `RunView.squad`; no obliga a inferir nombres de los slugs.
+`selectedPlayerId` debe coincidir con uno de sus IDs; estos IDs son únicos incluso si los
+objetos difieren en otros campos. La restricción la valida el DTO de captura, no solo
+`uniqueItems` (que en JSON Schema compara objetos completos).
+
+Se capturan también rival efectivo, competición, sede relativa al usuario (`home`, `away`,
+`neutral`) y etiqueta del partido clave. La representación HTTP incluye `opponent: TeamRef`,
+`competitionName`, `venue` y `keyMatchLabel` (nullable), además de fixture/fecha. El `TeamRef`
+lleva nombre, nombre corto, colores y `isUser=false`; se resuelve desde la publicación
+capturada, nunca desde el slug ni Catalog vivo. La etiqueta sigue la misma política que
+`MatchReport.keyMatchLabel`. No se publican marcador, once futuro ni causa de lesión futura.
 
 La oferta no se regenera tras una decisión, recarga, cambio de publicación o reintento.
 `selected_player_id` solo admite un candidato capturado y queda inmutable tras la elección.
 No hay segunda oferta aunque el jugador se lesione o sea vendido después. Dilemas y esta
-interacción pueden resolverse en cualquier orden; `advance` exige resolver ambos. La
-acreditación explica por qué una elección antes válida no se pudo aplicar.
+interacción pueden resolverse en cualquier orden. La elección es opcional: `advance` con
+oferta sin elegir la cierra como omitida y conserva la política normal de alineación/cantera,
+sin solicitud de titular al motor ni acreditación ficticia. Solo los dilemas sin resolver
+bloquean con `409 pending_dilemmas`; no existe `pending_key_starter` ni precedencia ambigua.
+La acreditación explica por qué una elección antes válida no se pudo aplicar.
+
+**Despliegue independiente:** T3.9 puede crear ofertas antes de integrar T4.10. El frontend
+anterior ignora el campo opcional y su comando `advance` sigue funcionando; no necesita un
+comando nuevo ni una bandera de composición. T4.10 ofrece «Simular sin elegir» mediante ese
+mismo avance, sin escoger un candidato por defecto. El cierre por omisión queda capturado
+por bloque junto al comando de avance, no se regenera la oferta ni se acepta una elección
+retroactiva. Una carrera selección/avance se resuelve con la versión habitual: solo gana
+uno; el otro recibe conflicto. Sin selección no se consumen nuevas hojas RNG. La recarga
+y el replay conservan esta omisión; las partidas antiguas siguen sin ofertas retroactivas.
 
 ## Comando HTTP y aplicación
 
@@ -81,7 +110,8 @@ compartir clave con `decisions` o `advance` nunca devuelve una respuesta de otro
 | Ya hay selección, con clave nueva | `409 key_starter_already_selected` |
 | Sin oferta, candidato ajeno, fixture ajeno/ya jugado/distinto del capturado | `422 invalid_key_starter` |
 | Partida terminal | `409 run_already_finished` |
-| Avanzar con oferta sin resolver | `409 pending_key_starter` |
+| Avanzar con oferta sin elegir, sin dilemas pendientes | Avance normal; oferta omitida durablemente |
+| Avanzar con dilemas pendientes, haya o no elección | `409 pending_dilemmas` |
 
 Concurrencia y rollback siguen `RunRepository`/`UnitOfWork`: solo un comando gana; doble toque
 con la misma clave recupera su respuesta. No se persiste una selección si falla el guardado
@@ -122,6 +152,9 @@ no inventa jugadores para completar una plantilla insuficiente. Si el partido no
 la lista está vacía y la causa es
 `fixture_not_played`; para un partido disputado es no vacía. Ninguna otra causa admite una
 lista vacía. El elegido está en la lista exactamente cuando la causa es `None`.
+`uniqueItems` en los modelos Pydantic documenta el esquema, no valida las listas en runtime:
+T3.9 construye los DTO validados antes de presentar y debe probar que ninguna respuesta
+HTTP publica duplicados (candidatos ni once). No debe fiarse de `json_schema_extra` como validador.
 
 `RunView.keyStarter` publica la oferta del bloque actual; `BlockSummary.keyStarterOutcome`
 publica la acreditación del último cierre. Ambos son opcionales para compatibilidad con
@@ -143,11 +176,11 @@ falla explícitamente, sin reinterpretarlo como legacy.
 
 | Entrega | Evidencia exigida |
 |---|---|
-| Esta CR | DTOs congelados, candidatos únicos/no vacíos, selección miembro, IDs/fecha tipados, evidencia coherente, once único, mapeo ACL sin pérdida, OpenAPI/generado y fixtures MSW válidos, compatibilidad de payload anterior |
-| T3.9 · Game/HTTP | Cero/una oferta; fixture conocido, ajeno/ya jugado; candidato inválido; autenticación, orden de validaciones, versión, idempotencia entre comandos, doble toque/carrera/rollback; persistencia y recarga |
+| Esta CR | DTOs congelados, dos o tres candidatos únicos y contexto legible del partido, selección miembro, IDs/fecha tipados, evidencia coherente, once único, mapeo ACL sin pérdida, OpenAPI/generado y fixtures MSW válidos, compatibilidad de payload anterior |
+| T3.9 · Game/HTTP | Cero/una oferta; fixture conocido, ajeno/ya jugado; candidato inválido; autenticación, orden de validaciones, versión, idempotencia entre comandos, doble toque/carrera/rollback; persistencia y recarga; avance sin elección con frontend anterior, omisión durable y carrera selección/avance |
 | T3.9 · Simulation | Fecha exacta, jugador realmente requerido y presente en fuerza; sin efecto en otro partido; lesión antes del fixture y recuperación ese día; venta/entrada por fecha; fallback visible; cantera compatible, jugador ya juvenil y saturación; fixture que deja de disputarse |
 | T3.9 · replay | Mismo contenido capturado y orden, cambio/retirada de Catalog, oferta que cambia de disponibilidad, resultado/acreditación iguales; legacy sin interacción ni consumo extra de RNG |
-| T4.10 | Elegir/confirmar, recarga y reintento, bloqueo por interacción pendiente, mostrar quién jugó o causa y once alternativo tras cierre; no prometer victoria; E2E Test FC con API real |
+| T4.10 | Elegir/confirmar, recarga y reintento, «Simular sin elegir» y recuperación de la omisión, mostrar quién jugó o causa y once alternativo tras cierre; no prometer victoria; E2E Test FC con API real |
 
 La suite de valores se ejecuta contra ambos contratos de contexto; los tests de mapeo usan
 la ACL real. Los tests HTTP de ejecución y fake/adaptador `SeasonSimulator` se amplían en

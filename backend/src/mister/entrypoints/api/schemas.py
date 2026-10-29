@@ -279,8 +279,12 @@ class KeyStarterOffer(BaseModel):
     block_id: Slug = Field(alias="blockId")
     fixture_id: Slug = Field(alias="fixtureId")
     date_value: date = Field(alias="date")
-    candidate_ids: list[Slug] = Field(
-        alias="candidateIds", min_length=1, json_schema_extra={"uniqueItems": True}
+    opponent: TeamRef
+    competition_name: str = Field(alias="competitionName")
+    venue: Venue
+    key_match_label: str | None = Field(..., alias="keyMatchLabel")
+    candidates: list[PlayerSummary] = Field(
+        min_length=2, max_length=3, json_schema_extra={"uniqueItems": True}
     )
     selected_player_id: Slug | None = Field(..., alias="selectedPlayerId")
 
@@ -464,7 +468,6 @@ class Problem(BaseModel):
         "invalid_option",
         "invalid_key_starter",
         "key_starter_already_selected",
-        "pending_key_starter",
         "idempotency_key_conflict",
         "alias_rejected",
         "rate_limited",

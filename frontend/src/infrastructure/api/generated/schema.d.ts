@@ -135,7 +135,7 @@ export interface paths {
         put?: never;
         /**
          * Simulate the current block
-         * @description Simulates the matches of the current block and returns the `RunView` with its `BlockSummary`. Answers `409 pending_dilemmas` while dilemmas are unresolved, `409 pending_key_starter` while a captured starter offer is unresolved, and `409 run_already_finished` once the run has ended. When the board confidence falls below the threshold the run ends with status `sacked`. Like decisions, it requires an `Idempotency-Key` (a replay returns the original reply and never simulates twice), a mandatory `expectedVersion` in the body and the run token.
+         * @description Simulates the matches of the current block and returns the `RunView` with its `BlockSummary`. A pending starter offer is optional: advance records it as skipped when no player was selected and uses the normal lineup policy, without adding RNG draws. This permits deploying T3.9 before the selection UI. Only unresolved dilemmas block advance. Answers `409 pending_dilemmas` while dilemmas are unresolved and `409 run_already_finished` once the run has ended. When the board confidence falls below the threshold the run ends with status `sacked`. Like decisions, it requires an `Idempotency-Key` (a replay returns the original reply and never simulates twice), a mandatory `expectedVersion` in the body and the run token.
          */
         post: operations["advanceBlock"];
         delete?: never;
@@ -267,7 +267,7 @@ export interface components {
              * @description Stable machine-readable error code. Clients branch on this value.
              * @enum {string}
              */
-            code: "validation_error" | "idempotency_key_required" | "run_token_required" | "run_token_invalid" | "alias_already_set" | "season_not_found" | "run_not_found" | "version_conflict" | "pending_dilemmas" | "dilemma_already_decided" | "run_already_finished" | "run_not_finished" | "invalid_option" | "invalid_key_starter" | "key_starter_already_selected" | "pending_key_starter" | "idempotency_key_conflict" | "alias_rejected" | "rate_limited";
+            code: "validation_error" | "idempotency_key_required" | "run_token_required" | "run_token_invalid" | "alias_already_set" | "season_not_found" | "run_not_found" | "version_conflict" | "pending_dilemmas" | "dilemma_already_decided" | "run_already_finished" | "run_not_finished" | "invalid_option" | "invalid_key_starter" | "key_starter_already_selected" | "idempotency_key_conflict" | "alias_rejected" | "rate_limited";
             /** @description Human-readable explanation specific to this occurrence. */
             detail?: string;
             /**
@@ -593,13 +593,17 @@ export interface components {
             playerId: components["schemas"]["Slug"];
             expectedVersion: number;
         };
-        /** @description Captured once at block entry. At most one per block. Candidates are player IDs resolved from the captured content. No match outcome is exposed before advance. selectedPlayerId is null until chosen and must belong to candidateIds when set. */
+        /** @description Captured once at block entry. At most one per block. Candidates are player summaries resolved from the captured content. No match outcome is exposed before advance. selectedPlayerId is null until chosen and must match a candidate ID when set. Two or three candidates, ordered by descending captured nominal rating and then ID. Advance without a choice explicitly skips the offer; it never blocks older clients. */
         KeyStarterOffer: {
             blockId: components["schemas"]["Slug"];
             fixtureId: components["schemas"]["Slug"];
             /** Format: date */
             date: string;
-            candidateIds: components["schemas"]["Slug"][];
+            opponent: components["schemas"]["TeamRef"];
+            competitionName: string;
+            venue: components["schemas"]["Venue"];
+            keyMatchLabel: string | null;
+            candidates: components["schemas"]["PlayerSummary"][];
             selectedPlayerId: components["schemas"]["Slug"] | null;
         };
         /** @description Evidence captured during simulation, only published after block closure. starterIds is the actual managed-team lineup, including fallback. The selected player is in it exactly when absenceReason is null. fixture_not_played requires an empty lineup; every other outcome requires a nonempty lineup. Runtime validates these relations. */
