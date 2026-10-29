@@ -65,6 +65,10 @@
 | Fuerza | `TeamStrength` | Par de valores de ataque y defensa que resulta de la plantilla y los ajustes. |
 | Táctica | `Tactic` | Estilo (presión, contragolpe, posesión o equilibrado) y sistema de juego. |
 | Alineación / once | `Lineup` | Los once titulares elegidos para un partido. |
+| Once previsto | `LineupProjection` | Previsión del once por defecto de un partido, calculada al entrar en el bloque con el estado conocido y sin azar; no prueba quién jugará. |
+| Titular clave | `KeyStarter` | Suplente que el míster elige para que sea titular en el partido clave del bloque, y solo en ese partido. |
+| Oferta de titular clave | `KeyStarterOffer` | Captura durable, una como máximo por bloque, con el partido clave, el once previsto y dos o tres suplentes candidatos. |
+| Acreditación del titular clave | `KeyStarterOutcome` | Once realmente usado en ese partido tras el cierre y, si el elegido no jugó, el motivo. |
 | Marcador | `Score` | Goles de cada equipo; nunca negativos. |
 | Resultado del partido | `MatchResult` | Marcador final, con prórroga y penaltis si los hubo, y el ganador. |
 | Prórroga / penaltis | `extra_time` / `penalties` | Desempates de un partido a eliminatoria. |
