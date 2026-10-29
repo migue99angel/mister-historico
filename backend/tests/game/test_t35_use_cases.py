@@ -37,18 +37,20 @@ from mister.game.application.use_cases import (
 )
 from mister.game.domain.board import GoalProgress, GoalStatus
 from mister.game.domain.effects import PlayerMoraleEffect, SellPlayerEffect
-from mister.game.domain.errors import AlreadyDecidedError
+from mister.game.domain.errors import AlreadyDecidedError, InvalidRunTransitionError
 from mister.game.domain.events import DecisionTaken, RunStarted
 from mister.game.infrastructure.catalog_adapter import CatalogRunContentAdapter
 from mister.game.infrastructure.in_memory.run_repository import InMemoryRunStore, InMemoryUnitOfWork
 from mister.game.infrastructure.in_memory.run_tokens import FakeRunTokenGenerator
 from mister.game.infrastructure.in_memory.season_simulator import ScriptedSeasonSimulator
 from mister.game.infrastructure.security.run_tokens import Sha256RunTokenHasher
+from mister.game.infrastructure.simulation_adapter import SimulationServiceAdapter
 from mister.shared_kernel.clock import FixedClock
 from mister.shared_kernel.errors import InvalidValueError
 from mister.shared_kernel.events import DomainEvent, InMemoryEventBus
 from mister.shared_kernel.ids import DilemmaId, OptionId, PlayableSeasonId, RunId
 from mister.shared_kernel.seed import Seed
+from mister.simulation.application.api import SimulationService
 
 
 class _Provider:
@@ -115,6 +117,67 @@ def _setup(
         restore_game=restore,
     )
     return season, provider, store, published, start, get, take
+
+
+@pytest.mark.parametrize("dilemma_origin", ["first", "last", "unknown"])
+@pytest.mark.parametrize("unknown_option", [False, True])
+def test_finished_run_rejects_any_decision_without_changing_its_version(
+    dilemma_origin: str, unknown_option: bool
+) -> None:
+    season, _, store, events, start, get, take = _setup()
+    created = start.execute(season.id)
+    captured = CatalogRunContentAdapter.restore_game(
+        store.runs[created.run_id].replay_inputs.content, RulesConfiguration.a_profile()
+    )
+    advance = AdvanceBlock(
+        uow=InMemoryUnitOfWork(store),
+        clock=FixedClock(datetime(2026, 10, 28, tzinfo=UTC)),
+        event_bus=InMemoryEventBus(),
+        token_hasher=Sha256RunTokenHasher(),
+        restore_game=CatalogRunContentAdapter.restore_game,
+        simulator=SimulationServiceAdapter(SimulationService()),
+    )
+    for block in captured.blocks:
+        for dilemma in block.dilemmas:
+            take.execute(
+                created.run_id,
+                created.token,
+                f"finish-choice-{dilemma.id.value}",
+                store.runs[created.run_id].version,
+                dilemma.id,
+                dilemma.historical_option,
+            )
+        advance.execute(
+            created.run_id,
+            created.token,
+            f"finish-block-{block.id.value}",
+            store.runs[created.run_id].version,
+        )
+
+    finished = get.execute(created.run_id, created.token)
+    assert finished.run.status.value == "finished"
+    record = store.runs[created.run_id]
+    replies = dict(store.replies)
+    published = tuple(events)
+    block = captured.blocks[-1] if dilemma_origin == "last" else captured.blocks[0]
+    dilemma = block.dilemmas[0]
+    dilemma_id = DilemmaId("unknown-dilemma") if dilemma_origin == "unknown" else dilemma.id
+    option_id = OptionId("unknown-option") if unknown_option else dilemma.historical_option
+
+    with pytest.raises(InvalidRunTransitionError, match="terminal runs"):
+        take.execute(
+            created.run_id,
+            created.token,
+            "decision-after-finish",
+            finished.version,
+            dilemma_id,
+            option_id,
+        )
+
+    assert get.execute(created.run_id, created.token) == finished
+    assert store.runs[created.run_id] == record
+    assert store.replies == replies
+    assert tuple(events) == published
 
 
 def test_start_run_captures_once_and_stores_recoverable_initial_snapshot() -> None:

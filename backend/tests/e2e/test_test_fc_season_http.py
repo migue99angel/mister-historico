@@ -215,17 +215,7 @@ async def test_a_reloaded_client_recovers_the_run_and_finishes_the_golden_season
     ("operation", "command_body"),
     [
         ("/advance", {}),
-        pytest.param(
-            "/decisions",
-            {"dilemmaId": "d01", "optionId": "a"},
-            marks=pytest.mark.xfail(
-                reason=(
-                    "TakeDecision checks the dilemma against the current block before the "
-                    "terminal status, so it answers 422 invalid_option instead of the "
-                    "contract's 409 run_already_finished"
-                ),
-            ),
-        ),
+        ("/decisions", {"dilemmaId": "d01", "optionId": "a"}),
     ],
 )
 async def test_a_finished_run_stays_readable_and_rejects_further_commands(
