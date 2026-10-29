@@ -87,3 +87,27 @@ describe('reviewed starter offer', () => {
     );
   });
 });
+
+describe('captured lineup projection', () => {
+  it('publishes eleven projected starters, with every candidate outside the projection', () => {
+    const offer = keyStarterRun().keyStarter;
+    expect(offer?.projectedStarterIds).toHaveLength(11);
+    expect(new Set(offer?.projectedStarterIds).size).toBe(11);
+    expect(offer?.candidates.every((player) => !offer.projectedStarterIds.includes(player.id))).toBe(true);
+  });
+
+  it.each([10, 12])('rejects a projection containing %i players', (count) => {
+    const view = keyStarterRun();
+    const invalid = {
+      ...view,
+      keyStarter: { ...view.keyStarter, projectedStarterIds: Array.from({ length: count }, (_, i) => `starter-${String(i)}`) },
+    };
+    expect(validateResponse('POST', PATH, 200, invalid, 'application/json').length).toBeGreaterThan(0);
+  });
+
+  it('rejects duplicate projected starters', () => {
+    const view = keyStarterRun();
+    const invalid = { ...view, keyStarter: { ...view.keyStarter, projectedStarterIds: Array<string>(11).fill('same-player') } };
+    expect(validateResponse('POST', PATH, 200, invalid, 'application/json').length).toBeGreaterThan(0);
+  });
+});
