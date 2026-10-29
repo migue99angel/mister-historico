@@ -1,9 +1,12 @@
 """HTTP problem details mapping for public Game API failures."""
 
+import logging
 from typing import Any
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
+
+_LOGGER = logging.getLogger(__name__)
 
 _STATUS = {
     "validation_error": 400,
@@ -43,5 +46,9 @@ def problem(
 async def domain_error_handler(_: Request, error: Exception) -> JSONResponse:
     code = getattr(error, "code", "")
     if not isinstance(code, str) or code not in _STATUS:
+        _LOGGER.error(
+            "Unexpected Game API failure",
+            exc_info=(type(error), error, error.__traceback__),
+        )
         return problem(500, "internal_error", "An internal error occurred.")
     return problem(_STATUS[code], code, str(error))

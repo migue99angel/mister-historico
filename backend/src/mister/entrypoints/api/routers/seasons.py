@@ -4,7 +4,7 @@ from fastapi import APIRouter, Path, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 
-from mister.entrypoints.api.errors import problem
+from mister.entrypoints.api.errors import domain_error_handler, problem
 from mister.entrypoints.api.schemas import Problem, SeasonDetail, SeasonList
 from mister.shared_kernel.ids import PlayableSeasonId
 
@@ -61,9 +61,7 @@ async def get_season(
     try:
         value = await run_in_threadpool(api.get_season, season_id_value)
     except Exception as error:
-        return (
-            problem(404, "season_not_found", "There is no playable season with that id.")
-            if getattr(error, "code", "") == "season_not_found"
-            else problem(500, "internal_error", "An internal error occurred.")
-        )
+        if getattr(error, "code", "") == "season_not_found":
+            return problem(404, "season_not_found", "There is no playable season with that id.")
+        return await domain_error_handler(request, error)
     return cast("dict[str, Any]", value.to_json())
