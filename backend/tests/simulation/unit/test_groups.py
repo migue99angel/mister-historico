@@ -385,7 +385,18 @@ def test_simulated_residual_tie_uses_a_repeatable_seeded_draw() -> None:
     assert len(ranking.qualifiers) == 2
     assert {row.club_season_id for row in ranking.rows} == set(CLUBS)
     assert ranking == table.rank(rng=rng)
-    assert ranking == replace(table, participants=CLUBS[::-1], rows=table.rows[::-1]).rank(rng=rng)
+
+
+def test_simulated_draw_is_independent_of_participant_and_row_order() -> None:
+    table = _table(_rules("head_to_head_points", "goal_difference"), evidence=_evidence())
+    rng = StdlibRandomSource(Seed(2001))
+    assert table.rank(rng=rng) == replace(
+        table, participants=CLUBS[::-1], rows=table.rows[::-1]
+    ).rank(rng=rng)
+
+
+def test_simulated_draw_can_change_qualifiers_with_the_seed() -> None:
+    table = _table(_rules("head_to_head_points", "goal_difference"), evidence=_evidence())
     assert (
         len({table.rank(rng=StdlibRandomSource(Seed(seed))).qualifiers for seed in range(20)}) > 1
     )

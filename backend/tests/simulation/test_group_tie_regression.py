@@ -1,0 +1,121 @@
+"""Regression seasons for residual simulated group ties, over the real HTTP composition.
+
+Run the acceptance sample with `MISTER_SAMPLE_GROUP_TIES=1 uv run pytest
+--no-cov tests/simulation/test_group_tie_regression.py` from backend/.
+"""
+
+import os
+from datetime import UTC, datetime
+from functools import cache
+from pathlib import Path
+
+import pytest
+from httpx import ASGITransport, AsyncClient
+from tests.golden.season_play import advance, start_run
+
+from mister.bootstrap import Container
+from mister.catalog.infrastructure.yaml_loader import YamlSeasonContentProvider
+from mister.entrypoints.api.app import create_app
+from mister.game.application.api import GameApi
+from mister.game.application.rules import RulesConfiguration
+from mister.game.application.use_cases import AdvanceBlock, GetRun, StartRun, TakeDecision
+from mister.game.infrastructure.catalog_adapter import CatalogRunContentAdapter
+from mister.game.infrastructure.in_memory.run_repository import (
+    InMemoryRunStore,
+    InMemoryUnitOfWork,
+)
+from mister.game.infrastructure.in_memory.run_tokens import FakeRunTokenGenerator
+from mister.game.infrastructure.presentation_adapter import CatalogPresentationAdapter
+from mister.game.infrastructure.security.run_tokens import Sha256RunTokenHasher
+from mister.game.infrastructure.simulation_adapter import SimulationServiceAdapter
+from mister.settings import Settings
+from mister.shared_kernel.clock import FixedClock
+from mister.shared_kernel.events import InMemoryEventBus
+from mister.shared_kernel.ids import RunId
+from mister.shared_kernel.seed import Seed
+from mister.simulation.application.api import SimulationService
+
+_CONTENT = Path(__file__).resolve().parents[1] / "fixtures" / "content"
+
+
+@cache
+def _content_provider() -> YamlSeasonContentProvider:
+    """Read-only synthetic content provider shared by the regression seasons."""
+    return YamlSeasonContentProvider(_CONTENT)
+
+
+class _GroupTieRuntime:
+    """Request-scoped Game API over in-memory runs, YAML content and the real engine."""
+
+    def __init__(self, seed: int) -> None:
+        self._seed = seed
+        self._store = InMemoryRunStore()
+        self._provider = _content_provider()
+
+    def api(self) -> GameApi:
+        uow = InMemoryUnitOfWork(self._store)
+        hasher = Sha256RunTokenHasher()
+        content = CatalogRunContentAdapter(self._provider)
+        presentation = CatalogPresentationAdapter(self._provider, Settings())
+        clock, bus = FixedClock(datetime(2000, 8, 1, tzinfo=UTC)), InMemoryEventBus()
+        return GameApi(
+            start_run=StartRun(
+                uow=uow,
+                capture_game=content.capture_game,
+                clock=clock,
+                event_bus=bus,
+                token_generator=FakeRunTokenGenerator(),
+                token_hasher=hasher,
+                seed_factory=lambda: Seed(self._seed),
+                run_id_factory=lambda: RunId.parse("00000000-0000-4000-8000-000000002000"),
+                rules=RulesConfiguration.a_profile(),
+            ),
+            get_run=GetRun(uow=uow, token_hasher=hasher, restore_game=content.restore_game),
+            take_decision=TakeDecision(
+                uow=uow,
+                clock=clock,
+                event_bus=bus,
+                token_hasher=hasher,
+                restore_game=content.restore_game,
+            ),
+            advance_block=AdvanceBlock(
+                uow=uow,
+                clock=clock,
+                event_bus=bus,
+                token_hasher=hasher,
+                restore_game=content.restore_game,
+                simulator=SimulationServiceAdapter(SimulationService()),
+            ),
+            uow=uow,
+            token_hasher=hasher,
+            presentation=presentation,
+            seasons=presentation,
+        )
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    "seed", range(2000, 2200) if os.environ.get("MISTER_SAMPLE_GROUP_TIES") == "1" else (2001, 2004)
+)
+@pytest.mark.parametrize("option_index", [0, -1], ids=["first-option", "last-option"])
+async def test_seeded_season_always_reaches_a_terminal_status(seed: int, option_index: int) -> None:
+    app = create_app(Container(Settings()))
+    app.state.runtime = _GroupTieRuntime(seed)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        run = await start_run(client)
+        while run.view["status"] == "in_progress":
+            block = run.view["block"]["number"]
+            for dilemma in run.view["pendingDilemmas"]:
+                response = await client.post(
+                    f"/api/runs/{run.run_id}/decisions",
+                    json={
+                        "expectedVersion": run.view["version"],
+                        "dilemmaId": dilemma["id"],
+                        "optionId": dilemma["options"][option_index]["id"],
+                    },
+                    headers={**run.headers, "Idempotency-Key": f"decide-{block}-{dilemma['id']}"},
+                )
+                assert response.status_code == 200, response.text
+                run.views.append(response.json())
+            await advance(client, run, f"advance-{block}")
+    assert run.view["status"] in {"finished", "sacked"}

@@ -2,8 +2,6 @@
 
 Regenerate the golden only after an intended engine or presentation change, with
 `MISTER_UPDATE_GOLDEN=1 uv run pytest --no-cov tests/golden`, and review its diff.
-Run the wider group-tie acceptance sample with
-`MISTER_SAMPLE_GROUP_TIES=1 uv run pytest --no-cov tests/golden -k terminal_status`.
 """
 
 import os
@@ -38,7 +36,6 @@ from mister.simulation.application.api import SimulationService
 from tests.golden.season_play import (
     GOLDEN_SEED,
     JsonObject,
-    advance,
     load_golden,
     play_to_the_end,
     start_run,
@@ -59,8 +56,7 @@ def _content_provider() -> YamlSeasonContentProvider:
 class _InMemoryRuntime:
     """Request-scoped Game API over in-memory runs, YAML content and the real engine."""
 
-    def __init__(self, seed: int = GOLDEN_SEED) -> None:
-        self._seed = seed
+    def __init__(self) -> None:
         self._store = InMemoryRunStore()
         self._provider = _content_provider()
 
@@ -78,7 +74,7 @@ class _InMemoryRuntime:
                 event_bus=bus,
                 token_generator=FakeRunTokenGenerator(),
                 token_hasher=hasher,
-                seed_factory=lambda: Seed(self._seed),
+                seed_factory=lambda: Seed(GOLDEN_SEED),
                 run_id_factory=lambda: RunId.parse("00000000-0000-4000-8000-000000002000"),
                 rules=RulesConfiguration.a_profile(),
             ),
@@ -129,31 +125,3 @@ async def test_golden_season_is_stable_across_ten_runs() -> None:
 
     for _ in range(_STABILITY_RUNS):
         assert await _play_golden_season() == golden
-
-
-@pytest.mark.anyio
-@pytest.mark.parametrize(
-    "seed", range(2000, 2200) if os.environ.get("MISTER_SAMPLE_GROUP_TIES") == "1" else (2001, 2004)
-)
-@pytest.mark.parametrize("option_index", [0, -1], ids=["first-option", "last-option"])
-async def test_seeded_season_always_reaches_a_terminal_status(seed: int, option_index: int) -> None:
-    app = create_app(Container(Settings()))
-    app.state.runtime = _InMemoryRuntime(seed)
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        run = await start_run(client)
-        while run.view["status"] == "in_progress":
-            block = run.view["block"]["number"]
-            for dilemma in run.view["pendingDilemmas"]:
-                response = await client.post(
-                    f"/api/runs/{run.run_id}/decisions",
-                    json={
-                        "expectedVersion": run.view["version"],
-                        "dilemmaId": dilemma["id"],
-                        "optionId": dilemma["options"][option_index]["id"],
-                    },
-                    headers={**run.headers, "Idempotency-Key": f"decide-{block}-{dilemma['id']}"},
-                )
-                assert response.status_code == 200, response.text
-                run.views.append(response.json())
-            await advance(client, run, f"advance-{block}")
-    assert run.view["status"] in {"finished", "sacked"}
