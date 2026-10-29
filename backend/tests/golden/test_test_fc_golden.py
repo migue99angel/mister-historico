@@ -6,6 +6,7 @@ Regenerate the golden only after an intended engine or presentation change, with
 
 import os
 from datetime import UTC, datetime
+from functools import cache
 from pathlib import Path
 
 import pytest
@@ -46,12 +47,18 @@ _CONTENT = Path(__file__).resolve().parents[1] / "fixtures" / "content"
 _STABILITY_RUNS = 10
 
 
+@cache
+def _content_provider() -> YamlSeasonContentProvider:
+    """Read-only synthetic content, parsed once and shared by every golden run."""
+    return YamlSeasonContentProvider(_CONTENT)
+
+
 class _InMemoryRuntime:
     """Request-scoped Game API over in-memory runs, YAML content and the real engine."""
 
     def __init__(self) -> None:
         self._store = InMemoryRunStore()
-        self._provider = YamlSeasonContentProvider(_CONTENT)
+        self._provider = _content_provider()
 
     def api(self) -> GameApi:
         uow = InMemoryUnitOfWork(self._store)
