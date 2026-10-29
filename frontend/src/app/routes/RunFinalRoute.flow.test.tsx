@@ -36,6 +36,9 @@ describe('From the run loop to the final page', () => {
     );
 
     fireEvent.click(simulate);
+    const skip = await screen.findByRole('button', { name: 'Mostrar todos' });
+    expect(window.location.pathname).toBe(`/partida/${runId}`);
+    fireEvent.click(skip);
 
     const title = await screen.findByRole('heading', { level: 1, name: 'Final de la partida' });
     expect(title).toHaveFocus();
