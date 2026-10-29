@@ -830,10 +830,11 @@ Detectado en el E2E de T3.7a. No cambia el contrato: lo cumple.
 
 ### FIX-T2.4-group-tie · Empate de grupo sin resolver en la clasificación
 Detectado al preparar T4.7a. Bloquea el hito A, no T4.7a, que fija una semilla sana.
-**Necesita la aprobación del autor antes de implementar:** cambia una decisión aprobada.
-ADR-007 preserva el empate de las salidas simuladas sin resolver, y ADR-005 exige un ADR
-para cada convención nueva de flujos de `RandomSource`.
-- **Depende de:** T2.4 (integrada) y la decisión del autor sobre la regla final.
+**Aprobado por el autor (2026-10-29): sorteo final como regla del motor.** Cambia una
+decisión aprobada: ADR-007 preserva el empate de las salidas simuladas sin resolver, y
+ADR-005 exige un ADR para cada convención nueva de flujos de `RandomSource`. Por eso la
+tarea amplía los dos ADR.
+- **Depende de:** T2.4 (integrada).
 - **Propiedad:** `backend/src/mister/simulation/domain/groups.py`,
   `backend/src/mister/simulation/domain/season.py` (tiene el `RandomSource`, y
   `_group_mapping` también rechaza estos empates), sus tests de `backend/tests/simulation/`,
@@ -843,16 +844,14 @@ para cada convención nueva de flujos de `RandomSource`.
   `GroupRanking.qualifiers` lanza `InvalidValueError("qualification crosses an unresolved
   group tie")` al cerrar un grupo cuyo empate, agotados sus criterios, cruza la línea de
   clasificación. El grupo de Test FC solo declara `head_to_head_points` y
-  `goal_difference`. La Partida no puede avanzar y queda atascada. Propuesta para que la
-  apruebe el autor:
+  `goal_difference`. La Partida no puede avanzar y queda atascada. Regla que
+  aprobó el autor:
   - Un sorteo final como **regla del motor**, no como criterio de contenido, para no
     cambiar el esquema. Se aplica solo cuando un empate simulado cruza la clasificación.
   - Un flujo hoja nuevo `("draw", competition_id, stage_id, group_id)`, añadido a la tabla
     de ADR-005.
   - Una enmienda de ADR-007: el empate se sigue preservando en la presentación y en el
     orden, pero la plaza se decide por sorteo. Es sintético y no afirma normativa histórica.
-  - Alternativa o complemento: ampliar los desempates del YAML sintético. Reduce los casos,
-    pero no garantiza la resolución y toca la propiedad de los fixtures.
 - **Tests primero:** un test de dominio con un grupo empatado en todos los criterios en la
   frontera de clasificación: la plaza se resuelve de forma determinista con la semilla y
   cambiar la semilla puede cambiarla. Además, tests de regresión de `simulation` que cierran
