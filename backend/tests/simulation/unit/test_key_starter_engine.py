@@ -42,6 +42,7 @@ LATER = FixtureId("test-3")
 # The two weakest goalkeeper-free reserves of `team()`: never in the default eleven.
 RESERVE = PlayerId("test-15")
 _GOLDEN_WITHOUT_SELECTION = "0ee2376af5034c9800a7488ebf6ad2722ac0a1b820b43bbc69eeb8eedaf508de"
+_GOLDEN_WITH_SELECTION = "a45e2904b423a8e77fae21d22408cb26a19931beca237f51677eb114f2f89dda"
 
 
 def _with_selection(
@@ -151,6 +152,7 @@ def test_a_selection_keeps_previous_matches_and_rng_leaves_of_the_season() -> No
     assert chosen.key_starter_outcome is not None
     assert chosen.key_starter_outcome.absence_reason is None
     assert weak in chosen.key_starter_outcome.starter_ids
+    assert _digest(chosen) == _GOLDEN_WITH_SELECTION
 
 
 def test_selected_player_already_required_as_youth_is_not_duplicated() -> None:

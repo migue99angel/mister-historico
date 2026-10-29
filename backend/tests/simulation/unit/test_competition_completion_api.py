@@ -248,10 +248,11 @@ def test_block_request_appends_optional_state_date_without_inferring_it_from_res
         "forced_injuries_from_effects",
         "prior_results",
     ]
-    assert field_names[-3:] == ["state_as_of", "squad_memberships", "player_pool"]
+    assert field_names[-4:] == ["state_as_of", "squad_memberships", "player_pool", "key_starter"]
     assert request.state_as_of is None
     assert request.squad_memberships is None
     assert request.player_pool is None
+    assert request.key_starter is None
 
 
 def test_continuation_request_preserves_the_explicit_previous_state_date() -> None:

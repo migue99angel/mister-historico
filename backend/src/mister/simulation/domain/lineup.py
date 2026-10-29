@@ -39,6 +39,11 @@ def _rank(player: SimPlayer) -> tuple[float, str]:
     return -effective_rating(player), player.player_id.value
 
 
+def rank_by_effective_rating(players: tuple[SimPlayer, ...]) -> tuple[SimPlayer, ...]:
+    """Descending effective rating, then ascending player ID: the selector's own order."""
+    return tuple(sorted(players, key=_rank))
+
+
 def _slots(tactic: Tactic) -> dict[Position, int]:
     lines = tuple(int(value) for value in tactic.system.split("-"))
     return dict(zip(Position, (1, lines[0], sum(lines[1:-1]), lines[-1]), strict=True))

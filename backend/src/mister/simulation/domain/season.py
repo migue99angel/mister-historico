@@ -31,7 +31,7 @@ from mister.simulation.domain.league_types import (
     LeagueRow,
     ResultReplacement,
 )
-from mister.simulation.domain.lineup import select_lineup
+from mister.simulation.domain.lineup import rank_by_effective_rating, select_lineup
 from mister.simulation.domain.model import (
     CompetitionParams,
     FixtureSpec,
@@ -133,6 +133,28 @@ class RankedTable:
 
 
 @dataclass(frozen=True, slots=True)
+class KeyStarterChoice:
+    fixture_id: FixtureId
+    date: date
+    player_id: PlayerId
+
+
+@dataclass(frozen=True, slots=True)
+class KeyStarterEvidence:
+    """Actual managed starters of the chosen fixture; empty when it was not played."""
+
+    choice: KeyStarterChoice
+    starter_ids: tuple[PlayerId, ...]
+    absence_reason: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class LineupProjection:
+    starter_ids: tuple[PlayerId, ...]
+    reserve_ids: tuple[PlayerId, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class Block:
     start: date
     end: date
@@ -154,6 +176,7 @@ class Block:
     rival_absences: tuple[tuple[ClubSeasonId, PlayerId, date], ...] = ()
     squad_memberships: tuple[DatedMembership, ...] | None = None
     player_pool: tuple[SimPlayer, ...] | None = None
+    key_starter: KeyStarterChoice | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -172,6 +195,7 @@ class SeasonOutcome:
     states: tuple[PlayerState, ...]
     events: tuple[SeasonEvent, ...] = ()
     unresolved: tuple[KnockoutTie, ...] = ()
+    key_starter: KeyStarterEvidence | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -217,6 +241,7 @@ class SeasonSimulation:
         self.used_prior: set[object] = set()
         self.stage_maps: dict[tuple[CompetitionId, str], dict[ClubSeasonId, ClubSeasonId]] = {}
         self.closed_groups: set[tuple[CompetitionId, str]] = set()
+        self.key_starter: KeyStarterEvidence | None = None
         self._validate_evidence_consistency()
         self._validate_original_tables()
         self._validate_group_feeders()
@@ -490,7 +515,16 @@ class SeasonSimulation:
         required = self._youth_required(spec, tie)
         squad = cast("tuple[SimPlayer, ...]", self.team.squad)
         tactic = cast("Tactic", self.team.tactic)
+        choice = self.block.key_starter
+        chosen = choice is not None and choice.fixture_id == spec.fixture_id
+        reason = self._key_starter_absence(squad, required) if chosen else None
+        if chosen and reason is None and choice is not None:
+            required |= {choice.player_id}
         lineup = select_lineup(squad, tactic, priority=priority, required=required)
+        if chosen and choice is not None:
+            self.key_starter = KeyStarterEvidence(
+                choice, tuple(p.player.player_id for p in lineup.starters), reason
+            )
         own = calculate_strength(self.team, self.references[spec.competition_id], lineup=lineup)
         rival_id = spec.away if spec.home == self.team.club_season_id else spec.home
         rival_team = self.rivals[rival_id]
@@ -551,6 +585,20 @@ class SeasonSimulation:
         self.played[spec.fixture_id] = played
         self.results.append(played)
         return played
+
+    def _key_starter_absence(
+        self, squad: tuple[SimPlayer, ...], required: frozenset[PlayerId]
+    ) -> str | None:
+        """Membership and injury are checked again on the match date; youth keeps priority."""
+        choice = cast("KeyStarterChoice", self.block.key_starter)
+        player = next((p for p in squad if p.player_id == choice.player_id), None)
+        if player is None:
+            return "not_in_squad"
+        if player.injured:
+            return "injured"
+        if choice.player_id not in required and len(required) >= _STARTERS:
+            return "youth_conflict"
+        return None
 
     def _evidence(
         self,
@@ -1176,6 +1224,9 @@ class SeasonSimulation:
                 "youth participation requirements exceed the block's available minutes"
             )
         self._recover(self.block.end)
+        choice = self.block.key_starter
+        if choice is not None and self.key_starter is None:
+            self.key_starter = KeyStarterEvidence(choice, (), "fixture_not_played")
         tables, unresolved = self._tables_and_unresolved()
         return SeasonOutcome(
             tuple(self.results),
@@ -1202,4 +1253,35 @@ class SeasonSimulation:
                 sorted(self.events, key=lambda e: (e.date, str(e.competition_id), e.stage_id or ""))
             ),
             tuple(unresolved),
+            self.key_starter,
         )
+
+
+def project_lineup(block: Block, fixture: FixtureSpec) -> LineupProjection | None:
+    """Default eleven of the incoming state on the fixture date, without RNG or simulation.
+
+    The effective squad follows dated ownership; only absences known at entry that last
+    beyond the fixture are excluded. Fitness and morale stay as they enter the block.
+    """
+    if block.squad_memberships is not None and block.player_pool is not None:
+        memberships = block.squad_memberships
+        squad = tuple(
+            p
+            for p in block.player_pool
+            if owner_on(memberships, p.player_id, fixture.date) == block.managed_team.club_season_id
+        )
+    else:
+        squad = block.managed_team.squad or ()
+    available = tuple(
+        p
+        for p in squad
+        if (until := block.initial_absences.get(p.player_id)) is None or until <= fixture.date
+    )
+    if len(available) < _STARTERS:
+        return None
+    priority = block.priorities.get(fixture.competition_id, Priority.NORMAL)
+    tactic = cast("Tactic", block.managed_team.tactic)
+    lineup = select_lineup(available, tactic, priority=priority)
+    starters = tuple(p.player.player_id for p in lineup.starters)
+    reserves = rank_by_effective_rating(tuple(p for p in available if p.player_id not in starters))
+    return LineupProjection(starters, tuple(p.player_id for p in reserves))
