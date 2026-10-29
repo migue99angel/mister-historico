@@ -25,7 +25,10 @@ para los partidos que juega contra tu equipo.
   o `null` con `verify: pending` si no se puede justificar el nivel.
 - Inventario del piloto: **20 plantillas y 40 agregados** (antes, 48 y 12).
 - Un jugador que un dilema permita fichar de un club agregado va en la plantilla
-  de mercado `_market-2012-13` (ADR-015), como cualquier fichaje de fuera del juego.
+  de mercado `_market-2012-13` (ADR-015) **sin `from_club_season`**, como
+  cualquier fichaje de fuera del juego. El fichaje no reduce la fuerza fija del
+  agregado: es una simplificación aceptada para este recorte, frente a la regla
+  general de debilitar al rival de Primera al quitarle un jugador.
 
 ## Lo que no cambia
 
