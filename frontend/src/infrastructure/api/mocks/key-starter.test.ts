@@ -48,6 +48,10 @@ describe('reviewed starter offer', () => {
   it('publishes readable opponent, competition, venue and match label before simulation', () => {
     expect(keyStarterRun().keyStarter).toMatchObject({
       opponent: { name: 'Test Rovers', shortName: 'ROV', isUser: false },
+      candidates: [
+        { id: 'ivan-delantero', displayName: 'Ivan Delantero' },
+        { id: 'marco-medio', displayName: 'Marco Medio' },
+      ],
       competitionName: 'Liga Test',
       venue: 'home',
       keyMatchLabel: 'Derbi de prueba',
@@ -66,10 +70,15 @@ describe('reviewed starter offer', () => {
     const invalid = {
       ...view,
       keyStarter: {
-        blockId: 'block-1', fixtureId: 'test-fixture', date: '2000-09-03',
-        candidateIds: ['player-one', 'player-two'], selectedPlayerId: null,
+        blockId: 'block-1',
+        fixtureId: 'test-fixture',
+        date: '2000-09-03',
+        candidateIds: ['player-one', 'player-two'],
+        selectedPlayerId: null,
       },
     };
-    expect(validateResponse('POST', PATH, 200, invalid, 'application/json').length).toBeGreaterThan(0);
+    expect(validateResponse('POST', PATH, 200, invalid, 'application/json').length).toBeGreaterThan(
+      0,
+    );
   });
 });
