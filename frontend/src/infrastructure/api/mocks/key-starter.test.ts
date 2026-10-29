@@ -22,11 +22,11 @@ describe('key starter contract', () => {
     ]);
   });
 
-  it('accepts a captured offer without leaking a future lineup', () => {
+  it('accepts the captured offer and forecast without leaking future outcomes', () => {
     expect(validateResponse('POST', PATH, 200, keyStarterRun(), 'application/json')).toEqual([]);
   });
 
-  it('rejects a future lineup inside the pre-match offer', () => {
+  it('rejects actual participation evidence inside the pre-match offer', () => {
     const view = keyStarterRun();
     const invalid = { ...view, keyStarter: { ...view.keyStarter, starterIds: ['ivan-delantero'] } };
     expect(validateResponse('POST', PATH, 200, invalid, 'application/json').length).toBeGreaterThan(
@@ -93,21 +93,42 @@ describe('captured lineup projection', () => {
     const offer = keyStarterRun().keyStarter;
     expect(offer?.projectedStarterIds).toHaveLength(11);
     expect(new Set(offer?.projectedStarterIds).size).toBe(11);
-    expect(offer?.candidates.every((player) => !offer.projectedStarterIds.includes(player.id))).toBe(true);
+    expect(offer?.projectedStarters.map((player) => player.id)).toEqual(offer?.projectedStarterIds);
+    expect(offer?.projectedStarters[0]).toMatchObject({
+      displayName: 'Titular 1',
+      position: 'GK',
+      rating: 90,
+    });
+    expect(
+      offer?.candidates.every((player) => !offer.projectedStarterIds.includes(player.id)),
+    ).toBe(true);
   });
 
   it.each([10, 12])('rejects a projection containing %i players', (count) => {
     const view = keyStarterRun();
     const invalid = {
       ...view,
-      keyStarter: { ...view.keyStarter, projectedStarterIds: Array.from({ length: count }, (_, i) => `starter-${String(i)}`) },
+      keyStarter: {
+        ...view.keyStarter,
+        projectedStarterIds: Array.from({ length: count }, (_, i) => `starter-${String(i)}`),
+      },
     };
-    expect(validateResponse('POST', PATH, 200, invalid, 'application/json').length).toBeGreaterThan(0);
+    expect(validateResponse('POST', PATH, 200, invalid, 'application/json').length).toBeGreaterThan(
+      0,
+    );
   });
 
   it('rejects duplicate projected starters', () => {
     const view = keyStarterRun();
-    const invalid = { ...view, keyStarter: { ...view.keyStarter, projectedStarterIds: Array<string>(11).fill('same-player') } };
-    expect(validateResponse('POST', PATH, 200, invalid, 'application/json').length).toBeGreaterThan(0);
+    const invalid = {
+      ...view,
+      keyStarter: {
+        ...view.keyStarter,
+        projectedStarterIds: Array<string>(11).fill('same-player'),
+      },
+    };
+    expect(validateResponse('POST', PATH, 200, invalid, 'application/json').length).toBeGreaterThan(
+      0,
+    );
   });
 });

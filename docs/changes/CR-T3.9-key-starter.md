@@ -32,6 +32,21 @@ Esta CR concede a **T3.9** la propiedad necesaria para implementar conjuntamente
   `BlockSimulationResult` / `BlockSummaryDTO`. Conectar los helpers ACL de esta CR y ampliar
   la tabla exhaustiva de mapeo. Cada contexto usa sus propios DTO, sin importar al otro.
 
+La proyección también se implementa en T3.9, junto a las interfaces reservadas anteriores.
+Esta CR autoriza añadir `SeasonSimulator.project_lineup(request: BlockSimulationRequest,
+fixture_id: FixtureId) -> LineupProjection | None` y
+`SimulationService.project_lineup(request: BlockSimRequest, fixture_id: FixtureId)
+-> LineupProjectionDTO | None`. Los DTO separados de cada contexto contienen
+`starter_ids: tuple[PlayerId, ...]` (once únicos) y `reserve_ids: tuple[PlayerId, ...]`
+(suplentes disponibles únicos, disjuntos y ya ordenados por media efectiva/ID). La solicitud
+se sitúa en el estado capturado de entrada y el fixture debe pertenecer al bloque y al club,
+ser conocido y no estar jugado. No se ejecuta `simulate_block`, ni cierres, ni efectos futuros,
+ni se recibe/consume RNG para proyectar. La imposibilidad de formar once se trata en Game
+como ausencia de oferta; las referencias inválidas siguen siendo errores de validación.
+Si hay menos de once disponibles devuelve `None`, sin fabricar una previsión parcial.
+El ACL traduce esas interfaces; T3.9 añade la suite compartida fake/adaptador para la
+proyección, incluidos prioridad/rotaciones, estados físicos distintos y desempates por ID.
+
 **T4.10** consume OpenAPI y tiene propiedad sobre hooks/puertos/view models de esta interacción,
 RunLoop, MSW (handler/store) y sus tests. Coordinar con T4.9/T4.12 antes de modificar sus archivos.
 Ni esta CR ni T3.9 autorizan cambiar la rúbrica, la normalización de fuerza o el RNG.
@@ -39,7 +54,7 @@ Ni esta CR ni T3.9 autorizan cambiar la rúbrica, la normalización de fuerza o 
 ## Oferta y elección
 
 `KeyStarterOffer(block_id, fixture_id, date, candidate_ids, opponent_id, competition_id,
-venue, key_match_label, selected_player_id=None)` es una
+venue, key_match_label, projected_starter_ids, selected_player_id=None)` es una
 captura durable, no una consulta a Catalog vivo. El bloque tiene cero o una oferta. Se crea
 una sola vez al entrar en él, también para el primero. El fixture es el primero, ordenado por
 fecha e ID, de los partidos `key=true` del club propio dentro de las fechas del bloque, con
@@ -48,17 +63,43 @@ participantes todavía pendientes ni partidos de otro club; no se consulta el re
 Sin fixture elegible o con menos de dos candidatos disponibles, no hay oferta y avanzar
 funciona como antes.
 
-Los candidatos son los jugadores de la plantilla efectiva en esa fecha según los intervalos
-capturados y los traspasos ya decididos. Se excluyen los lesionados cuyo `injured_until` actual
-sea posterior a esa fecha. El día de `injured_until` ya está disponible. Se ordenan por media
-nominal capturada descendente y, en empate, por ID ascendente; se conservan los tres primeros
-(o los dos si solo quedan dos). La oferta contiene exactamente dos o tres candidatos, nunca
-la plantilla completa. No se recalcula fuerza para ordenar. No se ejecuta RNG ni se
-anticipan lesiones futuras forzadas o aleatorias al generar candidatos. Se guardan IDs, no copias mutables del jugador; los nombres se resuelven con la
-misma política y contenido capturado que el resto de RunView. HTTP publica `candidates`
-como dos o tres `PlayerSummary`, en el orden de los IDs capturados, con nombres y medias
-nominales del contenido inicial. Esto permite mostrarlos aunque una venta o una entrada
-por fecha los deje fuera de `RunView.squad`; no obliga a inferir nombres de los slugs.
+La previsión se obtiene al entrar en el bloque a partir del estado ya conocido y capturado.
+Simulation resuelve la plantilla efectiva en la fecha del fixture según los intervalos y
+traspasos decididos, y descarta las lesiones conocidas cuyo `injured_until` sea posterior
+al encuentro (el día de recuperación ya está disponible). Reutiliza `select_lineup` con
+`required=frozenset()`, táctica y prioridad capturadas para esa competición. Incluye la
+rotación normal del selector: no se compara con un once ideal distinto de su once por defecto.
+El físico y la moral son los del estado de entrada; no se simulan partidos intermedios ni
+se anticipan fatiga, recuperación física, lesiones forzadas/aleatorias o resultados futuros.
+Si no puede formar once jugadores, no crea oferta y no inventa jugadores.
+
+**Candidatos:** únicamente jugadores disponibles de esa misma plantilla que quedan fuera
+del once previsto. Simulation los ordena por `effective_rating` descendente y, en empate,
+por ID ascendente, reutilizando su función existente; se conservan los tres primeros (o los
+dos si solo quedan dos). Con menos de dos suplentes no hay oferta. Game recibe la previsión
+y los suplentes ordenados por su ACL; no copia el algoritmo de selección ni la fórmula de
+media efectiva. No se consume RNG. Elegir a uno de ellos cambia la pertenencia al once frente
+a esta previsión; no garantiza victoria, un marcador distinto ni una fuerza distinta si los
+jugadores tienen fuerza equivalente. Los cambios posteriores pueden alterar la alineación.
+
+Se capturan durablemente `projected_starter_ids`, candidatos, fecha de la oferta, estado
+conocido y metadatos de presentación. La oferta no se vuelve a calcular tras una decisión.
+HTTP publica `projectedStarterIds` (once IDs únicos) y `projectedStarters` (once `SquadMember`
+en el mismo orden y con los mismos IDs), además de `candidates` (dos o tres `PlayerSummary`).
+Los candidatos son disjuntos de `projectedStarterIds`, validado por el DTO. Los datos de los
+titulares previstos conservan media, posición, moral, físico y lesión del estado de entrada,
+con nombres de la publicación capturada y la misma política de nombres que RunView. Los de
+los candidatos conservan su media nominal inicial. Así una venta o una entrada por fecha
+no obliga a buscar los nombres o el estado de la previsión en la plantilla actual.
+
+La interfaz los rotula «Once previsto al inicio del bloque»: son una previsión con datos
+conocidos, no evidencia de quién jugará. No se publican lesiones futuras ni marcador. El
+once real solo aparece en `keyStarterOutcome` tras el cierre y puede diferir por lesión,
+venta, cantera, táctica, prioridad o cambios de físico durante el bloque. Esta previsión es
+la única excepción a la regla anterior «sin once futuro»: no se simula para obtenerla.
+No se añade por ahora el reemplazo por candidato recomendado en la revisión; no se promete
+una sustitución individual fija antes de aplicar las decisiones y revalidar la disponibilidad.
+
 `selectedPlayerId` debe coincidir con uno de sus IDs; estos IDs son únicos incluso si los
 objetos difieren en otros campos. La restricción la valida el DTO de captura, no solo
 `uniqueItems` (que en JSON Schema compara objetos completos).
@@ -68,7 +109,7 @@ Se capturan también rival efectivo, competición, sede relativa al usuario (`ho
 `competitionName`, `venue` y `keyMatchLabel` (nullable), además de fixture/fecha. El `TeamRef`
 lleva nombre, nombre corto, colores y `isUser=false`; se resuelve desde la publicación
 capturada, nunca desde el slug ni Catalog vivo. La etiqueta sigue la misma política que
-`MatchReport.keyMatchLabel`. No se publican marcador, once futuro ni causa de lesión futura.
+`MatchReport.keyMatchLabel`. No se publican marcador, once real futuro ni causa de lesión futura.
 
 La oferta no se regenera tras una decisión, recarga, cambio de publicación o reintento.
 `selected_player_id` solo admite un candidato capturado y queda inmutable tras la elección.
@@ -159,7 +200,7 @@ HTTP publica duplicados (candidatos ni once). No debe fiarse de `json_schema_ext
 `RunView.keyStarter` publica la oferta del bloque actual; `BlockSummary.keyStarterOutcome`
 publica la acreditación del último cierre. Ambos son opcionales para compatibilidad con
 respuestas y partidas antiguas; ausencia equivale a `null`. No hay oferta en partida terminal.
-Antes de avanzar no existe acreditación del bloque actual, ni once futuro, marcador o lesión
+Antes de avanzar no existe acreditación del bloque actual, ni once real futuro, marcador o lesión
 que todavía no haya ocurrido. Tras avanzar, la selección anterior sigue conservada en la
 captura durable aunque RunView muestre la oferta del bloque siguiente.
 
@@ -176,11 +217,11 @@ falla explícitamente, sin reinterpretarlo como legacy.
 
 | Entrega | Evidencia exigida |
 |---|---|
-| Esta CR | DTOs congelados, dos o tres candidatos únicos y contexto legible del partido, selección miembro, IDs/fecha tipados, evidencia coherente, once único, mapeo ACL sin pérdida, OpenAPI/generado y fixtures MSW válidos, compatibilidad de payload anterior |
-| T3.9 · Game/HTTP | Cero/una oferta; fixture conocido, ajeno/ya jugado; candidato inválido; autenticación, orden de validaciones, versión, idempotencia entre comandos, doble toque/carrera/rollback; persistencia y recarga; avance sin elección con frontend anterior, omisión durable y carrera selección/avance |
+| Esta CR | DTOs congelados, dos o tres suplentes únicos, once previsto de once IDs disjuntos y contexto legible del partido, selección miembro, IDs/fecha tipados, evidencia coherente, once único, mapeo ACL sin pérdida, OpenAPI/generado y fixtures MSW válidos, compatibilidad de payload anterior |
+| T3.9 · Game/HTTP | Cero/una oferta; suplentes fuera de la previsión, orden por media efectiva/ID y menos de dos; fixture conocido, ajeno/ya jugado; candidato inválido; autenticación, orden de validaciones, versión, idempotencia entre comandos, doble toque/carrera/rollback; persistencia y recarga; avance sin elección con frontend anterior, omisión durable y carrera selección/avance |
 | T3.9 · Simulation | Fecha exacta, jugador realmente requerido y presente en fuerza; sin efecto en otro partido; lesión antes del fixture y recuperación ese día; venta/entrada por fecha; fallback visible; cantera compatible, jugador ya juvenil y saturación; fixture que deja de disputarse |
 | T3.9 · replay | Mismo contenido capturado y orden, cambio/retirada de Catalog, oferta que cambia de disponibilidad, resultado/acreditación iguales; legacy sin interacción ni consumo extra de RNG |
-| T4.10 | Elegir/confirmar, recarga y reintento, «Simular sin elegir» y recuperación de la omisión, mostrar quién jugó o causa y once alternativo tras cierre; no prometer victoria; E2E Test FC con API real |
+| T4.10 | Once previsto con media/posición/estado capturados, candidatos destacados; elegir/confirmar, recarga y reintento, «Simular sin elegir» y recuperación de la omisión, mostrar quién jugó o causa y once alternativo tras cierre; no prometer victoria; E2E Test FC con API real |
 
 La suite de valores se ejecuta contra ambos contratos de contexto; los tests de mapeo usan
 la ACL real. Los tests HTTP de ejecución y fake/adaptador `SeasonSimulator` se amplían en

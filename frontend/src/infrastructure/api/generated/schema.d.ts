@@ -115,7 +115,7 @@ export interface paths {
         put?: never;
         /**
          * Select the key starter
-         * @description Contract reserved for T3.9 execution; this CR does not activate the endpoint. Selects one player from the current block's captured key-starter offer, for its exact fixture and date. Requires the run token. Shares the run-wide idempotency namespace with decisions and advance: authenticate, validate shape, replay the original reply before checking expectedVersion, then validate the offer and selection. A different command or body with the same key is 422 idempotency_key_conflict. A fresh second selection is 409 key_starter_already_selected. Invalid candidates, foreign, already played or mismatched fixtures are 422 invalid_key_starter. The response captures the selection without any future outcome or lineup.
+         * @description Contract reserved for T3.9 execution; this CR does not activate the endpoint. Selects one player from the current block's captured key-starter offer, for its exact fixture and date. Requires the run token. Shares the run-wide idempotency namespace with decisions and advance: authenticate, validate shape, replay the original reply before checking expectedVersion, then validate the offer and selection. A different command or body with the same key is 422 idempotency_key_conflict. A fresh second selection is 409 key_starter_already_selected. Invalid candidates, foreign, already played or mismatched fixtures are 422 invalid_key_starter. The response captures the selection and the forecast from block entry, without any future outcome or actual participation evidence.
          */
         post: operations["selectKeyStarter"];
         delete?: never;
@@ -593,7 +593,7 @@ export interface components {
             playerId: components["schemas"]["Slug"];
             expectedVersion: number;
         };
-        /** @description Captured once at block entry. At most one per block. Candidates are player summaries resolved from the captured content. No match outcome is exposed before advance. selectedPlayerId is null until chosen and must match a candidate ID when set. Two or three candidates, ordered by descending captured nominal rating and then ID. Advance without a choice explicitly skips the offer; it never blocks older clients. */
+        /** @description Captured once at block entry. At most one per block. Candidates are player summaries resolved from the captured content. No match outcome is exposed before advance. selectedPlayerId is null until chosen and must match a candidate ID when set. Two or three available reserves outside projectedStarterIds, ordered by descending captured effective rating and then ID. projectedStarterIds is a deterministic forecast computed at block entry without required players or RNG, never the actual future lineup. projectedStarters carries the captured player metadata in the same ID order, even after squad changes. No future injuries or match results are used. Advance without a choice explicitly skips the offer; it never blocks older clients. */
         KeyStarterOffer: {
             blockId: components["schemas"]["Slug"];
             fixtureId: components["schemas"]["Slug"];
@@ -601,9 +601,14 @@ export interface components {
             date: string;
             opponent: components["schemas"]["TeamRef"];
             competitionName: string;
+            /** @description Home, away or neutral relative to the managed team, not the opponent. */
             venue: components["schemas"]["Venue"];
             keyMatchLabel: string | null;
             candidates: components["schemas"]["PlayerSummary"][];
+            /** @description Eleven unique predicted starter IDs captured at block entry. Candidates are outside this list. Known state only, without RNG; later injuries, transfers, fitness or decisions can change the actual lineup. This forecast is not participation evidence. */
+            projectedStarterIds: components["schemas"]["Slug"][];
+            /** @description Captured player details for projectedStarterIds in the same order, with unique IDs. Rating, position, morale, fitness and injury state are the known state at block entry, not predictions of future changes. Runtime validates agreement with projectedStarterIds. */
+            projectedStarters: components["schemas"]["SquadMember"][];
             selectedPlayerId: components["schemas"]["Slug"] | null;
         };
         /** @description Evidence captured during simulation, only published after block closure. starterIds is the actual managed-team lineup, including fallback. The selected player is in it exactly when absenceReason is null. fixture_not_played requires an empty lineup; every other outcome requires a nonempty lineup. Runtime validates these relations. */

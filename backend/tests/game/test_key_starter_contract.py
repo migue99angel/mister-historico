@@ -36,6 +36,7 @@ def _offer(
         CompetitionId("liga-test"),
         "home",
         "Derbi de prueba",
+        tuple(PlayerId(f"starter-{i}") for i in range(11)),
         selected,
     )
 
@@ -145,11 +146,13 @@ def test_offer_captures_eleven_projected_starters_outside_the_candidates() -> No
         tuple(PlayerId(f"starter-{i}") for i in range(10)),
         tuple(PlayerId(f"starter-{i}") for i in range(12)),
         (PlayerId("starter"),) * 11,
-        (PLAYER,) + tuple(PlayerId(f"starter-{i}") for i in range(10)),
+        (PLAYER, *(PlayerId(f"starter-{i}") for i in range(10))),
         [PlayerId(f"starter-{i}") for i in range(11)],
-        ("starter",) + tuple(PlayerId(f"starter-{i}") for i in range(10)),
+        ("starter", *(PlayerId(f"starter-{i}") for i in range(10))),
     ],
 )
-def test_offer_rejects_invalid_projection_or_a_candidate_already_starting(projected: object) -> None:
+def test_offer_rejects_invalid_projection_or_a_candidate_already_starting(
+    projected: object,
+) -> None:
     with pytest.raises(InvalidValueError):
-        replace(_offer(), projected_starter_ids=projected)
+        replace(_offer(), projected_starter_ids=projected)  # type: ignore[arg-type]
