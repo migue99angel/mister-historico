@@ -25,6 +25,8 @@ dilemmas:
     effects:
     - type: morale
       delta: 3
+    - type: board_confidence
+      delta: -15
   historical_option:
     option: a
     sources:
@@ -79,6 +81,8 @@ dilemmas:
       delta: -15
     - type: morale
       delta: 5
+    - type: board_confidence
+      delta: -25
   historical_option:
     option: a
     sources:
@@ -104,7 +108,7 @@ dilemmas:
       competition_id: copa-test
       priority: low
     - type: board_confidence
-      delta: -4
+      delta: -25
   historical_option:
     option: a
     sources:
