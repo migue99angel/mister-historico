@@ -161,8 +161,10 @@ def _target_entry(target: RunSnapshot, current: RunSnapshot) -> KeyStarterEntry 
 
 
 def _stored_entry(target: RunSnapshot, closed: RunSnapshot) -> KeyStarterEntry:
-    """The captured offer of the next block, as it was on entry, without projecting again."""
-    stored = _target_entry(target, closed)
-    if stored is None:
-        raise InvalidValueError("replay reached a block without its captured key starter entry")
-    return stored.reopened()
+    """The captured offer of the next block, as it was on entry, without projecting again.
+
+    Only called for runs with the interaction, whose decoded entries already follow every
+    entered block of the persisted target.
+    """
+    entries = target.key_starters or ()
+    return entries[len(closed.run.block_records)].reopened()
