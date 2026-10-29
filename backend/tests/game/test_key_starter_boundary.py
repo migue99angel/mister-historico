@@ -58,14 +58,14 @@ def test_a_request_carries_only_a_typed_key_starter() -> None:
     request = replace(make_simulation_request(), key_starter=_selection())
     assert request.key_starter == _selection()
     with pytest.raises(InvalidValueError):
-        replace(make_simulation_request(), key_starter=("fixture", "player"))
+        replace(make_simulation_request(), key_starter=("fixture", "player"))  # type: ignore[arg-type]
 
 
 def test_a_result_carries_only_typed_key_starter_evidence() -> None:
     result = replace(make_simulation_result(), key_starter_outcome=_outcome())
     assert result.key_starter_outcome == _outcome()
     with pytest.raises(InvalidValueError):
-        replace(make_simulation_result(), key_starter_outcome=object())
+        replace(make_simulation_result(), key_starter_outcome=object())  # type: ignore[arg-type]
 
 
 def test_a_projection_needs_eleven_distinct_starters_outside_the_reserves() -> None:
