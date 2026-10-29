@@ -43,3 +43,33 @@ describe('key starter contract', () => {
     expect(validateResponse('POST', PATH, 200, view, 'application/json').length).toBeGreaterThan(0);
   });
 });
+
+describe('reviewed starter offer', () => {
+  it('publishes readable opponent, competition, venue and match label before simulation', () => {
+    expect(keyStarterRun().keyStarter).toMatchObject({
+      opponent: { name: 'Test Rovers', shortName: 'ROV', isUser: false },
+      competitionName: 'Liga Test',
+      venue: 'home',
+      keyMatchLabel: 'Derbi de prueba',
+    });
+  });
+
+  it.each([1, 4])('rejects an offer with %i candidates', (count) => {
+    const view = keyStarterRun();
+    if (!view.keyStarter) throw new Error('expected fixture');
+    view.keyStarter.candidateIds = Array.from({ length: count }, (_, i) => `player-${String(i)}`);
+    expect(validateResponse('POST', PATH, 200, view, 'application/json').length).toBeGreaterThan(0);
+  });
+
+  it('requires the match presentation fields rather than relying on the fixture slug', () => {
+    const view = keyStarterRun();
+    const invalid = {
+      ...view,
+      keyStarter: {
+        blockId: 'block-1', fixtureId: 'test-fixture', date: '2000-09-03',
+        candidateIds: ['player-one', 'player-two'], selectedPlayerId: null,
+      },
+    };
+    expect(validateResponse('POST', PATH, 200, invalid, 'application/json').length).toBeGreaterThan(0);
+  });
+});

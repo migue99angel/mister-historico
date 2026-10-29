@@ -104,3 +104,12 @@ def test_acl_preserves_actual_starters_and_absence_reason() -> None:
     assert from_key_starter_outcome(source) == ports.KeyStarterOutcome(
         FIXTURE, DAY, PLAYER, (fallback,), "not_in_squad"
     )
+
+
+@pytest.mark.parametrize("count", [1, 4])
+def test_offer_limits_the_choice_to_two_or_three_candidates(count: int) -> None:
+    with pytest.raises(InvalidValueError):
+        ports.KeyStarterOffer(
+            BlockId("block-1"), FIXTURE, DAY,
+            tuple(PlayerId(f"candidate-{i}") for i in range(count)),
+        )
