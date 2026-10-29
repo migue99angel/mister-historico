@@ -32,6 +32,12 @@ class AdvanceBody(StrictBody):
     expected_version: StrictInt = Field(alias="expectedVersion", ge=0)
 
 
+class SelectKeyStarterBody(StrictBody):
+    fixture_id: Slug = Field(alias="fixtureId")
+    player_id: Slug = Field(alias="playerId")
+    expected_version: StrictInt = Field(alias="expectedVersion", ge=0)
+
+
 # Response schemas generated from contracts/openapi.yaml; regenerate with the T3.6 model generator.
 
 ClubSeasonId = Annotated[

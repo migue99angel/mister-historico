@@ -24,6 +24,196 @@
    }
   ],
   "decisions": [],
+  "keyStarter": {
+   "blockId": "b1",
+   "candidates": [
+    {
+     "age": 25,
+     "displayName": "Pepe Inventado",
+     "fitness": 100,
+     "id": "tfc-16",
+     "injury": null,
+     "key": true,
+     "morale": 50,
+     "position": "FW",
+     "rating": 71
+    },
+    {
+     "age": 26,
+     "displayName": "Quim Muestra",
+     "fitness": 100,
+     "id": "tfc-17",
+     "injury": null,
+     "key": true,
+     "morale": 50,
+     "position": "FW",
+     "rating": 69
+    },
+    {
+     "age": 34,
+     "displayName": "Rafa Ejemplo",
+     "fitness": 100,
+     "id": "tfc-18",
+     "injury": null,
+     "key": false,
+     "morale": 50,
+     "position": "FW",
+     "rating": 69
+    }
+   ],
+   "competitionName": "Supercopa Test",
+   "date": "2000-08-20",
+   "fixtureId": "tfc-super-final",
+   "keyMatchLabel": "Partido clave",
+   "opponent": {
+    "clubSeasonId": "sample-united-2000-01",
+    "colors": {
+     "primary": "#B22222",
+     "secondary": "#FFFFFF"
+    },
+    "isUser": false,
+    "name": "Sample United",
+    "shortName": "SMU"
+   },
+   "projectedStarterIds": [
+    "tfc-01",
+    "tfc-03",
+    "tfc-05",
+    "tfc-07",
+    "tfc-04",
+    "tfc-11",
+    "tfc-09",
+    "tfc-10",
+    "tfc-12",
+    "tfc-20",
+    "tfc-15"
+   ],
+   "projectedStarters": [
+    {
+     "age": 33,
+     "displayName": "Aldo Ficticio",
+     "fitness": 100,
+     "id": "tfc-01",
+     "injury": null,
+     "key": false,
+     "morale": 50,
+     "position": "GK",
+     "rating": 74
+    },
+    {
+     "age": 25,
+     "displayName": "Cleo Muestra",
+     "fitness": 100,
+     "id": "tfc-03",
+     "injury": null,
+     "key": true,
+     "morale": 50,
+     "position": "DF",
+     "rating": 76
+    },
+    {
+     "age": 24,
+     "displayName": "Eloy Simulado",
+     "fitness": 100,
+     "id": "tfc-05",
+     "injury": null,
+     "key": true,
+     "morale": 50,
+     "position": "DF",
+     "rating": 68
+    },
+    {
+     "age": 23,
+     "displayName": "Gael Falso",
+     "fitness": 100,
+     "id": "tfc-07",
+     "injury": null,
+     "key": false,
+     "morale": 50,
+     "position": "DF",
+     "rating": 62
+    },
+    {
+     "age": 35,
+     "displayName": "Dani Ejemplo",
+     "fitness": 100,
+     "id": "tfc-04",
+     "injury": null,
+     "key": false,
+     "morale": 50,
+     "position": "DF",
+     "rating": 60
+    },
+    {
+     "age": 21,
+     "displayName": "Kiko Sampleton",
+     "fitness": 100,
+     "id": "tfc-11",
+     "injury": null,
+     "key": true,
+     "morale": 50,
+     "position": "MF",
+     "rating": 75
+    },
+    {
+     "age": 33,
+     "displayName": "Ivo Mocko",
+     "fitness": 100,
+     "id": "tfc-09",
+     "injury": null,
+     "key": false,
+     "morale": 50,
+     "position": "MF",
+     "rating": 69
+    },
+    {
+     "age": 19,
+     "displayName": "Jano Stubby",
+     "fitness": 100,
+     "id": "tfc-10",
+     "injury": null,
+     "key": false,
+     "morale": 50,
+     "position": "MF",
+     "rating": 63
+    },
+    {
+     "age": 20,
+     "displayName": "Lalo Fakerson",
+     "fitness": 100,
+     "id": "tfc-12",
+     "injury": null,
+     "key": false,
+     "morale": 50,
+     "position": "MF",
+     "rating": 62
+    },
+    {
+     "age": 18,
+     "displayName": "Teo Prueba",
+     "fitness": 100,
+     "id": "tfc-20",
+     "injury": null,
+     "key": true,
+     "morale": 50,
+     "position": "FW",
+     "rating": 77
+    },
+    {
+     "age": 33,
+     "displayName": "Oleg Ficticio",
+     "fitness": 100,
+     "id": "tfc-15",
+     "injury": null,
+     "key": false,
+     "morale": 50,
+     "position": "FW",
+     "rating": 70
+    }
+   ],
+   "selectedPlayerId": null,
+   "venue": "neutral"
+  },
   "lastBlockSummary": null,
   "pendingDilemmas": [
    {
@@ -347,6 +537,196 @@
     "optionId": "a"
    }
   ],
+  "keyStarter": {
+   "blockId": "b1",
+   "candidates": [
+    {
+     "age": 25,
+     "displayName": "Pepe Inventado",
+     "fitness": 100,
+     "id": "tfc-16",
+     "injury": null,
+     "key": true,
+     "morale": 50,
+     "position": "FW",
+     "rating": 71
+    },
+    {
+     "age": 26,
+     "displayName": "Quim Muestra",
+     "fitness": 100,
+     "id": "tfc-17",
+     "injury": null,
+     "key": true,
+     "morale": 50,
+     "position": "FW",
+     "rating": 69
+    },
+    {
+     "age": 34,
+     "displayName": "Rafa Ejemplo",
+     "fitness": 100,
+     "id": "tfc-18",
+     "injury": null,
+     "key": false,
+     "morale": 50,
+     "position": "FW",
+     "rating": 69
+    }
+   ],
+   "competitionName": "Supercopa Test",
+   "date": "2000-08-20",
+   "fixtureId": "tfc-super-final",
+   "keyMatchLabel": "Partido clave",
+   "opponent": {
+    "clubSeasonId": "sample-united-2000-01",
+    "colors": {
+     "primary": "#B22222",
+     "secondary": "#FFFFFF"
+    },
+    "isUser": false,
+    "name": "Sample United",
+    "shortName": "SMU"
+   },
+   "projectedStarterIds": [
+    "tfc-01",
+    "tfc-03",
+    "tfc-05",
+    "tfc-07",
+    "tfc-04",
+    "tfc-11",
+    "tfc-09",
+    "tfc-10",
+    "tfc-12",
+    "tfc-20",
+    "tfc-15"
+   ],
+   "projectedStarters": [
+    {
+     "age": 33,
+     "displayName": "Aldo Ficticio",
+     "fitness": 100,
+     "id": "tfc-01",
+     "injury": null,
+     "key": false,
+     "morale": 50,
+     "position": "GK",
+     "rating": 74
+    },
+    {
+     "age": 25,
+     "displayName": "Cleo Muestra",
+     "fitness": 100,
+     "id": "tfc-03",
+     "injury": null,
+     "key": true,
+     "morale": 50,
+     "position": "DF",
+     "rating": 76
+    },
+    {
+     "age": 24,
+     "displayName": "Eloy Simulado",
+     "fitness": 100,
+     "id": "tfc-05",
+     "injury": null,
+     "key": true,
+     "morale": 50,
+     "position": "DF",
+     "rating": 68
+    },
+    {
+     "age": 23,
+     "displayName": "Gael Falso",
+     "fitness": 100,
+     "id": "tfc-07",
+     "injury": null,
+     "key": false,
+     "morale": 50,
+     "position": "DF",
+     "rating": 62
+    },
+    {
+     "age": 35,
+     "displayName": "Dani Ejemplo",
+     "fitness": 100,
+     "id": "tfc-04",
+     "injury": null,
+     "key": false,
+     "morale": 50,
+     "position": "DF",
+     "rating": 60
+    },
+    {
+     "age": 21,
+     "displayName": "Kiko Sampleton",
+     "fitness": 100,
+     "id": "tfc-11",
+     "injury": null,
+     "key": true,
+     "morale": 50,
+     "position": "MF",
+     "rating": 75
+    },
+    {
+     "age": 33,
+     "displayName": "Ivo Mocko",
+     "fitness": 100,
+     "id": "tfc-09",
+     "injury": null,
+     "key": false,
+     "morale": 50,
+     "position": "MF",
+     "rating": 69
+    },
+    {
+     "age": 19,
+     "displayName": "Jano Stubby",
+     "fitness": 100,
+     "id": "tfc-10",
+     "injury": null,
+     "key": false,
+     "morale": 50,
+     "position": "MF",
+     "rating": 63
+    },
+    {
+     "age": 20,
+     "displayName": "Lalo Fakerson",
+     "fitness": 100,
+     "id": "tfc-12",
+     "injury": null,
+     "key": false,
+     "morale": 50,
+     "position": "MF",
+     "rating": 62
+    },
+    {
+     "age": 18,
+     "displayName": "Teo Prueba",
+     "fitness": 100,
+     "id": "tfc-20",
+     "injury": null,
+     "key": true,
+     "morale": 50,
+     "position": "FW",
+     "rating": 77
+    },
+    {
+     "age": 33,
+     "displayName": "Oleg Ficticio",
+     "fitness": 100,
+     "id": "tfc-15",
+     "injury": null,
+     "key": false,
+     "morale": 50,
+     "position": "FW",
+     "rating": 70
+    }
+   ],
+   "selectedPlayerId": null,
+   "venue": "neutral"
+  },
   "lastBlockSummary": null,
   "pendingDilemmas": [
    {
@@ -667,6 +1047,196 @@
     "optionId": "a"
    }
   ],
+  "keyStarter": {
+   "blockId": "b1",
+   "candidates": [
+    {
+     "age": 25,
+     "displayName": "Pepe Inventado",
+     "fitness": 100,
+     "id": "tfc-16",
+     "injury": null,
+     "key": true,
+     "morale": 50,
+     "position": "FW",
+     "rating": 71
+    },
+    {
+     "age": 26,
+     "displayName": "Quim Muestra",
+     "fitness": 100,
+     "id": "tfc-17",
+     "injury": null,
+     "key": true,
+     "morale": 50,
+     "position": "FW",
+     "rating": 69
+    },
+    {
+     "age": 34,
+     "displayName": "Rafa Ejemplo",
+     "fitness": 100,
+     "id": "tfc-18",
+     "injury": null,
+     "key": false,
+     "morale": 50,
+     "position": "FW",
+     "rating": 69
+    }
+   ],
+   "competitionName": "Supercopa Test",
+   "date": "2000-08-20",
+   "fixtureId": "tfc-super-final",
+   "keyMatchLabel": "Partido clave",
+   "opponent": {
+    "clubSeasonId": "sample-united-2000-01",
+    "colors": {
+     "primary": "#B22222",
+     "secondary": "#FFFFFF"
+    },
+    "isUser": false,
+    "name": "Sample United",
+    "shortName": "SMU"
+   },
+   "projectedStarterIds": [
+    "tfc-01",
+    "tfc-03",
+    "tfc-05",
+    "tfc-07",
+    "tfc-04",
+    "tfc-11",
+    "tfc-09",
+    "tfc-10",
+    "tfc-12",
+    "tfc-20",
+    "tfc-15"
+   ],
+   "projectedStarters": [
+    {
+     "age": 33,
+     "displayName": "Aldo Ficticio",
+     "fitness": 100,
+     "id": "tfc-01",
+     "injury": null,
+     "key": false,
+     "morale": 50,
+     "position": "GK",
+     "rating": 74
+    },
+    {
+     "age": 25,
+     "displayName": "Cleo Muestra",
+     "fitness": 100,
+     "id": "tfc-03",
+     "injury": null,
+     "key": true,
+     "morale": 50,
+     "position": "DF",
+     "rating": 76
+    },
+    {
+     "age": 24,
+     "displayName": "Eloy Simulado",
+     "fitness": 100,
+     "id": "tfc-05",
+     "injury": null,
+     "key": true,
+     "morale": 50,
+     "position": "DF",
+     "rating": 68
+    },
+    {
+     "age": 23,
+     "displayName": "Gael Falso",
+     "fitness": 100,
+     "id": "tfc-07",
+     "injury": null,
+     "key": false,
+     "morale": 50,
+     "position": "DF",
+     "rating": 62
+    },
+    {
+     "age": 35,
+     "displayName": "Dani Ejemplo",
+     "fitness": 100,
+     "id": "tfc-04",
+     "injury": null,
+     "key": false,
+     "morale": 50,
+     "position": "DF",
+     "rating": 60
+    },
+    {
+     "age": 21,
+     "displayName": "Kiko Sampleton",
+     "fitness": 100,
+     "id": "tfc-11",
+     "injury": null,
+     "key": true,
+     "morale": 50,
+     "position": "MF",
+     "rating": 75
+    },
+    {
+     "age": 33,
+     "displayName": "Ivo Mocko",
+     "fitness": 100,
+     "id": "tfc-09",
+     "injury": null,
+     "key": false,
+     "morale": 50,
+     "position": "MF",
+     "rating": 69
+    },
+    {
+     "age": 19,
+     "displayName": "Jano Stubby",
+     "fitness": 100,
+     "id": "tfc-10",
+     "injury": null,
+     "key": false,
+     "morale": 50,
+     "position": "MF",
+     "rating": 63
+    },
+    {
+     "age": 20,
+     "displayName": "Lalo Fakerson",
+     "fitness": 100,
+     "id": "tfc-12",
+     "injury": null,
+     "key": false,
+     "morale": 50,
+     "position": "MF",
+     "rating": 62
+    },
+    {
+     "age": 18,
+     "displayName": "Teo Prueba",
+     "fitness": 100,
+     "id": "tfc-20",
+     "injury": null,
+     "key": true,
+     "morale": 50,
+     "position": "FW",
+     "rating": 77
+    },
+    {
+     "age": 33,
+     "displayName": "Oleg Ficticio",
+     "fitness": 100,
+     "id": "tfc-15",
+     "injury": null,
+     "key": false,
+     "morale": 50,
+     "position": "FW",
+     "rating": 70
+    }
+   ],
+   "selectedPlayerId": null,
+   "venue": "neutral"
+  },
   "lastBlockSummary": null,
   "pendingDilemmas": [],
   "sackedMonth": null,
@@ -3214,6 +3784,196 @@
     "optionId": "a"
    }
   ],
+  "keyStarter": {
+   "blockId": "b3",
+   "candidates": [
+    {
+     "age": 25,
+     "displayName": "Pepe Inventado",
+     "fitness": 100,
+     "id": "tfc-16",
+     "injury": null,
+     "key": true,
+     "morale": 55,
+     "position": "FW",
+     "rating": 71
+    },
+    {
+     "age": 33,
+     "displayName": "Oleg Ficticio",
+     "fitness": 100,
+     "id": "tfc-15",
+     "injury": null,
+     "key": false,
+     "morale": 55,
+     "position": "FW",
+     "rating": 70
+    },
+    {
+     "age": 21,
+     "displayName": "Uri Falso",
+     "fitness": 100,
+     "id": "tfc-21",
+     "injury": null,
+     "key": true,
+     "morale": 55,
+     "position": "FW",
+     "rating": 68
+    }
+   ],
+   "competitionName": "Liga Test",
+   "date": "2000-12-09",
+   "fixtureId": "tfc-liga-05",
+   "keyMatchLabel": "Partido clave",
+   "opponent": {
+    "clubSeasonId": "sample-united-2000-01",
+    "colors": {
+     "primary": "#B22222",
+     "secondary": "#FFFFFF"
+    },
+    "isUser": false,
+    "name": "Sample United",
+    "shortName": "SMU"
+   },
+   "projectedStarterIds": [
+    "tfc-01",
+    "tfc-03",
+    "tfc-05",
+    "tfc-07",
+    "tfc-04",
+    "tfc-11",
+    "tfc-09",
+    "mkt-01",
+    "tfc-20",
+    "tfc-17",
+    "tfc-18"
+   ],
+   "projectedStarters": [
+    {
+     "age": 33,
+     "displayName": "Aldo Ficticio",
+     "fitness": 100,
+     "id": "tfc-01",
+     "injury": null,
+     "key": false,
+     "morale": 55,
+     "position": "GK",
+     "rating": 74
+    },
+    {
+     "age": 25,
+     "displayName": "Cleo Muestra",
+     "fitness": 100,
+     "id": "tfc-03",
+     "injury": null,
+     "key": true,
+     "morale": 55,
+     "position": "DF",
+     "rating": 76
+    },
+    {
+     "age": 24,
+     "displayName": "Eloy Simulado",
+     "fitness": 100,
+     "id": "tfc-05",
+     "injury": null,
+     "key": true,
+     "morale": 65,
+     "position": "DF",
+     "rating": 68
+    },
+    {
+     "age": 23,
+     "displayName": "Gael Falso",
+     "fitness": 100,
+     "id": "tfc-07",
+     "injury": null,
+     "key": false,
+     "morale": 55,
+     "position": "DF",
+     "rating": 62
+    },
+    {
+     "age": 35,
+     "displayName": "Dani Ejemplo",
+     "fitness": 100,
+     "id": "tfc-04",
+     "injury": null,
+     "key": false,
+     "morale": 55,
+     "position": "DF",
+     "rating": 60
+    },
+    {
+     "age": 21,
+     "displayName": "Kiko Sampleton",
+     "fitness": 100,
+     "id": "tfc-11",
+     "injury": null,
+     "key": true,
+     "morale": 55,
+     "position": "MF",
+     "rating": 75
+    },
+    {
+     "age": 33,
+     "displayName": "Ivo Mocko",
+     "fitness": 100,
+     "id": "tfc-09",
+     "injury": null,
+     "key": false,
+     "morale": 55,
+     "position": "MF",
+     "rating": 69
+    },
+    {
+     "age": 25,
+     "displayName": "Nico Stubby",
+     "fitness": 100,
+     "id": "mkt-01",
+     "injury": null,
+     "key": false,
+     "morale": 55,
+     "position": "MF",
+     "rating": 67
+    },
+    {
+     "age": 18,
+     "displayName": "Teo Prueba",
+     "fitness": 100,
+     "id": "tfc-20",
+     "injury": null,
+     "key": true,
+     "morale": 55,
+     "position": "FW",
+     "rating": 77
+    },
+    {
+     "age": 26,
+     "displayName": "Quim Muestra",
+     "fitness": 100,
+     "id": "tfc-17",
+     "injury": null,
+     "key": true,
+     "morale": 55,
+     "position": "FW",
+     "rating": 69
+    },
+    {
+     "age": 34,
+     "displayName": "Rafa Ejemplo",
+     "fitness": 100,
+     "id": "tfc-18",
+     "injury": null,
+     "key": false,
+     "morale": 55,
+     "position": "FW",
+     "rating": 69
+    }
+   ],
+   "selectedPlayerId": null,
+   "venue": "home"
+  },
   "lastBlockSummary": {
    "blockNumber": 2,
    "events": [],
@@ -3992,6 +4752,196 @@
     "optionId": "a"
    }
   ],
+  "keyStarter": {
+   "blockId": "b3",
+   "candidates": [
+    {
+     "age": 25,
+     "displayName": "Pepe Inventado",
+     "fitness": 100,
+     "id": "tfc-16",
+     "injury": null,
+     "key": true,
+     "morale": 55,
+     "position": "FW",
+     "rating": 71
+    },
+    {
+     "age": 33,
+     "displayName": "Oleg Ficticio",
+     "fitness": 100,
+     "id": "tfc-15",
+     "injury": null,
+     "key": false,
+     "morale": 55,
+     "position": "FW",
+     "rating": 70
+    },
+    {
+     "age": 21,
+     "displayName": "Uri Falso",
+     "fitness": 100,
+     "id": "tfc-21",
+     "injury": null,
+     "key": true,
+     "morale": 55,
+     "position": "FW",
+     "rating": 68
+    }
+   ],
+   "competitionName": "Liga Test",
+   "date": "2000-12-09",
+   "fixtureId": "tfc-liga-05",
+   "keyMatchLabel": "Partido clave",
+   "opponent": {
+    "clubSeasonId": "sample-united-2000-01",
+    "colors": {
+     "primary": "#B22222",
+     "secondary": "#FFFFFF"
+    },
+    "isUser": false,
+    "name": "Sample United",
+    "shortName": "SMU"
+   },
+   "projectedStarterIds": [
+    "tfc-01",
+    "tfc-03",
+    "tfc-05",
+    "tfc-07",
+    "tfc-04",
+    "tfc-11",
+    "tfc-09",
+    "mkt-01",
+    "tfc-20",
+    "tfc-17",
+    "tfc-18"
+   ],
+   "projectedStarters": [
+    {
+     "age": 33,
+     "displayName": "Aldo Ficticio",
+     "fitness": 100,
+     "id": "tfc-01",
+     "injury": null,
+     "key": false,
+     "morale": 55,
+     "position": "GK",
+     "rating": 74
+    },
+    {
+     "age": 25,
+     "displayName": "Cleo Muestra",
+     "fitness": 100,
+     "id": "tfc-03",
+     "injury": null,
+     "key": true,
+     "morale": 55,
+     "position": "DF",
+     "rating": 76
+    },
+    {
+     "age": 24,
+     "displayName": "Eloy Simulado",
+     "fitness": 100,
+     "id": "tfc-05",
+     "injury": null,
+     "key": true,
+     "morale": 65,
+     "position": "DF",
+     "rating": 68
+    },
+    {
+     "age": 23,
+     "displayName": "Gael Falso",
+     "fitness": 100,
+     "id": "tfc-07",
+     "injury": null,
+     "key": false,
+     "morale": 55,
+     "position": "DF",
+     "rating": 62
+    },
+    {
+     "age": 35,
+     "displayName": "Dani Ejemplo",
+     "fitness": 100,
+     "id": "tfc-04",
+     "injury": null,
+     "key": false,
+     "morale": 55,
+     "position": "DF",
+     "rating": 60
+    },
+    {
+     "age": 21,
+     "displayName": "Kiko Sampleton",
+     "fitness": 100,
+     "id": "tfc-11",
+     "injury": null,
+     "key": true,
+     "morale": 55,
+     "position": "MF",
+     "rating": 75
+    },
+    {
+     "age": 33,
+     "displayName": "Ivo Mocko",
+     "fitness": 100,
+     "id": "tfc-09",
+     "injury": null,
+     "key": false,
+     "morale": 55,
+     "position": "MF",
+     "rating": 69
+    },
+    {
+     "age": 25,
+     "displayName": "Nico Stubby",
+     "fitness": 100,
+     "id": "mkt-01",
+     "injury": null,
+     "key": false,
+     "morale": 55,
+     "position": "MF",
+     "rating": 67
+    },
+    {
+     "age": 18,
+     "displayName": "Teo Prueba",
+     "fitness": 100,
+     "id": "tfc-20",
+     "injury": null,
+     "key": true,
+     "morale": 55,
+     "position": "FW",
+     "rating": 77
+    },
+    {
+     "age": 26,
+     "displayName": "Quim Muestra",
+     "fitness": 100,
+     "id": "tfc-17",
+     "injury": null,
+     "key": true,
+     "morale": 55,
+     "position": "FW",
+     "rating": 69
+    },
+    {
+     "age": 34,
+     "displayName": "Rafa Ejemplo",
+     "fitness": 100,
+     "id": "tfc-18",
+     "injury": null,
+     "key": false,
+     "morale": 55,
+     "position": "FW",
+     "rating": 69
+    }
+   ],
+   "selectedPlayerId": null,
+   "venue": "home"
+  },
   "lastBlockSummary": {
    "blockNumber": 2,
    "events": [],
@@ -4745,6 +5695,196 @@
     "optionId": "a"
    }
   ],
+  "keyStarter": {
+   "blockId": "b3",
+   "candidates": [
+    {
+     "age": 25,
+     "displayName": "Pepe Inventado",
+     "fitness": 100,
+     "id": "tfc-16",
+     "injury": null,
+     "key": true,
+     "morale": 55,
+     "position": "FW",
+     "rating": 71
+    },
+    {
+     "age": 33,
+     "displayName": "Oleg Ficticio",
+     "fitness": 100,
+     "id": "tfc-15",
+     "injury": null,
+     "key": false,
+     "morale": 55,
+     "position": "FW",
+     "rating": 70
+    },
+    {
+     "age": 21,
+     "displayName": "Uri Falso",
+     "fitness": 100,
+     "id": "tfc-21",
+     "injury": null,
+     "key": true,
+     "morale": 55,
+     "position": "FW",
+     "rating": 68
+    }
+   ],
+   "competitionName": "Liga Test",
+   "date": "2000-12-09",
+   "fixtureId": "tfc-liga-05",
+   "keyMatchLabel": "Partido clave",
+   "opponent": {
+    "clubSeasonId": "sample-united-2000-01",
+    "colors": {
+     "primary": "#B22222",
+     "secondary": "#FFFFFF"
+    },
+    "isUser": false,
+    "name": "Sample United",
+    "shortName": "SMU"
+   },
+   "projectedStarterIds": [
+    "tfc-01",
+    "tfc-03",
+    "tfc-05",
+    "tfc-07",
+    "tfc-04",
+    "tfc-11",
+    "tfc-09",
+    "mkt-01",
+    "tfc-20",
+    "tfc-17",
+    "tfc-18"
+   ],
+   "projectedStarters": [
+    {
+     "age": 33,
+     "displayName": "Aldo Ficticio",
+     "fitness": 100,
+     "id": "tfc-01",
+     "injury": null,
+     "key": false,
+     "morale": 55,
+     "position": "GK",
+     "rating": 74
+    },
+    {
+     "age": 25,
+     "displayName": "Cleo Muestra",
+     "fitness": 100,
+     "id": "tfc-03",
+     "injury": null,
+     "key": true,
+     "morale": 55,
+     "position": "DF",
+     "rating": 76
+    },
+    {
+     "age": 24,
+     "displayName": "Eloy Simulado",
+     "fitness": 100,
+     "id": "tfc-05",
+     "injury": null,
+     "key": true,
+     "morale": 65,
+     "position": "DF",
+     "rating": 68
+    },
+    {
+     "age": 23,
+     "displayName": "Gael Falso",
+     "fitness": 100,
+     "id": "tfc-07",
+     "injury": null,
+     "key": false,
+     "morale": 55,
+     "position": "DF",
+     "rating": 62
+    },
+    {
+     "age": 35,
+     "displayName": "Dani Ejemplo",
+     "fitness": 100,
+     "id": "tfc-04",
+     "injury": null,
+     "key": false,
+     "morale": 55,
+     "position": "DF",
+     "rating": 60
+    },
+    {
+     "age": 21,
+     "displayName": "Kiko Sampleton",
+     "fitness": 100,
+     "id": "tfc-11",
+     "injury": null,
+     "key": true,
+     "morale": 55,
+     "position": "MF",
+     "rating": 75
+    },
+    {
+     "age": 33,
+     "displayName": "Ivo Mocko",
+     "fitness": 100,
+     "id": "tfc-09",
+     "injury": null,
+     "key": false,
+     "morale": 55,
+     "position": "MF",
+     "rating": 69
+    },
+    {
+     "age": 25,
+     "displayName": "Nico Stubby",
+     "fitness": 100,
+     "id": "mkt-01",
+     "injury": null,
+     "key": false,
+     "morale": 55,
+     "position": "MF",
+     "rating": 67
+    },
+    {
+     "age": 18,
+     "displayName": "Teo Prueba",
+     "fitness": 100,
+     "id": "tfc-20",
+     "injury": null,
+     "key": true,
+     "morale": 55,
+     "position": "FW",
+     "rating": 77
+    },
+    {
+     "age": 26,
+     "displayName": "Quim Muestra",
+     "fitness": 100,
+     "id": "tfc-17",
+     "injury": null,
+     "key": true,
+     "morale": 55,
+     "position": "FW",
+     "rating": 69
+    },
+    {
+     "age": 34,
+     "displayName": "Rafa Ejemplo",
+     "fitness": 100,
+     "id": "tfc-18",
+     "injury": null,
+     "key": false,
+     "morale": 55,
+     "position": "FW",
+     "rating": 69
+    }
+   ],
+   "selectedPlayerId": null,
+   "venue": "home"
+  },
   "lastBlockSummary": {
    "blockNumber": 2,
    "events": [],
@@ -7783,6 +8923,196 @@
     "optionId": "a"
    }
   ],
+  "keyStarter": {
+   "blockId": "b5",
+   "candidates": [
+    {
+     "age": 33,
+     "displayName": "Oleg Ficticio",
+     "fitness": 100,
+     "id": "tfc-15",
+     "injury": null,
+     "key": false,
+     "morale": 68,
+     "position": "FW",
+     "rating": 70
+    },
+    {
+     "age": 29,
+     "displayName": "Vito Dummy",
+     "fitness": 100,
+     "id": "tfc-22",
+     "injury": null,
+     "key": false,
+     "morale": 68,
+     "position": "FW",
+     "rating": 68
+    },
+    {
+     "age": 35,
+     "displayName": "Beto Inventado",
+     "fitness": 100,
+     "id": "tfc-02",
+     "injury": null,
+     "key": false,
+     "morale": 68,
+     "position": "GK",
+     "rating": 67
+    }
+   ],
+   "competitionName": "Liga Test",
+   "date": "2001-05-12",
+   "fixtureId": "tfc-liga-10",
+   "keyMatchLabel": "Partido clave",
+   "opponent": {
+    "clubSeasonId": "sample-united-2000-01",
+    "colors": {
+     "primary": "#B22222",
+     "secondary": "#FFFFFF"
+    },
+    "isUser": false,
+    "name": "Sample United",
+    "shortName": "SMU"
+   },
+   "projectedStarterIds": [
+    "tfc-01",
+    "tfc-03",
+    "tfc-05",
+    "tfc-07",
+    "tfc-08",
+    "tfc-11",
+    "tfc-09",
+    "mkt-01",
+    "tfc-20",
+    "tfc-16",
+    "tfc-17"
+   ],
+   "projectedStarters": [
+    {
+     "age": 33,
+     "displayName": "Aldo Ficticio",
+     "fitness": 100,
+     "id": "tfc-01",
+     "injury": null,
+     "key": false,
+     "morale": 68,
+     "position": "GK",
+     "rating": 74
+    },
+    {
+     "age": 25,
+     "displayName": "Cleo Muestra",
+     "fitness": 100,
+     "id": "tfc-03",
+     "injury": null,
+     "key": true,
+     "morale": 68,
+     "position": "DF",
+     "rating": 76
+    },
+    {
+     "age": 24,
+     "displayName": "Eloy Simulado",
+     "fitness": 100,
+     "id": "tfc-05",
+     "injury": null,
+     "key": true,
+     "morale": 78,
+     "position": "DF",
+     "rating": 68
+    },
+    {
+     "age": 23,
+     "displayName": "Gael Falso",
+     "fitness": 100,
+     "id": "tfc-07",
+     "injury": null,
+     "key": false,
+     "morale": 68,
+     "position": "DF",
+     "rating": 62
+    },
+    {
+     "age": 20,
+     "displayName": "Hugo Dummy",
+     "fitness": 100,
+     "id": "tfc-08",
+     "injury": null,
+     "key": false,
+     "morale": 68,
+     "position": "DF",
+     "rating": 58
+    },
+    {
+     "age": 21,
+     "displayName": "Kiko Sampleton",
+     "fitness": 100,
+     "id": "tfc-11",
+     "injury": null,
+     "key": true,
+     "morale": 68,
+     "position": "MF",
+     "rating": 75
+    },
+    {
+     "age": 33,
+     "displayName": "Ivo Mocko",
+     "fitness": 100,
+     "id": "tfc-09",
+     "injury": null,
+     "key": false,
+     "morale": 68,
+     "position": "MF",
+     "rating": 69
+    },
+    {
+     "age": 25,
+     "displayName": "Nico Stubby",
+     "fitness": 100,
+     "id": "mkt-01",
+     "injury": null,
+     "key": false,
+     "morale": 68,
+     "position": "MF",
+     "rating": 67
+    },
+    {
+     "age": 18,
+     "displayName": "Teo Prueba",
+     "fitness": 100,
+     "id": "tfc-20",
+     "injury": null,
+     "key": true,
+     "morale": 68,
+     "position": "FW",
+     "rating": 77
+    },
+    {
+     "age": 25,
+     "displayName": "Pepe Inventado",
+     "fitness": 100,
+     "id": "tfc-16",
+     "injury": null,
+     "key": true,
+     "morale": 68,
+     "position": "FW",
+     "rating": 71
+    },
+    {
+     "age": 26,
+     "displayName": "Quim Muestra",
+     "fitness": 100,
+     "id": "tfc-17",
+     "injury": null,
+     "key": true,
+     "morale": 68,
+     "position": "FW",
+     "rating": 69
+    }
+   ],
+   "selectedPlayerId": null,
+   "venue": "away"
+  },
   "lastBlockSummary": {
    "blockNumber": 4,
    "events": [],
@@ -8441,6 +9771,196 @@
     "optionId": "a"
    }
   ],
+  "keyStarter": {
+   "blockId": "b5",
+   "candidates": [
+    {
+     "age": 33,
+     "displayName": "Oleg Ficticio",
+     "fitness": 100,
+     "id": "tfc-15",
+     "injury": null,
+     "key": false,
+     "morale": 68,
+     "position": "FW",
+     "rating": 70
+    },
+    {
+     "age": 29,
+     "displayName": "Vito Dummy",
+     "fitness": 100,
+     "id": "tfc-22",
+     "injury": null,
+     "key": false,
+     "morale": 68,
+     "position": "FW",
+     "rating": 68
+    },
+    {
+     "age": 35,
+     "displayName": "Beto Inventado",
+     "fitness": 100,
+     "id": "tfc-02",
+     "injury": null,
+     "key": false,
+     "morale": 68,
+     "position": "GK",
+     "rating": 67
+    }
+   ],
+   "competitionName": "Liga Test",
+   "date": "2001-05-12",
+   "fixtureId": "tfc-liga-10",
+   "keyMatchLabel": "Partido clave",
+   "opponent": {
+    "clubSeasonId": "sample-united-2000-01",
+    "colors": {
+     "primary": "#B22222",
+     "secondary": "#FFFFFF"
+    },
+    "isUser": false,
+    "name": "Sample United",
+    "shortName": "SMU"
+   },
+   "projectedStarterIds": [
+    "tfc-01",
+    "tfc-03",
+    "tfc-05",
+    "tfc-07",
+    "tfc-08",
+    "tfc-11",
+    "tfc-09",
+    "mkt-01",
+    "tfc-20",
+    "tfc-16",
+    "tfc-17"
+   ],
+   "projectedStarters": [
+    {
+     "age": 33,
+     "displayName": "Aldo Ficticio",
+     "fitness": 100,
+     "id": "tfc-01",
+     "injury": null,
+     "key": false,
+     "morale": 68,
+     "position": "GK",
+     "rating": 74
+    },
+    {
+     "age": 25,
+     "displayName": "Cleo Muestra",
+     "fitness": 100,
+     "id": "tfc-03",
+     "injury": null,
+     "key": true,
+     "morale": 68,
+     "position": "DF",
+     "rating": 76
+    },
+    {
+     "age": 24,
+     "displayName": "Eloy Simulado",
+     "fitness": 100,
+     "id": "tfc-05",
+     "injury": null,
+     "key": true,
+     "morale": 78,
+     "position": "DF",
+     "rating": 68
+    },
+    {
+     "age": 23,
+     "displayName": "Gael Falso",
+     "fitness": 100,
+     "id": "tfc-07",
+     "injury": null,
+     "key": false,
+     "morale": 68,
+     "position": "DF",
+     "rating": 62
+    },
+    {
+     "age": 20,
+     "displayName": "Hugo Dummy",
+     "fitness": 100,
+     "id": "tfc-08",
+     "injury": null,
+     "key": false,
+     "morale": 68,
+     "position": "DF",
+     "rating": 58
+    },
+    {
+     "age": 21,
+     "displayName": "Kiko Sampleton",
+     "fitness": 100,
+     "id": "tfc-11",
+     "injury": null,
+     "key": true,
+     "morale": 68,
+     "position": "MF",
+     "rating": 75
+    },
+    {
+     "age": 33,
+     "displayName": "Ivo Mocko",
+     "fitness": 100,
+     "id": "tfc-09",
+     "injury": null,
+     "key": false,
+     "morale": 68,
+     "position": "MF",
+     "rating": 69
+    },
+    {
+     "age": 25,
+     "displayName": "Nico Stubby",
+     "fitness": 100,
+     "id": "mkt-01",
+     "injury": null,
+     "key": false,
+     "morale": 68,
+     "position": "MF",
+     "rating": 67
+    },
+    {
+     "age": 18,
+     "displayName": "Teo Prueba",
+     "fitness": 100,
+     "id": "tfc-20",
+     "injury": null,
+     "key": true,
+     "morale": 68,
+     "position": "FW",
+     "rating": 77
+    },
+    {
+     "age": 25,
+     "displayName": "Pepe Inventado",
+     "fitness": 100,
+     "id": "tfc-16",
+     "injury": null,
+     "key": true,
+     "morale": 68,
+     "position": "FW",
+     "rating": 71
+    },
+    {
+     "age": 26,
+     "displayName": "Quim Muestra",
+     "fitness": 100,
+     "id": "tfc-17",
+     "injury": null,
+     "key": true,
+     "morale": 68,
+     "position": "FW",
+     "rating": 69
+    }
+   ],
+   "selectedPlayerId": null,
+   "venue": "away"
+  },
   "lastBlockSummary": {
    "blockNumber": 4,
    "events": [],
@@ -9089,6 +10609,196 @@
     "optionId": "a"
    }
   ],
+  "keyStarter": {
+   "blockId": "b5",
+   "candidates": [
+    {
+     "age": 33,
+     "displayName": "Oleg Ficticio",
+     "fitness": 100,
+     "id": "tfc-15",
+     "injury": null,
+     "key": false,
+     "morale": 68,
+     "position": "FW",
+     "rating": 70
+    },
+    {
+     "age": 29,
+     "displayName": "Vito Dummy",
+     "fitness": 100,
+     "id": "tfc-22",
+     "injury": null,
+     "key": false,
+     "morale": 68,
+     "position": "FW",
+     "rating": 68
+    },
+    {
+     "age": 35,
+     "displayName": "Beto Inventado",
+     "fitness": 100,
+     "id": "tfc-02",
+     "injury": null,
+     "key": false,
+     "morale": 68,
+     "position": "GK",
+     "rating": 67
+    }
+   ],
+   "competitionName": "Liga Test",
+   "date": "2001-05-12",
+   "fixtureId": "tfc-liga-10",
+   "keyMatchLabel": "Partido clave",
+   "opponent": {
+    "clubSeasonId": "sample-united-2000-01",
+    "colors": {
+     "primary": "#B22222",
+     "secondary": "#FFFFFF"
+    },
+    "isUser": false,
+    "name": "Sample United",
+    "shortName": "SMU"
+   },
+   "projectedStarterIds": [
+    "tfc-01",
+    "tfc-03",
+    "tfc-05",
+    "tfc-07",
+    "tfc-08",
+    "tfc-11",
+    "tfc-09",
+    "mkt-01",
+    "tfc-20",
+    "tfc-16",
+    "tfc-17"
+   ],
+   "projectedStarters": [
+    {
+     "age": 33,
+     "displayName": "Aldo Ficticio",
+     "fitness": 100,
+     "id": "tfc-01",
+     "injury": null,
+     "key": false,
+     "morale": 68,
+     "position": "GK",
+     "rating": 74
+    },
+    {
+     "age": 25,
+     "displayName": "Cleo Muestra",
+     "fitness": 100,
+     "id": "tfc-03",
+     "injury": null,
+     "key": true,
+     "morale": 68,
+     "position": "DF",
+     "rating": 76
+    },
+    {
+     "age": 24,
+     "displayName": "Eloy Simulado",
+     "fitness": 100,
+     "id": "tfc-05",
+     "injury": null,
+     "key": true,
+     "morale": 78,
+     "position": "DF",
+     "rating": 68
+    },
+    {
+     "age": 23,
+     "displayName": "Gael Falso",
+     "fitness": 100,
+     "id": "tfc-07",
+     "injury": null,
+     "key": false,
+     "morale": 68,
+     "position": "DF",
+     "rating": 62
+    },
+    {
+     "age": 20,
+     "displayName": "Hugo Dummy",
+     "fitness": 100,
+     "id": "tfc-08",
+     "injury": null,
+     "key": false,
+     "morale": 68,
+     "position": "DF",
+     "rating": 58
+    },
+    {
+     "age": 21,
+     "displayName": "Kiko Sampleton",
+     "fitness": 100,
+     "id": "tfc-11",
+     "injury": null,
+     "key": true,
+     "morale": 68,
+     "position": "MF",
+     "rating": 75
+    },
+    {
+     "age": 33,
+     "displayName": "Ivo Mocko",
+     "fitness": 100,
+     "id": "tfc-09",
+     "injury": null,
+     "key": false,
+     "morale": 68,
+     "position": "MF",
+     "rating": 69
+    },
+    {
+     "age": 25,
+     "displayName": "Nico Stubby",
+     "fitness": 100,
+     "id": "mkt-01",
+     "injury": null,
+     "key": false,
+     "morale": 68,
+     "position": "MF",
+     "rating": 67
+    },
+    {
+     "age": 18,
+     "displayName": "Teo Prueba",
+     "fitness": 100,
+     "id": "tfc-20",
+     "injury": null,
+     "key": true,
+     "morale": 68,
+     "position": "FW",
+     "rating": 77
+    },
+    {
+     "age": 25,
+     "displayName": "Pepe Inventado",
+     "fitness": 100,
+     "id": "tfc-16",
+     "injury": null,
+     "key": true,
+     "morale": 68,
+     "position": "FW",
+     "rating": 71
+    },
+    {
+     "age": 26,
+     "displayName": "Quim Muestra",
+     "fitness": 100,
+     "id": "tfc-17",
+     "injury": null,
+     "key": true,
+     "morale": 68,
+     "position": "FW",
+     "rating": 69
+    }
+   ],
+   "selectedPlayerId": null,
+   "venue": "away"
+  },
   "lastBlockSummary": {
    "blockNumber": 4,
    "events": [],

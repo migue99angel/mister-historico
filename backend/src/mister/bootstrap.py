@@ -21,7 +21,13 @@ from mister.catalog.infrastructure.sqlalchemy.publisher import SqlCatalogPublish
 from mister.catalog.infrastructure.yaml_validation import YamlContentValidator
 from mister.game.application.api import GameApi
 from mister.game.application.rules import RulesConfiguration
-from mister.game.application.use_cases import AdvanceBlock, GetRun, StartRun, TakeDecision
+from mister.game.application.use_cases import (
+    AdvanceBlock,
+    GetRun,
+    SelectKeyStarter,
+    StartRun,
+    TakeDecision,
+)
 from mister.game.infrastructure.catalog_adapter import CatalogRunContentAdapter
 from mister.game.infrastructure.presentation_adapter import CatalogPresentationAdapter
 from mister.game.infrastructure.security.run_tokens import (
@@ -50,6 +56,7 @@ class GameRuntime:
         rules = RulesConfiguration.a_profile()
         presentation = CatalogPresentationAdapter(provider, self.settings)
         clock, bus = SystemClock(), InMemoryEventBus()
+        simulator = SimulationServiceAdapter(SimulationService())
         start = StartRun(
             uow=uow,
             capture_game=content.capture_game,
@@ -59,6 +66,7 @@ class GameRuntime:
             token_hasher=hasher,
             seed_factory=lambda: Seed(secrets.randbits(64)),
             rules=rules,
+            simulator=simulator,
         )
         get = GetRun(
             uow=uow,
@@ -78,7 +86,13 @@ class GameRuntime:
             event_bus=bus,
             token_hasher=hasher,
             restore_game=content.restore_game,
-            simulator=SimulationServiceAdapter(SimulationService()),
+            simulator=simulator,
+        )
+        select = SelectKeyStarter(
+            uow=uow,
+            clock=clock,
+            token_hasher=hasher,
+            restore_game=content.restore_game,
         )
         return GameApi(
             start_run=start,
@@ -89,6 +103,7 @@ class GameRuntime:
             token_hasher=hasher,
             presentation=presentation,
             seasons=presentation,
+            select_key_starter=select,
         )
 
 

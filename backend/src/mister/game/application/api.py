@@ -4,13 +4,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol
 
-from mister.game.application import ports
+from mister.game.application import key_starter_flow, ports
 from mister.game.application.presentation_types import Presented, Started
 from mister.game.application.use_cases import (
     AdvanceBlock,
     GetRun,
     RunAccessDeniedError,
     RunView,
+    SelectKeyStarter,
     StartRun,
     TakeDecision,
 )
@@ -55,6 +56,14 @@ class InvalidOptionError(GameApiError):
     code = "invalid_option"
 
 
+class InvalidKeyStarterError(GameApiError):
+    code = "invalid_key_starter"
+
+
+class KeyStarterAlreadySelectedError(GameApiError):
+    code = "key_starter_already_selected"
+
+
 class SeasonNotFoundError(GameApiError):
     """The requested season isn't published as playable."""
 
@@ -70,11 +79,7 @@ class SeasonQueries(Protocol):
 
 
 class KeyStarterCommands(Protocol):
-    """Reserved command contract, implemented and exposed by T3.9 after this CR.
-
-    The existing GameApi does not advertise this capability until the aggregate,
-    persistence, replay and HTTP command are implemented together.
-    """
+    """Select the key starter of the current block's captured offer (T3.9)."""
 
     def select_key_starter(  # noqa: PLR0913, PLR0917 - public command fields
         self,
@@ -87,7 +92,7 @@ class KeyStarterCommands(Protocol):
     ) -> Presented: ...
 
 
-class GameApi:
+class GameApi(KeyStarterCommands):
     """Public facade that turns private use-case results into safe presentation DTOs."""
 
     def __init__(  # noqa: PLR0913 - explicit public dependencies
@@ -101,6 +106,7 @@ class GameApi:
         token_hasher: ports.RunTokenHasher,
         presentation: GamePresentation,
         seasons: SeasonQueries,
+        select_key_starter: SelectKeyStarter | None = None,
     ) -> None:
         self._start = start_run
         self._get = get_run
@@ -110,6 +116,7 @@ class GameApi:
         self._token_hasher = token_hasher
         self._presentation = presentation
         self._seasons = seasons
+        self._select = select_key_starter
 
     def list_seasons(self) -> tuple[Presented, ...]:
         return self._seasons.list_seasons()
@@ -184,6 +191,31 @@ class GameApi:
             if str(error) == "terminal runs reject commands":
                 raise RunAlreadyFinishedError("the run has already finished") from error
             raise
+        return self._present_latest_capture(run_id, view)
+
+    def select_key_starter(  # noqa: PLR0913, PLR0917 - mirrors public command fields
+        self,
+        run_id: RunId,
+        token: str,
+        idempotency_key: str,
+        expected_version: int,
+        fixture_id: FixtureId,
+        player_id: PlayerId,
+    ) -> Presented:
+        if self._select is None:
+            raise InvalidKeyStarterError("this composition offers no key starter command")
+        try:
+            view = self._select.execute(
+                run_id, token, idempotency_key, expected_version, fixture_id, player_id
+            )
+        except InvalidRunTransitionError as error:
+            if str(error) == "terminal runs reject commands":
+                raise RunAlreadyFinishedError("the run has already finished") from error
+            raise
+        except key_starter_flow.InvalidKeyStarterError as error:
+            raise InvalidKeyStarterError(str(error)) from error
+        except key_starter_flow.KeyStarterAlreadySelectedError as error:
+            raise KeyStarterAlreadySelectedError(str(error)) from error
         return self._present_latest_capture(run_id, view)
 
     def _present_latest_capture(self, run_id: RunId, view: RunView) -> Presented:

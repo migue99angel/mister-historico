@@ -17,7 +17,13 @@ from mister.catalog.infrastructure.yaml_loader import YamlSeasonContentProvider
 from mister.entrypoints.api.app import create_app
 from mister.game.application.api import GameApi
 from mister.game.application.rules import RulesConfiguration
-from mister.game.application.use_cases import AdvanceBlock, GetRun, StartRun, TakeDecision
+from mister.game.application.use_cases import (
+    AdvanceBlock,
+    GetRun,
+    SelectKeyStarter,
+    StartRun,
+    TakeDecision,
+)
 from mister.game.infrastructure.catalog_adapter import CatalogRunContentAdapter
 from mister.game.infrastructure.in_memory.run_repository import (
     InMemoryRunStore,
@@ -66,6 +72,7 @@ class _InMemoryRuntime:
         content = CatalogRunContentAdapter(self._provider)
         presentation = CatalogPresentationAdapter(self._provider, Settings())
         clock, bus = FixedClock(datetime(2000, 8, 1, tzinfo=UTC)), InMemoryEventBus()
+        simulator = SimulationServiceAdapter(SimulationService())
         return GameApi(
             start_run=StartRun(
                 uow=uow,
@@ -77,6 +84,7 @@ class _InMemoryRuntime:
                 seed_factory=lambda: Seed(GOLDEN_SEED),
                 run_id_factory=lambda: RunId.parse("00000000-0000-4000-8000-000000002000"),
                 rules=RulesConfiguration.a_profile(),
+                simulator=simulator,
             ),
             get_run=GetRun(uow=uow, token_hasher=hasher, restore_game=content.restore_game),
             take_decision=TakeDecision(
@@ -92,7 +100,10 @@ class _InMemoryRuntime:
                 event_bus=bus,
                 token_hasher=hasher,
                 restore_game=content.restore_game,
-                simulator=SimulationServiceAdapter(SimulationService()),
+                simulator=simulator,
+            ),
+            select_key_starter=SelectKeyStarter(
+                uow=uow, clock=clock, token_hasher=hasher, restore_game=content.restore_game
             ),
             uow=uow,
             token_hasher=hasher,

@@ -19,7 +19,9 @@ _STATUS = {
     "pending_dilemmas": 409,
     "dilemma_already_decided": 409,
     "run_already_finished": 409,
+    "key_starter_already_selected": 409,
     "invalid_option": 422,
+    "invalid_key_starter": 422,
     "idempotency_key_conflict": 422,
 }
 
