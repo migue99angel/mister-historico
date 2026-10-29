@@ -14,7 +14,8 @@ from mister.game.application.rules import RulesConfiguration
 from mister.game.application.run_codec import decode_run, encode_run
 from mister.game.domain import effects
 from mister.game.domain.board import GoalProgress, GoalStatus
-from mister.game.domain.run import Run
+from mister.game.domain.errors import InvalidRunTransitionError
+from mister.game.domain.run import Run, RunStatus
 from mister.shared_kernel.errors import DomainError, InvalidValueError
 from mister.shared_kernel.ids import DilemmaId, OptionId, PlayableSeasonId, RunId
 
@@ -168,6 +169,8 @@ def apply_choice(
     occurred_at: datetime,
 ) -> tuple[RunSnapshot, tuple[DomainEvent, ...]]:
     """Apply one valid captured choice with its historical decision date."""
+    if snapshot.run.status is not RunStatus.IN_PROGRESS:
+        raise InvalidRunTransitionError("terminal runs reject commands")
     current_block = captured.blocks[snapshot.run.block_index]
     dilemma = next((item for item in current_block.dilemmas if item.id == dilemma_id), None)
     if dilemma is None:
