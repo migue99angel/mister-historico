@@ -78,7 +78,8 @@ jobs:
       - name: pytest
         id: tests
         if: ${{ !cancelled() && steps.sync.outcome == 'success' }}
-        run: uv run pytest --cov-report=xml
+        # Keep module-scoped PostgreSQL fixtures on one worker; report slow tests.
+        run: uv run pytest -n 2 --dist loadfile --durations=25 --cov-report=xml
 
       - name: Coverage of domain + application (>= 95 %)
         if: ${{ !cancelled() && steps.tests.outcome != 'skipped' }}
