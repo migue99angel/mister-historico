@@ -1344,3 +1344,210 @@ beta es privada o pública lo decide el autor (PLAN §5.4).
 ### T7.10 · Verificación de competencia
 - **Oleada:** F7-A · **Tamaño:** S · **Propiedad:** `docs/market-check.md`
 - **Qué hacer:** repetir la búsqueda del brief §3 ("hueco detectado", marcado como [VERIFICAR antes de lanzar]) y documentar lo que aparezca.
+
+## Gameplay · Iteración A1 previa a B
+
+Encargo de planificación del autor (2026-10-29). [Análisis, matriz A–K, decisiones,
+riesgos y protocolo de playtest](GAMEPLAY_BACKLOG.md). Este apartado especifica;
+solo el Project registra estado. A1 no modifica alcance ni milestone de tareas
+A/B/C/D existentes. Las propiedades siguientes son estimadas: la CR correspondiente
+las concreta antes de repartir implementación. Sin autorización para implementar
+en el encargo que crea este backlog. TDD, CI completa y revisión independiente al
+implementar; las CR se integran antes de sus consumidores.
+
+### DOC-GAMEPLAY · Iniciativa de gameplay y rejugabilidad
+
+**Issue:** [#154](https://github.com/migue99angel/mister-historico/issues/154).
+
+- **Problema/resultado:** coordinar una iteración previa a B que haga visibles las
+  consecuencias y permita una decisión deportiva con efecto real.
+- **Prioridad/esfuerzo/hito:** P0 de producto, M de análisis, incertidumbre media; A1.
+- **Propiedad:** `docs/GAMEPLAY_BACKLOG.md`, este apartado, referencias de PLAN y
+  extensión de seguimiento ADR-016; ninguna de producción/contratos.
+- **Dependencias:** ninguna para planificar; seguimiento de las seis tareas siguientes
+  y pruebas #123/#124. No bloquear implementación mediante dependencia circular con
+  esta PR; cada issue apunta a su especificación propuesta hasta integrarla.
+- **Aceptación:** diagnóstico contrastado con main/Project; propuestas A–K evaluadas;
+  tareas y CR enlazadas, hito A1 y dependencias nativas; no duplicar evaluación;
+  exploraciones documentadas sin issues prematuras; PR documental sin integrar.
+- **Validación:** diff solo documental, enlaces y concordancia con Project. Sin tests
+  de producto para documentación. Riesgo: convertir la iteración en expansión del MVP;
+  salida acotada a entregas 1–2 y decisión de playtest.
+
+### CR-T3.8 · Contrato de consecuencias y evolución del estado
+
+**Issue:** [#155](https://github.com/migue99angel/mister-historico/issues/155).
+
+- **Problema/resultado:** el jugador necesita efectos aplicados recuperables y
+  separados del cierre deportivo, sin leer el DSL ni inferirlos en frontend.
+- **Prioridad/esfuerzo/hito:** P0, M, incertidumbre media; A1, entrega 1.
+- **Depende de:** ninguna; recibos compatibles con RunView de A.
+- **Propiedad estimada:** `docs/changes/CR-T3.8-gameplay-feedback.md`, OpenAPI,
+  puertos/API publicados de Game, DTOs de presentación, cliente generado/MSW y suites
+  contractuales; documentar formato de snapshot compatible con ADR-009.
+- **CR:** esta tarea publica exclusivamente el contrato, no la funcionalidad.
+- **Aceptación:** especificar recibo por secuencia/versión con antes/después/delta
+  real y entidades afectadas; separar cambio actual y efecto programado con fecha;
+  permitir historial recuperable tras recarga y reintento; muestras inicial/cierre
+  para moral/confianza/físico, sin serie ficticia. La media física identifica su
+  población y los cambios de composición; objetivos solo si su progreso se publica
+  explícitamente. No exponer efectos de opciones pendientes, semilla ni opción
+  histórica. Definir evolución de snapshot y compatibilidad con partidas disponibles.
+  No hacer depender este contrato de Evaluation ni modificar DSL innecesariamente.
+- **Tests esperados:** contrato fake/real cuando aplique, esquemas, generados/MSW,
+  compatibilidad respuestas anteriores y lectura de snapshot anterior; casos límite
+  con deltas saturados y fechas futuras definidos como ejemplos sintéticos.
+- **Validación de valor:** preparar ejemplo de respuesta que permita explicar «qué
+  cambió» sin cálculo cliente; se contrasta en #123 tras T4.9.
+- **Riesgos:** payload creciente, cambios de versión y objetivos fuera del contrato;
+  publicar solo datos necesarios y acordar límites antes de implementar.
+
+### T3.8 · Consecuencias aplicadas e historial mínimo en Game
+
+**Issue:** [#156](https://github.com/migue99angel/mister-historico/issues/156).
+
+- **Problema/resultado:** cada decisión confirmada devuelve un recibo verdadero;
+  recargar conserva los cambios y la evolución del equipo.
+- **Prioridad/esfuerzo/hito:** P0, M, incertidumbre media; A1, entrega 1.
+- **Depende de:** CR-T3.8 integrada.
+- **Propiedad estimada:** `game/domain/`, `game/application/{use_cases,closure,replay,run_codec}.py`,
+  adaptadores de presentación/SQL y tests asociados; migración de Game si la CR la
+  necesita. Sin editar puertos/API desde esta tarea.
+- **CR:** consume CR-T3.8; cualquier ampliación exige volver a CR.
+- **Aceptación:** computar y persistir cambios reales con la decisión en su transacción;
+  incluir jugadores, moral/confianza/físico, táctica y movimientos/fechas aplicables.
+  Lesiones/recuperaciones solo al acreditarse; programados separados de aplicados.
+  No aplicar dos veces con idempotencia ni perder recibo si la respuesta se corta.
+  Muestrear estado inicial/cierre según contrato; distinguir resultados de bloque de
+  efectos de elección. Replay conserva recibos/muestras o verifica su reconstrucción
+  según la CR, sin consultar Catalog actual ni cambiar reglas deportivas anteriores.
+- **Tests esperados:** saturación, cambio nulo, moral individual, traspaso futuro y
+  población física, lesión diferida, recarga/reintento, conflicto de versión, rollback,
+  contrato fake/SQL, replay con catálogo cambiado y golden de partidas previas.
+- **Validación de valor:** todos los cambios de dos decisiones de Test FC se pueden
+  explicar con los recibos, sin atribución causal del marcador; prueba con T4.9.
+- **Riesgos:** snapshots estrictos y múltiples efectos sobre el mismo jugador;
+  consolidar por entidad sin perder orden semántico ni inventar cambios.
+
+### T4.9 · Confirmar decisiones, ver consecuencias y estado del equipo
+
+**Issue:** [#157](https://github.com/migue99angel/mister-historico/issues/157).
+
+- **Problema/resultado:** pasar de elegir texto sin respuesta a confirmar y entender
+  cada decisión; saber cómo llega la plantilla al siguiente bloque.
+- **Prioridad/esfuerzo/hito:** P0, M, incertidumbre media; A1, entrega 1.
+- **Depende de:** T3.8 y CR-T3.8 integradas. Reutiliza T4.5/T4.8 de A.
+- **Propiedad estimada:** `frontend/src/ui/screens/RunLoop/**`, hooks de decisión/
+  consulta en `application/`, view models en `domain/` y tests. Componentes compartidos
+  solo con propiedad acordada; cliente/MSW son de la CR, no de esta tarea.
+- **CR:** ninguna adicional si el contrato aprobado cubre todo.
+- **Aceptación:** confirmar envía una decisión y muestra recibo inline; no enviar
+  automáticamente las demás. Simular solo tras confirmar pendientes. Reintento y
+  doble toque no duplican acción; conflicto refresca versión. Moral/confianza/físico
+  medio con texto y valores accesibles, lista de lesionados/jugadores, táctica y Liga.
+  Tendencias solo con muestras servidor; nunca confundir media nominal y fuerza.
+  Fecha/estado aplicado y programado distinguibles. Tras recargar, recuperar recibos;
+  resumen deportivo separado y sin anticipar resultados. Aprovechar eventos reales
+  del resumen para destacar hechos, sin causalidad inventada. Objetivos solo si
+  publicados. Móvil, foco/lector y teclado según T4.8; no ampliar ranking/final aquí.
+- **Tests esperados:** Vitest de confirmación, recibos, recarga, parcial/reintento,
+  conflicto, pending y estados vacíos; accesibilidad; E2E Test FC sobre backend real
+  con dos decisiones y simulación posterior. No tests que copien CSS.
+- **Validación de valor:** #123, pedir explicar dos consecuencias y localizar lesión;
+  registrar confusiones/ayuda, duración y deseo de repetir.
+- **Riesgos:** aumentar clics; usar confirmación inline breve, sin modal obligatorio.
+
+### CR-T3.9 · Contrato de titular clave por partido
+
+**Issue:** [#158](https://github.com/migue99angel/mister-historico/issues/158).
+
+- **Problema/resultado:** elegir un jugador influye en el once real de un encuentro,
+  sin que una elección local afecte a toda la temporada.
+- **Prioridad/esfuerzo/hito:** P1, M, incertidumbre alta; A1, entrega 2.
+- **Depende de:** CR-T3.8 integrada para reutilizar recibos/versionado.
+- **Propiedad estimada:** `docs/changes/CR-T3.9-key-starter.md`, contratos Game y
+  Simulation publicados, OpenAPI, DSL/Catalog si el contenido declara el encuentro,
+  generados/MSW y suites; ADR-005 solo si requiere nuevas claves (preferir no).
+- **CR:** esta tarea especifica/publica interfaces y compatibilidad; sin simulador nuevo.
+- **Aceptación:** una interacción por bloque como máximo, fixture conocido antes de
+  simular, candidatos/fecha/posición y selección capturados. No requiere cada bloque
+  ni nueva ronda. Titular requerido solo en ese fixture; disponibilidad revalidada a
+  su fecha, fallback automático visible si lesión/venta, política explícita al chocar
+  con cantera o falta de once válido. No permitir lesionado ni oponente inventado.
+  Decisión/token/version/idempotencia persistidos y replay de formato previo compatible.
+  Publicar quién jugó o por qué no, sin exponer fuerza privada ni resultado futuro.
+  Definir contenido sintético inicial; ficción rotulada, nunca opción histórica falsa.
+- **Tests esperados:** contratos Game/Simulation, fixture ajeno/ya jugado, selección
+  inválida, interacción ausente, compatibilidad y ejemplos de indisponibilidad futura.
+- **Validación de valor:** contrato permite ver que el elegido fue respetado y explicar
+  un fallback; validar en T4.10, sin exigir cambio de marcador.
+- **Riesgos:** alcance del DSL y captura; limitar primera versión a fixture ya conocido.
+
+### T3.9 · Aplicar titular clave en Game y Simulation
+
+**Issue:** [#159](https://github.com/migue99angel/mister-historico/issues/159).
+
+- **Problema/resultado:** que la elección deportiva sea auténtica y limitada al partido.
+- **Prioridad/esfuerzo/hito:** P1, M, incertidumbre alta; A1, entrega 2. Si crece a L,
+  dividir Game/adaptador y Simulation antes de reclamar, con propiedad y dependencia
+  separadas; no inventar una segunda vía de fuerza.
+- **Depende de:** CR-T3.9 y T3.8 integradas.
+- **Propiedad estimada:** Game agregado/casos de uso/replay y mapeo del adaptador;
+  `simulation/domain/{season,lineup}.py`, tests y captura/versionado autorizados por CR.
+  Un único escritor por estos archivos; sin puertos/API fuera de CR.
+- **CR:** consume CR-T3.9.
+- **Aceptación:** validar y registrar selección; traducir a required del fixture,
+  reutilizar selector y calculate_strength. Respetar disponibilidad en fecha y
+  resolver cantera/fallback conforme al contrato; otros partidos conservan selección
+  habitual. Log/recibo acredita once o causa de ausencia. Sin victoria garantizada,
+  nuevo RNG deportivo ni simulación parcial; replay reproduce selección y resultados.
+- **Tests esperados:** elección respeta once y cambia entrada/fuerza con jugadores
+  sintéticos de rating distinto; lesión sobrevenida, venta, prioridad/cantera,
+  selección ajena, idempotencia, golden antiguo/nuevo y fixtures sin override.
+- **Validación de valor:** E2E con T4.10; jugador comprueba que su titular participó.
+- **Riesgos:** override se filtra a otros partidos o cambia streams; preservar IDs y
+  hojas RNG de ADR-005, verificar entrada/fuerza sin exigir marcador distinto.
+
+### T4.10 · Elegir titular para un encuentro señalado
+
+**Issue:** [#160](https://github.com/migue99angel/mister-historico/issues/160).
+
+- **Problema/resultado:** decisión deportiva visible entre dos o tres candidatos,
+  con un coste comprensible y confirmación de quién jugó.
+- **Prioridad/esfuerzo/hito:** P1, M, incertidumbre media; A1, entrega 2.
+- **Depende de:** T3.9 y T4.9 integradas.
+- **Propiedad estimada:** `frontend/src/ui/screens/RunLoop/**`, hooks/view models y
+  tests; contenido sintético de interacción según propiedad concretada en CR-T3.9.
+- **CR:** consume CR-T3.9; no cálculos de elegibilidad o fuerza en frontend.
+- **Aceptación:** mostrar partido/fecha y candidatos con estado entregado por servidor;
+  confirmar elección, recuperar tras recarga y señalar aplicación/fallback después.
+  Sin puntuación/resultado inventado ni pausa al minuto 60. Mantener simular bloque,
+  accesibilidad y errores/versionado; sin once completo o nuevas fronteras.
+- **Tests esperados:** elección, doble toque/reintento, indisponibilidad, interacción
+  ausente, recarga, lector/teclado y E2E con API/motor reales.
+- **Validación de valor:** #123 e iniciativa A1; pedir justificar elección y comparar
+  diversión/control con una tarjeta tradicional; registrar duración y repetición.
+- **Riesgos:** el jugador interpreta titular como victoria asegurada; explicar impacto
+  como selección efectiva del once, sin porcentajes de éxito inventados.
+
+### Aceptación adicional propuesta de tareas existentes (sin duplicar)
+
+En T5.1a/T5.1b, CR-T5.B, T4.6b y T5.6a se conserva propiedad, milestone y secuencia:
+
+- #97 especifica cómo comparar todas las competiciones y Liga (posición/puntos),
+  títulos/eliminaciones y puntuación/veredicto, con objetivos y directiva disponibles.
+  #92 publica los campos necesarios; no calcularlos en frontend. #136/#138 persisten
+  y conectan. Probar historia exacta, mejor/peor y destitución con Test FC.
+- #133 presenta veredicto y 0–100 como principal, comparación por competición y
+  resumen factual; objetivos/directiva solo si #92 los publica. #140 conecta datos
+  reales y acciones de repetir/elegir, sin duplicar pantalla o endpoint. Narrativa
+  basada en hechos, sin atribuir una victoria a una decisión no demostrable.
+- #123 valida entregas A1 con el protocolo de GAMEPLAY_BACKLOG; #124 incorpora el
+  final histórico. No crear otra issue de pruebas humanas ni cerrarlas por un agente.
+- #88 mejora dilemas verificados con costes contrapuestos ya representables en los
+  diez efectos. No introducir conflictos ficticios bajo `historical_option`.
+
+Estas ampliaciones se proponen en la PR documental y se enlazan en comentarios;
+no reetiquetan, cierran, mueven ni reclaman las tareas existentes. Eventos contextuales,
+variantes, once completo, economía y duración siguen como decisiones de diseño en
+GAMEPLAY_BACKLOG, sin issues de implementación hasta validar su necesidad.
