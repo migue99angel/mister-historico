@@ -16,11 +16,18 @@ interface RunViewJson {
   lastBlockSummary: unknown;
 }
 
-function goldenFinalView(): RunViewJson {
+/** The view the golden client got from each block advance: the one with a new summary. */
+function goldenAdvanceViews(): RunViewJson[] {
   const views = JSON.parse(readFileSync(GOLDEN_PATH, 'utf-8')) as RunViewJson[];
-  const last = views.at(-1);
-  if (!last) throw new Error('the golden season has no views');
-  return last;
+  return views.filter(
+    (view, index) =>
+      index > 0 &&
+      JSON.stringify(view.lastBlockSummary) !== JSON.stringify(views[index - 1]?.lastBlockSummary),
+  );
+}
+
+function blockOutcome({ status, lastBlockSummary }: RunViewJson): RunViewJson {
+  return { status, lastBlockSummary };
 }
 
 function isAdvance(response: Response): boolean {
@@ -39,9 +46,10 @@ async function decideFirstOptions(page: Page): Promise<void> {
 test('Test FC is played to the end against the real API, surviving reloads, with no sideways scroll', async ({
   page,
 }) => {
-  const advances: Response[] = [];
+  // Read each body as it arrives: a reload discards the bodies of earlier responses.
+  const advances: Promise<RunViewJson>[] = [];
   page.on('response', (response) => {
-    if (isAdvance(response)) advances.push(response);
+    if (isAdvance(response)) advances.push(response.json() as Promise<RunViewJson>);
   });
 
   await page.goto('/');
@@ -81,14 +89,9 @@ test('Test FC is played to the end against the real API, surviving reloads, with
   await expect(progress).toHaveAttribute('aria-valuenow', String(totalBlocks));
   await expectNoHorizontalScroll(page);
 
-  // The real engine with the golden seed and policy plays exactly the backend golden season.
-  expect(advances).toHaveLength(totalBlocks);
-  const lastAdvance = advances.at(-1);
-  if (!lastAdvance) throw new Error('no block was advanced');
-  const lastView = (await lastAdvance.json()) as RunViewJson;
-  const golden = goldenFinalView();
-  expect(lastView.status).toBe(golden.status);
-  expect(lastView.lastBlockSummary).toEqual(golden.lastBlockSummary);
+  // Block by block, the real engine with the golden seed and policy plays the backend golden.
+  const played = await Promise.all(advances);
+  expect(played.map(blockOutcome)).toEqual(goldenAdvanceViews().map(blockOutcome));
 
   await page.reload();
   await expect(page).toHaveURL(`${runUrl}/final`);
