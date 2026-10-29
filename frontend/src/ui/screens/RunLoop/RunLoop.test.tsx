@@ -336,6 +336,7 @@ describe('RunLoop', () => {
     simulate();
 
     const summary = await screen.findByRole('region', { name: 'Resumen del bloque' });
+    fireEvent.click(await screen.findByRole('button', { name: 'Mostrar todos' }));
     expect(within(summary).getByText('August · 1 victoria y 1 empate')).toBeInTheDocument();
     expect(within(summary).getAllByText('Rovers Prueba')).not.toHaveLength(0);
     expect(within(summary).getByText('Derby')).toBeInTheDocument();
@@ -355,7 +356,7 @@ describe('RunLoop', () => {
     await waitFor(() => {
       expect(heading).toHaveFocus();
     });
-    expect(screen.getByRole('button', SIMULATE)).toBeDisabled();
+    expect(screen.queryByRole('button', SIMULATE)).not.toBeInTheDocument();
   });
 
   it('runs a double tap on Simular bloque as a single command', async () => {
@@ -538,6 +539,7 @@ describe('RunLoop', () => {
 
     simulate();
 
+    fireEvent.click(await screen.findByRole('button', { name: 'Mostrar todos' }));
     await waitFor(() => {
       expect(onRunEnded).toHaveBeenCalledWith(seeded.runId);
     });
@@ -558,6 +560,7 @@ describe('RunLoop', () => {
 
     simulate();
 
+    fireEvent.click(await screen.findByRole('button', { name: 'Mostrar todos' }));
     await waitFor(() => {
       expect(onRunEnded).toHaveBeenCalledWith(seeded.runId);
     });

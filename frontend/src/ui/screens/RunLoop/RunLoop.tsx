@@ -1,5 +1,3 @@
-import { useEffect, useRef } from 'react';
-
 import { useRun } from '../../../application/useRun';
 import { Button } from '../../design-system';
 import { RunInPlay } from './RunInPlay';
@@ -13,18 +11,16 @@ export interface RunLoopProps {
 /** Block loop screen of `/partida/:id`: decide the block's dilemmas, then simulate it. */
 export function RunLoop({ runId, onRunEnded }: RunLoopProps) {
   const state = useRun(runId);
-  const ended = state.kind === 'ready' && state.run.status !== 'in_progress';
-  const notifiedRunId = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!ended || notifiedRunId.current === runId) return;
-    notifiedRunId.current = runId;
-    onRunEnded(runId);
-  }, [ended, runId, onRunEnded]);
-
   switch (state.kind) {
     case 'ready':
-      return <RunInPlay key={runId} run={state.run} isRefreshing={state.isRefreshing} />;
+      return (
+        <RunInPlay
+          key={runId}
+          run={state.run}
+          isRefreshing={state.isRefreshing}
+          onRunEnded={onRunEnded}
+        />
+      );
     case 'unavailable':
       return (
         <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-4 px-gutter py-12 text-center">
