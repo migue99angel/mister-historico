@@ -13,6 +13,12 @@ from httpx import AsyncClient
 
 TEST_FC_SEASON = "test-fc-2000-01"
 GOLDEN_SEED = 2000
+# With the unchanged A profile, choosing the last option of every dilemma with seed
+# 2000 sacks the manager when block 2 closes (d04 rejects the board's cup priority).
+# The frontend E2E can reuse this seed, policy and expected dismissal block.
+SACKING_SEED = 2000
+SACKING_OPTION_INDEX = -1
+SACKING_BLOCK = 2
 GOLDEN_PATH = Path(__file__).with_name("test_fc_2000_01.golden.json")
 
 JsonObject = dict[str, Any]
@@ -42,14 +48,21 @@ async def start_run(client: AsyncClient) -> PlayedRun:
     return PlayedRun(payload["run"]["runId"], payload["runToken"], [payload["run"]])
 
 
-async def decide(client: AsyncClient, run: PlayedRun, dilemma: JsonObject, key: str) -> None:
-    """Choose the first option of `dilemma`, the deterministic policy of the golden."""
+async def decide(
+    client: AsyncClient,
+    run: PlayedRun,
+    dilemma: JsonObject,
+    key: str,
+    *,
+    option_index: int = 0,
+) -> None:
+    """Choose an option by position; the golden policy defaults to the first."""
     response = await client.post(
         f"/api/runs/{run.run_id}/decisions",
         json={
             "expectedVersion": run.view["version"],
             "dilemmaId": dilemma["id"],
-            "optionId": dilemma["options"][0]["id"],
+            "optionId": dilemma["options"][option_index]["id"],
         },
         headers={**run.headers, "Idempotency-Key": key},
     )
@@ -67,11 +80,13 @@ async def advance(client: AsyncClient, run: PlayedRun, key: str) -> None:
     run.views.append(response.json())
 
 
-async def play_block(client: AsyncClient, run: PlayedRun) -> None:
+async def play_block(client: AsyncClient, run: PlayedRun, *, option_index: int = 0) -> None:
     """Decide every pending dilemma of the current block, then close it."""
     block = run.view["block"]["number"]
     for dilemma in run.view["pendingDilemmas"]:
-        await decide(client, run, dilemma, f"decide-block-{block}-{dilemma['id']}")
+        await decide(
+            client, run, dilemma, f"decide-block-{block}-{dilemma['id']}", option_index=option_index
+        )
     await advance(client, run, f"advance-block-{block}")
 
 

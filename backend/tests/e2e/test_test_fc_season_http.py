@@ -31,6 +31,9 @@ from mister.shared_kernel.ids import RunId
 from mister.simulation.application.api import SimulationService
 from tests.golden.season_play import (
     GOLDEN_SEED,
+    SACKING_BLOCK,
+    SACKING_OPTION_INDEX,
+    SACKING_SEED,
     advance,
     decide,
     load_golden,
@@ -260,3 +263,42 @@ async def test_a_finished_run_replays_exactly_from_its_persisted_inputs(
 
     assert result.verified
     assert result.reconstructed.run.status is RunStatus.FINISHED
+
+
+@pytest.mark.anyio
+async def test_last_option_policy_sacks_the_manager_in_block_two_and_survives_reload(
+    database_url: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(composition, "secrets", SimpleNamespace(randbits=lambda _: SACKING_SEED))
+    async with _client(database_url) as client:
+        run = await start_run(client)
+        for block in range(1, SACKING_BLOCK + 1):
+            assert run.view["status"] == "in_progress"
+            assert run.view["block"]["number"] == block
+            await play_block(client, run, option_index=SACKING_OPTION_INDEX)
+
+    assert run.view["status"] == "sacked"
+    assert run.view["block"]["number"] == SACKING_BLOCK
+    assert run.view["state"]["boardConfidence"] < 20
+    assert run.view["pendingDilemmas"] == []
+    assert run.view["lastBlockSummary"] is not None
+
+    async with _client(database_url) as reloaded:
+        recovered = await reloaded.get(f"/api/runs/{run.run_id}", headers=run.headers)
+        assert recovered.status_code == 200
+        assert recovered.json() == run.view
+        for operation, body in (
+            ("advance", {}),
+            ("decisions", {"dilemmaId": "d04", "optionId": "b"}),
+        ):
+            rejected = await reloaded.post(
+                f"/api/runs/{run.run_id}/{operation}",
+                json={"expectedVersion": run.view["version"], **body},
+                headers={**run.headers, "Idempotency-Key": f"after-sacking-{operation}"},
+            )
+            assert (rejected.status_code, rejected.json()["code"]) == (
+                409,
+                "run_already_finished",
+            )
+        current = await reloaded.get(f"/api/runs/{run.run_id}", headers=run.headers)
+        assert current.json() == run.view
