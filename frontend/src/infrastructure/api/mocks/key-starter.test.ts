@@ -132,3 +132,33 @@ describe('captured lineup projection', () => {
     );
   });
 });
+
+describe('comparable candidate state', () => {
+  it('captures the same morale, fitness and injury fields as the projected starters', () => {
+    const view = keyStarterRun();
+    const candidate = view.keyStarter?.candidates[0];
+    const current = view.squad.players.find((player) => player.id === candidate?.id);
+    if (!current || !candidate) throw new Error('expected captured candidate');
+    expect(candidate).toMatchObject({
+      morale: current.morale, fitness: current.fitness, injury: current.injury,
+    });
+    const capturedFitness = candidate.fitness;
+    current.fitness = 1;
+    expect(candidate.fitness).toBe(capturedFitness);
+  });
+
+  it('rejects candidates containing only nominal player summaries', () => {
+    const view = keyStarterRun();
+    const invalid = {
+      ...view,
+      keyStarter: {
+        ...view.keyStarter,
+        candidates: view.keyStarter?.candidates.map((player) => ({
+          id: player.id, displayName: player.displayName, position: player.position,
+          age: player.age, rating: player.rating, key: player.key,
+        })),
+      },
+    };
+    expect(validateResponse('POST', PATH, 200, invalid, 'application/json').length).toBeGreaterThan(0);
+  });
+});
