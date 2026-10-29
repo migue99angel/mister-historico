@@ -50,12 +50,12 @@ y reconocer el éxito final. Los comentarios nuevos añaden ritmo visual y acces
 
 **A1 es una iteración que se prueba antes de B, con desarrollo en paralelo a B; el
 cierre íntegro de A1 no es requisito de la beta.** F2, verificación/firma y evaluación
-siguen sus dependencias actuales. Se registrará en #123/#124 qué mejoras están listas
+siguen sus dependencias actuales. Se registrará en #164/#124 qué mejoras están listas
 al probar/publicar B; cualquier P1 pendiente sigue abierta y se reprioriza explícitamente.
 
 1. P0: T4.9 confirma y explica cambios inmediatos con RunView; panel actual. En paralelo,
    #88 prepara dilemas con sacrificios reales dentro del DSL, como aporte editorial a A1,
-   conservando su milestone B. Primera muestra verificable, no todo F2, para playtest #123.
+   conservando su milestone B. Primera muestra verificable, no todo F2, para playtest #164.
 2. P1: T4.11 revela resultados; T4.12 organiza el panel. Versiones sencillas y medibles.
 3. P1: CR-T3.9 → T3.9 → T4.10 incorpora titular clave auténtico. Puede diseñarse en paralelo
    a UI; su implementación no depende de recibos persistentes.
@@ -67,7 +67,7 @@ P0 = bucle básico, P1 = experiencia siguiente, P2 = profundidad, Later = explor
 El PLAN describe su correspondencia con Priority del Project; las prioridades anteriores
 A/B permanecen. Salida de cada entrega: API real, aceptación y observaciones de 3–5 testers.
 La iniciativa #154 entrega planificación y se cierra al integrar su PR; el milestone
-sigue el trabajo posterior y #123 conserva resultados humanos.
+sigue el trabajo posterior y #164 conserva resultados humanos.
 
 ## Matriz de decisiones
 
@@ -184,7 +184,16 @@ al minuto 60 y herramientas IA esperan validación. IA solo offline, revisada y 
 
 ## Orden, validación y recursos
 
-**Orden:** T4.9 + muestra editorial #88 → #123. T4.11 → #123 → T4.12 → #123;
+La prueba [T7.8a2 #164](https://github.com/migue99angel/mister-historico/issues/164) es propia de A1.
+[#123](https://github.com/migue99angel/mister-historico/issues/123) cerró la prueba de A el 2026-10-29
+y se conserva solo como antecedente; #124 conserva la beta histórica B.
+El autor cierra #164 tras las sesiones acordadas y registra la decisión de activar
+o posponer recibos; #155 espera esa prueba y requiere la decisión explícita en su
+issue. El cierre de la prueba por sí solo no autoriza una CR descartada.
+
+
+**Orden:** T4.9 + muestra editorial #88 → primera sesión en #164. Después,
+T4.11 y T4.12 se prueban en sesiones sucesivas de #164, sin esperar a cerrar la issue;
 en paralelo CR-T3.9 → T3.9, después T4.10. T4.10 también espera T4.12 para evitar
 dos escritores de RunLoop. Las CR de recibos quedan condicionadas, fuera del camino.
 F2 y Evaluation tienen propiedad independiente; #133 y #140 se ejecutan en secuencia.
@@ -200,7 +209,7 @@ plantilla, posición y lesión, y volver a decidir sin ayuda; anotar tiempo, scr
 pérdidas de foco y errores. Comparar con su sesión anterior, alternando el orden cuando
 sea posible. Preguntar por repetición y diferencias relevantes, no solo estética.
 #124 valida también veredicto/nota/Liga/objetivos de B. Registrar observaciones
-individuales y decisiones en #123, sin porcentajes de mejora ni inferencia estadística.
+individuales y decisiones en #164, sin porcentajes de mejora ni inferencia estadística.
 
 [Iniciativa #154](https://github.com/migue99angel/mister-historico/issues/154).
 Recibos opcionales: [#155](https://github.com/migue99angel/mister-historico/issues/155)/[#156](https://github.com/migue99angel/mister-historico/issues/156).
@@ -208,4 +217,4 @@ Feedback/panel: [#157](https://github.com/migue99angel/mister-historico/issues/1
 Titular: [#158](https://github.com/migue99angel/mister-historico/issues/158)/[#159](https://github.com/migue99angel/mister-historico/issues/159)/[#160](https://github.com/migue99angel/mister-historico/issues/160).
 Nuevas tareas: [T4.11 #162](https://github.com/migue99angel/mister-historico/issues/162) (revelado) y
 [T4.12 #163](https://github.com/migue99angel/mister-historico/issues/163) (layout).
-Evaluación existente: #97/#92/#136/#138/#133/#140; edición #88; pruebas #123/#124.
+Evaluación existente: #97/#92/#136/#138/#133/#140; edición #88; pruebas #164/#124.
