@@ -1454,6 +1454,23 @@ RunLoop: secuencia T4.9 → T4.11 → T4.12 → T4.10; backend de titular indepe
   error, ausencia y recarga. Riesgo: promesa de victoria; comunicar selección efectiva.
 - **Valor:** #164 compara control/diversión con una tarjeta y registra carga de lectura.
 
+### CR-T4.10 · Identidad capturada en el resultado del titular clave
+- **Issue/hito/prioridad/tamaño:** [#174](https://github.com/migue99angel/mister-historico/issues/174), A1, P2, M.
+- **Origen:** revisión de T4.10 en [PR #173](https://github.com/migue99angel/mister-historico/pull/173#issuecomment-6518407150); seguimiento no bloqueante para esa entrega.
+- **Resultado:** reconocer por su nombre al elegido y al once real aunque ya no estén
+  en la plantilla actual, también tras recargar o reproducir la partida.
+- **Depende de:** T4.10 integrada; no bloquea su aceptación ni integración.
+- **Propiedad/CR:** propuesta de ampliación compatible de `KeyStarterOutcome`, captura/
+  presentación/persistencia/replay de Game, OpenAPI, cliente generado, MSW, RunLoop y
+  suites contractuales; coordinar propiedad antes de implementar. Simulation solo si
+  la propuesta aprobada requiere enriquecer su salida, sin modificar fuerza ni RNG.
+- **Aceptación/tests:** aprobar primero el contrato de identidad capturada (nombre o
+  metadatos del jugador elegido y de los integrantes del once real), su instante de
+  captura y compatibilidad con partidas/respuestas antiguas. La ausencia por venta
+  conserva la identidad conocida sin consultar la plantilla viva ni deducir nombres.
+  Tests sintéticos de venta, lesión, fallback/cantera, fixture no disputado, recarga,
+  persistencia/replay e idempotencia; E2E real comprueba el nombre tras la venta y recarga.
+
 ### T4.11 · Simulación visual progresiva de bloques
 - **Issue:** [#162](https://github.com/miguelposadas/mister-historico/issues/162).
 - **Hito/prioridad/tamaño:** A1 mejora visual, P1, M (incertidumbre media).
