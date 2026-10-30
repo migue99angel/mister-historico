@@ -531,7 +531,6 @@ export function getResult(runId: string): Schemas['RunResult'] {
     verdict: verdictFor(run, misterScore, season.historicalManager),
     percentile: Math.min(99, misterScore + 0.5),
     sackedMonth: run.sackedMonth,
-    ...(run.keyStarter ? { keyStarter: structuredClone(run.keyStarter) } : {}),
     alias: run.alias,
     shareUrl: shareUrl(run.runId),
     ogImageUrl: `${SHARE_ORIGIN}/og/${run.runId}.png`,
