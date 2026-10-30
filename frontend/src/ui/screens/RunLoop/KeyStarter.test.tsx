@@ -13,6 +13,7 @@ import {
 import type { RunViewDto } from '../../../application/ports';
 import { runQueryKey } from '../../../application/useRun';
 import { RunLoop } from './RunLoop';
+import { KeyStarterResult } from './KeyStarter';
 
 function setup({ selected = false, loseReply = false } = {}) {
   const runtime = createTestRuntime();
@@ -110,6 +111,7 @@ it.each(['injured', 'not_in_squad', 'youth_conflict', 'fixture_not_played', null
           ? [chosen.id]
           : ['actual-reserve'];
     run.keyStarter = null;
+    run.squad.players = [];
     run.lastBlockSummary = {
       blockNumber: 1,
       label: 'Bloque Test',
@@ -126,6 +128,8 @@ it.each(['injured', 'not_in_squad', 'youth_conflict', 'fixture_not_played', null
         playerId: chosen.id,
         starterIds: ids,
         absenceReason,
+        selectedPlayer: { id: chosen.id, displayName: chosen.displayName },
+        starters: ids.map((id) => ({ id, displayName: `Nombre capturado ${id}` })),
       },
     };
     runtime.runTokenStore.save(run.runId, 'test-token');
@@ -212,4 +216,16 @@ it('exposes the captured comparison with labelled keyboard controls and no acces
   setup();
   const panel = screen.getByRole('region', { name: 'Titular para el partido clave' });
   expect(await axe(panel)).toHaveNoViolations();
+});
+
+
+it.each([undefined, null])('uses IDs for legacy outcomes without captured identities (%s)', (missing) => {
+  renderWithRuntime(<KeyStarterResult outcome={{
+    fixtureId: 'test-fixture', date: '2000-09-03', playerId: 'sold-player',
+    starterIds: ['actual-starter'], absenceReason: 'not_in_squad',
+    selectedPlayer: missing, starters: missing,
+  }} match={undefined} />);
+  const result = screen.getByRole('region', { name: 'Resultado del titular elegido' });
+  expect(result).toHaveTextContent('sold-player');
+  expect(result).toHaveTextContent('actual-starter');
 });
