@@ -148,14 +148,23 @@ function required<T>(value: T | null | undefined): T {
 
 it('recovers another tab selection after a version conflict and announces the error with focus', async () => {
   const view = setup();
-  mockServer.use(http.post('*/api/runs/:runId/key-starter', () => {
-    view.run.version = 1;
-    view.offer.selectedPlayerId = required(view.offer.candidates[1]).id;
-    return HttpResponse.json({ type: 'about:blank', title: 'Conflict', status: 409, code: 'version_conflict' }, { status: 409, headers: { 'Content-Type': 'application/problem+json' } });
-  }));
+  mockServer.use(
+    http.post('*/api/runs/:runId/key-starter', () => {
+      view.run.version = 1;
+      view.offer.selectedPlayerId = required(view.offer.candidates[1]).id;
+      return HttpResponse.json(
+        { type: 'about:blank', title: 'Conflict', status: 409, code: 'version_conflict' },
+        { status: 409, headers: { 'Content-Type': 'application/problem+json' } },
+      );
+    }),
+  );
   fireEvent.click(required(screen.getAllByRole('radio')[0]));
   fireEvent.click(screen.getByRole('button', { name: 'Confirmar titular' }));
-  expect(await screen.findByText(`Titular confirmado: ${required(view.offer.candidates[1]).displayName}`)).toBeVisible();
+  expect(
+    await screen.findByText(
+      `Titular confirmado: ${required(view.offer.candidates[1]).displayName}`,
+    ),
+  ).toBeVisible();
   const alert = await screen.findByRole('alert');
   expect(alert).toHaveTextContent('Hemos recargado');
   expect(alert).toHaveFocus();
@@ -169,7 +178,9 @@ it('does not offer a selection when the server has no offer', () => {
   runtime.runTokenStore.save(run.runId, 'test-token');
   runtime.queryClient.setQueryData(runQueryKey(run.runId), run);
   renderWithRuntime(<RunLoop runId={run.runId} onRunEnded={vi.fn()} />, { runtime });
-  expect(screen.queryByRole('region', { name: 'Titular para el partido clave' })).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('region', { name: 'Titular para el partido clave' }),
+  ).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Simular bloque' })).toBeVisible();
 });
 
