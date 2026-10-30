@@ -85,6 +85,7 @@ interface RunRecord {
   tactic: Schemas['Tactic'];
   priorities: Map<string, Schemas['CompetitionPriorityLevel']>;
   lastBlockSummary: Schemas['BlockSummary'] | null;
+  keyStarter: Schemas['KeyStarterOffer'] | null;
   injuredPlayerId: string | null;
   sackedMonth: number | null;
   alias: string | null;
@@ -199,6 +200,7 @@ function view(run: RunRecord): Schemas['RunView'] {
     })),
     lastBlockSummary: run.lastBlockSummary,
     sackedMonth: run.sackedMonth,
+    ...(run.keyStarter ? { keyStarter: structuredClone(run.keyStarter) } : {}),
   };
 }
 
@@ -244,6 +246,7 @@ export function startRun(seasonId: unknown): Schemas['StartRunResponse'] {
     tactic: { style: 'balanced', system: '4-4-2' },
     priorities: new Map(season.competitions.map((competition) => [competition.id, 'normal'])),
     lastBlockSummary: null,
+    keyStarter: null,
     injuredPlayerId: null,
     sackedMonth: null,
     alias: null,
@@ -314,6 +317,50 @@ function requireInProgress(run: RunRecord): void {
 }
 
 const clamp = (value: number): number => Math.min(100, Math.max(0, value));
+
+/** Installs a synthetic captured offer without pretending to project or simulate a lineup. */
+export function seedKeyStarterOffer(runId: string, offer: Schemas['KeyStarterOffer']): void {
+  findRun(runId).keyStarter = structuredClone(offer);
+}
+
+export function selectKeyStarter(
+  runId: string,
+  authorization: string | null,
+  idempotencyKey: string | null,
+  rawBody: Record<string, unknown> | null,
+): Schemas['RunView'] {
+  const run = authorize(runId, authorization);
+  const body = requireObject(rawBody);
+  const key = requireIdempotencyKey(idempotencyKey);
+  const fixtureId = requireSlug(body.fixtureId, 'fixtureId');
+  const playerId = requireSlug(body.playerId, 'playerId');
+  const expectedVersion = requireExpectedVersion(body.expectedVersion);
+  const fingerprint = `key-starter/${fixtureId}/${playerId}/${String(expectedVersion)}`;
+  const replayed = replay(run, key, fingerprint);
+  if (replayed) return replayed;
+  checkVersion(run, expectedVersion);
+  requireInProgress(run);
+  const offer = run.keyStarter;
+  if (!offer || offer.fixtureId !== fixtureId || !offer.candidates.some((p) => p.id === playerId)) {
+    throw new ApiProblem(
+      422,
+      'invalid_key_starter',
+      'The player or fixture is outside the captured offer.',
+    );
+  }
+  if (offer.selectedPlayerId !== null) {
+    throw new ApiProblem(
+      409,
+      'key_starter_already_selected',
+      'The key starter is already selected.',
+    );
+  }
+  run.keyStarter = { ...offer, selectedPlayerId: playerId };
+  run.version += 1;
+  const reply = view(run);
+  run.idempotency.set(key, { fingerprint, reply });
+  return reply;
+}
 
 export function takeDecision(
   runId: string,
@@ -387,6 +434,7 @@ export function advanceBlock(
     );
   }
 
+  run.keyStarter = null;
   const block = run.block;
   const injuries = injuriesForBlock(block);
   run.lastBlockSummary = {
@@ -483,6 +531,7 @@ export function getResult(runId: string): Schemas['RunResult'] {
     verdict: verdictFor(run, misterScore, season.historicalManager),
     percentile: Math.min(99, misterScore + 0.5),
     sackedMonth: run.sackedMonth,
+    ...(run.keyStarter ? { keyStarter: structuredClone(run.keyStarter) } : {}),
     alias: run.alias,
     shareUrl: shareUrl(run.runId),
     ogImageUrl: `${SHARE_ORIGIN}/og/${run.runId}.png`,

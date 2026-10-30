@@ -12,27 +12,65 @@ it('confirms and durably reloads a captured offer, replays before version checki
   const { run, runToken } = await api.startRun({ seasonId: TEST_SEASON_ID });
   const offer = keyStarterRun().keyStarter!;
   seedKeyStarterOffer(run.runId, offer);
-  const choice = { runId: run.runId, runToken, fixtureId: offer.fixtureId, playerId: offer.candidates[0]!.id, expectedVersion: 0, idempotencyKey: 'starter-first-attempt' };
+  const choice = {
+    runId: run.runId,
+    runToken,
+    fixtureId: offer.fixtureId,
+    playerId: offer.candidates[0]!.id,
+    expectedVersion: 0,
+    idempotencyKey: 'starter-first-attempt',
+  };
   const selected = await api.selectKeyStarter(choice);
   expect(selected.keyStarter?.selectedPlayerId).toBe(choice.playerId);
   expect(selected.version).toBe(1);
-  expect(validateResponse('POST', '/runs/{runId}/key-starter', 200, selected, 'application/json')).toEqual([]);
+  expect(
+    validateResponse('POST', '/runs/{runId}/key-starter', 200, selected, 'application/json'),
+  ).toEqual([]);
   expect(await api.getRun(run.runId, runToken)).toEqual(selected);
   expect(await api.selectKeyStarter(choice)).toEqual(selected);
-  await expect(api.selectKeyStarter({ ...choice, idempotencyKey: 'starter-second-attempt', expectedVersion: 1, playerId: offer.candidates[1]!.id })).rejects.toMatchObject({ status: 409, code: 'key_starter_already_selected' });
+  await expect(
+    api.selectKeyStarter({
+      ...choice,
+      idempotencyKey: 'starter-second-attempt',
+      expectedVersion: 1,
+      playerId: offer.candidates[1]!.id,
+    }),
+  ).rejects.toMatchObject({ status: 409, code: 'key_starter_already_selected' });
 });
 
-it.each(['no-offer', 'wrong-fixture', 'outsider', 'stale', 'bad-token', 'key-reuse'] as const)('rejects invalid starter command: %s', async (scenario) => {
-  resetMockState();
-  const api = createHttpGameApi({ baseUrl: 'http://localhost/api' });
-  const { run, runToken } = await api.startRun({ seasonId: TEST_SEASON_ID });
-  const offer = keyStarterRun().keyStarter!;
-  if (scenario !== 'no-offer') seedKeyStarterOffer(run.runId, offer);
-  const choice = { runId: run.runId, runToken, fixtureId: offer.fixtureId, playerId: offer.candidates[0]!.id, expectedVersion: 0, idempotencyKey: 'starter-first-attempt' };
-  if (scenario === 'wrong-fixture') choice.fixtureId = 'wrong-fixture';
-  if (scenario === 'outsider') choice.playerId = 'outsider';
-  if (scenario === 'stale') choice.expectedVersion = 3;
-  if (scenario === 'bad-token') choice.runToken = 'incorrect';
-  if (scenario === 'key-reuse') { await api.selectKeyStarter(choice); choice.playerId = offer.candidates[1]!.id; }
-  await expect(api.selectKeyStarter(choice)).rejects.toMatchObject({ code: scenario === 'stale' ? 'version_conflict' : scenario === 'bad-token' ? 'run_token_invalid' : scenario === 'key-reuse' ? 'idempotency_key_conflict' : 'invalid_key_starter' });
-});
+it.each(['no-offer', 'wrong-fixture', 'outsider', 'stale', 'bad-token', 'key-reuse'] as const)(
+  'rejects invalid starter command: %s',
+  async (scenario) => {
+    resetMockState();
+    const api = createHttpGameApi({ baseUrl: 'http://localhost/api' });
+    const { run, runToken } = await api.startRun({ seasonId: TEST_SEASON_ID });
+    const offer = keyStarterRun().keyStarter!;
+    if (scenario !== 'no-offer') seedKeyStarterOffer(run.runId, offer);
+    const choice = {
+      runId: run.runId,
+      runToken,
+      fixtureId: offer.fixtureId,
+      playerId: offer.candidates[0]!.id,
+      expectedVersion: 0,
+      idempotencyKey: 'starter-first-attempt',
+    };
+    if (scenario === 'wrong-fixture') choice.fixtureId = 'wrong-fixture';
+    if (scenario === 'outsider') choice.playerId = 'outsider';
+    if (scenario === 'stale') choice.expectedVersion = 3;
+    if (scenario === 'bad-token') choice.runToken = 'incorrect';
+    if (scenario === 'key-reuse') {
+      await api.selectKeyStarter(choice);
+      choice.playerId = offer.candidates[1]!.id;
+    }
+    await expect(api.selectKeyStarter(choice)).rejects.toMatchObject({
+      code:
+        scenario === 'stale'
+          ? 'version_conflict'
+          : scenario === 'bad-token'
+            ? 'run_token_invalid'
+            : scenario === 'key-reuse'
+              ? 'idempotency_key_conflict'
+              : 'invalid_key_starter',
+    });
+  },
+);

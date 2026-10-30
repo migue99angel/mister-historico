@@ -14,6 +14,7 @@ import {
   setAlias,
   startRun,
   takeDecision,
+  selectKeyStarter,
 } from './store';
 
 /**
@@ -106,6 +107,19 @@ export const handlers: RequestHandler[] = [
         ),
       );
     }),
+  ),
+
+  http.post(`${API}/runs/:runId/key-starter`, ({ params, request }) =>
+    respond(async () =>
+      HttpResponse.json(
+        selectKeyStarter(
+          String(params.runId),
+          request.headers.get('Authorization'),
+          request.headers.get('Idempotency-Key'),
+          await jsonBody(request),
+        ),
+      ),
+    ),
   ),
 
   http.post(`${API}/runs/:runId/advance`, ({ params, request }) =>
