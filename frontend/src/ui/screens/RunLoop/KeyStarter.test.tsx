@@ -6,6 +6,7 @@ import { expect, it, vi } from 'vitest';
 import { keyStarterRun } from '../../../../test/keyStarter';
 import {
   createTestRuntime,
+  mockFixtures,
   mockServer,
   renderWithRuntime,
 } from '../../../../test/renderWithRuntime';
@@ -48,7 +49,8 @@ it('compares the captured forecast and reserves, confirms by keyboard and restor
   const view = setup();
   const panel = screen.getByRole('region', { name: 'Titular para el partido clave' });
   expect(within(panel).getByText(/Test Rovers/)).toBeVisible();
-  expect(within(panel).getByText(/2000-09-03/)).toBeVisible();
+  expect(within(panel).getByText('3 sept 2000')).toHaveAttribute('dateTime', '2000-09-03');
+  expect(panel).not.toHaveTextContent('2000-09-03');
   expect(within(panel).getByText(/Once previsto/)).toBeVisible();
   expect(within(panel).getAllByText(/Media 90/)).toHaveLength(11);
   const radio = required(within(panel).getAllByRole('radio')[0]);
@@ -111,7 +113,7 @@ it.each(['injured', 'not_in_squad', 'youth_conflict', 'fixture_not_played', null
     run.lastBlockSummary = {
       blockNumber: 1,
       label: 'Bloque Test',
-      results: [],
+      results: absenceReason === 'fixture_not_played' ? [] : [{ ...required(mockFixtures.resultsForBlock(0)[0]), fixtureId: 'test-fixture' }],
       standings: [],
       events: [],
       injuries: [],
@@ -128,6 +130,14 @@ it.each(['injured', 'not_in_squad', 'youth_conflict', 'fixture_not_played', null
     renderWithRuntime(<RunLoop runId={run.runId} onRunEnded={vi.fn()} />, { runtime });
     const outcome = screen.getByRole('region', { name: 'Resultado del titular elegido' });
     expect(outcome).toHaveTextContent(chosen.displayName);
+    expect(within(outcome).getByText('3 sept 2000')).toHaveAttribute('dateTime', '2000-09-03');
+    expect(outcome).not.toHaveTextContent('test-fixture');
+    if (absenceReason === 'fixture_not_played') expect(outcome).toHaveTextContent('Partido señalado');
+    else {
+      const match = required(mockFixtures.resultsForBlock(0)[0]);
+      expect(outcome).toHaveTextContent(match.competitionName);
+      expect(outcome).toHaveTextContent(match.home.isUser ? match.away.name : match.home.name);
+    }
     if (absenceReason === null) expect(outcome).toHaveTextContent('Jugó de titular');
     else
       expect(outcome).toHaveTextContent(
