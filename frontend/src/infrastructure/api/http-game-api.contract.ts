@@ -1,5 +1,8 @@
 import type {
   AdvanceBlockRequestDto,
+  SelectKeyStarterRequestDto,
+  KeyStarterOfferDto,
+  KeyStarterOutcomeDto,
   RunViewDto,
   SeasonDetailDto,
   SeasonListDto,
@@ -14,6 +17,9 @@ type Assert<Condition extends true> = Condition;
 
 /** Bidirectional type equality prevents the application DTOs drifting from OpenAPI. */
 export type HttpGameApiContractChecks = [
+  Assert<Equal<SelectKeyStarterRequestDto, components['schemas']['SelectKeyStarterRequest']>>,
+  Assert<Equal<KeyStarterOfferDto, components['schemas']['KeyStarterOffer']>>,
+  Assert<Equal<KeyStarterOutcomeDto, components['schemas']['KeyStarterOutcome']>>,
   Assert<Equal<SeasonListDto, components['schemas']['SeasonList']>>,
   Assert<Equal<SeasonDetailDto, components['schemas']['SeasonDetail']>>,
   Assert<Equal<StartRunRequestDto, components['schemas']['StartRunRequest']>>,

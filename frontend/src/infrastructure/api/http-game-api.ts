@@ -130,6 +130,17 @@ export function createHttpGameApi({ baseUrl }: HttpGameApiOptions): GameApi {
           }),
         200,
       ),
+    selectKeyStarter: ({ runId, runToken, idempotencyKey, ...body }) =>
+      unwrap(
+        () =>
+          client.POST('/runs/{runId}/key-starter', {
+            params: { path: { runId }, header: { 'Idempotency-Key': idempotencyKey } },
+            headers: { Authorization: `Bearer ${runToken}` },
+            body,
+            parseAs: 'text',
+          }),
+        200,
+      ),
     advanceBlock: ({ runId, runToken, idempotencyKey, ...body }) =>
       unwrap(
         () =>

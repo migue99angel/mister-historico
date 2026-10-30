@@ -224,7 +224,36 @@ export interface InjuryReportDto {
   daysOut: number;
 }
 
+export interface SelectKeyStarterRequestDto {
+  fixtureId: SlugDto;
+  playerId: SlugDto;
+  expectedVersion: number;
+}
+
+export interface KeyStarterOfferDto {
+  blockId: SlugDto;
+  fixtureId: SlugDto;
+  date: string;
+  opponent: TeamRefDto;
+  competitionName: string;
+  venue: VenueDto;
+  keyMatchLabel: string | null;
+  candidates: SquadMemberDto[];
+  projectedStarterIds: SlugDto[];
+  projectedStarters: SquadMemberDto[];
+  selectedPlayerId: SlugDto | null;
+}
+
+export interface KeyStarterOutcomeDto {
+  fixtureId: SlugDto;
+  date: string;
+  playerId: SlugDto;
+  starterIds: SlugDto[];
+  absenceReason: 'injured' | 'not_in_squad' | 'youth_conflict' | 'fixture_not_played' | null;
+}
+
 export interface BlockSummaryDto {
+  keyStarterOutcome?: KeyStarterOutcomeDto | null;
   blockNumber: number;
   label: string;
   results: MatchReportDto[];
@@ -234,6 +263,7 @@ export interface BlockSummaryDto {
 }
 
 export interface RunViewDto {
+  keyStarter?: KeyStarterOfferDto | null;
   runId: string;
   seasonId: SlugDto;
   status: RunStatusDto;
@@ -265,6 +295,7 @@ export interface GameApi {
   startRun(request: StartRunRequestDto): Promise<StartRunResponseDto>;
   getRun(runId: string, runToken: string): Promise<RunViewDto>;
   takeDecision(request: IdempotentRunCommand & TakeDecisionRequestDto): Promise<RunViewDto>;
+  selectKeyStarter(request: IdempotentRunCommand & SelectKeyStarterRequestDto): Promise<RunViewDto>;
   advanceBlock(request: IdempotentRunCommand & AdvanceBlockRequestDto): Promise<RunViewDto>;
 }
 
