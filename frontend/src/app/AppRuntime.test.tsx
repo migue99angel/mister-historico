@@ -15,6 +15,7 @@ const unusedApi: GameApi = {
   startRun: () => Promise.reject(new Error('Not used in this test.')),
   getRun: () => Promise.reject(new Error('Not used in this test.')),
   takeDecision: () => Promise.reject(new Error('Not used in this test.')),
+  selectKeyStarter: () => Promise.reject(new Error('unused')),
   advanceBlock: () => Promise.reject(new Error('Not used in this test.')),
 };
 
