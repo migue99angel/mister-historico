@@ -2,6 +2,11 @@ import { useEffect, useId, useRef, useState } from 'react';
 
 import type { DilemmaDto, RunViewDto, TeamRefDto } from '../../../application/ports';
 import { useAdvanceBlock } from '../../../application/useAdvanceBlock';
+import {
+  useSelectKeyStarter,
+  type KeyStarterChoice,
+} from '../../../application/useSelectKeyStarter';
+import { KeyStarter, KeyStarterResult } from './KeyStarter';
 import { useTakeDecision } from '../../../application/useTakeDecision';
 import { describeDecisionChanges } from '../../../domain/decisionFeedback';
 import { toRunViewModel } from '../../../domain/runViewModel';
@@ -30,6 +35,10 @@ export function RunInPlay({ run, isRefreshing, onRunEnded }: RunInPlayProps) {
   const wasRevealing = useRef(false);
   const decision = useTakeDecision(run.runId);
   const advance = useAdvanceBlock(run.runId);
+  const starter = useSelectKeyStarter(run.runId);
+  const [starterAttempt, setStarterAttempt] = useState<KeyStarterChoice | null>(null);
+  const starterHeading = useRef<HTMLHeadingElement>(null);
+  const focusStarter = useRef(false);
   const [choices, setChoices] = useState<Partial<Record<string, string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [confirmed, setConfirmed] = useState<{
@@ -62,7 +71,9 @@ export function RunInPlay({ run, isRefreshing, onRunEnded }: RunInPlayProps) {
   const pending = run.pendingDilemmas;
   const chosenOptionId = (dilemma: DilemmaDto): string | null =>
     dilemma.options.find((option) => option.id === choices[dilemma.id])?.id ?? null;
-  const uncertain = failedStep === 'decision' && decision.failure?.kind === 'failed';
+  const uncertain =
+    (failedStep === 'decision' && decision.failure?.kind === 'failed') ||
+    (failedStep === 'starter' && starter.failure?.kind === 'failed');
   const locked = submitting || isRefreshing || uncertain;
   const transition = decision.transition;
   const showConfirmation = confirmed !== null && confirmed.version === run.version && !isRefreshing;
@@ -80,7 +91,11 @@ export function RunInPlay({ run, isRefreshing, onRunEnded }: RunInPlayProps) {
       ? null
       : commandFailureMessage(
           failedStep,
-          failedStep === 'decision' ? decision.failure : advance.failure,
+          failedStep === 'decision'
+            ? decision.failure
+            : failedStep === 'starter'
+              ? starter.failure
+              : advance.failure,
         );
 
   useEffect(() => {
@@ -116,6 +131,10 @@ export function RunInPlay({ run, isRefreshing, onRunEnded }: RunInPlayProps) {
     if (focusConfirmation.current && confirmationHeading.current) {
       focusConfirmation.current = false;
       confirmationHeading.current.focus();
+    }
+    if (focusStarter.current && starterHeading.current) {
+      focusStarter.current = false;
+      starterHeading.current.focus();
     }
     if (focusFailure.current) {
       focusFailure.current = false;
@@ -157,8 +176,36 @@ export function RunInPlay({ run, isRefreshing, onRunEnded }: RunInPlayProps) {
     }
   }
 
+  async function confirmStarter(choice: KeyStarterChoice) {
+    if (busy.current || isRefreshing || !inProgress) return;
+    busy.current = true;
+    setSubmitting(true);
+    setStarterAttempt(choice);
+    setFailedStep(null);
+    setConfirmed(null);
+    try {
+      const selected = await starter.send(choice);
+      if (!selected) {
+        reportFailure('starter');
+        return;
+      }
+      focusStarter.current = true;
+      setFocusRequest((request) => request + 1);
+    } finally {
+      busy.current = false;
+      setSubmitting(false);
+    }
+  }
+
   async function simulateBlock() {
-    if (busy.current || reveal.revealing || isRefreshing || !inProgress || pending.length > 0)
+    if (
+      busy.current ||
+      uncertain ||
+      reveal.revealing ||
+      isRefreshing ||
+      !inProgress ||
+      pending.length > 0
+    )
       return;
     busy.current = true;
     setSubmitting(true);
@@ -221,6 +268,27 @@ export function RunInPlay({ run, isRefreshing, onRunEnded }: RunInPlayProps) {
               }
               onComplete={() => {
                 reveal.complete();
+              }}
+            />
+          )}
+
+          {!reveal.revealing && run.lastBlockSummary?.keyStarterOutcome && (
+            <KeyStarterResult
+              outcome={run.lastBlockSummary.keyStarterOutcome}
+              players={run.squad.players}
+            />
+          )}
+
+          {inProgress && !reveal.revealing && run.keyStarter && (
+            <KeyStarter
+              key={`${run.keyStarter.blockId}/${run.keyStarter.fixtureId}`}
+              offer={run.keyStarter}
+              disabled={locked}
+              pending={starter.isPending}
+              headingRef={starterHeading}
+              onConfirm={(playerId) => {
+                if (run.keyStarter)
+                  void confirmStarter({ fixtureId: run.keyStarter.fixtureId, playerId });
               }}
             />
           )}
@@ -332,7 +400,7 @@ export function RunInPlay({ run, isRefreshing, onRunEnded }: RunInPlayProps) {
                   {failureMessage}
                 </p>
               )}
-              {uncertain && attempted && (
+              {uncertain && failedStep === 'decision' && attempted && (
                 <Button
                   fullWidth
                   disabled={submitting || isRefreshing}
@@ -343,16 +411,31 @@ export function RunInPlay({ run, isRefreshing, onRunEnded }: RunInPlayProps) {
                   Reintentar confirmación
                 </Button>
               )}
+              {uncertain && failedStep === 'starter' && starterAttempt && (
+                <Button
+                  fullWidth
+                  disabled={submitting || isRefreshing}
+                  onClick={() => {
+                    void confirmStarter(starterAttempt);
+                  }}
+                >
+                  Reintentar titular
+                </Button>
+              )}
               <Button
                 fullWidth
-                disabled={pending.length > 0 || isRefreshing}
+                disabled={pending.length > 0 || locked}
                 loading={submitting && advance.isPending}
                 aria-describedby={hintId}
                 onClick={() => {
                   void simulateBlock();
                 }}
               >
-                {submitting && advance.isPending ? 'Simulando…' : 'Simular bloque'}
+                {submitting && advance.isPending
+                  ? 'Simulando…'
+                  : run.keyStarter && !run.keyStarter.selectedPlayerId
+                    ? 'Simular bloque sin elegir titular'
+                    : 'Simular bloque'}
               </Button>
               <p id={hintId} className="mt-1.5 text-center text-caption text-ink-muted">
                 {pendingDilemmasHint(pending.length)}
