@@ -74,7 +74,8 @@ export function RunInPlay({ run, isRefreshing, onRunEnded }: RunInPlayProps) {
   const uncertain =
     (failedStep === 'decision' && decision.failure?.kind === 'failed') ||
     (failedStep === 'starter' && starter.failure?.kind === 'failed');
-  const locked = submitting || isRefreshing || uncertain;
+  const advanceUncertain = failedStep === 'advance' && advance.failure?.kind === 'failed';
+  const locked = submitting || isRefreshing || uncertain || advanceUncertain;
   const transition = decision.transition;
   const showConfirmation = confirmed !== null && confirmed.version === run.version && !isRefreshing;
   const changes =
@@ -424,7 +425,7 @@ export function RunInPlay({ run, isRefreshing, onRunEnded }: RunInPlayProps) {
               )}
               <Button
                 fullWidth
-                disabled={pending.length > 0 || locked}
+                disabled={pending.length > 0 || submitting || isRefreshing || uncertain}
                 loading={submitting && advance.isPending}
                 aria-describedby={hintId}
                 onClick={() => {
