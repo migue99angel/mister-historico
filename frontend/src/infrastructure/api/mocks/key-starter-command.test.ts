@@ -80,7 +80,6 @@ function required<T>(value: T | null | undefined): T {
   return value;
 }
 
-
 it('keeps captured starter offers out of the public final result', async () => {
   resetMockState();
   const api = createHttpGameApi({ baseUrl: 'http://localhost/api' });
@@ -88,13 +87,27 @@ it('keeps captured starter offers out of the public final result', async () => {
   let run = started.run;
   while (run.status === 'in_progress') {
     for (const dilemma of run.pendingDilemmas) {
-      run = await api.takeDecision({ runId: run.runId, runToken: started.runToken, idempotencyKey: crypto.randomUUID(), expectedVersion: run.version, dilemmaId: dilemma.id, optionId: required(dilemma.options[0]).id });
+      run = await api.takeDecision({
+        runId: run.runId,
+        runToken: started.runToken,
+        idempotencyKey: crypto.randomUUID(),
+        expectedVersion: run.version,
+        dilemmaId: dilemma.id,
+        optionId: required(dilemma.options[0]).id,
+      });
     }
-    run = await api.advanceBlock({ runId: run.runId, runToken: started.runToken, idempotencyKey: crypto.randomUUID(), expectedVersion: run.version });
+    run = await api.advanceBlock({
+      runId: run.runId,
+      runToken: started.runToken,
+      idempotencyKey: crypto.randomUUID(),
+      expectedVersion: run.version,
+    });
   }
   // Retained captures are internal state, even if a fixture seeds one after closure.
   seedKeyStarterOffer(run.runId, required(keyStarterRun().keyStarter));
   const result = getResult(run.runId);
   expect(result).not.toHaveProperty('keyStarter');
-  expect(validateResponse('GET', '/runs/{runId}/result', 200, result, 'application/json')).toEqual([]);
+  expect(validateResponse('GET', '/runs/{runId}/result', 200, result, 'application/json')).toEqual(
+    [],
+  );
 });

@@ -276,6 +276,9 @@ export function RunInPlay({ run, isRefreshing, onRunEnded }: RunInPlayProps) {
           {!reveal.revealing && run.lastBlockSummary?.keyStarterOutcome && (
             <KeyStarterResult
               outcome={run.lastBlockSummary.keyStarterOutcome}
+              match={run.lastBlockSummary.results.find(
+                (match) => match.fixtureId === run.lastBlockSummary?.keyStarterOutcome?.fixtureId,
+              )}
               players={run.squad.players}
             />
           )}

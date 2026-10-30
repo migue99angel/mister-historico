@@ -1,10 +1,22 @@
 import { useId, useState, type Ref } from 'react';
 import type {
   KeyStarterOfferDto,
+  MatchReportDto,
   KeyStarterOutcomeDto,
   SquadMemberDto,
 } from '../../../application/ports';
 import { Button, Card } from '../../design-system';
+
+const DATE_FORMAT = new Intl.DateTimeFormat('es', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+
+function MatchDate({ date }: { date: string }) {
+  return <time dateTime={date}>{DATE_FORMAT.format(new Date(`${date}T00:00:00Z`))}</time>;
+}
 
 const POSITIONS = { GK: 'Portero', DF: 'Defensa', MF: 'Centrocampista', FW: 'Delantero' };
 
@@ -41,7 +53,7 @@ export function KeyStarter({
       </h2>
       <Card>
         <p className="font-semibold">
-          {offer.opponent.name} · {offer.date}
+          {offer.opponent.name} · <MatchDate date={offer.date} />
         </p>
         <p>
           {offer.competitionName} ·{' '}
@@ -125,16 +137,21 @@ const ABSENCE = {
 export function KeyStarterResult({
   outcome,
   players,
+  match,
 }: {
   outcome: KeyStarterOutcomeDto;
   players: SquadMemberDto[];
+  match: MatchReportDto | undefined;
 }) {
   const name = (id: string) => players.find((player) => player.id === id)?.displayName ?? id;
   return (
     <section aria-label="Resultado del titular elegido" className="mt-3 border-t border-line pt-3">
       <h3 className="font-semibold">Resultado del titular elegido</h3>
       <p>
-        {outcome.date} · {outcome.fixtureId}
+        <MatchDate date={outcome.date} /> ·{' '}
+        {match
+          ? `${match.home.isUser ? match.away.name : match.home.name} · ${match.competitionName}`
+          : 'Partido señalado'}
       </p>
       <p>
         {name(outcome.playerId)}:{' '}

@@ -113,7 +113,10 @@ it.each(['injured', 'not_in_squad', 'youth_conflict', 'fixture_not_played', null
     run.lastBlockSummary = {
       blockNumber: 1,
       label: 'Bloque Test',
-      results: absenceReason === 'fixture_not_played' ? [] : [{ ...required(mockFixtures.resultsForBlock(0)[0]), fixtureId: 'test-fixture' }],
+      results:
+        absenceReason === 'fixture_not_played'
+          ? []
+          : [{ ...required(mockFixtures.resultsForBlock(0)[0]), fixtureId: 'test-fixture' }],
       standings: [],
       events: [],
       injuries: [],
@@ -132,7 +135,8 @@ it.each(['injured', 'not_in_squad', 'youth_conflict', 'fixture_not_played', null
     expect(outcome).toHaveTextContent(chosen.displayName);
     expect(within(outcome).getByText('3 sept 2000')).toHaveAttribute('dateTime', '2000-09-03');
     expect(outcome).not.toHaveTextContent('test-fixture');
-    if (absenceReason === 'fixture_not_played') expect(outcome).toHaveTextContent('Partido señalado');
+    if (absenceReason === 'fixture_not_played')
+      expect(outcome).toHaveTextContent('Partido señalado');
     else {
       const match = required(mockFixtures.resultsForBlock(0)[0]);
       expect(outcome).toHaveTextContent(match.competitionName);
