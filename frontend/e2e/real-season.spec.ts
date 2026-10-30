@@ -54,6 +54,8 @@ async function decideFirstOptions(page: Page): Promise<void> {
 test('Test FC is played to the end against the real API, surviving reloads, with no sideways scroll', async ({
   page,
 }) => {
+  // Five blocks include progressive reveals and scrolling the captured lineup comparison.
+  test.setTimeout(60_000);
   // Read each body as it arrives: a reload discards the bodies of earlier responses.
   const advances: Promise<RunViewJson>[] = [];
   page.on('response', (response) => {
@@ -69,7 +71,7 @@ test('Test FC is played to the end against the real API, surviving reloads, with
   await expect(page).toHaveURL(/\/partida\/[0-9a-f-]+$/);
   const runUrl = page.url();
   const progress = page.getByRole('progressbar', { name: 'Progreso de la temporada' });
-  const simulate = page.getByRole('button', { name: 'Simular bloque' });
+  const simulate = page.getByRole('button', { name: /^Simular bloque/ });
   await expect(simulate).toBeVisible();
   const totalBlocks = Number(await progress.getAttribute('aria-valuemax'));
   expect(totalBlocks).toBeGreaterThan(1);
@@ -139,7 +141,7 @@ test('the board sacks the Test FC manager in block two and the dismissal survive
   await expect(page).toHaveURL(/\/partida\/[0-9a-f-]+$/);
   const runUrl = page.url();
   const progress = page.getByRole('progressbar', { name: 'Progreso de la temporada' });
-  const simulate = page.getByRole('button', { name: 'Simular bloque' });
+  const simulate = page.getByRole('button', { name: /^Simular bloque/ });
 
   let dismissed: unknown;
   for (let played = 0; played < dismissalBlock; played += 1) {
@@ -215,7 +217,7 @@ test('a confirmed decision shows real changes and reload preserves state and log
   await page.getByRole('button', { name: 'Empezar' }).click();
   const group = page.getByRole('group', { name: /^Opciones/ }).first();
   await group.getByRole('button').first().click();
-  await expect(page.getByRole('button', { name: 'Simular bloque' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: /^Simular bloque/ })).toBeDisabled();
   const decided = page.waitForResponse(
     (response) => response.request().method() === 'POST' && response.url().endsWith('/decisions'),
   );
