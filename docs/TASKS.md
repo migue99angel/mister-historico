@@ -1464,6 +1464,14 @@ RunLoop: secuencia T4.9 → T4.11 → T4.12 → T4.10; backend de titular indepe
   presentación/persistencia/replay de Game, OpenAPI, cliente generado, MSW, RunLoop y
   suites contractuales; coordinar propiedad antes de implementar. Simulation solo si
   la propuesta aprobada requiere enriquecer su salida, sin modificar fuerza ni RNG.
+- **Contrato aprobado por el autor:** `KeyStarterOutcome` público añade `selectedPlayer`
+  (`{id, displayName} | null`) y `starters` (lista de esas identidades o `null`), ambos
+  opcionales para respuestas antiguas. Proceden exclusivamente de `RunContentSnapshot`,
+  capturado al crear la partida; se aplica la política configurada de nombres/alias.
+  Coinciden con `playerId` y con el orden de `starterIds`; fixture no disputado publica
+  lista vacía. Identidad desconocida: elegido `null` u once completo `null`, sin deducir
+  nombres. Se reutilizan persistencia y replay existentes, sin cambios en Simulation.
+  [Propuesta aprobada](https://github.com/miguelposadas/mister-historico/issues/174#issuecomment-6519247707).
 - **Aceptación/tests:** aprobar primero el contrato de identidad capturada (nombre o
   metadatos del jugador elegido y de los integrantes del once real), su instante de
   captura y compatibilidad con partidas/respuestas antiguas. La ausencia por venta

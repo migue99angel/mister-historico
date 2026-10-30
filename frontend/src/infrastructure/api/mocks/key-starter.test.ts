@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { validateResponse, openApiDocument } from './contractValidator';
-import { keyStarterRun } from './key-starter.fixtures';
+import { keyStarterResultRun, keyStarterRun } from './key-starter.fixtures';
 
 const PATH = '/runs/{runId}/key-starter';
 
@@ -168,5 +168,50 @@ describe('comparable candidate state', () => {
     expect(validateResponse('POST', PATH, 200, invalid, 'application/json').length).toBeGreaterThan(
       0,
     );
+  });
+});
+
+describe('captured result identities', () => {
+  it('accepts the named result after the chosen player has left the squad', () => {
+    const run = keyStarterResultRun();
+    const outcome = run.lastBlockSummary?.keyStarterOutcome;
+    expect(run.squad.players.some((p) => p.id === outcome?.playerId)).toBe(false);
+    expect(outcome?.selectedPlayer?.id).toBe(outcome?.playerId);
+    expect(outcome?.starters?.map((p) => p.id)).toEqual(outcome?.starterIds);
+    expect(validateResponse('GET', '/runs/{runId}', 200, run, 'application/json')).toEqual([]);
+  });
+
+  it.each(['absent', 'null'] as const)(
+    'accepts legacy or unknown result identities (%s)',
+    (kind) => {
+      const run = keyStarterResultRun();
+      const outcome = run.lastBlockSummary?.keyStarterOutcome;
+      if (!outcome) throw new Error('expected outcome');
+      if (kind === 'null') {
+        outcome.selectedPlayer = null;
+        outcome.starters = null;
+      } else {
+        delete outcome.selectedPlayer;
+        delete outcome.starters;
+      }
+      expect(validateResponse('GET', '/runs/{runId}', 200, run, 'application/json')).toEqual([]);
+    },
+  );
+
+  it('rejects identity objects without the captured name', () => {
+    const run = keyStarterResultRun();
+    const invalid = {
+      ...run,
+      lastBlockSummary: {
+        ...run.lastBlockSummary,
+        keyStarterOutcome: {
+          ...run.lastBlockSummary?.keyStarterOutcome,
+          selectedPlayer: { id: 'test-player' },
+        },
+      },
+    };
+    expect(
+      validateResponse('GET', '/runs/{runId}', 200, invalid, 'application/json').length,
+    ).toBeGreaterThan(0);
   });
 });

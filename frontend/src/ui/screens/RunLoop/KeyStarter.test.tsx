@@ -156,7 +156,11 @@ it.each(['injured', 'not_in_squad', 'youth_conflict', 'fixture_not_played', null
           fixture_not_played: 'no se disputó',
         }[absenceReason],
       );
-    if (ids.length) expect(within(outcome).getByText('Once real')).toBeVisible();
+    if (ids.length) {
+      expect(within(outcome).getByText('Once real')).toBeVisible();
+      for (const id of ids)
+        expect(within(outcome).getByText(`Nombre capturado ${id}`)).toBeVisible();
+    }
   },
 );
 
@@ -229,8 +233,7 @@ it.each([undefined, null])(
           playerId: 'sold-player',
           starterIds: ['actual-starter'],
           absenceReason: 'not_in_squad',
-          selectedPlayer: missing,
-          starters: missing,
+          ...(missing === null ? { selectedPlayer: null, starters: null } : {}),
         }}
         match={undefined}
       />,
