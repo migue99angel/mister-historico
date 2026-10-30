@@ -148,6 +148,10 @@ test('real advance can omit the choice, and a later sale explains a selected res
   });
   const outcome = page.getByRole('region', { name: 'Resultado del titular elegido' });
   await expect(outcome).toContainText('Ya no estaba en la plantilla');
+  await expect(outcome).toContainText(required(candidate).displayName);
+  await page.reload();
+  await expect(outcome).toContainText(required(candidate).displayName);
+  await expect(outcome).toContainText('Ya no estaba en la plantilla');
   await expect(outcome.getByText('Once real')).toBeVisible();
 });
 
