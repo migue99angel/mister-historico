@@ -14,7 +14,7 @@ from mister.game.application.block_codec import decode_block
 from mister.game.infrastructure.catalog_adapter import CatalogRunContentAdapter
 from mister.game.infrastructure.presentation_adapter import CatalogPresentationAdapter
 from mister.settings import Settings
-from mister.shared_kernel.ids import PlayerId
+from mister.shared_kernel.ids import DilemmaId, OptionId, PlayerId
 
 
 @pytest.mark.parametrize("real_names", [False, True])
@@ -96,7 +96,7 @@ def test_stored_evidence_gets_names_after_reload_replay_and_idempotent_advance()
     assert retried == first
     assert game.replay.execute(game.run_id, game.token).verified
     adapter = CatalogPresentationAdapter(_UnavailableCatalog(), Settings())
-    reloaded = adapter.present_run(
+    reloaded: dict[str, Any] = adapter.present_run(
         game.get.execute(game.run_id, game.token),
         game.store.runs[game.run_id].replay_inputs.content,
     ).to_json()
@@ -108,3 +108,67 @@ def test_stored_evidence_gets_names_after_reload_replay_and_idempotent_advance()
     # Old responses containing IDs only remain valid.
     del after["selectedPlayer"], after["starters"]
     RunViewSchema.model_validate(reloaded)
+
+
+@pytest.mark.parametrize("unknown_starter", [False, True])
+def test_missing_captured_identity_is_explicit_and_never_guessed(unknown_starter: bool) -> None:
+    game = _game()
+    game.advance_block()
+    result = decode_block(game.snapshot().run.block_records[0].payload)
+    actual = (PlayerId("tfc-01"), PlayerId("unknown")) if unknown_starter else (PlayerId("tfc-01"),)
+    result = replace(
+        result,
+        key_starter_outcome=ports.KeyStarterOutcome(
+            result.matches[0].fixture_id,
+            result.matches[0].date,
+            PlayerId("missing-player"),
+            actual,
+            "not_in_squad",
+        ),
+    )
+    season = build_expected_test_fc_season()
+    players = {p.player_id: p for club in season.club_seasons for p in club.squad or ()}
+    adapter = CatalogPresentationAdapter(_UnavailableCatalog(), Settings())
+    shown = adapter._block_summary(
+        result,
+        None,
+        1,
+        season,
+        {c.id: c for c in season.club_seasons},
+        {c.id: c for c in season.competitions},
+        players,
+    )
+    outcome: Any = shown["keyStarterOutcome"]
+    assert outcome["selectedPlayer"] is None
+    if unknown_starter:
+        assert outcome["starters"] is None
+    else:
+        assert outcome["starters"][0]["id"] == "tfc-01"
+
+
+def test_sold_selected_player_retains_name_after_persistence_reload_and_replay() -> None:
+    game = _game(seed_value=2000)
+    game.take.execute(
+        game.run_id, game.token, "counter-choice", game.version(), DilemmaId("d02"), OptionId("b")
+    )
+    game.advance_block()
+    game.advance_block()
+    offer = game.entry().offer
+    assert offer is not None
+    candidate = next(p for p in offer.candidate_ids if p.value in {"tfc-17", "tfc-18"})
+    known = next(
+        p for p in _present(game)["keyStarter"]["candidates"] if p["id"] == candidate.value
+    )
+    game.choose(candidate)
+    option = "a" if candidate.value == "tfc-18" else "b"
+    game.take.execute(
+        game.run_id, game.token, "sale-choice", game.version(), DilemmaId("d05"), OptionId(option)
+    )
+    game.advance_block()
+    reloaded = _present(game)
+    assert candidate.value not in {p["id"] for p in reloaded["squad"]["players"]}
+    outcome = reloaded["lastBlockSummary"]["keyStarterOutcome"]
+    assert outcome["absenceReason"] == "not_in_squad"
+    assert outcome["selectedPlayer"] == {"id": candidate.value, "displayName": known["displayName"]}
+    assert game.replay.execute(game.run_id, game.token).verified
+    assert _present(game)["lastBlockSummary"]["keyStarterOutcome"] == outcome

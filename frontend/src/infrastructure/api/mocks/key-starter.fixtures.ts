@@ -1,7 +1,7 @@
 import type { components } from '../generated/schema';
 
 import { startRun } from './store';
-import { TEST_SEASON_ID } from './fixtures';
+import { resultsForBlock, TEST_SEASON_ID } from './fixtures';
 
 /** Captured pre-match offer only; MSW does not claim to simulate starter selection. */
 export function keyStarterRun(): components['schemas']['RunView'] {
@@ -39,6 +39,38 @@ export function keyStarterRun(): components['schemas']['RunView'] {
       projectedStarterIds: projected.map((player) => player.id),
       projectedStarters: projected,
       selectedPlayerId: null,
+    },
+  };
+}
+
+/** Explicit post-sale evidence fixture for contract tests; never produced by MSW simulation. */
+export function keyStarterResultRun(): components['schemas']['RunView'] {
+  const run = keyStarterRun();
+  const offer = run.keyStarter;
+  const selected = offer?.candidates[0];
+  if (!offer || !selected) throw new Error('expected captured offer');
+  return {
+    ...run,
+    keyStarter: null,
+    squad: { ...run.squad, players: run.squad.players.filter((p) => p.id !== selected.id) },
+    lastBlockSummary: {
+      blockNumber: 1,
+      label: 'Bloque Test',
+      results: resultsForBlock(0).map((match, index) =>
+        index === 0 ? { ...match, fixtureId: offer.fixtureId } : match,
+      ),
+      standings: [],
+      events: [],
+      injuries: [],
+      keyStarterOutcome: {
+        fixtureId: offer.fixtureId,
+        date: offer.date,
+        playerId: selected.id,
+        starterIds: offer.projectedStarterIds,
+        absenceReason: 'not_in_squad',
+        selectedPlayer: { id: selected.id, displayName: selected.displayName },
+        starters: offer.projectedStarters.map(({ id, displayName }) => ({ id, displayName })),
+      },
     },
   };
 }

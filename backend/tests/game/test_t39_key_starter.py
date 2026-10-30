@@ -122,7 +122,9 @@ class _Game:
         self.select.execute(self.run_id, self.token, key, self.version(), offer.fixture_id, player)
 
 
-def _game(*, offers: bool = True, simulator: ports.SeasonSimulator | None = None) -> _Game:
+def _game(
+    *, offers: bool = True, simulator: ports.SeasonSimulator | None = None, seed_value: int = 159
+) -> _Game:
     season = build_expected_test_fc_season()
     content = CatalogRunContentAdapter(_Provider(season))
     store = InMemoryRunStore()
@@ -142,7 +144,7 @@ def _game(*, offers: bool = True, simulator: ports.SeasonSimulator | None = None
             event_bus=bus,
             token_generator=FakeRunTokenGenerator(),
             token_hasher=hasher,
-            seed_factory=lambda: Seed(159),
+            seed_factory=lambda: Seed(seed_value),
             run_id_factory=lambda: RUN_ID,
             rules=RulesConfiguration.a_profile(),
             simulator=engine if offers else None,
