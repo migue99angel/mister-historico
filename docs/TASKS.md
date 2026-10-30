@@ -19,7 +19,7 @@ uso y replay; T3.6 incorpora la API F3. Su aceptación conectada de temporada
 completa sigue en T3.7a/T4.7a. Las PR #45/#46/#49 conservan contenido parcial en borrador.
 Este fichero es la **especificación** de las tareas; su **estado operativo**
 (Ready, In Progress, In Review, Blocked, Done) se lleva en el
-[GitHub Project](https://github.com/users/migue99angel/projects/1), con una issue
+[GitHub Project](https://github.com/users/miguelposadas/projects/1), con una issue
 por tarea activa o pendiente de A y del arranque de B ([ADR-016](adr/016-seguimiento-en-github-projects.md)).
 Las issues no sustituyen la comprobación de código, PR y CI. Las tareas cerradas
 antes del 2026-10-28 no se migraron: su registro son las PR y HANDOFF.
@@ -45,7 +45,7 @@ antes del 2026-10-28 no se migraron: su registro son las PR y HANDOFF.
 
 ### DOC · Visión de carrera y comparación de alternativas
 
-- **Seguimiento:** [#118](https://github.com/migue99angel/mister-historico/issues/118).
+- **Seguimiento:** [#118](https://github.com/miguelposadas/mister-historico/issues/118).
 - **Propiedad:** `docs/PRODUCT_BRIEF.md`, `docs/PLAN.md`, esta entrada y `docs/PRODUCT_EVOLUTION.md`.
 - **Aceptación:** visión a largo plazo, comparación breve de MVP, límites técnicos y decisiones pendientes; sin cambios de A, código o contratos. La reducción de plantillas pertenece a CR #121 y no se ejecuta aquí.
 - **Validación:** coherencia con código y revisión, enlaces y diff documental; PR independiente sin integrar.
@@ -129,7 +129,7 @@ antes del 2026-10-28 no se migraron: su registro son las PR y HANDOFF.
 
 ### CR-T0.4-pytest-parallel · Reducir el tiempo del CI del backend
 
-- **Seguimiento:** [#151](https://github.com/migue99angel/mister-historico/issues/151).
+- **Seguimiento:** [#151](https://github.com/miguelposadas/mister-historico/issues/151).
 - **Capa:** plataforma · **Tamaño:** S · **Depende de:** T0.2 y T0.4, integradas.
 - **Propiedad:** `backend/pyproject.toml`, `backend/uv.lock`, `.github/workflows/backend.yml` y esta entrada.
 - **Qué hacer:** añadir `pytest-xdist` con uv y ejecutar el backend de CI con dos procesos y `--dist loadfile`, manteniendo juntas las fixtures PostgreSQL de ámbito módulo. Publicar los 25 tests más lentos. Mantener la ejecución local secuencial por defecto.
@@ -298,7 +298,7 @@ antes del 2026-10-28 no se migraron: su registro son las PR y HANDOFF.
 ### Track de simulación (`backend/src/mister/simulation/`)
 
 #### T2.1 · Modelo de goles Poisson
-- **Estado:** completada e integrada por rebase-merge en [PR #20](https://github.com/migue99angel/mister-historico/pull/20), tras implementación Sol, revisión independiente Astra y CI en verde.
+- **Estado:** completada e integrada por rebase-merge en [PR #20](https://github.com/miguelposadas/mister-historico/pull/20), tras implementación Sol, revisión independiente Astra y CI en verde.
 - **Oleada:** F2-A · **Tamaño:** M · **Depende de:** T1.6
 - **Propiedad:** `simulation/domain/goal_model.py`, `simulation/domain/match_simulator.py` y sus tests
 - **Qué hacer:** `PoissonGoalModel`, con λ calculada según el ADR-004, y `PoissonMatchSimulator`, que usa `rng.stream("match", fixture_id)`.
@@ -311,7 +311,7 @@ antes del 2026-10-28 no se migraron: su registro son las PR y HANDOFF.
 - **Aceptación:** un benchmark de 1 000 partidos tarda menos de 50 ms.
 
 #### T2.2 · Fuerza del equipo y alineación
-- **Estado:** completada e integrada por rebase-merge en [PR #21](https://github.com/migue99angel/mister-historico/pull/21), tras implementación Sol, corrección del hallazgo de revisión, visto bueno independiente Astra y CI en verde.
+- **Estado:** completada e integrada por rebase-merge en [PR #21](https://github.com/miguelposadas/mister-historico/pull/21), tras implementación Sol, corrección del hallazgo de revisión, visto bueno independiente Astra y CI en verde.
 - **Oleada:** F2-A · **Tamaño:** M · **Depende de:** T1.6
 - **Propiedad:** `simulation/domain/strength.py`, `simulation/domain/lineup.py` y sus tests. Extensión interna autorizada para esta oleada: añadir al final de `SimPlayer` en `simulation/domain/model.py` el campo compatible `age: int | None = None` y su validación, con sus tests en `test_model.py`. No cambia el DTO publicado, que ya admite edad, ni los puertos.
 - **Qué hacer:**
@@ -330,7 +330,7 @@ antes del 2026-10-28 no se migraron: su registro son las PR y HANDOFF.
 - **Aceptación:** todas las funciones son puras y no dependen de `RandomSource`.
 
 #### CR-T2.3 · Política de resultados externos y tipos de liga
-- **Estado:** completada e integrada por rebase-merge en [PR #23](https://github.com/migue99angel/mister-historico/pull/23), tras revisión independiente Sol y CI en verde. Desbloquea T2.3.
+- **Estado:** completada e integrada por rebase-merge en [PR #23](https://github.com/miguelposadas/mister-historico/pull/23), tras revisión independiente Sol y CI en verde. Desbloquea T2.3.
 - **Depende de:** T1.6. No modifica las firmas de `GoalModel` o `MatchSimulator` ni la API publicada de aplicación.
 - **Propiedad:** ampliación de `simulation/domain/ports.py` con `ExternalResultsPolicy`; nuevo `simulation/domain/league_types.py`; `tests/simulation/unit/test_external_results_contract.py`, `test_league_types.py` y `docs/changes/CR-T2.3-external-results.md`.
 - **Contrato:** estrategia pura que recibe una petición inmutable con el corte, participantes, puntuación configurada, baseline histórico original y todos los reemplazos acumulados de partidos gestionados hasta ese corte. Devuelve acumulados sin clasificar, en el orden del baseline. `LeagueTable` recibirá el orden final real por separado; no se confunde con la posición real de cada corte.
@@ -338,7 +338,7 @@ antes del 2026-10-28 no se migraron: su registro son las PR y HANDOFF.
 - **Tests primero:** invariantes de los tipos y suite reutilizable del puerto con fake programado. Integración por rebase-merge tras revisión y checks; no se implementa `league.py` en esta CR.
 
 #### T2.3 · Competición de liga
-- **Estado:** completada e integrada por rebase-merge en [PR #26](https://github.com/migue99angel/mister-historico/pull/26), tras revisión independiente Sol y CI en verde.
+- **Estado:** completada e integrada por rebase-merge en [PR #26](https://github.com/miguelposadas/mister-historico/pull/26), tras revisión independiente Sol y CI en verde.
 - **Oleada:** F2-A · **Tamaño:** M · **Depende de:** T1.6 y CR-T2.3 integrada · [P2]
 - **Propiedad:** `simulation/domain/league.py` y sus tests
 - **Qué hacer:**
@@ -353,7 +353,7 @@ antes del 2026-10-28 no se migraron: su registro son las PR y HANDOFF.
 - **Aceptación:** tests de tablas con escenarios de Test FC.
 
 #### T2.4 · Eliminatorias y fases de grupos
-- **Estado:** completada e integrada por rebase-merge en [PR #27](https://github.com/migue99angel/mister-historico/pull/27), tras corrección del hallazgo, revisión independiente Sol y CI en verde. Reglas sintéticas de Test FC, sin afirmar normativa histórica.
+- **Estado:** completada e integrada por rebase-merge en [PR #27](https://github.com/miguelposadas/mister-historico/pull/27), tras corrección del hallazgo, revisión independiente Sol y CI en verde. Reglas sintéticas de Test FC, sin afirmar normativa histórica.
 - **Oleada:** F2-A · **Tamaño:** L · **Depende de:** T1.6 · [P2]
 - **Propiedad:** `simulation/domain/knockout.py`, `simulation/domain/groups.py` y sus tests
 - **Qué hacer:**
@@ -369,7 +369,7 @@ antes del 2026-10-28 no se migraron: su registro son las PR y HANDOFF.
 - **Aceptación:** cubre las Copas del Rey, la Champions, la UEFA y la Supercopa del Test FC.
 
 #### T2.5 · Estado físico y lesiones
-- **Estado:** completada e integrada por rebase-merge en [PR #24](https://github.com/migue99angel/mister-historico/pull/24), tras implementación Sol, revisión independiente de otro Sol y CI en verde. Reglas provisionales documentadas en [físico y lesiones](simulation/fitness-injuries.md).
+- **Estado:** completada e integrada por rebase-merge en [PR #24](https://github.com/miguelposadas/mister-historico/pull/24), tras implementación Sol, revisión independiente de otro Sol y CI en verde. Reglas provisionales documentadas en [físico y lesiones](simulation/fitness-injuries.md).
 - **Oleada:** F2-A · **Tamaño:** M · **Depende de:** T1.6
 - **Propiedad:** `simulation/domain/fitness.py`, `simulation/domain/injuries.py` y sus tests
 - **Qué hacer:**
@@ -385,17 +385,17 @@ antes del 2026-10-28 no se migraron: su registro son las PR y HANDOFF.
 - **Aceptación:** todo es determinista con la semilla.
 
 #### CR-T2.6 · Evidencia histórica para la simulación
-- **Estado:** completada e integrada por rebase-merge en [PR #29](https://github.com/migue99angel/mister-historico/pull/29), tras corrección del hallazgo de identidad global, revisión independiente Sol y CI en verde.
+- **Estado:** completada e integrada por rebase-merge en [PR #29](https://github.com/miguelposadas/mister-historico/pull/29), tras corrección del hallazgo de identidad global, revisión independiente Sol y CI en verde.
 - **Alcance y propiedad:** [plan de la CR](changes/CR-T2.6-historical-evidence.md). Entrada de enfrentamientos entre rivales y regla explícita de goles fuera en prórroga, con procedencia y compatibilidad de construcción.
 - **Dependencia:** integrar antes de T2.6 y del mapeo definitivo de T2.20. La entrada del calendario posterior a la eliminación real se resolvió en la CR de competiciones integrada en PR #32. Su conexión efectiva pertenece a T2.6.
 
 #### CR-T2.6-competition-completion · Cierre de datos de competiciones
-- **Estado:** completada e integrada por rebase-merge en [PR #32](https://github.com/migue99angel/mister-historico/pull/32), con revisión independiente Sol, correcciones verificadas y CI/pruebas conjuntas en verde.
+- **Estado:** completada e integrada por rebase-merge en [PR #32](https://github.com/miguelposadas/mister-historico/pull/32), con revisión independiente Sol, correcciones verificadas y CI/pruebas conjuntas en verde.
 - **Alcance y propiedad:** [plan y política de plazas](changes/CR-T2.6-competition-completion.md). APIs/esquema, calendarios y asignaciones, salidas sin resolver y ajuste de sede en `league.py` con sus tests/documentación; sin cambiar copas ni puertos.
 - **Dependencia:** CR de evidencia histórica integrada. Debe integrarse antes de T2.6 y del mapeo definitivo de T2.20. No inventar fechas ni equiparar desconocido a vacío o local.
 
 #### T2.6 · Simulación por bloques
-- **Estado:** completada e integrada por rebase-merge en [PR #37](https://github.com/migue99angel/mister-historico/pull/37), tras revisión independiente y CI en verde. La temporada sintética de Test FC cumple el presupuesto de 20 ms en el benchmark local; no es calibración histórica.
+- **Estado:** completada e integrada por rebase-merge en [PR #37](https://github.com/miguelposadas/mister-historico/pull/37), tras revisión independiente y CI en verde. La temporada sintética de Test FC cumple el presupuesto de 20 ms en el benchmark local; no es calibración histórica.
 - **Oleada:** F2-B · **Tamaño:** M · **Depende de:** T2.1-T2.5 y ambas CR-T2.6 integradas
 - **Propiedad:** `simulation/domain/season.py`, `simulation/application/simulate_block.py` (la fachada de `api.py` ya delega en este módulo) y sus tests. Ampliación expresa a los helpers privados `lineup.py`, `strength.py` y sus tests para juventud obligatoria y fuerza desde la alineación efectiva. [Plan de conexión de Astra](simulation/block-plan.md).
 - **Qué hacer:**
@@ -434,15 +434,15 @@ antes del 2026-10-28 no se migraron: su registro son las PR y HANDOFF.
 ### Track de catálogo (`backend/src/mister/catalog/`)
 
 #### CR-T2.20 · Puerto de validación del catálogo
-- **Estado:** completada e integrada por rebase-merge en [PR #31](https://github.com/migue99angel/mister-historico/pull/31), con revisión independiente Sol y CI en verde.
+- **Estado:** completada e integrada por rebase-merge en [PR #31](https://github.com/miguelposadas/mister-historico/pull/31), con revisión independiente Sol y CI en verde.
 - **Propiedad y contrato:** [plan de la CR](changes/CR-T2.20-validation-port.md). Nuevo puerto de IO, tipos de aplicación, fake y suite reutilizable; sin modificar APIs de temporadas, esquemas ni configuración compartida.
 - **Dependencia:** integrar antes del adaptador de validación de T2.20. El cableado compartido necesita su CR explícita posterior.
 
 #### T2.20 · Dominio del catálogo, cargador YAML y validación
 - **Oleada:** F2-A · **Tamaño:** M · **Depende de:** T1.2, T1.5
 - **Propiedad:** `catalog/domain/**`, `catalog/application/**` (salvo `ports.py` y `api.py`, que son contrato de T1.5: cambiarlos requiere CR), `catalog/infrastructure/yaml_loader.py`, `entrypoints/cli/content.py` y sus tests y `docs/adr/008-nombres-reales-desactivables.md`
-- **T2.20a — validación:** implementados `catalog/infrastructure/yaml_validation.py` (ampliación expresa de propiedad), el caso de uso `application/validate_content.py`, tests propios y [documentación](catalog/content-validation.md); integrada en [PR #33](https://github.com/migue99angel/mister-historico/pull/33), tras revisión independiente Sol, CI y comprobación conjunta. Reutiliza `load_content_tree` y la suite del puerto integrado.
-- **Estado de T2.20:** completada e integrada por rebase-merge. La [PR #38](https://github.com/migue99angel/mister-historico/pull/38) añadió proveedor YAML, mapeo y `NamePolicy`; la [PR #39](https://github.com/migue99angel/mister-historico/pull/39) activó CLI, Makefile y CI mediante CR. `make validate-content` funciona sobre `content/` y comunica que todavía hay cero temporadas jugables.
+- **T2.20a — validación:** implementados `catalog/infrastructure/yaml_validation.py` (ampliación expresa de propiedad), el caso de uso `application/validate_content.py`, tests propios y [documentación](catalog/content-validation.md); integrada en [PR #33](https://github.com/miguelposadas/mister-historico/pull/33), tras revisión independiente Sol, CI y comprobación conjunta. Reutiliza `load_content_tree` y la suite del puerto integrado.
+- **Estado de T2.20:** completada e integrada por rebase-merge. La [PR #38](https://github.com/miguelposadas/mister-historico/pull/38) añadió proveedor YAML, mapeo y `NamePolicy`; la [PR #39](https://github.com/miguelposadas/mister-historico/pull/39) activó CLI, Makefile y CI mediante CR. `make validate-content` funciona sobre `content/` y comunica que todavía hay cero temporadas jugables.
 - **Qué hacer:**
   - Entidades del catálogo.
   - `YamlSeasonContentProvider`.
@@ -456,7 +456,7 @@ antes del 2026-10-28 no se migraron: su registro son las PR y HANDOFF.
 - **Aceptación:** `make validate-content` funciona sobre `content/`.
 
 #### T2.21 · Persistencia del catálogo y carga al desplegar
-- **Estado:** persistencia y comando de carga completados e integrados por rebase-merge en [PR #40](https://github.com/migue99angel/mister-historico/pull/40) y [PR #41](https://github.com/migue99angel/mister-historico/pull/41), con revisión independiente y CI en verde. La integración automática en un despliegue real pertenece a F7.
+- **Estado:** persistencia y comando de carga completados e integrados por rebase-merge en [PR #40](https://github.com/miguelposadas/mister-historico/pull/40) y [PR #41](https://github.com/miguelposadas/mister-historico/pull/41), con revisión independiente y CI en verde. La integración automática en un despliegue real pertenece a F7.
 - **Oleada:** F2-B · **Tamaño:** M · **Depende de:** T2.20, T0.5
 - **Propiedad:** `catalog/infrastructure/sqlalchemy/**`, `backend/migrations/versions/*catalog*` y `entrypoints/cli/content.py` (el subcomando `load`)
 - **Qué hacer:**
@@ -534,7 +534,7 @@ integrados. La API T3.6 reutiliza esas piezas; la aceptación conectada
 T3.7a/T4.7a sigue pendiente y F3 continúa abierta.
 
 ### CR-T3.0 · Entradas fijadas de partida y contrato de replay (antes de A)
-- **Estado:** integrada por rebase-merge en [PR #54](https://github.com/migue99angel/mister-historico/pull/54), implementada por Luna y revisada por Sol sobre `d8170ac`, con CI y comprobación conjunta en verde. SQL está integrado en T3.4 y los casos de uso/replay en T3.5 (HANDOFF §15).
+- **Estado:** integrada por rebase-merge en [PR #54](https://github.com/miguelposadas/mister-historico/pull/54), implementada por Luna y revisada por Sol sobre `d8170ac`, con CI y comprobación conjunta en verde. SQL está integrado en T3.4 y los casos de uso/replay en T3.5 (HANDOFF §15).
 - **Tamaño:** M · **Depende de:** T1.5/T1.6, T2.6 y T2.21, ya integradas.
 - **Propiedad:** `game/application/ports.py`, sus DTOs de entrada/persistencia,
   fakes de `game/infrastructure/in_memory/`, suites de contrato y mapeo de Game,
@@ -564,11 +564,11 @@ T3.7a/T4.7a sigue pendiente y F3 continúa abierta.
   recuperables, ni selector genérico de modos o de motores.
 
 ### T3.1 · Agregado `Run` y máquina de estados
-- **Estado T3.1a:** integrada por rebase-merge en [PR #53](https://github.com/migue99angel/mister-historico/pull/53),
+- **Estado T3.1a:** integrada por rebase-merge en [PR #53](https://github.com/miguelposadas/mister-historico/pull/53),
   implementación Luna, revisión independiente Sol y CI en verde. 46 pruebas
   dirigidas y cobertura del dominio Game al 100% en esa entrega;
   esta integración solo define estado privado y pertenencias/movimientos.
-- **Estado T3.1b:** integrada por rebase-merge en [PR #58](https://github.com/migue99angel/mister-historico/pull/58),
+- **Estado T3.1b:** integrada por rebase-merge en [PR #58](https://github.com/miguelposadas/mister-historico/pull/58),
   implementación Luna y revisión independiente Sol. Agregado inmutable,
   transiciones, eventos y cierres completos opacos por bloque. No implementa
   efectos, fórmulas de directiva ni casos de uso. Dos P2 corregidos con
@@ -598,7 +598,7 @@ T3.7a/T4.7a sigue pendiente y F3 continúa abierta.
 - **Aceptación:** ninguna dependencia de infraestructura.
 
 ### T3.2 · Intérprete de efectos
-- **Estado:** integrada por rebase-merge en [PR #61](https://github.com/migue99angel/mister-historico/pull/61),
+- **Estado:** integrada por rebase-merge en [PR #61](https://github.com/miguelposadas/mister-historico/pull/61),
   implementación Luna y aprobación independiente Sol sobre `6859414`.
   Diez efectos privados, pertenencias por fecha explícita y lesiones agendadas;
   20 pruebas dirigidas, CI y comprobación conjunta verdes (HANDOFF §14).
@@ -616,7 +616,7 @@ T3.7a/T4.7a sigue pendiente y F3 continúa abierta.
 - **Aceptación:** el pattern matching sobre la unión de efectos es exhaustivo (lo comprueba mypy con `assert_never`).
 
 ### T3.3 · Directiva, moral y destitución
-- **Estado:** integrada por rebase-merge en [PR #62](https://github.com/migue99angel/mister-historico/pull/62),
+- **Estado:** integrada por rebase-merge en [PR #62](https://github.com/miguelposadas/mister-historico/pull/62),
   implementación Luna y aprobación independiente Sol sobre `396aac7`.
   Objetivos por competición, confianza y moral parametrizadas, resolución de
   cierre sin mutar el agregado; 53 pruebas dirigidas. El balance numérico no
@@ -636,7 +636,7 @@ T3.7a/T4.7a sigue pendiente y F3 continúa abierta.
   - Un jugador estrella que no juega pierde moral.
 
 ### T3.4 · Persistencia de la partida
-- **Estado:** integrada por rebase-merge en [PR #57](https://github.com/migue99angel/mister-historico/pull/57),
+- **Estado:** integrada por rebase-merge en [PR #57](https://github.com/miguelposadas/mister-historico/pull/57),
   implementación Luna y revisión independiente Sol sobre `833895d`. SQL y
   ADR-009 completos; 42 pruebas PostgreSQL, suites comunes y conservación de A
   tras publicar B y retirar Catalog. El cableado productivo sigue en T3.6.
@@ -655,11 +655,11 @@ T3.7a/T4.7a sigue pendiente y F3 continúa abierta.
 
 ### T3.5 · Casos de uso y replay
 - **Estado:** implementación integrada por rebase-merge en las PR
-  [#67](https://github.com/migue99angel/mister-historico/pull/67) (captura/codecs),
-  [#68](https://github.com/migue99angel/mister-historico/pull/68) (CR fechada previa),
-  [#74](https://github.com/migue99angel/mister-historico/pull/74) (comandos/cierre) y
-  [#76](https://github.com/migue99angel/mister-historico/pull/76) (replay), con
-  la corrección de elegibilidad de [#94](https://github.com/migue99angel/mister-historico/pull/94).
+  [#67](https://github.com/miguelposadas/mister-historico/pull/67) (captura/codecs),
+  [#68](https://github.com/miguelposadas/mister-historico/pull/68) (CR fechada previa),
+  [#74](https://github.com/miguelposadas/mister-historico/pull/74) (comandos/cierre) y
+  [#76](https://github.com/miguelposadas/mister-historico/pull/76) (replay), con
+  la corrección de elegibilidad de [#94](https://github.com/miguelposadas/mister-historico/pull/94).
   Implementación Luna, revisión independiente Sol y CI verde; evidencia en
   HANDOFF §15. El perfil provisional A fue aprobado por el autor y se conserva
   completo en `ReplayInputs`; los valores especiales de tests siguen siendo sintéticos.
@@ -783,7 +783,7 @@ T3.7a/T4.7a sigue pendiente y F3 continúa abierta.
 
 ### CR-T3.6-r7-bootstrap · `SimulationService` en el composition root sin esquivar R7
 - **Origen:** recomendación 2 de la revisión de la PR #112 (T3.6). Issue
-  [#113](https://github.com/migue99angel/mister-historico/issues/113).
+  [#113](https://github.com/miguelposadas/mister-historico/issues/113).
 - **Depende de:** T3.6 integrada. No bloquea A.
 - **Propiedad:** la línea de importación de `SimulationService` en `bootstrap.py`
   y, según la opción elegida, el contrato R7 de `[tool.importlinter]` en
@@ -858,7 +858,7 @@ tarea amplía los dos ADR.
   - Un sorteo final como **regla del motor**, no como criterio de contenido, para no
     cambiar el esquema. Al cerrar un grupo con resultados simulados, resuelve **todos** los
     empates residuales, también los que no cruzan la clasificación (ampliación aprobada por
-    el autor el 2026-10-29 en [#126](https://github.com/migue99angel/mister-historico/issues/126#issuecomment-6494985260)).
+    el autor el 2026-10-29 en [#126](https://github.com/miguelposadas/mister-historico/issues/126#issuecomment-6494985260)).
   - Un flujo hoja `("draw", competition_id, stage_id, group_id, club_season_id)` en ADR-005,
     con una extracción por club, como subclave de
     la fila de sorteos `("draw", competition_id, stage_id)`. Esa fila deja de ser hoja:
@@ -905,7 +905,7 @@ T4.7a y la «salida por destitución» del hito A (PLAN §5).
 ## F4 · Frontend (`frontend/`): la oleada A empieza en cuanto cierra la F1
 
 ### T4.1 · Sistema de diseño móvil primero
-- **Estado:** integrada en [PR #65](https://github.com/migue99angel/mister-historico/pull/65)
+- **Estado:** integrada en [PR #65](https://github.com/miguelposadas/mister-historico/pull/65)
   por rebase-merge, con revisión independiente (aprobar con matices; corregidos
   negrita y nombres largos de `MiniStandings`, foco de `Button` al cargar, «tu equipo»
   en `MatchLine` y coherencia de los datos de muestra) y CI en verde. 307 tests
@@ -913,7 +913,7 @@ T4.7a y la «salida por destitución» del hito A (PLAN §5).
   Tokens en `theme.css`/`tokens.ts` (contraste AA comprobado), nueve componentes
   presentacionales con props compatibles con los view models de T4.3
   (`viewModels.test.ts`) y página de muestra `Showcase` con maquetas del bucle y del
-  final. Capturas en Pixel 7 en [PR #66](https://github.com/migue99angel/mister-historico/pull/66)
+  final. Capturas en Pixel 7 en [PR #66](https://github.com/miguelposadas/mister-historico/pull/66)
   (rama `assets/T4.1-screenshots`, que no se integra).
 - **Oleada:** F4-A · **Tamaño:** M · **Depende de:** T0.3
 - **Propiedad:** `frontend/src/ui/design-system/**`
@@ -926,7 +926,7 @@ T4.7a y la «salida por destitución» del hito A (PLAN §5).
   - `GenericCrest` es determinista para los mismos colores.
 
 ### CR-T4.1a · Dependencia de accesibilidad (jest-axe)
-- **Estado:** integrada en [PR #63](https://github.com/migue99angel/mister-historico/pull/63)
+- **Estado:** integrada en [PR #63](https://github.com/miguelposadas/mister-historico/pull/63)
   por rebase-merge, con revisión independiente y CI en verde.
   Añade `jest-axe` y `axe-core` como dependencias de desarrollo, registra
   `toHaveNoViolations` en `frontend/test/setup.ts` y declara los tipos en
@@ -935,7 +935,7 @@ T4.7a y la «salida por destitución» del hito A (PLAN §5).
 - `axe()` se espera siempre con `await` y nunca en `it.concurrent` («Axe is already running»).
 
 ### CR-T4.1b · Ruta de desarrollo `/diseno`
-- **Estado:** integrada en [PR #66](https://github.com/migue99angel/mister-historico/pull/66)
+- **Estado:** integrada en [PR #66](https://github.com/miguelposadas/mister-historico/pull/66)
   por rebase-merge, con revisión independiente (aprobar con matices) y CI en verde.
   309 tests frontend; JS inicial 79,5 KB gzip. [Propiedad y decisiones](changes/CR-T4.1b-design-route.md).
 - Extensión autorizada de `frontend/src/app/**` (propiedad de T4.2): `/diseno` carga
@@ -945,14 +945,14 @@ T4.7a y la «salida por destitución» del hito A (PLAN §5).
   (`npm run dev -- --host` para el móvil en la misma red).
 
 ### CR-T4.0 · Dependencia y cableado web previo
-- **Estado:** integrada en [PR #52](https://github.com/migue99angel/mister-historico/pull/52),
+- **Estado:** integrada en [PR #52](https://github.com/miguelposadas/mister-historico/pull/52),
   Luna implementó y Sol revisó; CI en verde. Añade únicamente TanStack Query,
   ya aprobada en ADR-011, worker MSW generado con opt-in en desarrollo y proxy
   Vite que respeta el modo seleccionado. [Propiedad y decisiones](changes/CR-T4.0-web-wiring.md).
 - No implementa pantallas ni bucle de juego; desbloquea T4.2.
 
 ### T4.2 · Shell, rutas y adaptador de la API
-- **Estado:** implementada en [PR #55](https://github.com/migue99angel/mister-historico/pull/55),
+- **Estado:** implementada en [PR #55](https://github.com/miguelposadas/mister-historico/pull/55),
   integrada por rebase-merge tras revisión independiente Sol y CI en verde
   sobre `f4f151e`; aquella entrega verificó 100 tests frontend y 79,49 KB gzip.
   Las pantallas y rutas de T4.4/T4.5/T4.6a ya están integradas mediante la tanda
@@ -976,7 +976,7 @@ T4.7a y la «salida por destitución» del hito A (PLAN §5).
   - Una ruta desconocida muestra una página 404.
 
 ### T4.3 · Dominio del frontend (view models)
-- **Estado:** integrada en [PR #60](https://github.com/migue99angel/mister-historico/pull/60)
+- **Estado:** integrada en [PR #60](https://github.com/miguelposadas/mister-historico/pull/60)
   por rebase-merge, con revisión independiente y CI en verde. Incluye la preferencia
   por la tabla de liga en `findUserStanding` y «tras la prórroga, 4-3 en los penaltis».
 - **Oleada:** F4-A · **Tamaño:** S · **Depende de:** T1.4
@@ -985,7 +985,7 @@ T4.7a y la «salida por destitución» del hito A (PLAN §5).
 - **Tests primero:** tablas de casos para cada función. La cobertura tiene que llegar al 100 %.
 
 ### CR-T4.B · Cableado de pantallas
-- **Estado:** integrada en [PR #70](https://github.com/migue99angel/mister-historico/pull/70)
+- **Estado:** integrada en [PR #70](https://github.com/miguelposadas/mister-historico/pull/70)
   por rebase-merge, tras dos rondas de revisión independiente (cambios pequeños y después
   aprobar con matices) y CI en verde. 361 tests frontend; JS inicial 79,84 KB gzip.
   [Propiedad y decisiones](changes/CR-T4.B-screen-wiring.md).
@@ -996,7 +996,7 @@ T4.7a y la «salida por destitución» del hito A (PLAN §5).
   callbacks de navegación por props. Fija el contrato de `useRun` cuando no hay token.
 
 ### T4.4 · Pantalla de selección de equipo y contexto
-- **Estado:** integrada en [PR #72](https://github.com/migue99angel/mister-historico/pull/72)
+- **Estado:** integrada en [PR #72](https://github.com/miguelposadas/mister-historico/pull/72)
   por rebase-merge, con dos rondas de revisión independiente (aprobar con matices y
   después aprobar) y CI en verde. 401 tests frontend; JS inicial 85,05 KB gzip.
   `SeasonPicker` sustituye a `HomeScreen` en `/` (decisión del orquestador; conserva el
@@ -1013,7 +1013,7 @@ T4.7a y la «salida por destitución» del hito A (PLAN §5).
   sistema de diseño, no dentro de `screens/`.
 
 ### T4.5 · Pantalla del bucle de bloques
-- **Estado:** integrada en [PR #73](https://github.com/migue99angel/mister-historico/pull/73)
+- **Estado:** integrada en [PR #73](https://github.com/miguelposadas/mister-historico/pull/73)
   por rebase-merge, con dos rondas de revisión independiente (aprobar con matices y
   después aprobar) y CI en verde. 462 tests frontend; `application/` al 99 % de líneas;
   JS inicial 86,75 KB gzip y chunk `RunLoop` de 4,52 KB al integrar.
@@ -1049,10 +1049,10 @@ T4.7a y la «salida por destitución» del hito A (PLAN §5).
 - **Propiedad:** `frontend/src/ui/screens/RunResult/**` y `frontend/src/app/routes/RunFinalRoute.tsx` con su test (`RunFinalRoute.test.tsx` y `RunFinalRoute.flow.test.tsx`).
 - **Estado de T4.6a:** integrada en dos PR por rebase-merge, cada una con revisión
   independiente (aprobar con matices y después aprobar) y CI en verde.
-  - [PR #71](https://github.com/migue99angel/mister-historico/pull/71): pantalla
+  - [PR #71](https://github.com/miguelposadas/mister-historico/pull/71): pantalla
     `RunResult` con props (estado final, cabecera del club, último bloque y «Jugar otra
     partida»), sin puntuación, percentil ni veredicto inventados.
-  - [PR #75](https://github.com/migue99angel/mister-historico/pull/75): contenedor
+  - [PR #75](https://github.com/miguelposadas/mister-historico/pull/75): contenedor
     `RunFinal` sobre `useRun`, montado con `lazy()`. Una Partida en juego se redirige a
     `/partida/:id` con `replace`, y el foco va al `h1` al llegar. 506 tests frontend;
     JS inicial 86,84 KB gzip y chunk `RunResult` de 1,85 KB.
@@ -1348,8 +1348,8 @@ beta es privada o pública lo decide el autor (PLAN §5.4).
 ## Gameplay · Iteración A1 previa a B
 
 [Diagnóstico, matriz y decisiones](GAMEPLAY_BACKLOG.md). Especificación propuesta en
-[PR #161](https://github.com/migue99angel/mister-historico/pull/161); estado solo en
-[Project](https://github.com/users/migue99angel/projects/1). A1 se prueba antes de B,
+[PR #161](https://github.com/miguelposadas/mister-historico/pull/161); estado solo en
+[Project](https://github.com/users/miguelposadas/projects/1). A1 se prueba antes de B,
 con desarrollo paralelo; no es puerta completa de B. P0/P1/P2 en PLAN §5.1.
 Este encargo solo modifica planificación. Implementación futura: TDD, CI y revisión
 independiente; contratos ampliados mediante CR previa. Propiedad estimada abajo;
@@ -1357,7 +1357,7 @@ cualquier ampliación se acuerda antes de reclamar. Las tareas de UI comparten
 RunLoop: secuencia T4.9 → T4.11 → T4.12 → T4.10; backend de titular independiente.
 
 ### DOC-GAMEPLAY · Iniciativa de gameplay y rejugabilidad
-- **Issue/hito/prioridad/tamaño:** [#154](https://github.com/migue99angel/mister-historico/issues/154), A1, P0, M (incertidumbre media).
+- **Issue/hito/prioridad/tamaño:** [#154](https://github.com/miguelposadas/mister-historico/issues/154), A1, P0, M (incertidumbre media).
 - **Resultado:** planificación revisable que prioriza comprensión, agencia y ritmo visual.
 - **Propiedad:** GAMEPLAY_BACKLOG, apartado A1 de TASKS, PLAN y extensión ADR-016.
 - **Dependencias/CR:** ninguna para documentar; no bloquea circularmente las entregas.
@@ -1367,7 +1367,7 @@ RunLoop: secuencia T4.9 → T4.11 → T4.12 → T4.10; backend de titular indepe
   En este encargo se deja abierta. Riesgo: expansión del alcance; revisarlo en playtest.
 
 ### CR-T3.8 · Contrato de consecuencias y evolución del estado
-- **Issue/hito/prioridad/tamaño:** [#155](https://github.com/migue99angel/mister-historico/issues/155), A1 opcional, P2, M (incertidumbre media).
+- **Issue/hito/prioridad/tamaño:** [#155](https://github.com/miguelposadas/mister-historico/issues/155), A1 opcional, P2, M (incertidumbre media).
 - **Problema/resultado:** conservar detalle de efectos y tendencias tras recargar si
   T4.9 demuestra que se necesita; fuera del camino crítico de A1/B.
 - **Dependencias:** bloqueada por T7.8a2 #164 hasta completar la prueba humana y
@@ -1381,7 +1381,7 @@ RunLoop: secuencia T4.9 → T4.11 → T4.12 → T4.10; backend de titular indepe
 - **Valor/riesgo:** validar necesidad de recordar efectos con #164; limitar payload.
 
 ### T3.8 · Consecuencias aplicadas e historial mínimo en Game
-- **Issue/hito/prioridad/tamaño:** [#156](https://github.com/migue99angel/mister-historico/issues/156), A1 opcional, P2, M (incertidumbre media).
+- **Issue/hito/prioridad/tamaño:** [#156](https://github.com/miguelposadas/mister-historico/issues/156), A1 opcional, P2, M (incertidumbre media).
 - **Resultado:** recibos/historial duraderos si se activa #155.
 - **Depende de/CR:** CR-T3.8 integrada; tampoco bloquea titular clave.
 - **Propiedad:** Game dominio/casos de uso/cierre/replay/codecs, adaptadores SQL y
@@ -1392,7 +1392,7 @@ RunLoop: secuencia T4.9 → T4.11 → T4.12 → T4.10; backend de titular indepe
 - **Valor:** el tester recupera y explica una decisión previa después de recargar.
 
 ### T4.9 · Confirmar decisiones, ver consecuencias y estado del equipo
-- **Issue/hito/prioridad/tamaño:** [#157](https://github.com/migue99angel/mister-historico/issues/157), A1 entrega 1, P0, M (incertidumbre media).
+- **Issue/hito/prioridad/tamaño:** [#157](https://github.com/miguelposadas/mister-historico/issues/157), A1 entrega 1, P0, M (incertidumbre media).
 - **Problema/resultado:** entender cada decisión confirmada y consultar estado real.
 - **Dependencias/CR:** hooks T4.5 y API integrados; ninguna issue abierta ni CR nueva.
   Se eliminan #155/#156 como bloqueos por revisión de #161.
@@ -1414,7 +1414,7 @@ RunLoop: secuencia T4.9 → T4.11 → T4.12 → T4.10; backend de titular indepe
 
 ### CR-T3.9 · Contrato de titular clave por partido
 - **Contrato:** [CR-T3.9 · Titular clave](changes/CR-T3.9-key-starter.md); define DTOs, comando, compatibilidad, política de fallback y propiedad de T3.9.
-- **Issue/hito/prioridad/tamaño:** [#158](https://github.com/migue99angel/mister-historico/issues/158), A1 entrega 2, P1, M (incertidumbre alta).
+- **Issue/hito/prioridad/tamaño:** [#158](https://github.com/miguelposadas/mister-historico/issues/158), A1 entrega 2, P1, M (incertidumbre alta).
 - **Resultado:** elección auténtica en fixture conocido al inicio del bloque.
 - **Dependencias:** ninguna abierta; se elimina #155. Elección y acreditación propias
   del contrato de titular, sin exigir recibos/historial de CR-T3.8.
@@ -1428,7 +1428,7 @@ RunLoop: secuencia T4.9 → T4.11 → T4.12 → T4.10; backend de titular indepe
 - **Valor:** poder verificar que el elegido participó, sin exigir victoria.
 
 ### T3.9 · Aplicar titular clave en Game y Simulation
-- **Issue/hito/prioridad/tamaño:** [#159](https://github.com/migue99angel/mister-historico/issues/159), A1 entrega 2, P1, M (incertidumbre alta).
+- **Issue/hito/prioridad/tamaño:** [#159](https://github.com/miguelposadas/mister-historico/issues/159), A1 entrega 2, P1, M (incertidumbre alta).
 - **Resultado:** elección llega a required y fuerza real solo en ese fixture.
 - **Depende de/CR:** CR-T3.9 integrada; se elimina T3.8 como requisito.
 - **Propiedad:** Game agregado/casos de uso/replay/mapeo y Simulation season/lineup,
@@ -1441,7 +1441,7 @@ RunLoop: secuencia T4.9 → T4.11 → T4.12 → T4.10; backend de titular indepe
 - **Valor:** usuario comprueba aplicación o explicación de ausencia junto a T4.10.
 
 ### T4.10 · Elegir titular para un encuentro señalado
-- **Issue/hito/prioridad/tamaño:** [#160](https://github.com/migue99angel/mister-historico/issues/160), A1 entrega 2, P1, M (incertidumbre media).
+- **Issue/hito/prioridad/tamaño:** [#160](https://github.com/miguelposadas/mister-historico/issues/160), A1 entrega 2, P1, M (incertidumbre media).
 - **Resultado:** elegir entre dos o tres candidatos y ver quién jugó/por qué faltó.
 - **Depende de:** T3.9, T4.9 y T4.12; secuenciar propiedad RunLoop con cambios visuales.
 - **Propiedad/CR:** RunLoop, hooks/view models y tests; consume CR-T3.9.
@@ -1455,7 +1455,7 @@ RunLoop: secuencia T4.9 → T4.11 → T4.12 → T4.10; backend de titular indepe
 - **Valor:** #164 compara control/diversión con una tarjeta y registra carga de lectura.
 
 ### T4.11 · Simulación visual progresiva de bloques
-- **Issue:** [#162](https://github.com/migue99angel/mister-historico/issues/162).
+- **Issue:** [#162](https://github.com/miguelposadas/mister-historico/issues/162).
 - **Hito/prioridad/tamaño:** A1 mejora visual, P1, M (incertidumbre media).
 - **Problema/resultado:** lista instantánea sin tensión; ver avanzar partidos del bloque.
 - **Depende de:** T4.9 integrada para compartir flujo de confirmar/simular. API actual,
@@ -1480,7 +1480,7 @@ RunLoop: secuencia T4.9 → T4.11 → T4.12 → T4.10; backend de titular indepe
   rendimiento móvil y no confundir revelado con simulación en vivo. Opción B fuera.
 
 ### T4.12 · Layout responsive de entrenador
-- **Issue:** [#163](https://github.com/migue99angel/mister-historico/issues/163).
+- **Issue:** [#163](https://github.com/miguelposadas/mister-historico/issues/163).
 - **Hito/prioridad/tamaño:** A1 mejora visual, P1, M (incertidumbre media).
 - **Problema/resultado:** max-w-md y scroll dificultan consultar equipo; usar escritorio
   y accesos móviles manteniendo decisiones como acción principal.
@@ -1500,7 +1500,7 @@ RunLoop: secuencia T4.9 → T4.11 → T4.12 → T4.10; backend de titular indepe
   lesión y volver a decidir; evitar navegación que añada más pasos que el scroll.
 
 ### T7.8a2 · Playtest A1 por entregas [HUMANO]
-- **Issue/hito/prioridad/tamaño:** [#164](https://github.com/migue99angel/mister-historico/issues/164), A1, P0, S por sesión/M conjunto; incertidumbre de agenda.
+- **Issue/hito/prioridad/tamaño:** [#164](https://github.com/miguelposadas/mister-historico/issues/164), A1, P0, S por sesión/M conjunto; incertidumbre de agenda.
 - **Problema/resultado:** comprobar las mejoras de A1 con los mismos 3–5 testers;
   #123, cerrada en A, se conserva solo como antecedente. #124 prueba la beta B.
 - **Dependencias:** comenzar tras T4.9 #157; probar #162/#163/#160 cuando estén

@@ -1,13 +1,13 @@
 # Míster Histórico
 
-[![backend](https://github.com/migue99angel/mister-historico/actions/workflows/backend.yml/badge.svg?branch=main)](https://github.com/migue99angel/mister-historico/actions/workflows/backend.yml)
-[![frontend](https://github.com/migue99angel/mister-historico/actions/workflows/frontend.yml/badge.svg?branch=main)](https://github.com/migue99angel/mister-historico/actions/workflows/frontend.yml)
+[![backend](https://github.com/miguelposadas/mister-historico/actions/workflows/backend.yml/badge.svg?branch=main)](https://github.com/miguelposadas/mister-historico/actions/workflows/backend.yml)
+[![frontend](https://github.com/miguelposadas/mister-historico/actions/workflows/frontend.yml/badge.svg?branch=main)](https://github.com/miguelposadas/mister-historico/actions/workflows/frontend.yml)
 
 > *¿Lo habrías hecho mejor que el míster?*
 
 Juego de navegador gratuito, sin registro y con partidas de 3 a 5 minutos. Eres el entrenador de un equipo histórico real (por ejemplo, el Real Madrid 2012-13), con su plantilla de esa temporada, y tomas las decisiones de la temporada: mercado, vestuario, táctica, rotaciones y dilemas que ocurrieron de verdad. Al final, el juego compara tu temporada con lo que pasó en la realidad y genera una tarjeta para compartir.
 
-**Estado:** en desarrollo. [v0.1.0](https://github.com/migue99angel/mister-historico/releases/tag/v0.1.0) es la primera versión jugable (hito A, pre-release interna): se juega una temporada completa con **Test FC**, un equipo sintético, todavía sin contenido histórico real. Ahora se trabaja en el hito A1 (gameplay y rejugabilidad); la primera beta histórica, con el Real Madrid 2012-13, será el hito B. El progreso se sigue en el [Project de GitHub](https://github.com/users/migue99angel/projects/1).
+**Estado:** en desarrollo. [v0.1.0](https://github.com/miguelposadas/mister-historico/releases/tag/v0.1.0) es la primera versión jugable (hito A, pre-release interna): se juega una temporada completa con **Test FC**, un equipo sintético, todavía sin contenido histórico real. Ahora se trabaja en el hito A1 (gameplay y rejugabilidad); la primera beta histórica, con el Real Madrid 2012-13, será el hito B. El progreso se sigue en el [Project de GitHub](https://github.com/users/miguelposadas/projects/1).
 
 ## Probarlo en local
 

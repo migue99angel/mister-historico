@@ -1,9 +1,9 @@
 # Gameplay y rejugabilidad: A1
 
-Planificación del 2026-10-29, actualizada tras la revisión de [PR #161](https://github.com/migue99angel/mister-historico/pull/161)
+Planificación del 2026-10-29, actualizada tras la revisión de [PR #161](https://github.com/miguelposadas/mister-historico/pull/161)
 y dos observaciones nuevas. [TASKS especifica](TASKS.md#gameplay--iteración-a1-previa-a-b);
-el [Project](https://github.com/users/migue99angel/projects/1) mantiene el estado y
-[A1](https://github.com/migue99angel/mister-historico/milestone/4) agrupa las entregas.
+el [Project](https://github.com/users/miguelposadas/projects/1) mantiene el estado y
+[A1](https://github.com/miguelposadas/mister-historico/milestone/4) agrupa las entregas.
 Solo documentación y backlog en este encargo; revisión independiente pendiente del nuevo commit.
 
 ## Diagnóstico contrastado
@@ -184,8 +184,8 @@ al minuto 60 y herramientas IA esperan validación. IA solo offline, revisada y 
 
 ## Orden, validación y recursos
 
-La prueba [T7.8a2 #164](https://github.com/migue99angel/mister-historico/issues/164) es propia de A1.
-[#123](https://github.com/migue99angel/mister-historico/issues/123) cerró la prueba de A el 2026-10-29
+La prueba [T7.8a2 #164](https://github.com/miguelposadas/mister-historico/issues/164) es propia de A1.
+[#123](https://github.com/miguelposadas/mister-historico/issues/123) cerró la prueba de A el 2026-10-29
 y se conserva solo como antecedente; #124 conserva la beta histórica B.
 El autor cierra #164 tras las sesiones acordadas y registra la decisión de activar
 o posponer recibos; #155 espera esa prueba y requiere la decisión explícita en su
@@ -211,10 +211,10 @@ sea posible. Preguntar por repetición y diferencias relevantes, no solo estéti
 #124 valida también veredicto/nota/Liga/objetivos de B. Registrar observaciones
 individuales y decisiones en #164, sin porcentajes de mejora ni inferencia estadística.
 
-[Iniciativa #154](https://github.com/migue99angel/mister-historico/issues/154).
-Recibos opcionales: [#155](https://github.com/migue99angel/mister-historico/issues/155)/[#156](https://github.com/migue99angel/mister-historico/issues/156).
-Feedback/panel: [#157](https://github.com/migue99angel/mister-historico/issues/157).
-Titular: [#158](https://github.com/migue99angel/mister-historico/issues/158)/[#159](https://github.com/migue99angel/mister-historico/issues/159)/[#160](https://github.com/migue99angel/mister-historico/issues/160).
-Nuevas tareas: [T4.11 #162](https://github.com/migue99angel/mister-historico/issues/162) (revelado) y
-[T4.12 #163](https://github.com/migue99angel/mister-historico/issues/163) (layout).
+[Iniciativa #154](https://github.com/miguelposadas/mister-historico/issues/154).
+Recibos opcionales: [#155](https://github.com/miguelposadas/mister-historico/issues/155)/[#156](https://github.com/miguelposadas/mister-historico/issues/156).
+Feedback/panel: [#157](https://github.com/miguelposadas/mister-historico/issues/157).
+Titular: [#158](https://github.com/miguelposadas/mister-historico/issues/158)/[#159](https://github.com/miguelposadas/mister-historico/issues/159)/[#160](https://github.com/miguelposadas/mister-historico/issues/160).
+Nuevas tareas: [T4.11 #162](https://github.com/miguelposadas/mister-historico/issues/162) (revelado) y
+[T4.12 #163](https://github.com/miguelposadas/mister-historico/issues/163) (layout).
 Evaluación existente: #97/#92/#136/#138/#133/#140; edición #88; pruebas #164/#124.

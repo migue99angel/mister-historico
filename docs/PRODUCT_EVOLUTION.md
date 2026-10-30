@@ -7,7 +7,7 @@
 
 Mantener Liga, Copa, Champions y Supercopa del piloto. La palanca de ahorro es
 **investigar menos plantillas completas**, no retirar competiciones ni cambiar
-el simulador. La [CR #121](https://github.com/migue99angel/mister-historico/issues/121),
+el simulador. La [CR #121](https://github.com/miguelposadas/mister-historico/issues/121),
 en ejecución independiente, propone pasar de **48 plantillas y 12 agregados a
 20 plantillas y 40 agregados**: conservar los clubes de Primera y representar
 los demás por fuerzas con fuente. Son 28 plantillas menos; **no implica un ahorro
