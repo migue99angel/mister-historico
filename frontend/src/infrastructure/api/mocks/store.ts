@@ -341,7 +341,7 @@ export function selectKeyStarter(
   checkVersion(run, expectedVersion);
   requireInProgress(run);
   const offer = run.keyStarter;
-  if (!offer || offer.fixtureId !== fixtureId || !offer.candidates.some((p) => p.id === playerId)) {
+  if (offer?.fixtureId !== fixtureId || !offer.candidates.some((p) => p.id === playerId)) {
     throw new ApiProblem(
       422,
       'invalid_key_starter',

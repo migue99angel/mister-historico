@@ -10,13 +10,13 @@ it('confirms and durably reloads a captured offer, replays before version checki
   resetMockState();
   const api = createHttpGameApi({ baseUrl: 'http://localhost/api' });
   const { run, runToken } = await api.startRun({ seasonId: TEST_SEASON_ID });
-  const offer = keyStarterRun().keyStarter!;
+  const offer = required(keyStarterRun().keyStarter);
   seedKeyStarterOffer(run.runId, offer);
   const choice = {
     runId: run.runId,
     runToken,
     fixtureId: offer.fixtureId,
-    playerId: offer.candidates[0]!.id,
+    playerId: required(offer.candidates[0]).id,
     expectedVersion: 0,
     idempotencyKey: 'starter-first-attempt',
   };
@@ -33,7 +33,7 @@ it('confirms and durably reloads a captured offer, replays before version checki
       ...choice,
       idempotencyKey: 'starter-second-attempt',
       expectedVersion: 1,
-      playerId: offer.candidates[1]!.id,
+      playerId: required(offer.candidates[1]).id,
     }),
   ).rejects.toMatchObject({ status: 409, code: 'key_starter_already_selected' });
 });
@@ -44,13 +44,13 @@ it.each(['no-offer', 'wrong-fixture', 'outsider', 'stale', 'bad-token', 'key-reu
     resetMockState();
     const api = createHttpGameApi({ baseUrl: 'http://localhost/api' });
     const { run, runToken } = await api.startRun({ seasonId: TEST_SEASON_ID });
-    const offer = keyStarterRun().keyStarter!;
+    const offer = required(keyStarterRun().keyStarter);
     if (scenario !== 'no-offer') seedKeyStarterOffer(run.runId, offer);
     const choice = {
       runId: run.runId,
       runToken,
       fixtureId: offer.fixtureId,
-      playerId: offer.candidates[0]!.id,
+      playerId: required(offer.candidates[0]).id,
       expectedVersion: 0,
       idempotencyKey: 'starter-first-attempt',
     };
@@ -60,7 +60,7 @@ it.each(['no-offer', 'wrong-fixture', 'outsider', 'stale', 'bad-token', 'key-reu
     if (scenario === 'bad-token') choice.runToken = 'incorrect';
     if (scenario === 'key-reuse') {
       await api.selectKeyStarter(choice);
-      choice.playerId = offer.candidates[1]!.id;
+      choice.playerId = required(offer.candidates[1]).id;
     }
     await expect(api.selectKeyStarter(choice)).rejects.toMatchObject({
       code:
@@ -74,3 +74,8 @@ it.each(['no-offer', 'wrong-fixture', 'outsider', 'stale', 'bad-token', 'key-reu
     });
   },
 );
+
+function required<T>(value: T | null | undefined): T {
+  if (value === null || value === undefined) throw new Error('Expected test fixture value');
+  return value;
+}
