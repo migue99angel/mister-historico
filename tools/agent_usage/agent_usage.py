@@ -578,7 +578,7 @@ def github_data(sizes: dict) -> tuple[list[dict] | None, dict[str, str] | None]:
     runs = _run_json(["gh", "run", "list", "--limit", "1000", "--json", "headBranch,conclusion"])
     known = set(sizes)
     out = pr_rows(prs, runs, known)
-    items = _run_json(["gh", "project", "item-list", "1", "--owner", "migue99angel", "--limit", "500", "--format", "json"])
+    items = _run_json(["gh", "project", "item-list", "1", "--owner", "miguelposadas", "--limit", "500", "--format", "json"])
     if items is None:
         return out, None
     board = {}

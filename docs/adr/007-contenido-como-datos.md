@@ -86,7 +86,7 @@ La conexión posterior transformará las dos plazas de cada slot mediante una bi
 
 ## Ampliación FIX-T2.4-group-tie · Cierre de empates simulados por sorteo
 
-**Aprobada por el autor el 2026-10-29** ([decisión en #126](https://github.com/migue99angel/mister-historico/issues/126#issuecomment-6494985260)). Esta enmienda sustituye, para el cierre de un grupo con resultados simulados, la preservación del empate de la ampliación CR-T2.6-competition-completion.
+**Aprobada por el autor el 2026-10-29** ([decisión en #126](https://github.com/miguelposadas/mister-historico/issues/126#issuecomment-6494985260)). Esta enmienda sustituye, para el cierre de un grupo con resultados simulados, la preservación del empate de la ampliación CR-T2.6-competition-completion.
 
 Al cerrar el grupo del club gestionado, si contiene resultados simulados que sustituyen a los históricos, el motor sortea **todos los empates residuales** una vez agotados los puntos y criterios configurados, incluidos los que no cruzan la frontera de clasificación. Usa las hojas por club fijadas en ADR-005. La tabla queda ordenada según el sorteo, sin `unresolved_ties`; ese orden decide las plazas clasificatorias y la asignación de posiciones a los cruces. Así puede pasar a FINAL cuando cumpla las demás condiciones de cierre, sin que el empate residual la bloquee.
 

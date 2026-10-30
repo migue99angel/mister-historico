@@ -9,7 +9,7 @@ Míster Histórico es un juego de navegador, gratuito y sin registro: entrenas a
 | Qué se construye y por qué | [`docs/PRODUCT_BRIEF.md`](docs/PRODUCT_BRIEF.md) |
 | Arquitectura, testing, fases y trabajo en paralelo | [`docs/PLAN.md`](docs/PLAN.md) |
 | Tareas, con su propiedad de ficheros | [`docs/TASKS.md`](docs/TASKS.md) |
-| Estado de las tareas (qué está listo, en curso, en revisión o bloqueado) | [GitHub Project «Míster Histórico — Development»](https://github.com/users/migue99angel/projects/1) ([ADR-016](docs/adr/016-seguimiento-en-github-projects.md)) |
+| Estado de las tareas (qué está listo, en curso, en revisión o bloqueado) | [GitHub Project «Míster Histórico — Development»](https://github.com/users/miguelposadas/projects/1) ([ADR-016](docs/adr/016-seguimiento-en-github-projects.md)) |
 | Decisiones de arquitectura | [`docs/adr/`](docs/adr/) (plantilla: [`000-template.md`](docs/adr/000-template.md)) |
 | Lenguaje ubicuo ES ↔ EN | [`docs/glossary.md`](docs/glossary.md) |
 
@@ -62,10 +62,10 @@ Consulta el estado con `make status` (tareas abiertas del Project) o `make statu
 
 ```bash
 # Mover el Status: Backlog=9a5adce2 Ready=522e867f "In Progress"=a5c268dc "In Review"=8743f1a4 Blocked=171336ac Done=664872bc
-ITEM=$(gh project item-list 1 --owner migue99angel --limit 500 --format json --jq '.items[]|select(.content.number==<N>)|.id')
+ITEM=$(gh project item-list 1 --owner miguelposadas --limit 500 --format json --jq '.items[]|select(.content.number==<N>)|.id')
 gh project item-edit --project-id PVT_kwHOAphq684BpIRk --id "$ITEM" --field-id PVTSSF_lAHOAphq684BpIRkzhnlQd0 --single-select-option-id <opción>
 # Añadir «#<N> blocked by #<M>»
-gh api -X POST repos/migue99angel/mister-historico/issues/<N>/dependencies/blocked_by -F issue_id=$(gh api repos/migue99angel/mister-historico/issues/<M> --jq .id)
+gh api -X POST repos/miguelposadas/mister-historico/issues/<N>/dependencies/blocked_by -F issue_id=$(gh api repos/miguelposadas/mister-historico/issues/<M> --jq .id)
 # Comentar
 gh issue comment <N> -b "..."
 ```
