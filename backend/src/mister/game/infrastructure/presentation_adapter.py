@@ -261,6 +261,20 @@ class CatalogPresentationAdapter(GamePresentation, SeasonQueries):
             else offer.selected_player_id.value,
         }
 
+    def _starter_identity(
+        self, player_id: PlayerId, players: dict[PlayerId, catalog.PlayerDTO]
+    ) -> dict[str, str] | None:
+        """Resolve identity from the run's immutable content, including sold players."""
+        player = players.get(player_id)
+        if player is None:
+            return None
+        return {
+            "id": player_id.value,
+            "displayName": present_person_name(
+                player.display_name, player.alias_name, real_names=self._real_names
+            ),
+        }
+
     def _block_summary(  # noqa: PLR0913, PLR0917 - all reference metadata is explicit
         self,
         result: ports.BlockSimulationResult,
@@ -388,6 +402,15 @@ class CatalogPresentationAdapter(GamePresentation, SeasonQueries):
                         "playerId": outcome.player_id.value,
                         "starterIds": [player.value for player in outcome.starter_ids],
                         "absenceReason": outcome.absence_reason,
+                        "selectedPlayer": self._starter_identity(outcome.player_id, players),
+                        "starters": (
+                            [
+                                self._starter_identity(player, players)
+                                for player in outcome.starter_ids
+                            ]
+                            if all(player in players for player in outcome.starter_ids)
+                            else None
+                        ),
                     }
                 }
                 if outcome is not None

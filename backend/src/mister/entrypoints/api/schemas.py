@@ -309,8 +309,16 @@ class KeyStarterOffer(BaseModel):
     selected_player_id: Slug | None = Field(..., alias="selectedPlayerId")
 
 
+class StarterIdentity(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    id: Slug
+    display_name: str = Field(alias="displayName")
+
+
 class KeyStarterOutcome(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    selected_player: StarterIdentity | None = Field(default=None, alias="selectedPlayer")
+    starters: list[StarterIdentity] | None = Field(default=None, max_length=11)
     fixture_id: Slug = Field(alias="fixtureId")
     date_value: date = Field(alias="date")
     player_id: Slug = Field(alias="playerId")

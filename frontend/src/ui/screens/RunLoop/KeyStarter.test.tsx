@@ -218,14 +218,25 @@ it('exposes the captured comparison with labelled keyboard controls and no acces
   expect(await axe(panel)).toHaveNoViolations();
 });
 
-
-it.each([undefined, null])('uses IDs for legacy outcomes without captured identities (%s)', (missing) => {
-  renderWithRuntime(<KeyStarterResult outcome={{
-    fixtureId: 'test-fixture', date: '2000-09-03', playerId: 'sold-player',
-    starterIds: ['actual-starter'], absenceReason: 'not_in_squad',
-    selectedPlayer: missing, starters: missing,
-  }} match={undefined} />);
-  const result = screen.getByRole('region', { name: 'Resultado del titular elegido' });
-  expect(result).toHaveTextContent('sold-player');
-  expect(result).toHaveTextContent('actual-starter');
-});
+it.each([undefined, null])(
+  'uses IDs for legacy outcomes without captured identities (%s)',
+  (missing) => {
+    renderWithRuntime(
+      <KeyStarterResult
+        outcome={{
+          fixtureId: 'test-fixture',
+          date: '2000-09-03',
+          playerId: 'sold-player',
+          starterIds: ['actual-starter'],
+          absenceReason: 'not_in_squad',
+          selectedPlayer: missing,
+          starters: missing,
+        }}
+        match={undefined}
+      />,
+    );
+    const result = screen.getByRole('region', { name: 'Resultado del titular elegido' });
+    expect(result).toHaveTextContent('sold-player');
+    expect(result).toHaveTextContent('actual-starter');
+  },
+);
