@@ -6,13 +6,13 @@ import {
   useSelectKeyStarter,
   type KeyStarterChoice,
 } from '../../../application/useSelectKeyStarter';
-import { KeyStarter, KeyStarterResult } from './KeyStarter';
 import { useTakeDecision } from '../../../application/useTakeDecision';
 import { describeDecisionChanges } from '../../../domain/decisionFeedback';
 import { toRunViewModel } from '../../../domain/runViewModel';
 import { BlockProgress, Button, DilemmaCard, GenericCrest } from '../../design-system';
 import { BlockSummary } from './BlockSummary';
 import { CoachLayout } from './CoachLayout';
+import { KeyStarter, KeyStarterResult } from './KeyStarter';
 import { useBlockReveal } from './useBlockReveal';
 import { commandFailureMessage, pendingDilemmasHint, type RunLoopCommand } from './feedback';
 

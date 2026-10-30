@@ -1,5 +1,6 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { axe } from 'jest-axe';
 import { HttpResponse, http } from 'msw';
 import { expect, it, vi } from 'vitest';
 import { keyStarterRun } from '../../../../test/keyStarter';
@@ -191,4 +192,10 @@ it('blocks selecting a starter while an advance has an uncertain outcome', async
   expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo simular');
   expect(screen.getAllByRole('radio')[0]).toBeDisabled();
   expect(screen.getByRole('button', { name: 'Simular bloque sin elegir titular' })).toBeEnabled();
+});
+
+it('exposes the captured comparison with labelled keyboard controls and no accessibility violations', async () => {
+  setup();
+  const panel = screen.getByRole('region', { name: 'Titular para el partido clave' });
+  expect(await axe(panel)).toHaveNoViolations();
 });
