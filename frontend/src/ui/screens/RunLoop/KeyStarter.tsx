@@ -136,14 +136,11 @@ const ABSENCE = {
 /** Only the server's post-block evidence establishes actual participation. */
 export function KeyStarterResult({
   outcome,
-  players,
   match,
 }: {
   outcome: KeyStarterOutcomeDto;
-  players: SquadMemberDto[];
   match: MatchReportDto | undefined;
 }) {
-  const name = (id: string) => players.find((player) => player.id === id)?.displayName ?? id;
   return (
     <section aria-label="Resultado del titular elegido" className="mt-3 border-t border-line pt-3">
       <h3 className="font-semibold">Resultado del titular elegido</h3>
@@ -154,7 +151,7 @@ export function KeyStarterResult({
           : 'Partido señalado'}
       </p>
       <p>
-        {name(outcome.playerId)}:{' '}
+        {outcome.selectedPlayer?.displayName ?? outcome.playerId}:{' '}
         {outcome.absenceReason === null ? 'Jugó de titular.' : ABSENCE[outcome.absenceReason]}
       </p>
       {outcome.starterIds.length > 0 && (
@@ -162,7 +159,9 @@ export function KeyStarterResult({
           <summary className="min-h-touch cursor-pointer py-2 font-semibold">Once real</summary>
           <ul className="grid gap-1 text-caption sm:grid-cols-2">
             {outcome.starterIds.map((id) => (
-              <li key={id}>{name(id)}</li>
+              <li key={id}>
+                {outcome.starters?.find((player) => player.id === id)?.displayName ?? id}
+              </li>
             ))}
           </ul>
         </details>

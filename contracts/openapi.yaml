@@ -1147,6 +1147,18 @@ components:
             - $ref: "#/components/schemas/Slug"
             - type: "null"
 
+    StarterIdentity:
+      type: object
+      description: Player identity from the immutable content captured when the run was created.
+      required: [id, displayName]
+      additionalProperties: false
+      properties:
+        id:
+          $ref: "#/components/schemas/Slug"
+        displayName:
+          type: string
+          description: Captured name rendered with the configured real-name or alias policy.
+
     KeyStarterOutcome:
       type: object
       description: >-
@@ -1170,6 +1182,24 @@ components:
           uniqueItems: true
           items:
             $ref: "#/components/schemas/Slug"
+        selectedPlayer:
+          description: >-
+            Identity of playerId from the run's captured content, including after a sale.
+            Absent in legacy responses; null if the identity is unknown.
+          oneOf:
+            - $ref: "#/components/schemas/StarterIdentity"
+            - type: "null"
+        starters:
+          description: >-
+            Captured identities in exactly starterIds order. Empty for fixture_not_played.
+            Absent in legacy responses; null if any starter identity is unknown.
+          oneOf:
+            - type: array
+              maxItems: 11
+              uniqueItems: true
+              items:
+                $ref: "#/components/schemas/StarterIdentity"
+            - type: "null"
         absenceReason:
           oneOf:
             - type: string

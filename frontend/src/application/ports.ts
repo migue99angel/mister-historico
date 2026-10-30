@@ -245,6 +245,8 @@ export interface KeyStarterOfferDto {
 }
 
 export interface KeyStarterOutcomeDto {
+  selectedPlayer?: { id: SlugDto; displayName: string } | null;
+  starters?: { id: SlugDto; displayName: string }[] | null;
   fixtureId: SlugDto;
   date: string;
   playerId: SlugDto;

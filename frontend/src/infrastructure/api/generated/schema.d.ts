@@ -611,6 +611,12 @@ export interface components {
             projectedStarters: components["schemas"]["SquadMember"][];
             selectedPlayerId: components["schemas"]["Slug"] | null;
         };
+        /** @description Player identity from the immutable content captured when the run was created. */
+        StarterIdentity: {
+            id: components["schemas"]["Slug"];
+            /** @description Captured name rendered with the configured real-name or alias policy. */
+            displayName: string;
+        };
         /** @description Evidence captured during simulation, only published after block closure. starterIds is the actual managed-team lineup, including fallback. The selected player is in it exactly when absenceReason is null. fixture_not_played requires an empty lineup; every other outcome requires a nonempty lineup. Runtime validates these relations. */
         KeyStarterOutcome: {
             fixtureId: components["schemas"]["Slug"];
@@ -618,6 +624,10 @@ export interface components {
             date: string;
             playerId: components["schemas"]["Slug"];
             starterIds: components["schemas"]["Slug"][];
+            /** @description Identity of playerId from the run's captured content, including after a sale. Absent in legacy responses; null if the identity is unknown. */
+            selectedPlayer?: components["schemas"]["StarterIdentity"] | null;
+            /** @description Captured identities in exactly starterIds order. Empty for fixture_not_played. Absent in legacy responses; null if any starter identity is unknown. */
+            starters?: components["schemas"]["StarterIdentity"][] | null;
             absenceReason: ("injured" | "not_in_squad" | "youth_conflict" | "fixture_not_played") | null;
         };
         /**
