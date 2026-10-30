@@ -17,7 +17,7 @@
 ## 2. Reglas que se conservan
 
 - **Nunca inventar datos históricos.** Todo dato tiene fuentes; lo que no se encuentre queda en `null` con `verify: pending`.
-- **Solo medios, recursos y cuentas personales.** La identidad Git es `43543275+migue99angel@users.noreply.github.com`; no la cambies. `frontend/.npmrc` fija npmjs y la CI comprueba que el lock use únicamente el registro público.
+- **Solo medios, recursos y cuentas personales.** La identidad Git es `43543275+miguelposadas@users.noreply.github.com`; no la cambies. `frontend/.npmrc` fija npmjs y la CI comprueba que el lock use únicamente el registro público.
 - Código, comentarios, docstrings y commits en inglés; `docs/` y textos de usuario en español.
 - Evita duplicar entornos y limpia worktrees temporales al terminar. La última comprobación dejó unos 40 GB libres en `/`; el aviso anterior de solo 2 GB ya no describe el estado observado.
 
