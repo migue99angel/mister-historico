@@ -1,23 +1,26 @@
 import type { RunCommandFailure } from '../../../application/useRun';
 
-export type RunLoopCommand = 'decision' | 'advance';
+export type RunLoopCommand = 'decision' | 'advance' | 'starter';
 
 const CONFLICT_MESSAGES: Partial<Record<string, string>> = {
   version_conflict: 'La partida ya había cambiado. Hemos recargado su estado.',
   dilemma_already_decided: 'Ese dilema ya estaba decidido. Hemos recargado la partida.',
   run_already_finished: 'La partida ya había terminado. Hemos recargado su estado.',
+  key_starter_already_selected: 'El titular ya estaba confirmado. Hemos recargado la partida.',
   pending_dilemmas: 'Aún quedan dilemas por decidir. Hemos recargado la partida.',
 };
 
 const DEFAULT_CONFLICT_MESSAGE = 'La partida ya había cambiado. Hemos recargado su estado.';
 
 const REJECTED_MESSAGES: Partial<Record<string, string>> = {
+  invalid_key_starter: 'Ese titular ya no es válido. Hemos recargado la partida.',
   invalid_option: 'Esa opción ya no es válida. Hemos recargado la partida.',
 };
 
 const DEFAULT_REJECTED_MESSAGE = 'La partida no ha aceptado la acción. Hemos recargado su estado.';
 
 const FAILED_MESSAGES: Record<RunLoopCommand, string> = {
+  starter: 'No se pudo confirmar el titular. Comprueba la conexión y reintenta la selección.',
   decision: 'No se pudo enviar la decisión. Comprueba la conexión y vuelve a intentarlo.',
   advance: 'No se pudo simular el bloque. Comprueba la conexión y vuelve a intentarlo.',
 };
