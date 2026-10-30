@@ -318,7 +318,9 @@ class StarterIdentity(BaseModel):
 class KeyStarterOutcome(BaseModel):
     model_config = ConfigDict(extra="forbid")
     selected_player: StarterIdentity | None = Field(default=None, alias="selectedPlayer")
-    starters: list[StarterIdentity] | None = Field(default=None, max_length=11)
+    starters: list[StarterIdentity] | None = Field(
+        default=None, max_length=11, json_schema_extra={"uniqueItems": True}
+    )
     fixture_id: Slug = Field(alias="fixtureId")
     date_value: date = Field(alias="date")
     player_id: Slug = Field(alias="playerId")
